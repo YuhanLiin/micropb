@@ -1,33 +1,62 @@
 #![no_std]
 
-use core::ops::{AddAssign, BitOrAssign, Shl};
+pub mod container;
 
+use core::{
+    mem::size_of,
+    ops::{BitOrAssign, Shl},
+    slice,
+    str::{from_utf8, Utf8Error},
+};
+
+use container::{PbString, PbVec};
+
+#[derive(Debug)]
 enum Error {
     VarIntLimit(u8),
     UnexpectedEof,
     Deprecation,
     BadWireType(u8),
+    Utf8(Utf8Error),
+    Capacity,
+}
+
+impl From<Utf8Error> for Error {
+    fn from(err: Utf8Error) -> Self {
+        Self::Utf8(err)
+    }
+}
+
+enum WireType {
+    Varint,
+    I64,
+    Len,
+    I32,
+}
+
+struct Tag {
+    field_num: u32,
+    wire_type: WireType,
 }
 
 trait VarIntDecode: BitOrAssign + Shl<u8, Output = Self> + From<u8> + Copy {
-    const BITS: u8;
-    const BYTES: u8 = Self::BITS / 7;
+    const BYTES: u8;
 }
 
 impl VarIntDecode for u32 {
-    const BITS: u8 = 35;
+    const BYTES: u8 = 5;
 }
 
 impl VarIntDecode for u64 {
-    const BITS: u8 = 70;
+    const BYTES: u8 = 10;
 }
 
-pub struct ProtoReader<'a> {
+pub struct PbReader<'a> {
     buf: &'a [u8],
     idx: usize,
 }
 
-impl<'a> ProtoReader<'a> {
+impl<'a> PbReader<'a> {
     pub fn new(buf: &'a [u8]) -> Self {
         Self { buf, idx: 0 }
     }
@@ -55,7 +84,7 @@ impl<'a> ProtoReader<'a> {
         }
 
         let mut bitpos = 7;
-        loop {
+        for _ in 1..U::BYTES {
             let b = self.get_byte()?;
             // possible truncation in the last byte
             varint |= U::from(b & !0x80) << bitpos;
@@ -63,10 +92,8 @@ impl<'a> ProtoReader<'a> {
                 return Ok(varint);
             }
             bitpos += 7;
-            if bitpos >= U::BITS {
-                return Err(Error::VarIntLimit(U::BYTES));
-            }
         }
+        Err(Error::VarIntLimit(U::BYTES))
     }
 
     fn decode_uint32(&mut self) -> Result<u32, Error> {
@@ -97,6 +124,9 @@ impl<'a> ProtoReader<'a> {
 
     fn decode_bool(&mut self) -> Result<bool, Error> {
         let b = self.get_byte()?;
+        if b & 0x80 != 0 {
+            return Err(Error::VarIntLimit(1));
+        }
         Ok(b != 0)
     }
 
@@ -149,16 +179,53 @@ impl<'a> ProtoReader<'a> {
             wire_type,
         })
     }
-}
 
-enum WireType {
-    Varint,
-    I64,
-    Len,
-    I32,
-}
+    fn decode_len_slice(&mut self) -> Result<&[u8], Error> {
+        let len = self.decode_uint32()?;
+        self.get_slice(len as usize)
+    }
 
-struct Tag {
-    field_num: u32,
-    wire_type: WireType,
+    fn decode_string<S: PbString>(&mut self, string: &mut S) -> Result<(), Error> {
+        let slice = self.decode_len_slice()?;
+        let s = from_utf8(slice)?;
+        string.write_str(s).map_err(|_| Error::Capacity)
+    }
+
+    fn decode_bytes<S: PbVec<u8>>(&mut self, bytes: &mut S) -> Result<(), Error> {
+        let slice = self.decode_len_slice()?;
+        bytes.write_slice(slice).map_err(|_| Error::Capacity)
+    }
+
+    fn decode_packed<T: Copy, S: PbVec<T>, F: for<'b> Fn(&mut PbReader<'b>) -> Result<T, Error>>(
+        &mut self,
+        vec: &mut S,
+        decoder: F,
+    ) -> Result<(), Error> {
+        let mut reader = PbReader::new(self.decode_len_slice()?);
+        while reader.remaining() > 0 {
+            let val = decoder(&mut reader)?;
+            vec.push(val).map_err(|_| Error::Capacity)?;
+        }
+        Ok(())
+    }
+
+    fn skip_varint(&mut self) -> Result<(), Error> {
+        for _ in 0..u64::BYTES {
+            let b = self.get_byte()?;
+            if b & 0x80 == 0 {
+                return Ok(());
+            }
+        }
+        Err(Error::VarIntLimit(u64::BYTES))
+    }
+
+    fn skip_wire_value(&mut self, wire_type: WireType) -> Result<(), Error> {
+        match wire_type {
+            WireType::Varint => self.skip_varint()?,
+            WireType::I64 => drop(self.get_slice(8)?),
+            WireType::Len => drop(self.decode_len_slice()?),
+            WireType::I32 => drop(self.get_slice(4)?),
+        }
+        Ok(())
+    }
 }
