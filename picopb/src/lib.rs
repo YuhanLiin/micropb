@@ -4,7 +4,7 @@ pub mod container;
 pub mod decode;
 pub mod message;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Tag {
     field_num: u32,
     wire_type: u8,

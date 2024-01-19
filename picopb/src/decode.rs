@@ -8,7 +8,7 @@ use crate::{
     Tag,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DecodeError {
     VarIntLimit(u8),
     UnexpectedEof,
@@ -118,11 +118,13 @@ impl<'a> PbReader<'a> {
         Ok(b != 0)
     }
 
-    fn get_slice(&self, size: usize) -> Result<&[u8], DecodeError> {
+    fn get_slice(&mut self, size: usize) -> Result<&[u8], DecodeError> {
         if self.remaining() < size {
             return Err(DecodeError::UnexpectedEof);
         }
-        Ok(&self.buf[self.idx..self.idx + size])
+        let idx = self.idx;
+        self.idx += size;
+        Ok(&self.buf[idx..idx + size])
     }
 
     pub fn decode_fixed32(&mut self) -> Result<u32, DecodeError> {
@@ -155,7 +157,7 @@ impl<'a> PbReader<'a> {
     pub fn decode_tag(&mut self) -> Result<Tag, DecodeError> {
         let u = self.decode_uint32()?;
         let field_num = u >> 3;
-        let wire_type = (u | 0b111) as u8;
+        let wire_type = (u & 0b111) as u8;
         Ok(Tag {
             field_num,
             wire_type,
@@ -241,4 +243,248 @@ impl<'a> PbReader<'a> {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! assert_decode {
+        ($expected:expr, $arr:expr, $($op:tt)+) => {
+            let mut reader = PbReader::new(&$arr);
+            let res = reader.$($op)+;
+            assert_eq!($expected, res);
+            // Check that the reader is empty only when the decoding is successful
+            if res.is_ok() {
+                assert_eq!(reader.remaining(), 0);
+            }
+        };
+    }
+
+    #[test]
+    fn varint32() {
+        assert_decode!(Ok(5), [5], decode_uint32());
+        assert_decode!(Ok(150), [0x96, 0x01], decode_uint32());
+        assert_decode!(
+            Ok(0b1010000001110010101),
+            [0x95, 0x87, 0x14],
+            decode_uint32()
+        );
+        // Last byte is partially truncated in the output
+        assert_decode!(
+            Ok(0b11110000000000000000000000000001),
+            [0x81, 0x80, 0x80, 0x80, 0x7F],
+            decode_uint32()
+        );
+
+        assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], decode_uint32());
+        assert_decode!(Err(DecodeError::UnexpectedEof), [], decode_uint32());
+        assert_decode!(
+            Err(DecodeError::VarIntLimit(5)),
+            [0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
+            decode_uint32()
+        );
+    }
+
+    #[test]
+    fn varint64() {
+        assert_decode!(Ok(5), [5], decode_uint64());
+        assert_decode!(Ok(150), [0x96, 0x01], decode_uint64());
+        // Last byte is partially truncated in the output
+        assert_decode!(
+            Ok(0b1000000000000000000000000000000000000000000000000000000000000001),
+            [0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F],
+            decode_uint64()
+        );
+
+        assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], decode_uint64());
+        assert_decode!(Err(DecodeError::UnexpectedEof), [], decode_uint64());
+        assert_decode!(
+            Err(DecodeError::VarIntLimit(10)),
+            [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
+            decode_uint64()
+        );
+    }
+
+    #[test]
+    fn skip_varint() {
+        assert_decode!(Ok(()), [5], skip_varint());
+        assert_decode!(Ok(()), [0x96, 0x01], skip_varint());
+        assert_decode!(
+            Ok(()),
+            [0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F],
+            skip_varint()
+        );
+
+        assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], skip_varint());
+        assert_decode!(Err(DecodeError::UnexpectedEof), [], skip_varint());
+        assert_decode!(
+            Err(DecodeError::VarIntLimit(10)),
+            [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
+            skip_varint()
+        );
+    }
+
+    #[test]
+    fn int() {
+        assert_decode!(Ok(5), [5], decode_int32());
+        assert_decode!(Ok(5), [5], decode_int64());
+
+        // int32 is decoded as varint64, so big varints get casted down to 32 bits
+        assert_decode!(
+            Ok(0b00000000000000000000000000000001),
+            [0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F],
+            decode_int32()
+        );
+        assert_decode!(
+            Ok(0b100000000000000000000000000000000000000000000000000000000000001),
+            [0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0xC0, 0x00],
+            decode_int64()
+        );
+
+        assert_decode!(
+            Ok(-2),
+            [0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            decode_int32()
+        );
+        assert_decode!(
+            Ok(-2),
+            [0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            decode_int64()
+        );
+    }
+
+    #[test]
+    fn sint32() {
+        assert_decode!(Ok(0), [0], decode_sint32());
+        assert_decode!(Ok(-1), [1], decode_sint32());
+        assert_decode!(Ok(1), [2], decode_sint32());
+        assert_decode!(Ok(-2), [3], decode_sint32());
+        assert_decode!(
+            Ok(0x7FFFFFFF),
+            [0xFE, 0xFF, 0xFF, 0xFF, 0x7F],
+            decode_sint32()
+        );
+        assert_decode!(
+            Ok(-0x80000000),
+            [0xFF, 0xFF, 0xFF, 0xFF, 0x7F],
+            decode_sint32()
+        );
+        assert_decode!(
+            Err(DecodeError::VarIntLimit(5)),
+            [0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
+            decode_sint32()
+        );
+    }
+
+    #[test]
+    fn sint64() {
+        assert_decode!(Ok(0), [0], decode_sint64());
+        assert_decode!(Ok(-1), [1], decode_sint64());
+        assert_decode!(
+            Ok(0x7FFFFFFFFFFFFFFF),
+            [0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F],
+            decode_sint64()
+        );
+        assert_decode!(
+            Ok(-0x8000000000000000),
+            [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F],
+            decode_sint64()
+        );
+        assert_decode!(
+            Err(DecodeError::VarIntLimit(10)),
+            [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
+            decode_sint64()
+        );
+    }
+
+    #[test]
+    fn bool() {
+        assert_decode!(Ok(false), [0], decode_bool());
+        assert_decode!(Ok(true), [1], decode_bool());
+        assert_decode!(Ok(true), [0x3], decode_bool());
+        assert_decode!(Err(DecodeError::VarIntLimit(1)), [0x80], decode_bool());
+    }
+
+    #[test]
+    fn fixed() {
+        assert_decode!(Err(DecodeError::UnexpectedEof), [0], decode_fixed32());
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x01, 0x43, 0x22],
+            decode_fixed32()
+        );
+        assert_decode!(Ok(0xF4983212), [0x12, 0x32, 0x98, 0xF4], decode_fixed32());
+
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x01, 0x43, 0x22, 0x32, 0x9A, 0xBB, 0x3C],
+            decode_fixed64()
+        );
+        assert_decode!(
+            Ok(0x9950AA3BF4983212),
+            [0x12, 0x32, 0x98, 0xF4, 0x3B, 0xAA, 0x50, 0x99],
+            decode_fixed64()
+        );
+    }
+
+    #[test]
+    fn sfixed() {
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x01, 0x43, 0x22],
+            decode_sfixed32()
+        );
+        assert_decode!(Ok(-0x0B67CDEE), [0x12, 0x32, 0x98, 0xF4], decode_sfixed32());
+
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x01, 0x43, 0x22, 0x32, 0x9A, 0xBB, 0x3C],
+            decode_sfixed64()
+        );
+    }
+
+    #[test]
+    fn float() {
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x01, 0x43, 0x22],
+            decode_float()
+        );
+        assert_decode!(Ok(-29.03456), [0xC7, 0x46, 0xE8, 0xC1], decode_float());
+
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x01, 0x43, 0x22, 0x32, 0x9A, 0xBB, 0x3C],
+            decode_double()
+        );
+        assert_decode!(
+            Ok(26.029345233467545),
+            [0x5E, 0x09, 0x52, 0x2B, 0x83, 0x07, 0x3A, 0x40],
+            decode_double()
+        );
+    }
+
+    #[test]
+    fn tag() {
+        assert_decode!(
+            Ok(Tag {
+                field_num: 5,
+                wire_type: 4
+            }),
+            [0x2C],
+            decode_tag()
+        );
+        assert_decode!(
+            Ok(Tag {
+                field_num: 59,
+                wire_type: 7
+            }),
+            [0xDF, 0x03],
+            decode_tag()
+        );
+    }
+
+    #[test]
+    fn skip() {}
 }
