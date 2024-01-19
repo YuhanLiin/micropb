@@ -5,11 +5,11 @@ use core::{
 
 use crate::{
     container::{PbString, PbVec},
-    Tag, WireType,
+    Tag,
 };
 
 #[derive(Debug)]
-enum DecodeError {
+pub enum DecodeError {
     VarIntLimit(u8),
     UnexpectedEof,
     Deprecation,
@@ -36,6 +36,9 @@ impl VarIntDecode for u64 {
     const BYTES: u8 = 10;
 }
 
+type DecodeFn<T> = fn(&mut PbReader) -> Result<T, DecodeError>;
+
+#[derive(Debug)]
 pub struct PbReader<'a> {
     buf: &'a [u8],
     idx: usize,
@@ -81,33 +84,33 @@ impl<'a> PbReader<'a> {
         Err(DecodeError::VarIntLimit(U::BYTES))
     }
 
-    fn decode_uint32(&mut self) -> Result<u32, DecodeError> {
+    pub fn decode_uint32(&mut self) -> Result<u32, DecodeError> {
         self.decode_varint::<u32>()
     }
 
-    fn decode_uint64(&mut self) -> Result<u64, DecodeError> {
+    pub fn decode_uint64(&mut self) -> Result<u64, DecodeError> {
         self.decode_varint::<u64>()
     }
 
-    fn decode_int64(&mut self) -> Result<i64, DecodeError> {
+    pub fn decode_int64(&mut self) -> Result<i64, DecodeError> {
         self.decode_uint64().map(|u| u as i64)
     }
 
-    fn decode_int32(&mut self) -> Result<i32, DecodeError> {
+    pub fn decode_int32(&mut self) -> Result<i32, DecodeError> {
         self.decode_int64().map(|u| u as i32)
     }
 
-    fn decode_sint32(&mut self) -> Result<i32, DecodeError> {
+    pub fn decode_sint32(&mut self) -> Result<i32, DecodeError> {
         self.decode_uint32()
             .map(|u| ((u >> 1) as i32) ^ -((u & 1) as i32))
     }
 
-    fn decode_sint64(&mut self) -> Result<i64, DecodeError> {
+    pub fn decode_sint64(&mut self) -> Result<i64, DecodeError> {
         self.decode_uint64()
             .map(|u| ((u >> 1) as i64) ^ -((u & 1) as i64))
     }
 
-    fn decode_bool(&mut self) -> Result<bool, DecodeError> {
+    pub fn decode_bool(&mut self) -> Result<bool, DecodeError> {
         let b = self.get_byte()?;
         if b & 0x80 != 0 {
             return Err(DecodeError::VarIntLimit(1));
@@ -122,73 +125,63 @@ impl<'a> PbReader<'a> {
         Ok(&self.buf[self.idx..self.idx + size])
     }
 
-    fn decode_fixed32(&mut self) -> Result<u32, DecodeError> {
+    pub fn decode_fixed32(&mut self) -> Result<u32, DecodeError> {
         let bytes = self.get_slice(4)?;
         Ok(u32::from_le_bytes(bytes.try_into().unwrap()))
     }
 
-    fn decode_fixed64(&mut self) -> Result<u64, DecodeError> {
+    pub fn decode_fixed64(&mut self) -> Result<u64, DecodeError> {
         let bytes = self.get_slice(8)?;
         Ok(u64::from_le_bytes(bytes.try_into().unwrap()))
     }
 
-    fn decode_sfixed32(&mut self) -> Result<i32, DecodeError> {
+    pub fn decode_sfixed32(&mut self) -> Result<i32, DecodeError> {
         self.decode_fixed32().map(|u| u as i32)
     }
 
-    fn decode_sfixed64(&mut self) -> Result<i64, DecodeError> {
+    pub fn decode_sfixed64(&mut self) -> Result<i64, DecodeError> {
         self.decode_fixed64().map(|u| u as i64)
     }
 
-    fn decode_float(&mut self) -> Result<f32, DecodeError> {
+    pub fn decode_float(&mut self) -> Result<f32, DecodeError> {
         self.decode_fixed32().map(f32::from_bits)
     }
 
-    fn decode_double(&mut self) -> Result<f64, DecodeError> {
+    pub fn decode_double(&mut self) -> Result<f64, DecodeError> {
         self.decode_fixed64().map(f64::from_bits)
     }
 
-    fn decode_tag(&mut self) -> Result<Tag, DecodeError> {
+    #[inline(always)]
+    pub fn decode_tag(&mut self) -> Result<Tag, DecodeError> {
         let u = self.decode_uint32()?;
         let field_num = u >> 3;
-        let wire_type = match u & 0b111 {
-            0 => WireType::Varint,
-            1 => WireType::I64,
-            2 => WireType::Len,
-            3 | 4 => return Err(DecodeError::Deprecation),
-            5 => WireType::I32,
-            w => return Err(DecodeError::BadWireType(w as u8)),
-        };
+        let wire_type = (u | 0b111) as u8;
         Ok(Tag {
             field_num,
             wire_type,
         })
     }
 
-    fn decode_len_slice(&mut self) -> Result<&[u8], DecodeError> {
+    pub fn decode_len_slice(&mut self) -> Result<&[u8], DecodeError> {
         let len = self.decode_uint32()?;
         self.get_slice(len as usize)
     }
 
-    fn decode_string<S: PbString>(&mut self, string: &mut S) -> Result<(), DecodeError> {
+    pub fn decode_string<S: PbString>(&mut self, string: &mut S) -> Result<(), DecodeError> {
         let slice = self.decode_len_slice()?;
         let s = from_utf8(slice)?;
         string.write_str(s).map_err(|_| DecodeError::Capacity)
     }
 
-    fn decode_bytes<S: PbVec<u8>>(&mut self, bytes: &mut S) -> Result<(), DecodeError> {
+    pub fn decode_bytes<S: PbVec<u8>>(&mut self, bytes: &mut S) -> Result<(), DecodeError> {
         let slice = self.decode_len_slice()?;
         bytes.write_slice(slice).map_err(|_| DecodeError::Capacity)
     }
 
-    fn decode_packed<
-        T: Copy,
-        S: PbVec<T>,
-        F: for<'b> Fn(&mut PbReader<'b>) -> Result<T, DecodeError>,
-    >(
+    pub fn decode_packed<T: Copy, S: PbVec<T>>(
         &mut self,
         vec: &mut S,
-        decoder: F,
+        decoder: DecodeFn<T>,
     ) -> Result<(), DecodeError> {
         let mut reader = PbReader::new(self.decode_len_slice()?);
         while reader.remaining() > 0 {
@@ -196,6 +189,35 @@ impl<'a> PbReader<'a> {
             vec.push(val).map_err(|_| DecodeError::Capacity)?;
         }
         Ok(())
+    }
+
+    pub fn decode_map_elem<
+        K: Default,
+        V: Default,
+        UK: Fn(&mut Option<K>, &mut PbReader) -> Result<(), DecodeError>,
+        UV: Fn(&mut Option<V>, &mut PbReader) -> Result<(), DecodeError>,
+    >(
+        &mut self,
+        key_update: UK,
+        val_update: UV,
+    ) -> Result<Option<(K, V)>, DecodeError> {
+        let mut reader = PbReader::new(self.decode_len_slice()?);
+        let mut key = None;
+        let mut val = None;
+        while reader.remaining() > 0 {
+            let tag = reader.decode_tag()?;
+            match tag.field_num {
+                1 => key_update(&mut key, &mut reader)?,
+                2 => val_update(&mut val, &mut reader)?,
+                _ => reader.skip_wire_value(&tag)?,
+            }
+        }
+
+        if let (Some(key), Some(val)) = (key, val) {
+            Ok(Some((key, val)))
+        } else {
+            Ok(None)
+        }
     }
 
     fn skip_varint(&mut self) -> Result<(), DecodeError> {
@@ -208,12 +230,14 @@ impl<'a> PbReader<'a> {
         Err(DecodeError::VarIntLimit(u64::BYTES))
     }
 
-    fn skip_wire_value(&mut self, wire_type: WireType) -> Result<(), DecodeError> {
-        match wire_type {
-            WireType::Varint => self.skip_varint()?,
-            WireType::I64 => drop(self.get_slice(8)?),
-            WireType::Len => drop(self.decode_len_slice()?),
-            WireType::I32 => drop(self.get_slice(4)?),
+    pub fn skip_wire_value(&mut self, tag: &Tag) -> Result<(), DecodeError> {
+        match tag.wire_type {
+            0 => self.skip_varint()?,
+            1 => drop(self.get_slice(8)?),
+            2 => drop(self.decode_len_slice()?),
+            3 | 4 => return Err(DecodeError::Deprecation),
+            5 => drop(self.get_slice(4)?),
+            w => return Err(DecodeError::BadWireType(w)),
         }
         Ok(())
     }

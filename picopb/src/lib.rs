@@ -2,15 +2,20 @@
 
 pub mod container;
 pub mod decode;
+pub mod message;
 
-enum WireType {
-    Varint,
-    I64,
-    Len,
-    I32,
+#[derive(Debug)]
+pub struct Tag {
+    field_num: u32,
+    wire_type: u8,
 }
 
-struct Tag {
-    field_num: u32,
-    wire_type: WireType,
+impl Tag {
+    pub fn wire_type(&self) -> u8 {
+        self.wire_type
+    }
+
+    pub fn field_num(&self) -> u32 {
+        self.field_num
+    }
 }
