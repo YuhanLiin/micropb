@@ -1,4 +1,4 @@
-use crate::VarInt;
+use crate::{Tag, VarInt};
 
 pub trait PbWrite {
     type Error;
@@ -79,5 +79,36 @@ impl<W: PbWrite> PbEncoder<W> {
 
     pub fn encode_bool(&mut self, b: bool) -> Result<(), W::Error> {
         self.encode_byte(b as u8)
+    }
+
+    pub fn encode_fixed32(&mut self, u: u32) -> Result<(), W::Error> {
+        self.writer.pb_write(&u.to_le_bytes())
+    }
+
+    pub fn encode_fixed64(&mut self, u: u64) -> Result<(), W::Error> {
+        self.writer.pb_write(&u.to_le_bytes())
+    }
+
+    pub fn encode_sfixed32(&mut self, i: i32) -> Result<(), W::Error> {
+        self.encode_fixed32(i as u32)
+    }
+
+    pub fn encode_sfixed64(&mut self, i: i64) -> Result<(), W::Error> {
+        self.encode_fixed64(i as u64)
+    }
+
+    pub fn encode_float(&mut self, f: f32) -> Result<(), W::Error> {
+        self.encode_fixed32(f.to_bits())
+    }
+
+    pub fn encode_double(&mut self, f: f64) -> Result<(), W::Error> {
+        self.encode_fixed64(f.to_bits())
+    }
+
+    #[inline]
+    pub fn encode_tag(&mut self, tag: &Tag) -> Result<(), W::Error> {
+        debug_assert!(tag.wire_type <= 7);
+        let num = (tag.field_num << 3) | tag.wire_type as u32;
+        self.encode_varint32(num)
     }
 }
