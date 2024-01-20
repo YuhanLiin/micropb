@@ -5,7 +5,7 @@ use core::{
 
 use crate::{
     container::{PbString, PbVec},
-    Tag,
+    Tag, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
 };
 
 #[derive(Debug, PartialEq)]
@@ -234,11 +234,11 @@ impl<'a> PbReader<'a> {
 
     pub fn skip_wire_value(&mut self, tag: &Tag) -> Result<(), DecodeError> {
         match tag.wire_type {
-            0 => self.skip_varint()?,
-            1 => drop(self.get_slice(8)?),
-            2 => drop(self.decode_len_slice()?),
+            WIRE_TYPE_VARINT => self.skip_varint()?,
+            WIRE_TYPE_I64 => drop(self.get_slice(8)?),
+            WIRE_TYPE_LEN => drop(self.decode_len_slice()?),
             3 | 4 => return Err(DecodeError::Deprecation),
-            5 => drop(self.get_slice(4)?),
+            WIRE_TYPE_I32 => drop(self.get_slice(4)?),
             w => return Err(DecodeError::BadWireType(w)),
         }
         Ok(())
@@ -486,5 +486,55 @@ mod tests {
     }
 
     #[test]
-    fn skip() {}
+    fn skip() {
+        let mut tag = Tag {
+            field_num: 1,
+            wire_type: WIRE_TYPE_VARINT,
+        };
+        assert_decode!(
+            Ok(()),
+            [0x81, 0x80, 0x80, 0x80, 0x7F],
+            skip_wire_value(&tag)
+        );
+
+        tag.wire_type = WIRE_TYPE_I64;
+        assert_decode!(
+            Ok(()),
+            [0x12, 0x45, 0xE4, 0x90, 0x9C, 0xA1, 0xF5, 0xFF],
+            skip_wire_value(&tag)
+        );
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x12, 0x45, 0xE4, 0x90, 0x9C],
+            skip_wire_value(&tag)
+        );
+
+        tag.wire_type = WIRE_TYPE_I32;
+        assert_decode!(Ok(()), [0x9C, 0xA1, 0xF5, 0xFF], skip_wire_value(&tag));
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0xF5, 0xFF],
+            skip_wire_value(&tag)
+        );
+
+        tag.wire_type = WIRE_TYPE_LEN;
+        assert_decode!(Ok(()), [0x03, 0xEE, 0xAB, 0x56], skip_wire_value(&tag));
+        assert_decode!(
+            Ok(()),
+            [0x85, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
+            skip_wire_value(&tag)
+        );
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x03, 0xAB, 0x56],
+            skip_wire_value(&tag)
+        );
+
+        tag.wire_type = 3;
+        assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(&tag));
+        tag.wire_type = 4;
+        assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(&tag));
+        tag.wire_type = 10;
+        assert_decode!(Err(DecodeError::BadWireType(10)), [], skip_wire_value(&tag));
+    }
 }
