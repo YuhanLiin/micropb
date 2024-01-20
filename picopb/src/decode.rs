@@ -22,12 +22,12 @@ impl From<Utf8Error> for DecodeError {
 }
 
 #[derive(Debug)]
-pub struct PbReader<'a> {
+pub struct PbDecoder<'a> {
     buf: &'a [u8],
     idx: usize,
 }
 
-impl<'a> PbReader<'a> {
+impl<'a> PbDecoder<'a> {
     pub fn new(buf: &'a [u8]) -> Self {
         Self { buf, idx: 0 }
     }
@@ -164,13 +164,12 @@ impl<'a> PbReader<'a> {
         bytes.write_slice(slice).map_err(|_| DecodeError::Capacity)
     }
 
-    pub fn decode_packed<T: Copy, S: PbVec<T>, F: Fn(&mut PbReader) -> Result<T, DecodeError>>(
+    pub fn decode_packed<T: Copy, S: PbVec<T>, F: Fn(&mut PbDecoder) -> Result<T, DecodeError>>(
         &mut self,
         vec: &mut S,
         decoder: F,
-    ) -> Result<(), DecodeError>
-where {
-        let mut reader = PbReader::new(self.decode_len_slice()?);
+    ) -> Result<(), DecodeError> {
+        let mut reader = PbDecoder::new(self.decode_len_slice()?);
         while reader.remaining() > 0 {
             let val = decoder(&mut reader)?;
             vec.push(val).map_err(|_| DecodeError::Capacity)?;
@@ -181,14 +180,14 @@ where {
     pub fn decode_map_elem<
         K,
         V,
-        UK: Fn(&mut Option<K>, &mut PbReader) -> Result<(), DecodeError>,
-        UV: Fn(&mut Option<V>, &mut PbReader) -> Result<(), DecodeError>,
+        UK: Fn(&mut Option<K>, &mut PbDecoder) -> Result<(), DecodeError>,
+        UV: Fn(&mut Option<V>, &mut PbDecoder) -> Result<(), DecodeError>,
     >(
         &mut self,
         key_update: UK,
         val_update: UV,
     ) -> Result<Option<(K, V)>, DecodeError> {
-        let mut reader = PbReader::new(self.decode_len_slice()?);
+        let mut reader = PbDecoder::new(self.decode_len_slice()?);
         let mut key = None;
         let mut val = None;
         while reader.remaining() > 0 {
@@ -240,7 +239,7 @@ mod tests {
 
     macro_rules! assert_decode {
         ($expected:expr, $arr:expr, $($op:tt)+) => {
-            let mut reader = PbReader::new(&$arr);
+            let mut reader = PbDecoder::new(&$arr);
             let res = reader.$($op)+;
             assert_eq!($expected, res);
             // Check that the reader is empty only when the decoding is successful
@@ -529,7 +528,7 @@ mod tests {
 
     macro_rules! assert_decode_vec {
         ($pattern:pat $(if $guard:expr)?, $arr:expr, $func:ident ($container:ident $(, $($args:tt)+)?)) => {
-            let mut reader = PbReader::new(&$arr);
+            let mut reader = PbDecoder::new(&$arr);
             let res = reader.$func(&mut $container, $($($args)+)?).map(|_| $container.deref());
             println!("Output = {res:?}");
             assert!(matches!(res, $pattern $(if $guard)?));

@@ -15,11 +15,11 @@ impl<W: PbWrite> PbWrite for &mut W {
     }
 }
 
-pub struct PbWriter<W: PbWrite> {
+pub struct PbEncoder<W: PbWrite> {
     writer: W,
 }
 
-impl<W: PbWrite> PbWriter<W> {
+impl<W: PbWrite> PbEncoder<W> {
     pub fn new(writer: W) -> Self {
         Self { writer }
     }
