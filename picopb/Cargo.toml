@@ -8,6 +8,7 @@ container-arrayvec = ["dep:arrayvec"]
 
 [dependencies]
 arrayvec = { version = "0.7", optional = true }
+num-traits = { version = "0.2", default-features = false }
 
 [dev-dependencies]
 picopb = { path = ".", features = ["container-arrayvec"] }

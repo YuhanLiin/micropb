@@ -1,11 +1,8 @@
-use core::{
-    ops::{BitOrAssign, Shl},
-    str::{from_utf8, Utf8Error},
-};
+use core::str::{from_utf8, Utf8Error};
 
 use crate::{
     container::{PbString, PbVec},
-    Tag, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
+    Tag, VarInt, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
 };
 
 #[derive(Debug, PartialEq)]
@@ -22,18 +19,6 @@ impl From<Utf8Error> for DecodeError {
     fn from(err: Utf8Error) -> Self {
         Self::Utf8(err)
     }
-}
-
-trait VarIntDecode: BitOrAssign + Shl<u8, Output = Self> + From<u8> + Copy {
-    const BYTES: u8;
-}
-
-impl VarIntDecode for u32 {
-    const BYTES: u8 = 5;
-}
-
-impl VarIntDecode for u64 {
-    const BYTES: u8 = 10;
 }
 
 #[derive(Debug)]
@@ -61,9 +46,9 @@ impl<'a> PbReader<'a> {
         Ok(b)
     }
 
-    fn decode_varint<U: VarIntDecode>(&mut self) -> Result<U, DecodeError> {
+    fn decode_varint<U: VarInt>(&mut self) -> Result<U, DecodeError> {
         let b = self.get_byte()?;
-        let mut varint = U::from(b & !0x80);
+        let mut varint = From::from(b & !0x80);
         // Single byte case
         if b & 0x80 == 0 {
             return Ok(varint);
@@ -73,7 +58,8 @@ impl<'a> PbReader<'a> {
         for _ in 1..U::BYTES {
             let b = self.get_byte()?;
             // possible truncation in the last byte
-            varint |= U::from(b & !0x80) << bitpos;
+            let u: U = From::from(b & !0x80);
+            varint = varint | u << bitpos;
             if b & 0x80 == 0 {
                 return Ok(varint);
             }
