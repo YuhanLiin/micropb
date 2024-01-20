@@ -3,4 +3,11 @@ name = "picopb"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+container-arrayvec = ["dep:arrayvec"]
+
 [dependencies]
+arrayvec = { version = "0.7", optional = true }
+
+[dev-dependencies]
+picopb = { path = ".", features = ["container-arrayvec"] }

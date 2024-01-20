@@ -36,8 +36,6 @@ impl VarIntDecode for u64 {
     const BYTES: u8 = 10;
 }
 
-type DecodeFn<T> = fn(&mut PbReader) -> Result<T, DecodeError>;
-
 #[derive(Debug)]
 pub struct PbReader<'a> {
     buf: &'a [u8],
@@ -84,16 +82,16 @@ impl<'a> PbReader<'a> {
         Err(DecodeError::VarIntLimit(U::BYTES))
     }
 
-    pub fn decode_uint32(&mut self) -> Result<u32, DecodeError> {
+    pub fn decode_varint32(&mut self) -> Result<u32, DecodeError> {
         self.decode_varint::<u32>()
     }
 
-    pub fn decode_uint64(&mut self) -> Result<u64, DecodeError> {
+    pub fn decode_varint64(&mut self) -> Result<u64, DecodeError> {
         self.decode_varint::<u64>()
     }
 
     pub fn decode_int64(&mut self) -> Result<i64, DecodeError> {
-        self.decode_uint64().map(|u| u as i64)
+        self.decode_varint64().map(|u| u as i64)
     }
 
     pub fn decode_int32(&mut self) -> Result<i32, DecodeError> {
@@ -101,12 +99,12 @@ impl<'a> PbReader<'a> {
     }
 
     pub fn decode_sint32(&mut self) -> Result<i32, DecodeError> {
-        self.decode_uint32()
+        self.decode_varint32()
             .map(|u| ((u >> 1) as i32) ^ -((u & 1) as i32))
     }
 
     pub fn decode_sint64(&mut self) -> Result<i64, DecodeError> {
-        self.decode_uint64()
+        self.decode_varint64()
             .map(|u| ((u >> 1) as i64) ^ -((u & 1) as i64))
     }
 
@@ -155,7 +153,7 @@ impl<'a> PbReader<'a> {
 
     #[inline(always)]
     pub fn decode_tag(&mut self) -> Result<Tag, DecodeError> {
-        let u = self.decode_uint32()?;
+        let u = self.decode_varint32()?;
         let field_num = u >> 3;
         let wire_type = (u & 0b111) as u8;
         Ok(Tag {
@@ -165,7 +163,7 @@ impl<'a> PbReader<'a> {
     }
 
     pub fn decode_len_slice(&mut self) -> Result<&[u8], DecodeError> {
-        let len = self.decode_uint32()?;
+        let len = self.decode_varint32()?;
         self.get_slice(len as usize)
     }
 
@@ -180,11 +178,20 @@ impl<'a> PbReader<'a> {
         bytes.write_slice(slice).map_err(|_| DecodeError::Capacity)
     }
 
-    pub fn decode_packed<T: Copy, S: PbVec<T>>(
-        &mut self,
+    pub fn decode_packed<
+        'b,
+        'c,
+        T: Copy,
+        S: PbVec<T>,
+        F: Fn(&mut PbReader<'c>) -> Result<T, DecodeError>,
+    >(
+        &'b mut self,
         vec: &mut S,
-        decoder: DecodeFn<T>,
-    ) -> Result<(), DecodeError> {
+        decoder: F,
+    ) -> Result<(), DecodeError>
+    where
+        'b: 'c,
+    {
         let mut reader = PbReader::new(self.decode_len_slice()?);
         while reader.remaining() > 0 {
             let val = decoder(&mut reader)?;
@@ -194,8 +201,8 @@ impl<'a> PbReader<'a> {
     }
 
     pub fn decode_map_elem<
-        K: Default,
-        V: Default,
+        K,
+        V,
         UK: Fn(&mut Option<K>, &mut PbReader) -> Result<(), DecodeError>,
         UV: Fn(&mut Option<V>, &mut PbReader) -> Result<(), DecodeError>,
     >(
@@ -247,6 +254,10 @@ impl<'a> PbReader<'a> {
 
 #[cfg(test)]
 mod tests {
+    use core::ops::Deref;
+
+    use arrayvec::{ArrayString, ArrayVec};
+
     use super::*;
 
     macro_rules! assert_decode {
@@ -263,46 +274,46 @@ mod tests {
 
     #[test]
     fn varint32() {
-        assert_decode!(Ok(5), [5], decode_uint32());
-        assert_decode!(Ok(150), [0x96, 0x01], decode_uint32());
+        assert_decode!(Ok(5), [5], decode_varint32());
+        assert_decode!(Ok(150), [0x96, 0x01], decode_varint32());
         assert_decode!(
             Ok(0b1010000001110010101),
             [0x95, 0x87, 0x14],
-            decode_uint32()
+            decode_varint32()
         );
         // Last byte is partially truncated in the output
         assert_decode!(
             Ok(0b11110000000000000000000000000001),
             [0x81, 0x80, 0x80, 0x80, 0x7F],
-            decode_uint32()
+            decode_varint32()
         );
 
-        assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], decode_uint32());
-        assert_decode!(Err(DecodeError::UnexpectedEof), [], decode_uint32());
+        assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], decode_varint32());
+        assert_decode!(Err(DecodeError::UnexpectedEof), [], decode_varint32());
         assert_decode!(
             Err(DecodeError::VarIntLimit(5)),
             [0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
-            decode_uint32()
+            decode_varint32()
         );
     }
 
     #[test]
     fn varint64() {
-        assert_decode!(Ok(5), [5], decode_uint64());
-        assert_decode!(Ok(150), [0x96, 0x01], decode_uint64());
+        assert_decode!(Ok(5), [5], decode_varint64());
+        assert_decode!(Ok(150), [0x96, 0x01], decode_varint64());
         // Last byte is partially truncated in the output
         assert_decode!(
             Ok(0b1000000000000000000000000000000000000000000000000000000000000001),
             [0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F],
-            decode_uint64()
+            decode_varint64()
         );
 
-        assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], decode_uint64());
-        assert_decode!(Err(DecodeError::UnexpectedEof), [], decode_uint64());
+        assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], decode_varint64());
+        assert_decode!(Err(DecodeError::UnexpectedEof), [], decode_varint64());
         assert_decode!(
             Err(DecodeError::VarIntLimit(10)),
             [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
-            decode_uint64()
+            decode_varint64()
         );
     }
 
@@ -536,5 +547,150 @@ mod tests {
         assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(&tag));
         tag.wire_type = 10;
         assert_decode!(Err(DecodeError::BadWireType(10)), [], skip_wire_value(&tag));
+    }
+
+    macro_rules! assert_decode_vec {
+        ($pattern:pat $(if $guard:expr)?, $arr:expr, $func:ident ($container:ident $(, $($args:tt)+)?)) => {
+            let mut reader = PbReader::new(&$arr);
+            let res = reader.$func(&mut $container, $($($args)+)?).map(|_| $container.deref());
+            println!("Output = {res:?}");
+            assert!(matches!(res, $pattern $(if $guard)?));
+            // Check that the reader is empty only when the decoding is successful
+            if res.is_ok() {
+                assert_eq!(reader.remaining(), 0);
+            }
+        };
+    }
+
+    #[test]
+    fn string() {
+        let mut string = ArrayString::<4>::new();
+        assert_decode_vec!(Ok(""), [0], decode_string(string));
+        assert_decode_vec!(Ok("a"), [1, b'a'], decode_string(string));
+        assert_decode_vec!(
+            Ok("abcd"),
+            [4, b'a', b'b', b'c', b'd'],
+            decode_string(string)
+        );
+
+        assert_decode_vec!(Err(DecodeError::UnexpectedEof), [], decode_string(string));
+        assert_decode_vec!(
+            Err(DecodeError::UnexpectedEof),
+            [5, b'a', b'b', b'c', b'd'],
+            decode_string(string)
+        );
+        assert_decode_vec!(
+            Err(DecodeError::Capacity),
+            [5, b'a', b'b', b'c', b'd', b'e'],
+            decode_string(string)
+        );
+        assert_decode_vec!(
+            Err(DecodeError::Utf8(_)),
+            [4, 0x80, 0x80, 0x80, 0x80],
+            decode_string(string)
+        );
+    }
+
+    #[test]
+    fn bytes() {
+        let mut bytes = ArrayVec::<u8, 3>::new();
+        assert_decode_vec!(Ok(&[]), [0], decode_bytes(bytes));
+        assert_decode_vec!(Ok(b"a"), [1, b'a'], decode_bytes(bytes));
+        assert_decode_vec!(
+            Ok(&[0x10, 0x20, 0x30]),
+            [3, 0x10, 0x20, 0x30],
+            decode_bytes(bytes)
+        );
+
+        assert_decode_vec!(Err(DecodeError::UnexpectedEof), [], decode_bytes(bytes));
+        assert_decode_vec!(
+            Err(DecodeError::Capacity),
+            [4, 0x10, 0x20, 0x30, 0x40],
+            decode_bytes(bytes)
+        );
+        assert_decode_vec!(
+            Err(DecodeError::UnexpectedEof),
+            [4, 0x10, 0x20, 0x30],
+            decode_bytes(bytes)
+        );
+    }
+
+    #[test]
+    fn packed() {
+        let mut vec = ArrayVec::<u32, 5>::new();
+        assert_decode_vec!(Ok(&[]), [0], decode_packed(vec, PbReader::decode_varint32));
+        assert_decode_vec!(
+            Ok(&[150, 5]),
+            [3, 0x96, 0x01, 0x05],
+            decode_packed(vec, PbReader::decode_varint32)
+        );
+        assert_decode_vec!(
+            Ok(&[150, 5, 144, 512, 1]),
+            [5, 0x90, 0x01, 0x80, 0x04, 0x01],
+            decode_packed(vec, PbReader::decode_varint32)
+        );
+        assert_decode_vec!(
+            Err(DecodeError::Capacity),
+            [1, 0x01],
+            decode_packed(vec, PbReader::decode_varint32)
+        );
+    }
+
+    /// Test decoding of a map element with varint32 key and string value
+    macro_rules! assert_decode_map_elem {
+        ($expected:expr, $arr:expr) => {
+            assert_decode!(
+                $expected,
+                $arr,
+                decode_map_elem(
+                    |opt, rd| rd.decode_varint32().map(|u| *opt = Some(u)),
+                    |opt, rd| rd
+                        .decode_string::<ArrayString<5>>(opt.get_or_insert_with(Default::default))
+                )
+            );
+        };
+    }
+
+    #[test]
+    fn map_elem() {
+        assert_decode_map_elem!(Ok(None), [0]);
+        // One key
+        assert_decode_map_elem!(Ok(None), [2, 0x08, 0x01]);
+        // Two keys
+        assert_decode_map_elem!(Ok(None), [4, 0x08, 0x01, 0x08, 0x02]);
+        // One value
+        assert_decode_map_elem!(Ok(None), [3, 0x12, 1, b'a']);
+        // Two values
+        assert_decode_map_elem!(Ok(None), [6, 0x12, 1, b'a', 0x12, 1, b'c']);
+        // Key and value
+        assert_decode_map_elem!(
+            Ok(Some((1, ArrayString::from("ac").unwrap()))),
+            [6, 0x08, 0x01, 0x12, 2, b'a', b'c']
+        );
+        // Key and value, then an unknown tag which we ignore
+        assert_decode_map_elem!(
+            Ok(Some((1, ArrayString::from("ac").unwrap()))),
+            [8, 0x08, 0x01, 0x12, 2, b'a', b'c', 0x28, 0x01]
+        );
+        // Value and key
+        assert_decode_map_elem!(
+            Ok(Some((1, ArrayString::from("ac").unwrap()))),
+            [6, 0x12, 2, b'a', b'c', 0x08, 0x01]
+        );
+        // Overwrite value and key
+        assert_decode_map_elem!(
+            Ok(Some((2, ArrayString::from("x").unwrap()))),
+            [11, 0x12, 2, b'a', b'c', 0x08, 0x01, 0x08, 0x02, 0x12, 1, b'x']
+        );
+
+        // Buffer too short
+        assert_decode_map_elem!(Err(DecodeError::UnexpectedEof), []);
+        assert_decode_map_elem!(Err(DecodeError::UnexpectedEof), [1]);
+        assert_decode_map_elem!(Err(DecodeError::UnexpectedEof), [1, 0x08]);
+        // Key and value, then an unknown tag with bad wire type
+        assert_decode_map_elem!(
+            Err(DecodeError::BadWireType(7)),
+            [7, 0x08, 0x01, 0x12, 2, b'a', b'c', 0x07]
+        );
     }
 }
