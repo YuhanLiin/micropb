@@ -177,6 +177,24 @@ impl<'a> PbDecoder<'a> {
         Ok(())
     }
 
+    #[cfg(target_endian = "little")]
+    pub fn decode_packed_fixed<T: Copy, S: PbVec<T>>(
+        &mut self,
+        vec: &mut S,
+    ) -> Result<(), DecodeError> {
+        let bytes = self.decode_len_slice()?;
+        let size = core::mem::size_of::<T>();
+        if bytes.len() % size != 0 {
+            Err(DecodeError::UnexpectedEof)
+        } else {
+            let len = bytes.len() / size;
+            let packed = unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const T, len) };
+            vec.extend_from_slice(packed)
+                .map_err(|_| DecodeError::Capacity)?;
+            Ok(())
+        }
+    }
+
     pub fn decode_map_elem<
         K,
         V,
@@ -610,6 +628,33 @@ mod tests {
             Err(DecodeError::Capacity),
             [1, 0x01],
             decode_packed(vec, |rd| rd.decode_varint32())
+        );
+    }
+
+    #[test]
+    #[cfg(target_endian = "little")]
+    fn packed_fixed() {
+        let mut vec = ArrayVec::<u32, 3>::new();
+        assert_decode_vec!(Ok(&[]), [0], decode_packed_fixed(vec));
+        assert_decode_vec!(
+            Ok(&[0x04030201]),
+            [4, 0x01, 0x02, 0x03, 0x04],
+            decode_packed_fixed(vec)
+        );
+        assert_decode_vec!(
+            Ok(&[0x04030201, 0x0D0C0B0A, 0x44332211]),
+            [8, 0x0A, 0x0B, 0x0C, 0x0D, 0x11, 0x22, 0x33, 0x44],
+            decode_packed_fixed(vec)
+        );
+        assert_decode_vec!(
+            Err(DecodeError::Capacity),
+            [4, 0x01, 0x02, 0x03, 0x04],
+            decode_packed_fixed(vec)
+        );
+        assert_decode_vec!(
+            Err(DecodeError::UnexpectedEof),
+            [1, 0x01],
+            decode_packed_fixed(vec)
         );
     }
 
