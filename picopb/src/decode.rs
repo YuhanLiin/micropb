@@ -164,20 +164,12 @@ impl<'a> PbReader<'a> {
         bytes.write_slice(slice).map_err(|_| DecodeError::Capacity)
     }
 
-    pub fn decode_packed<
-        'b,
-        'c,
-        T: Copy,
-        S: PbVec<T>,
-        F: Fn(&mut PbReader<'c>) -> Result<T, DecodeError>,
-    >(
-        &'b mut self,
+    pub fn decode_packed<T: Copy, S: PbVec<T>, F: Fn(&mut PbReader) -> Result<T, DecodeError>>(
+        &mut self,
         vec: &mut S,
         decoder: F,
     ) -> Result<(), DecodeError>
-    where
-        'b: 'c,
-    {
+where {
         let mut reader = PbReader::new(self.decode_len_slice()?);
         while reader.remaining() > 0 {
             let val = decoder(&mut reader)?;
@@ -604,21 +596,21 @@ mod tests {
     #[test]
     fn packed() {
         let mut vec = ArrayVec::<u32, 5>::new();
-        assert_decode_vec!(Ok(&[]), [0], decode_packed(vec, PbReader::decode_varint32));
+        assert_decode_vec!(Ok(&[]), [0], decode_packed(vec, |rd| rd.decode_varint32()));
         assert_decode_vec!(
             Ok(&[150, 5]),
             [3, 0x96, 0x01, 0x05],
-            decode_packed(vec, PbReader::decode_varint32)
+            decode_packed(vec, |rd| rd.decode_varint32())
         );
         assert_decode_vec!(
             Ok(&[150, 5, 144, 512, 1]),
             [5, 0x90, 0x01, 0x80, 0x04, 0x01],
-            decode_packed(vec, PbReader::decode_varint32)
+            decode_packed(vec, |rd| rd.decode_varint32())
         );
         assert_decode_vec!(
             Err(DecodeError::Capacity),
             [1, 0x01],
-            decode_packed(vec, PbReader::decode_varint32)
+            decode_packed(vec, |rd| rd.decode_varint32())
         );
     }
 
