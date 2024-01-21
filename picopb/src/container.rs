@@ -1,6 +1,8 @@
 #![allow(clippy::result_unit_err)]
 
-pub trait PbVec<T>: Default {
+use core::ops::Deref;
+
+pub trait PbVec<T>: Default + Deref<Target = [T]> {
     fn push(&mut self, elem: T) -> Result<(), ()>;
 
     fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), ()>
@@ -12,7 +14,7 @@ pub trait PbVec<T>: Default {
         T: Copy;
 }
 
-pub trait PbString: Default {
+pub trait PbString: Default + Deref<Target = str> {
     fn write_str(&mut self, s: &str) -> Result<(), ()>;
 }
 

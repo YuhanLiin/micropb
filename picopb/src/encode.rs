@@ -70,11 +70,11 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     pub fn encode_sint32(&mut self, i: i32) -> Result<(), W::Error> {
-        self.encode_varint32(((i as u32) << 1) ^ ((i as u32) >> 31))
+        self.encode_varint32(((i << 1) ^ (i >> 31)) as u32)
     }
 
     pub fn encode_sint64(&mut self, i: i64) -> Result<(), W::Error> {
-        self.encode_varint64(((i as u64) << 1) ^ ((i as u64) >> 31))
+        self.encode_varint64(((i << 1) ^ (i >> 63)) as u64)
     }
 
     pub fn encode_bool(&mut self, b: bool) -> Result<(), W::Error> {
