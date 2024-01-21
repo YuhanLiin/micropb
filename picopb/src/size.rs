@@ -1,4 +1,4 @@
-use crate::{container::PbVec, Tag};
+use crate::{encode::IsDefault, Tag};
 
 pub fn sizeof_varint32(v: u32) -> usize {
     match v {
@@ -48,11 +48,56 @@ pub fn sizeof_tag(tag: &Tag) -> usize {
     sizeof_varint32(tag.varint())
 }
 
-pub fn sizeof_packed<T: Copy, S: PbVec<T>, F: Fn(T) -> usize>(vec: S, sizeof: F) -> usize {
-    vec.iter().copied().map(sizeof).sum()
+pub fn sizeof_packed<T: Copy, F: Fn(T) -> usize>(elems: &[T], sizer: F) -> usize {
+    elems.iter().copied().map(sizer).sum()
 }
 
-pub fn sizeof_packed_fixed<T: Copy, S: PbVec<T>>(vec: S) -> usize {
-    let slice: &[_] = vec.deref();
+pub fn sizeof_packed_fixed<T: Copy>(slice: &[T]) -> usize {
     core::mem::size_of_val(slice)
+}
+
+pub fn sizeof_map_elem<K, V, FK: FnMut(&K) -> usize, FV: FnMut(&V) -> usize>(
+    key: &K,
+    key_wtype: u8,
+    val: &V,
+    val_wtype: u8,
+    mut key_sizer: FK,
+    mut val_sizer: FV,
+) -> usize {
+    let key_tag = Tag::from_parts(1, key_wtype);
+    let val_tag = Tag::from_parts(2, val_wtype);
+
+    sizeof_varint32(key_tag.varint())
+        + sizeof_varint32(val_tag.varint())
+        + key_sizer(key)
+        + val_sizer(val)
+}
+
+pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
+    tag: &Tag,
+    elems: impl Iterator<Item = T>,
+    mut sizer: F,
+) -> usize {
+    let tag_size = sizeof_tag(tag);
+    elems.map(|e| tag_size + sizer(e)).sum()
+}
+
+pub fn sizeof_with_tag<T: IsDefault, F: FnMut(&T) -> usize>(
+    tag: &Tag,
+    val: &T,
+    mut sizer: F,
+) -> usize {
+    if val.pb_is_default() {
+        0
+    } else {
+        sizeof_tag(tag) + sizer(val)
+    }
+}
+
+pub fn sizeof_optional_with_tag<T, F: FnMut(&T) -> usize>(
+    tag: &Tag,
+    val: &Option<T>,
+    mut sizer: F,
+) -> usize {
+    val.as_ref().map_or(0, |v| sizeof_tag(tag) + sizer(v))
 }
