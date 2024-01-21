@@ -107,8 +107,6 @@ impl<W: PbWrite> PbEncoder<W> {
 
     #[inline]
     pub fn encode_tag(&mut self, tag: &Tag) -> Result<(), W::Error> {
-        debug_assert!(tag.wire_type <= 7);
-        let num = (tag.field_num << 3) | tag.wire_type as u32;
-        self.encode_varint32(num)
+        self.encode_varint32(tag.varint())
     }
 }

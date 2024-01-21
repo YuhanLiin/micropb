@@ -139,13 +139,7 @@ impl<'a> PbDecoder<'a> {
 
     #[inline(always)]
     pub fn decode_tag(&mut self) -> Result<Tag, DecodeError> {
-        let u = self.decode_varint32()?;
-        let field_num = u >> 3;
-        let wire_type = (u & 0b111) as u8;
-        Ok(Tag {
-            field_num,
-            wire_type,
-        })
+        self.decode_varint32().map(Tag)
     }
 
     pub fn decode_len_slice(&mut self) -> Result<&[u8], DecodeError> {
@@ -210,10 +204,10 @@ impl<'a> PbDecoder<'a> {
         let mut val = None;
         while reader.remaining() > 0 {
             let tag = reader.decode_tag()?;
-            match tag.field_num {
+            match tag.field_num() {
                 1 => key_update(&mut key, &mut reader)?,
                 2 => val_update(&mut val, &mut reader)?,
-                _ => reader.skip_wire_value(&tag)?,
+                _ => reader.skip_wire_value(tag.wire_type())?,
             }
         }
 
@@ -234,8 +228,8 @@ impl<'a> PbDecoder<'a> {
         Err(DecodeError::VarIntLimit(u64::BYTES))
     }
 
-    pub fn skip_wire_value(&mut self, tag: &Tag) -> Result<(), DecodeError> {
-        match tag.wire_type {
+    pub fn skip_wire_value(&mut self, wire_type: u8) -> Result<(), DecodeError> {
+        match wire_type {
             WIRE_TYPE_VARINT => self.skip_varint()?,
             WIRE_TYPE_I64 => drop(self.get_slice(8)?),
             WIRE_TYPE_LEN => drop(self.decode_len_slice()?),
@@ -472,76 +466,54 @@ mod tests {
     }
 
     #[test]
-    fn tag() {
-        assert_decode!(
-            Ok(Tag {
-                field_num: 5,
-                wire_type: 4
-            }),
-            [0x2C],
-            decode_tag()
-        );
-        assert_decode!(
-            Ok(Tag {
-                field_num: 59,
-                wire_type: 7
-            }),
-            [0xDF, 0x03],
-            decode_tag()
-        );
-    }
-
-    #[test]
     fn skip() {
-        let mut tag = Tag {
-            field_num: 1,
-            wire_type: WIRE_TYPE_VARINT,
-        };
         assert_decode!(
             Ok(()),
             [0x81, 0x80, 0x80, 0x80, 0x7F],
-            skip_wire_value(&tag)
+            skip_wire_value(WIRE_TYPE_VARINT)
         );
 
-        tag.wire_type = WIRE_TYPE_I64;
         assert_decode!(
             Ok(()),
             [0x12, 0x45, 0xE4, 0x90, 0x9C, 0xA1, 0xF5, 0xFF],
-            skip_wire_value(&tag)
+            skip_wire_value(WIRE_TYPE_I64)
         );
         assert_decode!(
             Err(DecodeError::UnexpectedEof),
             [0x12, 0x45, 0xE4, 0x90, 0x9C],
-            skip_wire_value(&tag)
+            skip_wire_value(WIRE_TYPE_I64)
         );
 
-        tag.wire_type = WIRE_TYPE_I32;
-        assert_decode!(Ok(()), [0x9C, 0xA1, 0xF5, 0xFF], skip_wire_value(&tag));
+        assert_decode!(
+            Ok(()),
+            [0x9C, 0xA1, 0xF5, 0xFF],
+            skip_wire_value(WIRE_TYPE_I32)
+        );
         assert_decode!(
             Err(DecodeError::UnexpectedEof),
             [0xF5, 0xFF],
-            skip_wire_value(&tag)
+            skip_wire_value(WIRE_TYPE_I32)
         );
 
-        tag.wire_type = WIRE_TYPE_LEN;
-        assert_decode!(Ok(()), [0x03, 0xEE, 0xAB, 0x56], skip_wire_value(&tag));
+        assert_decode!(
+            Ok(()),
+            [0x03, 0xEE, 0xAB, 0x56],
+            skip_wire_value(WIRE_TYPE_LEN)
+        );
         assert_decode!(
             Ok(()),
             [0x85, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
-            skip_wire_value(&tag)
+            skip_wire_value(WIRE_TYPE_LEN)
         );
         assert_decode!(
             Err(DecodeError::UnexpectedEof),
             [0x03, 0xAB, 0x56],
-            skip_wire_value(&tag)
+            skip_wire_value(WIRE_TYPE_LEN)
         );
 
-        tag.wire_type = 3;
-        assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(&tag));
-        tag.wire_type = 4;
-        assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(&tag));
-        tag.wire_type = 10;
-        assert_decode!(Err(DecodeError::BadWireType(10)), [], skip_wire_value(&tag));
+        assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(3));
+        assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(4));
+        assert_decode!(Err(DecodeError::BadWireType(10)), [], skip_wire_value(10));
     }
 
     macro_rules! assert_decode_vec {

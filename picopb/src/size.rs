@@ -1,4 +1,4 @@
-use crate::container::PbVec;
+use crate::{container::PbVec, Tag};
 
 pub fn sizeof_varint32(v: u32) -> usize {
     match v {
@@ -42,6 +42,10 @@ pub fn sizeof_sint32(i: i32) -> usize {
 
 pub fn sizeof_sint64(i: i64) -> usize {
     sizeof_varint64(((i << 1) ^ (i >> 63)) as u64)
+}
+
+pub fn sizeof_tag(tag: &Tag) -> usize {
+    sizeof_varint32(tag.varint())
 }
 
 pub fn sizeof_packed<T: Copy, S: PbVec<T>, F: Fn(T) -> usize>(vec: S, sizeof: F) -> usize {
