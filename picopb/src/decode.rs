@@ -190,10 +190,10 @@ impl<'a> PbDecoder<'a> {
     }
 
     pub fn decode_map_elem<
-        K,
-        V,
-        UK: Fn(&mut Option<K>, &mut PbDecoder) -> Result<(), DecodeError>,
-        UV: Fn(&mut Option<V>, &mut PbDecoder) -> Result<(), DecodeError>,
+        K: Default,
+        V: Default,
+        UK: Fn(&mut K, &mut PbDecoder) -> Result<(), DecodeError>,
+        UV: Fn(&mut V, &mut PbDecoder) -> Result<(), DecodeError>,
     >(
         &mut self,
         key_update: UK,
@@ -205,8 +205,8 @@ impl<'a> PbDecoder<'a> {
         while reader.remaining() > 0 {
             let tag = reader.decode_tag()?;
             match tag.field_num() {
-                1 => key_update(&mut key, &mut reader)?,
-                2 => val_update(&mut val, &mut reader)?,
+                1 => reader.decode_optional(&mut key, &key_update)?,
+                2 => reader.decode_optional(&mut val, &val_update)?,
                 _ => reader.skip_wire_value(tag.wire_type())?,
             }
         }
@@ -216,6 +216,24 @@ impl<'a> PbDecoder<'a> {
         } else {
             Ok(None)
         }
+    }
+
+    pub fn decode_optional<T: Default, U: Fn(&mut T, &mut Self) -> Result<(), DecodeError>>(
+        &mut self,
+        optional: &mut Option<T>,
+        update: U,
+    ) -> Result<(), DecodeError> {
+        let val = optional.get_or_insert_with(T::default);
+        update(val, self)
+    }
+
+    pub fn decode_repeated_elem<T, S: PbVec<T>, F: Fn(&mut Self) -> Result<T, DecodeError>>(
+        &mut self,
+        repeated: &mut S,
+        decoder: F,
+    ) -> Result<(), DecodeError> {
+        let val = decoder(self)?;
+        repeated.push(val).map_err(|_| DecodeError::Capacity)
     }
 
     fn skip_varint(&mut self) -> Result<(), DecodeError> {
@@ -637,9 +655,8 @@ mod tests {
                 $expected,
                 $arr,
                 decode_map_elem(
-                    |opt, rd| rd.decode_varint32().map(|u| *opt = Some(u)),
-                    |opt, rd| rd
-                        .decode_string::<ArrayString<5>>(opt.get_or_insert_with(Default::default))
+                    |v, rd| rd.decode_varint32().map(|u| *v = u),
+                    |v, rd| rd.decode_string::<ArrayString<5>>(v)
                 )
             );
         };
