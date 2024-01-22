@@ -212,123 +212,170 @@ impl<W: PbWrite> PbEncoder<W> {
 mod tests {
     use arrayvec::ArrayVec;
 
-    use crate::{WIRE_TYPE_LEN, WIRE_TYPE_VARINT};
+    use crate::{size::*, WIRE_TYPE_LEN, WIRE_TYPE_VARINT};
 
     use super::*;
 
     macro_rules! assert_encode {
-        ($expected:expr, $($op:tt)+) => {
+        ($expected:expr, $encode:ident( $($arg:expr),+ ), $sizeof:ident) => {
             let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
-            encoder.$($op)+.unwrap();
+            encoder.$encode($($arg),+).unwrap();
+            assert_eq!($expected, encoder.writer.as_slice());
+            assert_eq!(encoder.writer.len(), $sizeof($($arg),+));
+        }
+    }
+
+    macro_rules! assert_encode_nosize {
+        ($expected:expr, $encode:ident( $($arg:expr),+ )) => {
+            let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
+            encoder.$encode($($arg),+).unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
         }
     }
 
     #[test]
     fn varint32() {
-        assert_encode!(&[0x01], encode_varint32(1));
-        assert_encode!(&[0x00], encode_varint32(0));
-        assert_encode!(&[0x96, 0x01], encode_varint32(150));
-        assert_encode!(&[0xFF, 0xFF, 0xFF, 0xFF, 0x0F], encode_varint32(u32::MAX));
-        assert_encode!(&[0x95, 0x87, 0x14], encode_varint32(0b1010000001110010101));
+        assert_encode!(&[0x01], encode_varint32(1), sizeof_varint32);
+        assert_encode!(&[0x00], encode_varint32(0), sizeof_varint32);
+        assert_encode!(&[0x96, 0x01], encode_varint32(150), sizeof_varint32);
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
+            encode_varint32(u32::MAX),
+            sizeof_varint32
+        );
+        assert_encode!(
+            &[0x95, 0x87, 0x14],
+            encode_varint32(0b1010000001110010101),
+            sizeof_varint32
+        );
     }
 
     #[test]
     fn varint64() {
-        assert_encode!(&[0x01], encode_varint64(1));
-        assert_encode!(&[0x00], encode_varint64(0));
-        assert_encode!(&[0x96, 0x01], encode_varint64(150));
+        assert_encode!(&[0x01], encode_varint64(1), sizeof_varint64);
+        assert_encode!(&[0x00], encode_varint64(0), sizeof_varint64);
+        assert_encode!(&[0x96, 0x01], encode_varint64(150), sizeof_varint64);
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
-            encode_varint64(u32::MAX as u64)
+            encode_varint64(u32::MAX as u64),
+            sizeof_varint64
         );
-        assert_encode!(&[0x95, 0x87, 0x14], encode_varint64(0b1010000001110010101));
+        assert_encode!(
+            &[0x95, 0x87, 0x14],
+            encode_varint64(0b1010000001110010101),
+            sizeof_varint64
+        );
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encode_varint64(u64::MAX)
+            encode_varint64(u64::MAX),
+            sizeof_varint64
         );
     }
 
     #[test]
     fn int() {
-        assert_encode!(&[0x01], encode_int32(1));
-        assert_encode!(&[0x96, 0x01], encode_int32(150));
+        assert_encode!(&[0x01], encode_int32(1), sizeof_int32);
+        assert_encode!(&[0x96, 0x01], encode_int32(150), sizeof_int32);
         assert_encode!(
             &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encode_int32(-2)
+            encode_int32(-2),
+            sizeof_int32
         );
         assert_encode!(
             &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encode_int64(-2)
+            encode_int64(-2),
+            sizeof_int32
         );
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encode_int32(-1)
+            encode_int32(-1),
+            sizeof_int32
         );
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encode_int64(-1)
+            encode_int64(-1),
+            sizeof_int64
         );
         assert_encode!(
             &[0x80, 0x80, 0x80, 0x80, 0xF8, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encode_int32(i32::MIN)
+            encode_int32(i32::MIN),
+            sizeof_int32
         );
         assert_encode!(
             &[0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
-            encode_int64(i64::MIN)
+            encode_int64(i64::MIN),
+            sizeof_int64
         );
     }
 
     #[test]
     fn sint32() {
-        assert_encode!(&[0x00], encode_sint32(0));
-        assert_encode!(&[0x01], encode_sint32(-1));
-        assert_encode!(&[0x02], encode_sint32(1));
-        assert_encode!(&[0x03], encode_sint32(-2));
-        assert_encode!(&[0xFE, 0xFF, 0xFF, 0xFF, 0x0F], encode_sint32(0x7FFFFFFF));
-        assert_encode!(&[0xFF, 0xFF, 0xFF, 0xFF, 0x0F], encode_sint32(-0x80000000));
+        assert_encode!(&[0x00], encode_sint32(0), sizeof_sint32);
+        assert_encode!(&[0x01], encode_sint32(-1), sizeof_sint32);
+        assert_encode!(&[0x02], encode_sint32(1), sizeof_sint32);
+        assert_encode!(&[0x03], encode_sint32(-2), sizeof_sint32);
+        assert_encode!(
+            &[0xFE, 0xFF, 0xFF, 0xFF, 0x0F],
+            encode_sint32(0x7FFFFFFF),
+            sizeof_sint32
+        );
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
+            encode_sint32(-0x80000000),
+            sizeof_sint32
+        );
     }
 
     #[test]
     fn sint64() {
-        assert_encode!(&[0x00], encode_sint64(0));
-        assert_encode!(&[0x01], encode_sint64(-1));
-        assert_encode!(&[0x02], encode_sint64(1));
-        assert_encode!(&[0x03], encode_sint64(-2));
-        assert_encode!(&[0xFE, 0xFF, 0xFF, 0xFF, 0x0F], encode_sint64(0x7FFFFFFF));
-        assert_encode!(&[0xFF, 0xFF, 0xFF, 0xFF, 0x0F], encode_sint64(-0x80000000));
+        assert_encode!(&[0x00], encode_sint64(0), sizeof_sint64);
+        assert_encode!(&[0x01], encode_sint64(-1), sizeof_sint64);
+        assert_encode!(&[0x02], encode_sint64(1), sizeof_sint64);
+        assert_encode!(&[0x03], encode_sint64(-2), sizeof_sint64);
+        assert_encode!(
+            &[0xFE, 0xFF, 0xFF, 0xFF, 0x0F],
+            encode_sint64(0x7FFFFFFF),
+            sizeof_sint64
+        );
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
+            encode_sint64(-0x80000000),
+            sizeof_sint64
+        );
         assert_encode!(
             &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encode_sint64(0x7FFFFFFFFFFFFFFF)
+            encode_sint64(0x7FFFFFFFFFFFFFFF),
+            sizeof_sint64
         );
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encode_sint64(-0x8000000000000000)
+            encode_sint64(-0x8000000000000000),
+            sizeof_sint64
         );
     }
 
     #[test]
     fn bool() {
-        assert_encode!(&[0x01], encode_bool(true));
-        assert_encode!(&[0x00], encode_bool(false));
+        assert_encode_nosize!(&[0x01], encode_bool(true));
+        assert_encode_nosize!(&[0x00], encode_bool(false));
     }
 
     #[test]
     fn fixed() {
-        assert_encode!(&[0x00; 4], encode_fixed32(0));
-        assert_encode!(&[0x12, 0x32, 0x98, 0xF4], encode_fixed32(0xF4983212));
-        assert_encode!(&[0x00; 8], encode_fixed64(0));
-        assert_encode!(
+        assert_encode_nosize!(&[0x00; 4], encode_fixed32(0));
+        assert_encode_nosize!(&[0x12, 0x32, 0x98, 0xF4], encode_fixed32(0xF4983212));
+        assert_encode_nosize!(&[0x00; 8], encode_fixed64(0));
+        assert_encode_nosize!(
             &[0x12, 0x32, 0x98, 0xF4, 0x3B, 0xAA, 0x50, 0x99],
             encode_fixed64(0x9950AA3BF4983212)
         );
-        assert_encode!(&[0x12, 0x32, 0x98, 0xF4], encode_sfixed32(-0x0B67CDEE));
+        assert_encode_nosize!(&[0x12, 0x32, 0x98, 0xF4], encode_sfixed32(-0x0B67CDEE));
     }
 
     #[test]
     fn float() {
-        assert_encode!(&[0xC7, 0x46, 0xE8, 0xC1], encode_float(-29.03456));
-        assert_encode!(
+        assert_encode_nosize!(&[0xC7, 0x46, 0xE8, 0xC1], encode_float(-29.03456));
+        assert_encode_nosize!(
             &[0x5E, 0x09, 0x52, 0x2B, 0x83, 0x07, 0x3A, 0x40],
             encode_double(26.029345233467545)
         );
@@ -336,23 +383,23 @@ mod tests {
 
     #[test]
     fn bytes_string() {
-        assert_encode!(&[0], encode_bytes(b""));
-        assert_encode!(&[5, b'a', b'b', b'c', b'd', b'e'], encode_bytes(b"abcde"));
+        assert_encode_nosize!(&[0], encode_bytes(b""));
+        assert_encode_nosize!(&[5, b'a', b'b', b'c', b'd', b'e'], encode_bytes(b"abcde"));
 
-        assert_encode!(&[0], encode_string(""));
-        assert_encode!(&[3, b'a', b'b', b'c'], encode_string("abc"));
-        assert_encode!(&[4, 208, 151, 208, 180], encode_string("Зд"));
+        assert_encode_nosize!(&[0], encode_string(""));
+        assert_encode_nosize!(&[3, b'a', b'b', b'c'], encode_string("abc"));
+        assert_encode_nosize!(&[4, 208, 151, 208, 180], encode_string("Зд"));
     }
 
     #[test]
     #[cfg(target_endian = "little")]
     fn packed_fixed() {
-        assert_encode!([0], encode_packed_fixed(&[0u32; 0]));
-        assert_encode!(
+        assert_encode_nosize!([0], encode_packed_fixed(&[0u32; 0]));
+        assert_encode_nosize!(
             [4, 0x1, 0x0, 0x0, 0x1],
             encode_packed_fixed(&[true, false, false, true])
         );
-        assert_encode!(
+        assert_encode_nosize!(
             [8, 0x1, 0x0, 0x0, 0x0, 0x6, 0x0, 0x0, 0x0],
             encode_packed_fixed(&[1u32, 6u32])
         );
@@ -360,41 +407,54 @@ mod tests {
 
     #[test]
     fn packed() {
-        assert_encode!(
-            [0],
-            encode_packed(0, &[0u32; 0], PbEncoder::encode_varint32)
-        );
-        // Use wrong length of 150 to test multi-byte length varint32 encode
-        assert_encode!(
-            [0x96, 0x01, 0x01, 0x9C, 0x01],
-            encode_packed(150, &[1, 156], PbEncoder::encode_varint32)
-        );
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
+        let len = sizeof_packed(&[0u32; 0], sizeof_varint32);
+        encoder
+            .encode_packed(len, &[0u32; 0], PbEncoder::encode_varint32)
+            .unwrap();
+        assert_eq!([0], encoder.writer.as_slice());
+        assert_eq!(1, sizeof_len_record(len));
+
+        encoder.writer.clear();
+        let len = sizeof_packed(&[1, 156], sizeof_varint32);
+        encoder
+            .encode_packed(len, &[1, 156], PbEncoder::encode_varint32)
+            .unwrap();
+        assert_eq!([3, 0x01, 0x9C, 0x01], encoder.writer.as_slice());
+        assert_eq!(4, sizeof_len_record(len));
     }
 
     macro_rules! assert_encode_map_elem {
-        ($expected:expr, $len:expr, $key:expr, $val:expr) => {
-            assert_encode!(
-                $expected,
-                encode_map_elem(
-                    $len,
+        ($expected:expr, $key:expr, $val:expr) => {
+            let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
+            let len = sizeof_map_elem(
+                $key,
+                $val,
+                |v| sizeof_varint32(*v),
+                |s| sizeof_len_record(s.len()),
+            );
+            encoder
+                .encode_map_elem(
+                    len,
                     $key,
                     WIRE_TYPE_VARINT,
                     $val,
                     WIRE_TYPE_LEN,
                     |wr, v| wr.encode_varint32(*v),
-                    |wr, s| wr.encode_string(s)
+                    |wr, s| wr.encode_string(s),
                 )
-            )
+                .unwrap();
+            assert_eq!($expected, encoder.writer.as_slice());
+            assert_eq!($expected.len(), sizeof_len_record(len));
         };
     }
 
     #[test]
     fn map_elem() {
-        assert_encode_map_elem!([6, 0x08, 0x01, 0x12, 2, b'a', b'c'], 6, &1, "ac");
-        assert_encode_map_elem!([5, 0x08, 0x02, 0x12, 1, b'x'], 5, &2, "x");
+        assert_encode_map_elem!([6, 0x08, 0x01, 0x12, 2, b'a', b'c'], &1, "ac");
+        assert_encode_map_elem!([5, 0x08, 0x02, 0x12, 1, b'x'], &2, "x");
         assert_encode_map_elem!(
             [8, 0x08, 0x0B, 0x12, 4, b'c', b'd', b'e', b'f'],
-            8,
             &11,
             "cdef"
         );

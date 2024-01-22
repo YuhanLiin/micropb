@@ -60,21 +60,15 @@ pub fn sizeof_len_record(len: usize) -> usize {
     len + sizeof_varint32(len as u32)
 }
 
-pub fn sizeof_map_elem<K, V, FK: FnMut(&K) -> usize, FV: FnMut(&V) -> usize>(
+pub fn sizeof_map_elem<K, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&V) -> usize>(
     key: &K,
-    key_wtype: u8,
     val: &V,
-    val_wtype: u8,
     mut key_sizer: FK,
     mut val_sizer: FV,
 ) -> usize {
-    let key_tag = Tag::from_parts(1, key_wtype);
-    let val_tag = Tag::from_parts(2, val_wtype);
-
-    sizeof_varint32(key_tag.varint())
-        + sizeof_varint32(val_tag.varint())
-        + key_sizer(key)
-        + val_sizer(val)
+    // key and value field numbers are 1 and 2, so the tags will always be small numbers, so tag
+    // sizes are 1 each
+    2 + key_sizer(key) + val_sizer(val)
 }
 
 pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
