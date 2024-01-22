@@ -20,9 +20,11 @@ pub trait PbString: Default + Deref<Target = str> + DerefMut<Target = str> {
 
 #[cfg(feature = "container-arrayvec")]
 mod impl_arrayvec {
+    use crate::encode::PbWrite;
+
     use super::*;
 
-    use arrayvec::{ArrayString, ArrayVec};
+    use arrayvec::{ArrayString, ArrayVec, CapacityError};
 
     impl<T, const N: usize> PbVec<T> for ArrayVec<T, N> {
         fn push(&mut self, elem: T) -> Result<(), ()> {
@@ -49,6 +51,14 @@ mod impl_arrayvec {
         fn write_str(&mut self, s: &str) -> Result<(), ()> {
             self.clear();
             self.try_push_str(s).map_err(drop)
+        }
+    }
+
+    impl<const N: usize> PbWrite for ArrayVec<u8, N> {
+        type Error = CapacityError;
+
+        fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+            self.try_extend_from_slice(data)
         }
     }
 }

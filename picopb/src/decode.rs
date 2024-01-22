@@ -288,10 +288,15 @@ mod tests {
             [0x95, 0x87, 0x14],
             decode_varint32()
         );
-        // Last byte is partially truncated in the output
+        // Last byte of input is partially truncated in the output
         assert_decode!(
             Ok(0b11110000000000000000000000000001),
             [0x81, 0x80, 0x80, 0x80, 0x7F],
+            decode_varint32()
+        );
+        assert_decode!(
+            Ok(u32::MAX),
+            [0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
             decode_varint32()
         );
 
@@ -312,6 +317,11 @@ mod tests {
         assert_decode!(
             Ok(0b1000000000000000000000000000000000000000000000000000000000000001),
             [0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F],
+            decode_varint64()
+        );
+        assert_decode!(
+            Ok(u64::MAX),
+            [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
             decode_varint64()
         );
 
@@ -368,6 +378,16 @@ mod tests {
         assert_decode!(
             Ok(-2),
             [0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            decode_int64()
+        );
+        assert_decode!(
+            Ok(i32::MIN),
+            [0x80, 0x80, 0x80, 0x80, 0xF8, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            decode_int32()
+        );
+        assert_decode!(
+            Ok(i64::MIN),
+            [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
             decode_int64()
         );
     }

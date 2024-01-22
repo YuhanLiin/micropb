@@ -207,3 +207,163 @@ impl<W: PbWrite> PbEncoder<W> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use arrayvec::ArrayVec;
+
+    use super::*;
+
+    macro_rules! assert_encode {
+        ($expected:expr, $encoder:ident.$($op:tt)+) => {
+            $encoder.$($op)+.unwrap();
+            assert_eq!($expected, $encoder.writer.as_slice());
+            $encoder.writer.clear();
+        }
+    }
+
+    #[test]
+    fn varint32() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+        assert_encode!(&[0x01], encoder.encode_varint32(1));
+        assert_encode!(&[0x00], encoder.encode_varint32(0));
+        assert_encode!(&[0x96, 0x01], encoder.encode_varint32(150));
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
+            encoder.encode_varint32(u32::MAX)
+        );
+        assert_encode!(
+            &[0x95, 0x87, 0x14],
+            encoder.encode_varint32(0b1010000001110010101)
+        );
+    }
+
+    #[test]
+    fn varint64() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+        assert_encode!(&[0x01], encoder.encode_varint64(1));
+        assert_encode!(&[0x00], encoder.encode_varint64(0));
+        assert_encode!(&[0x96, 0x01], encoder.encode_varint64(150));
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
+            encoder.encode_varint64(u32::MAX as u64)
+        );
+        assert_encode!(
+            &[0x95, 0x87, 0x14],
+            encoder.encode_varint64(0b1010000001110010101)
+        );
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encoder.encode_varint64(u64::MAX)
+        );
+    }
+
+    #[test]
+    fn int() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+        assert_encode!(&[0x01], encoder.encode_int32(1));
+        assert_encode!(&[0x96, 0x01], encoder.encode_int32(150));
+        assert_encode!(
+            &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encoder.encode_int32(-2)
+        );
+        assert_encode!(
+            &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encoder.encode_int64(-2)
+        );
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encoder.encode_int32(-1)
+        );
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encoder.encode_int64(-1)
+        );
+        assert_encode!(
+            &[0x80, 0x80, 0x80, 0x80, 0xF8, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encoder.encode_int32(i32::MIN)
+        );
+        assert_encode!(
+            &[0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
+            encoder.encode_int64(i64::MIN)
+        );
+    }
+
+    #[test]
+    fn sint32() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+        assert_encode!(&[0x00], encoder.encode_sint32(0));
+        assert_encode!(&[0x01], encoder.encode_sint32(-1));
+        assert_encode!(&[0x02], encoder.encode_sint32(1));
+        assert_encode!(&[0x03], encoder.encode_sint32(-2));
+        assert_encode!(
+            &[0xFE, 0xFF, 0xFF, 0xFF, 0x0F],
+            encoder.encode_sint32(0x7FFFFFFF)
+        );
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
+            encoder.encode_sint32(-0x80000000)
+        );
+    }
+
+    #[test]
+    fn sint64() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+        assert_encode!(&[0x00], encoder.encode_sint64(0));
+        assert_encode!(&[0x01], encoder.encode_sint64(-1));
+        assert_encode!(&[0x02], encoder.encode_sint64(1));
+        assert_encode!(&[0x03], encoder.encode_sint64(-2));
+        assert_encode!(
+            &[0xFE, 0xFF, 0xFF, 0xFF, 0x0F],
+            encoder.encode_sint64(0x7FFFFFFF)
+        );
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
+            encoder.encode_sint64(-0x80000000)
+        );
+        assert_encode!(
+            &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encoder.encode_sint64(0x7FFFFFFFFFFFFFFF)
+        );
+        assert_encode!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encoder.encode_sint64(-0x8000000000000000)
+        );
+    }
+
+    #[test]
+    fn bool() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+        assert_encode!(&[0x01], encoder.encode_bool(true));
+        assert_encode!(&[0x00], encoder.encode_bool(false));
+    }
+
+    #[test]
+    fn fixed() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+        assert_encode!(&[0x00; 4], encoder.encode_fixed32(0));
+        assert_encode!(
+            &[0x12, 0x32, 0x98, 0xF4],
+            encoder.encode_fixed32(0xF4983212)
+        );
+        assert_encode!(&[0x00; 8], encoder.encode_fixed64(0));
+        assert_encode!(
+            &[0x12, 0x32, 0x98, 0xF4, 0x3B, 0xAA, 0x50, 0x99],
+            encoder.encode_fixed64(0x9950AA3BF4983212)
+        );
+        assert_encode!(
+            &[0x12, 0x32, 0x98, 0xF4],
+            encoder.encode_sfixed32(-0x0B67CDEE)
+        );
+    }
+
+    #[test]
+    fn float() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+        assert_encode!(&[0xC7, 0x46, 0xE8, 0xC1], encoder.encode_float(-29.03456));
+        assert_encode!(
+            &[0x5E, 0x09, 0x52, 0x2B, 0x83, 0x07, 0x3A, 0x40],
+            encoder.encode_double(26.029345233467545)
+        );
+    }
+}
