@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 
-use num_traits::{AsPrimitive, PrimInt};
+use num_traits::{AsPrimitive, PrimInt, Zero};
 
 pub mod container;
 pub mod decode;
@@ -49,6 +49,28 @@ impl VarInt for u32 {
 
 impl VarInt for u64 {
     const BYTES: u8 = 10;
+}
+
+pub trait ImplicitPresence {
+    fn pb_is_present(&self) -> bool;
+}
+
+impl<T: Zero> ImplicitPresence for T {
+    fn pb_is_present(&self) -> bool {
+        self.is_zero()
+    }
+}
+
+impl ImplicitPresence for str {
+    fn pb_is_present(&self) -> bool {
+        !self.is_empty()
+    }
+}
+
+impl ImplicitPresence for [u8] {
+    fn pb_is_present(&self) -> bool {
+        !self.is_empty()
+    }
 }
 
 #[cfg(test)]

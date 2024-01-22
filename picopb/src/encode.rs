@@ -1,6 +1,4 @@
-use num_traits::Zero;
-
-use crate::{size::sizeof_packed_fixed, Tag, VarInt};
+use crate::{size::sizeof_packed_fixed, ImplicitPresence, Tag, VarInt};
 
 pub trait PbWrite {
     type Error;
@@ -14,16 +12,6 @@ impl<W: PbWrite> PbWrite for &mut W {
     #[inline]
     fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
         (*self).pb_write(data)
-    }
-}
-
-pub trait IsDefault {
-    fn pb_is_default(&self) -> bool;
-}
-
-impl<T: Zero> IsDefault for T {
-    fn pb_is_default(&self) -> bool {
-        self.is_zero()
     }
 }
 
@@ -192,14 +180,14 @@ impl<W: PbWrite> PbEncoder<W> {
         Ok(())
     }
 
-    pub fn encode_with_tag<T: IsDefault, F: FnMut(&mut Self, &T) -> Result<(), W::Error>>(
+    pub fn encode_with_tag<T: ImplicitPresence, F: FnMut(&mut Self, &T) -> Result<(), W::Error>>(
         &mut self,
         tag: &Tag,
         val: &T,
         mut encoder: F,
     ) -> Result<(), W::Error> {
         // Implicit field presence, only encode if value is non-default
-        if !val.pb_is_default() {
+        if !val.pb_is_present() {
             self.encode_tag(tag)?;
             encoder(self, val)?;
         }

@@ -1,4 +1,4 @@
-use crate::{encode::IsDefault, Tag};
+use crate::{ImplicitPresence, Tag};
 
 pub fn sizeof_varint32(v: u32) -> usize {
     match v {
@@ -82,12 +82,12 @@ pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
     elems.map(|e| tag_size + sizer(e)).sum()
 }
 
-pub fn sizeof_with_tag<T: IsDefault, F: FnMut(&T) -> usize>(
+pub fn sizeof_with_tag<T: ImplicitPresence, F: FnMut(&T) -> usize>(
     tag: &Tag,
     val: &T,
     mut sizer: F,
 ) -> usize {
-    if val.pb_is_default() {
+    if val.pb_is_present() {
         0
     } else {
         sizeof_tag(tag) + sizer(val)
