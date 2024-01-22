@@ -725,4 +725,19 @@ mod tests {
             [7, 0x08, 0x01, 0x12, 2, b'a', b'c', 0x07]
         );
     }
+
+    #[test]
+    fn map_elem_string_key() {
+        assert_decode!(
+            Ok(Some((
+                ArrayString::from("ac").unwrap(),
+                ArrayString::from("bd").unwrap()
+            ))),
+            [8, 0x0A, 2, b'a', b'c', 0x12, 2, b'b', b'd'],
+            decode_map_elem(
+                |v, rd| rd.decode_string::<ArrayString<5>>(v),
+                |v, rd| rd.decode_string::<ArrayString<5>>(v)
+            )
+        );
+    }
 }

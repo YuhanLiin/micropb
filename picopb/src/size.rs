@@ -60,7 +60,7 @@ pub fn sizeof_len_record(len: usize) -> usize {
     len + sizeof_varint32(len as u32)
 }
 
-pub fn sizeof_map_elem<K, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&V) -> usize>(
+pub fn sizeof_map_elem<K: ?Sized, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&V) -> usize>(
     key: &K,
     val: &V,
     mut key_sizer: FK,

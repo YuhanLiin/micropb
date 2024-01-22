@@ -141,7 +141,7 @@ impl<W: PbWrite> PbEncoder<W> {
 
     #[allow(clippy::too_many_arguments)]
     pub fn encode_map_elem<
-        K,
+        K: ?Sized,
         V: ?Sized,
         EK: FnMut(&mut Self, &K) -> Result<(), W::Error>,
         EV: FnMut(&mut Self, &V) -> Result<(), W::Error>,
@@ -458,5 +458,6 @@ mod tests {
             &11,
             "cdef"
         );
+        assert_encode_map_elem!([5, 0x08, 0x96, 0x01, 0x12, 0], &150, "");
     }
 }
