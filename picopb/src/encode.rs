@@ -180,24 +180,27 @@ impl<W: PbWrite> PbEncoder<W> {
         Ok(())
     }
 
-    pub fn encode_with_tag<T: ImplicitPresence, F: FnMut(&mut Self, &T) -> Result<(), W::Error>>(
+    pub fn encode_with_tag<
+        T: ?Sized + ImplicitPresence,
+        F: FnMut(&mut Self, &T) -> Result<(), W::Error>,
+    >(
         &mut self,
         tag: &Tag,
         val: &T,
         mut encoder: F,
     ) -> Result<(), W::Error> {
         // Implicit field presence, only encode if value is non-default
-        if !val.pb_is_present() {
+        if val.pb_is_present() {
             self.encode_tag(tag)?;
             encoder(self, val)?;
         }
         Ok(())
     }
 
-    pub fn encode_optional_with_tag<T, F: FnMut(&mut Self, &T) -> Result<(), W::Error>>(
+    pub fn encode_optional_with_tag<T: ?Sized, F: FnMut(&mut Self, &T) -> Result<(), W::Error>>(
         &mut self,
         tag: &Tag,
-        val: &Option<T>,
+        val: Option<&T>,
         mut encoder: F,
     ) -> Result<(), W::Error> {
         if let Some(val) = val {
@@ -459,5 +462,121 @@ mod tests {
             "cdef"
         );
         assert_encode_map_elem!([5, 0x08, 0x96, 0x01, 0x12, 0], &150, "");
+    }
+
+    macro_rules! assert_encode_with_tag {
+        ($expected:expr, $encode:ident($tag:expr, $val:expr), $sizeof:ident) => {
+            let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
+            encoder
+                .$encode($tag, $val, |wr, v| wr.encode_varint32(*v))
+                .unwrap();
+            assert_eq!($expected, encoder.writer.as_slice());
+            assert_eq!(
+                $expected.len(),
+                $sizeof($tag, $val, |v| sizeof_varint32(*v))
+            );
+        };
+    }
+
+    #[test]
+    fn with_tag() {
+        let tag = Tag::from_parts(16, WIRE_TYPE_VARINT);
+        assert_encode_with_tag!(
+            [0x80, 0x01, 0x09],
+            encode_with_tag(&tag, &9),
+            sizeof_with_tag
+        );
+    }
+
+    #[test]
+    fn repeated_with_tag() {
+        let tag = Tag::from_parts(1, WIRE_TYPE_VARINT);
+        assert_encode_with_tag!(
+            b"",
+            encode_repeated_with_tag(&tag, core::iter::empty::<&u32>()),
+            sizeof_repeated_with_tag
+        );
+        assert_encode_with_tag!(
+            [0x08, 0x01, 0x08, 0x96, 0x01],
+            encode_repeated_with_tag(&tag, [1, 150].iter()),
+            sizeof_repeated_with_tag
+        );
+    }
+
+    #[test]
+    fn optional_with_tag() {
+        let tag = Tag::from_parts(1, WIRE_TYPE_VARINT);
+        assert_encode_with_tag!(
+            b"",
+            encode_optional_with_tag(&tag, None),
+            sizeof_optional_with_tag
+        );
+        assert_encode_with_tag!(
+            [0x08, 0xE],
+            encode_optional_with_tag(&tag, Some(&14)),
+            sizeof_optional_with_tag
+        );
+    }
+
+    #[test]
+    fn implicit_presence() {
+        let tag = Tag::from_parts(1, WIRE_TYPE_VARINT);
+        assert_eq!(0, sizeof_with_tag(&tag, &0u32, |_| 4));
+        assert_eq!(0, sizeof_with_tag(&tag, &0.0, |_| 4));
+        assert_eq!(0, sizeof_with_tag(&tag, &false, |_| 4));
+        assert_eq!(0, sizeof_with_tag(&tag, "", |_| 4));
+        assert_eq!(0, sizeof_with_tag(&tag, b"".as_slice(), |_| 4));
+
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 1>::new());
+        encoder.encode_with_tag(&tag, &0u32, |_, _| Ok(())).unwrap();
+        encoder.encode_with_tag(&tag, &0.0, |_, _| Ok(())).unwrap();
+        encoder
+            .encode_with_tag(&tag, &false, |_, _| Ok(()))
+            .unwrap();
+        encoder.encode_with_tag(&tag, "", |_, _| Ok(())).unwrap();
+        encoder
+            .encode_with_tag(&tag, b"".as_slice(), |_, _| Ok(()))
+            .unwrap();
+        assert!(encoder.writer.is_empty());
+    }
+
+    #[test]
+    fn repeated_map_elems() {
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 30>::new());
+        let mut len_cache = ArrayVec::<_, 3>::new();
+
+        let tag = Tag::from_parts(8, WIRE_TYPE_LEN);
+        let elems = &[("x", true), ("xy", false), ("xyz", true)];
+        let len = sizeof_repeated_with_tag(&tag, elems.iter(), |(k, v)| {
+            let kvlen = sizeof_map_elem(k, v, |s| sizeof_len_record(s.len()), |_| 1);
+            len_cache.push(kvlen);
+            sizeof_len_record(kvlen)
+        });
+
+        let mut cached = len_cache.iter().copied();
+        encoder
+            .encode_repeated_with_tag(&tag, elems.iter(), |wr, (k, v)| {
+                wr.encode_map_elem(
+                    cached.next().unwrap(),
+                    k,
+                    WIRE_TYPE_LEN,
+                    v,
+                    WIRE_TYPE_VARINT,
+                    |wr, s| wr.encode_string(s),
+                    |wr, b| wr.encode_bool(*b),
+                )
+            })
+            .unwrap();
+
+        assert_eq!(
+            // 1st byte is tag, 2nd is length of the pair, rest are the payload of the pair
+            [
+                0x42, 5, 0x0A, 1, b'x', 0x10, 0x01, // first key-value pair
+                0x42, 6, 0x0A, 2, b'x', b'y', 0x10, 0x00, // second key-value pair
+                0x42, 7, 0x0A, 3, b'x', b'y', b'z', 0x10, 0x01 // third key-value pair
+            ],
+            encoder.writer.as_slice()
+        );
+        assert_eq!(24, len);
     }
 }

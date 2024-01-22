@@ -55,9 +55,26 @@ pub trait ImplicitPresence {
     fn pb_is_present(&self) -> bool;
 }
 
-impl<T: Zero> ImplicitPresence for T {
+macro_rules! impl_implicit_presence_num {
+    ($typ:ty) => {
+        impl ImplicitPresence for $typ {
+            fn pb_is_present(&self) -> bool {
+                !self.is_zero()
+            }
+        }
+    };
+}
+
+impl_implicit_presence_num!(u32);
+impl_implicit_presence_num!(i32);
+impl_implicit_presence_num!(u64);
+impl_implicit_presence_num!(i64);
+impl_implicit_presence_num!(f32);
+impl_implicit_presence_num!(f64);
+
+impl ImplicitPresence for bool {
     fn pb_is_present(&self) -> bool {
-        self.is_zero()
+        *self
     }
 }
 
@@ -70,6 +87,12 @@ impl ImplicitPresence for str {
 impl ImplicitPresence for [u8] {
     fn pb_is_present(&self) -> bool {
         !self.is_empty()
+    }
+}
+
+impl<T: ImplicitPresence> ImplicitPresence for &T {
+    fn pb_is_present(&self) -> bool {
+        (*self).pb_is_present()
     }
 }
 

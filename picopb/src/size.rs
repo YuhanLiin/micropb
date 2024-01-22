@@ -80,22 +80,22 @@ pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
     elems.map(|e| tag_size + sizer(e)).sum()
 }
 
-pub fn sizeof_with_tag<T: ImplicitPresence, F: FnMut(&T) -> usize>(
+pub fn sizeof_with_tag<T: ?Sized + ImplicitPresence, F: FnMut(&T) -> usize>(
     tag: &Tag,
     val: &T,
     mut sizer: F,
 ) -> usize {
     if val.pb_is_present() {
-        0
-    } else {
         sizeof_tag(tag) + sizer(val)
+    } else {
+        0
     }
 }
 
-pub fn sizeof_optional_with_tag<T, F: FnMut(&T) -> usize>(
+pub fn sizeof_optional_with_tag<T: ?Sized, F: FnMut(&T) -> usize>(
     tag: &Tag,
-    val: &Option<T>,
+    val: Option<&T>,
     mut sizer: F,
 ) -> usize {
-    val.as_ref().map_or(0, |v| sizeof_tag(tag) + sizer(v))
+    val.map_or(0, |v| sizeof_tag(tag) + sizer(v))
 }
