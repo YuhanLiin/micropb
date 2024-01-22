@@ -128,8 +128,8 @@ impl<W: PbWrite> PbEncoder<W> {
 
     pub fn encode_packed<T: Copy, F: FnMut(&mut Self, T) -> Result<(), W::Error>>(
         &mut self,
-        elems: &[T],
         len: usize,
+        elems: &[T],
         mut encoder: F,
     ) -> Result<(), W::Error> {
         self.encode_varint32(len as u32)?;
@@ -142,7 +142,7 @@ impl<W: PbWrite> PbEncoder<W> {
     #[allow(clippy::too_many_arguments)]
     pub fn encode_map_elem<
         K,
-        V,
+        V: ?Sized,
         EK: FnMut(&mut Self, &K) -> Result<(), W::Error>,
         EV: FnMut(&mut Self, &V) -> Result<(), W::Error>,
     >(
@@ -212,158 +212,191 @@ impl<W: PbWrite> PbEncoder<W> {
 mod tests {
     use arrayvec::ArrayVec;
 
+    use crate::{WIRE_TYPE_LEN, WIRE_TYPE_VARINT};
+
     use super::*;
 
     macro_rules! assert_encode {
-        ($expected:expr, $encoder:ident.$($op:tt)+) => {
-            $encoder.$($op)+.unwrap();
-            assert_eq!($expected, $encoder.writer.as_slice());
-            $encoder.writer.clear();
+        ($expected:expr, $($op:tt)+) => {
+            let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
+            encoder.$($op)+.unwrap();
+            assert_eq!($expected, encoder.writer.as_slice());
         }
     }
 
     #[test]
     fn varint32() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-        assert_encode!(&[0x01], encoder.encode_varint32(1));
-        assert_encode!(&[0x00], encoder.encode_varint32(0));
-        assert_encode!(&[0x96, 0x01], encoder.encode_varint32(150));
-        assert_encode!(
-            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
-            encoder.encode_varint32(u32::MAX)
-        );
-        assert_encode!(
-            &[0x95, 0x87, 0x14],
-            encoder.encode_varint32(0b1010000001110010101)
-        );
+        assert_encode!(&[0x01], encode_varint32(1));
+        assert_encode!(&[0x00], encode_varint32(0));
+        assert_encode!(&[0x96, 0x01], encode_varint32(150));
+        assert_encode!(&[0xFF, 0xFF, 0xFF, 0xFF, 0x0F], encode_varint32(u32::MAX));
+        assert_encode!(&[0x95, 0x87, 0x14], encode_varint32(0b1010000001110010101));
     }
 
     #[test]
     fn varint64() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-        assert_encode!(&[0x01], encoder.encode_varint64(1));
-        assert_encode!(&[0x00], encoder.encode_varint64(0));
-        assert_encode!(&[0x96, 0x01], encoder.encode_varint64(150));
+        assert_encode!(&[0x01], encode_varint64(1));
+        assert_encode!(&[0x00], encode_varint64(0));
+        assert_encode!(&[0x96, 0x01], encode_varint64(150));
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
-            encoder.encode_varint64(u32::MAX as u64)
+            encode_varint64(u32::MAX as u64)
         );
-        assert_encode!(
-            &[0x95, 0x87, 0x14],
-            encoder.encode_varint64(0b1010000001110010101)
-        );
+        assert_encode!(&[0x95, 0x87, 0x14], encode_varint64(0b1010000001110010101));
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encoder.encode_varint64(u64::MAX)
+            encode_varint64(u64::MAX)
         );
     }
 
     #[test]
     fn int() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-        assert_encode!(&[0x01], encoder.encode_int32(1));
-        assert_encode!(&[0x96, 0x01], encoder.encode_int32(150));
+        assert_encode!(&[0x01], encode_int32(1));
+        assert_encode!(&[0x96, 0x01], encode_int32(150));
         assert_encode!(
             &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encoder.encode_int32(-2)
+            encode_int32(-2)
         );
         assert_encode!(
             &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encoder.encode_int64(-2)
+            encode_int64(-2)
         );
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encoder.encode_int32(-1)
+            encode_int32(-1)
         );
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encoder.encode_int64(-1)
+            encode_int64(-1)
         );
         assert_encode!(
             &[0x80, 0x80, 0x80, 0x80, 0xF8, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encoder.encode_int32(i32::MIN)
+            encode_int32(i32::MIN)
         );
         assert_encode!(
             &[0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
-            encoder.encode_int64(i64::MIN)
+            encode_int64(i64::MIN)
         );
     }
 
     #[test]
     fn sint32() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-        assert_encode!(&[0x00], encoder.encode_sint32(0));
-        assert_encode!(&[0x01], encoder.encode_sint32(-1));
-        assert_encode!(&[0x02], encoder.encode_sint32(1));
-        assert_encode!(&[0x03], encoder.encode_sint32(-2));
-        assert_encode!(
-            &[0xFE, 0xFF, 0xFF, 0xFF, 0x0F],
-            encoder.encode_sint32(0x7FFFFFFF)
-        );
-        assert_encode!(
-            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
-            encoder.encode_sint32(-0x80000000)
-        );
+        assert_encode!(&[0x00], encode_sint32(0));
+        assert_encode!(&[0x01], encode_sint32(-1));
+        assert_encode!(&[0x02], encode_sint32(1));
+        assert_encode!(&[0x03], encode_sint32(-2));
+        assert_encode!(&[0xFE, 0xFF, 0xFF, 0xFF, 0x0F], encode_sint32(0x7FFFFFFF));
+        assert_encode!(&[0xFF, 0xFF, 0xFF, 0xFF, 0x0F], encode_sint32(-0x80000000));
     }
 
     #[test]
     fn sint64() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-        assert_encode!(&[0x00], encoder.encode_sint64(0));
-        assert_encode!(&[0x01], encoder.encode_sint64(-1));
-        assert_encode!(&[0x02], encoder.encode_sint64(1));
-        assert_encode!(&[0x03], encoder.encode_sint64(-2));
-        assert_encode!(
-            &[0xFE, 0xFF, 0xFF, 0xFF, 0x0F],
-            encoder.encode_sint64(0x7FFFFFFF)
-        );
-        assert_encode!(
-            &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F],
-            encoder.encode_sint64(-0x80000000)
-        );
+        assert_encode!(&[0x00], encode_sint64(0));
+        assert_encode!(&[0x01], encode_sint64(-1));
+        assert_encode!(&[0x02], encode_sint64(1));
+        assert_encode!(&[0x03], encode_sint64(-2));
+        assert_encode!(&[0xFE, 0xFF, 0xFF, 0xFF, 0x0F], encode_sint64(0x7FFFFFFF));
+        assert_encode!(&[0xFF, 0xFF, 0xFF, 0xFF, 0x0F], encode_sint64(-0x80000000));
         assert_encode!(
             &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encoder.encode_sint64(0x7FFFFFFFFFFFFFFF)
+            encode_sint64(0x7FFFFFFFFFFFFFFF)
         );
         assert_encode!(
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-            encoder.encode_sint64(-0x8000000000000000)
+            encode_sint64(-0x8000000000000000)
         );
     }
 
     #[test]
     fn bool() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-        assert_encode!(&[0x01], encoder.encode_bool(true));
-        assert_encode!(&[0x00], encoder.encode_bool(false));
+        assert_encode!(&[0x01], encode_bool(true));
+        assert_encode!(&[0x00], encode_bool(false));
     }
 
     #[test]
     fn fixed() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-        assert_encode!(&[0x00; 4], encoder.encode_fixed32(0));
-        assert_encode!(
-            &[0x12, 0x32, 0x98, 0xF4],
-            encoder.encode_fixed32(0xF4983212)
-        );
-        assert_encode!(&[0x00; 8], encoder.encode_fixed64(0));
+        assert_encode!(&[0x00; 4], encode_fixed32(0));
+        assert_encode!(&[0x12, 0x32, 0x98, 0xF4], encode_fixed32(0xF4983212));
+        assert_encode!(&[0x00; 8], encode_fixed64(0));
         assert_encode!(
             &[0x12, 0x32, 0x98, 0xF4, 0x3B, 0xAA, 0x50, 0x99],
-            encoder.encode_fixed64(0x9950AA3BF4983212)
+            encode_fixed64(0x9950AA3BF4983212)
         );
-        assert_encode!(
-            &[0x12, 0x32, 0x98, 0xF4],
-            encoder.encode_sfixed32(-0x0B67CDEE)
-        );
+        assert_encode!(&[0x12, 0x32, 0x98, 0xF4], encode_sfixed32(-0x0B67CDEE));
     }
 
     #[test]
     fn float() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-        assert_encode!(&[0xC7, 0x46, 0xE8, 0xC1], encoder.encode_float(-29.03456));
+        assert_encode!(&[0xC7, 0x46, 0xE8, 0xC1], encode_float(-29.03456));
         assert_encode!(
             &[0x5E, 0x09, 0x52, 0x2B, 0x83, 0x07, 0x3A, 0x40],
-            encoder.encode_double(26.029345233467545)
+            encode_double(26.029345233467545)
+        );
+    }
+
+    #[test]
+    fn bytes_string() {
+        assert_encode!(&[0], encode_bytes(b""));
+        assert_encode!(&[5, b'a', b'b', b'c', b'd', b'e'], encode_bytes(b"abcde"));
+
+        assert_encode!(&[0], encode_string(""));
+        assert_encode!(&[3, b'a', b'b', b'c'], encode_string("abc"));
+        assert_encode!(&[4, 208, 151, 208, 180], encode_string("Зд"));
+    }
+
+    #[test]
+    #[cfg(target_endian = "little")]
+    fn packed_fixed() {
+        assert_encode!([0], encode_packed_fixed(&[0u32; 0]));
+        assert_encode!(
+            [4, 0x1, 0x0, 0x0, 0x1],
+            encode_packed_fixed(&[true, false, false, true])
+        );
+        assert_encode!(
+            [8, 0x1, 0x0, 0x0, 0x0, 0x6, 0x0, 0x0, 0x0],
+            encode_packed_fixed(&[1u32, 6u32])
+        );
+    }
+
+    #[test]
+    fn packed() {
+        assert_encode!(
+            [0],
+            encode_packed(0, &[0u32; 0], PbEncoder::encode_varint32)
+        );
+        // Use wrong length of 150 to test multi-byte length varint32 encode
+        assert_encode!(
+            [0x96, 0x01, 0x01, 0x9C, 0x01],
+            encode_packed(150, &[1, 156], PbEncoder::encode_varint32)
+        );
+    }
+
+    macro_rules! assert_encode_map_elem {
+        ($expected:expr, $len:expr, $key:expr, $val:expr) => {
+            assert_encode!(
+                $expected,
+                encode_map_elem(
+                    $len,
+                    $key,
+                    WIRE_TYPE_VARINT,
+                    $val,
+                    WIRE_TYPE_LEN,
+                    |wr, v| wr.encode_varint32(*v),
+                    |wr, s| wr.encode_string(s)
+                )
+            )
+        };
+    }
+
+    #[test]
+    fn map_elem() {
+        assert_encode_map_elem!([6, 0x08, 0x01, 0x12, 2, b'a', b'c'], 6, &1, "ac");
+        assert_encode_map_elem!([5, 0x08, 0x02, 0x12, 1, b'x'], 5, &2, "x");
+        assert_encode_map_elem!(
+            [8, 0x08, 0x0B, 0x12, 4, b'c', b'd', b'e', b'f'],
+            8,
+            &11,
+            "cdef"
         );
     }
 }

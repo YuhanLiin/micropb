@@ -577,6 +577,7 @@ mod tests {
             [4, b'a', b'b', b'c', b'd'],
             decode_string(string)
         );
+        assert_decode_vec!(Ok("Зд"), [4, 208, 151, 208, 180], decode_string(string));
 
         assert_decode_vec!(Err(DecodeError::UnexpectedEof), [], decode_string(string));
         assert_decode_vec!(

@@ -56,6 +56,10 @@ pub fn sizeof_packed_fixed<T: Copy>(slice: &[T]) -> usize {
     core::mem::size_of_val(slice)
 }
 
+pub fn sizeof_len_record(len: usize) -> usize {
+    len + sizeof_varint32(len as u32)
+}
+
 pub fn sizeof_map_elem<K, V, FK: FnMut(&K) -> usize, FV: FnMut(&V) -> usize>(
     key: &K,
     key_wtype: u8,
