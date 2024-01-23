@@ -387,18 +387,49 @@ mod tests {
 
     use super::*;
 
+    struct Multichunk<'a>(&'a [u8]);
+
+    impl<'a> Multichunk<'a> {
+        fn len(&self) -> usize {
+            self.0.len()
+        }
+
+        #[must_use]
+        pub fn is_empty(&self) -> bool {
+            self.len() == 0
+        }
+    }
+
+    impl<'a> PbRead for Multichunk<'a> {
+        type Error = Never;
+
+        fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error> {
+            let n = if self.len() % 2 == 0 { 2 } else { 1 };
+            Ok(&self.0[..n.min(self.len())])
+        }
+
+        fn pb_advance(&mut self, bytes: usize) {
+            self.0.pb_advance(bytes)
+        }
+    }
+
     macro_rules! assert_decode {
-        ($expected:expr, $arr:expr, $($op:tt)+) => {
-            let mut decoder = PbDecoder::new($arr.as_slice());
+        (@testcase $expected:expr, $reader:expr, $($op:tt)+) => {
+            let mut decoder = PbDecoder::new($reader);
             let total = decoder.reader.len();
             let res = decoder.$($op)+;
-            println!("Slice output = {res:?}");
+            println!("{} output = {res:?}", stringify!($reader));
             assert_eq!($expected, res);
             // Check that the reader is empty only when the decoding is successful
             if res.is_ok() {
                 assert!(decoder.reader.is_empty());
                 assert_eq!(decoder.idx, total);
             }
+        };
+
+        ($expected:expr, $arr:expr, $($op:tt)+) => {
+            assert_decode!(@testcase $expected, $arr.as_slice(), $($op)+);
+            assert_decode!(@testcase $expected, Multichunk($arr.as_slice()), $($op)+);
         };
     }
 
@@ -678,17 +709,27 @@ mod tests {
     }
 
     macro_rules! assert_decode_vec {
-        ($pattern:pat $(if $guard:expr)?, $arr:expr, $func:ident ($container:ident $(, $($args:tt)+)?)) => {
-            let mut decoder = PbDecoder::new($arr.as_slice());
+        (@testcase $pattern:pat $(if $guard:expr)?, $reader:expr, $func:ident ($container:ident $(, $($args:tt)+)?)) => {
+            let mut decoder = PbDecoder::new($reader);
             let total = decoder.reader.len();
             let res = decoder.$func(&mut $container, $($($args)+)?).map(|_| $container.deref());
-            println!("Slice output = {res:?}");
+            println!("{} output = {res:?}", stringify!($reader));
             assert!(matches!(res, $pattern $(if $guard)?));
             // Check that the decoder is empty only when the decoding is successful
             if res.is_ok() {
                 assert!(decoder.reader.is_empty());
                 assert_eq!(decoder.idx, total);
             }
+        };
+
+        ($pattern:pat $(if $guard:expr)?, $arr:expr, $func:ident ($container:ident $(, $($args:tt)+)?)) => {
+            assert_decode_vec!(@testcase $pattern $($guard)?, $arr.as_slice(), $func($container $(, $($args)+)?));
+            assert_decode_vec!(@testcase $pattern $($guard)?, Multichunk($arr.as_slice()), $func($container $(, $($args)+)?));
+        };
+
+        ($pattern:pat $(if $guard:expr)?, $arr:expr, $func:ident ($container1:ident | $container2:ident $(, $($args:tt)+)?)) => {
+            assert_decode_vec!(@testcase $pattern $($guard)?, $arr.as_slice(), $func($container1 $(, $($args)+)?));
+            assert_decode_vec!(@testcase $pattern $($guard)?, Multichunk($arr.as_slice()), $func($container2 $(, $($args)+)?));
         };
     }
 
@@ -748,49 +789,55 @@ mod tests {
 
     #[test]
     fn packed() {
-        let mut vec = ArrayVec::<u32, 5>::new();
-        assert_decode_vec!(Ok(&[]), [0], decode_packed(vec, |rd| rd.decode_varint32()));
+        let mut vec1 = ArrayVec::<u32, 5>::new();
+        let mut vec2 = ArrayVec::<u32, 5>::new();
+        assert_decode_vec!(
+            Ok(&[]),
+            [0],
+            decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
+        );
         assert_decode_vec!(
             Ok(&[150, 5]),
             [3, 0x96, 0x01, 0x05],
-            decode_packed(vec, |rd| rd.decode_varint32())
+            decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
         assert_decode_vec!(
             Ok(&[150, 5, 144, 512, 1]),
             [5, 0x90, 0x01, 0x80, 0x04, 0x01],
-            decode_packed(vec, |rd| rd.decode_varint32())
+            decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
         assert_decode_vec!(
             Err(DecodeError::Capacity),
             [1, 0x01],
-            decode_packed(vec, |rd| rd.decode_varint32())
+            decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
     }
 
     #[test]
     #[cfg(target_endian = "little")]
     fn packed_fixed() {
-        let mut vec = ArrayVec::<u32, 3>::new();
-        assert_decode_vec!(Ok(&[]), [0], decode_packed_fixed(vec));
+        let mut vec1 = ArrayVec::<u32, 3>::new();
+        let mut vec2 = ArrayVec::<u32, 3>::new();
+        assert_decode_vec!(Ok(&[]), [0], decode_packed_fixed(vec1 | vec2));
         assert_decode_vec!(
             Ok(&[0x04030201]),
             [4, 0x01, 0x02, 0x03, 0x04],
-            decode_packed_fixed(vec)
+            decode_packed_fixed(vec1 | vec2)
         );
         assert_decode_vec!(
             Ok(&[0x04030201, 0x0D0C0B0A, 0x44332211]),
             [8, 0x0A, 0x0B, 0x0C, 0x0D, 0x11, 0x22, 0x33, 0x44],
-            decode_packed_fixed(vec)
+            decode_packed_fixed(vec1 | vec2)
         );
         assert_decode_vec!(
             Err(DecodeError::Capacity),
             [4, 0x01, 0x02, 0x03, 0x04],
-            decode_packed_fixed(vec)
+            decode_packed_fixed(vec1 | vec2)
         );
         assert_decode_vec!(
             Err(DecodeError::WrongLen(1)),
             [1, 0x01],
-            decode_packed_fixed(vec)
+            decode_packed_fixed(vec1 | vec2)
         );
     }
 
