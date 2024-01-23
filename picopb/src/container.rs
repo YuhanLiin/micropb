@@ -2,7 +2,7 @@
 
 use core::{mem::MaybeUninit, ops::DerefMut};
 
-use num_traits::Num;
+use crate::decode::DecodeFixedSize;
 
 pub trait PbContainer: Default {
     fn pb_clear(&mut self);
@@ -15,7 +15,7 @@ pub trait PbVec<T>: PbContainer + DerefMut<Target = [T]> {
 
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>]
     where
-        T: Num + Copy;
+        T: DecodeFixedSize;
 }
 
 pub trait PbString: PbContainer + DerefMut<Target = str> {
@@ -59,7 +59,7 @@ mod impl_arrayvec {
 
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>]
         where
-            T: Num + Copy,
+            T: DecodeFixedSize,
         {
             let cap_bytes = N * size_of::<T>();
             let len_bytes = self.len() * size_of::<T>();

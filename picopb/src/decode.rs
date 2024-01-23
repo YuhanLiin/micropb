@@ -13,7 +13,6 @@ use crate::{
 };
 
 use never::Never;
-use num_traits::Num;
 
 #[derive(Debug, PartialEq)]
 pub enum DecodeError<E> {
@@ -32,6 +31,16 @@ impl<E> From<Utf8Error> for DecodeError<E> {
         Self::Utf8(err)
     }
 }
+
+pub trait DecodeFixedSize: Copy {}
+
+impl DecodeFixedSize for u8 {}
+impl DecodeFixedSize for u32 {}
+impl DecodeFixedSize for i32 {}
+impl DecodeFixedSize for u64 {}
+impl DecodeFixedSize for i64 {}
+impl DecodeFixedSize for f32 {}
+impl DecodeFixedSize for f64 {}
 
 pub trait PbRead {
     type Error;
@@ -256,7 +265,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[cfg(target_endian = "little")]
-    pub fn decode_packed_fixed<T: Num + Copy, S: PbVec<T>>(
+    pub fn decode_packed_fixed<T: DecodeFixedSize, S: PbVec<T>>(
         &mut self,
         vec: &mut S,
     ) -> Result<(), DecodeError<R::Error>> {
