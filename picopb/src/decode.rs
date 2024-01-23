@@ -35,8 +35,7 @@ impl<E> From<Utf8Error> for DecodeError<E> {
 
 /// Implemented only for types decoded from fixed-size fields. These types must have no invalid
 /// bit-patterns in their representation.
-// TODO seal
-pub trait DecodeFixedSize: Copy {}
+pub trait DecodeFixedSize: sealed::Sealed + Copy {}
 
 impl DecodeFixedSize for u8 {}
 impl DecodeFixedSize for u32 {}
@@ -45,6 +44,17 @@ impl DecodeFixedSize for u64 {}
 impl DecodeFixedSize for i64 {}
 impl DecodeFixedSize for f32 {}
 impl DecodeFixedSize for f64 {}
+
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for u8 {}
+    impl Sealed for u32 {}
+    impl Sealed for i32 {}
+    impl Sealed for u64 {}
+    impl Sealed for i64 {}
+    impl Sealed for f32 {}
+    impl Sealed for f64 {}
+}
 
 pub trait PbRead {
     type Error;

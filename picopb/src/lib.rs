@@ -52,7 +52,7 @@ impl VarInt for u64 {
     const BYTES: u8 = 10;
 }
 
-pub trait ImplicitPresence {
+pub trait ImplicitPresence: sealed::Sealed {
     fn pb_is_present(&self) -> bool;
 }
 
@@ -95,6 +95,20 @@ impl<T: ImplicitPresence> ImplicitPresence for &T {
     fn pb_is_present(&self) -> bool {
         (*self).pb_is_present()
     }
+}
+
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for u32 {}
+    impl Sealed for i32 {}
+    impl Sealed for u64 {}
+    impl Sealed for i64 {}
+    impl Sealed for f32 {}
+    impl Sealed for f64 {}
+    impl Sealed for bool {}
+    impl Sealed for str {}
+    impl Sealed for [u8] {}
+    impl<T: Sealed> Sealed for &T {}
 }
 
 #[cfg(test)]
