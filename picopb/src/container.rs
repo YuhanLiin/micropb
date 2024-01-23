@@ -1,56 +1,88 @@
 #![allow(clippy::result_unit_err)]
 
-use core::ops::{Deref, DerefMut};
+use core::{mem::MaybeUninit, ops::DerefMut};
 
-pub trait PbVec<T>: Default + Deref<Target = [T]> + DerefMut<Target = [T]> {
-    fn push(&mut self, elem: T) -> Result<(), ()>;
+use num_traits::Num;
 
-    fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), ()>
-    where
-        T: Copy;
+pub trait PbContainer: Default {
+    fn pb_clear(&mut self);
 
-    fn write_slice(&mut self, slice: &[T]) -> Result<(), ()>
-    where
-        T: Copy;
+    unsafe fn pb_set_len(&mut self, len: usize);
 }
 
-pub trait PbString: Default + Deref<Target = str> + DerefMut<Target = str> {
-    fn write_str(&mut self, s: &str) -> Result<(), ()>;
+pub trait PbVec<T>: PbContainer + DerefMut<Target = [T]> {
+    fn pb_push(&mut self, elem: T) -> Result<(), ()>;
+
+    fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>]
+    where
+        T: Num + Copy;
+}
+
+pub trait PbString: PbContainer + DerefMut<Target = str> {
+    fn pb_cap_bytes(&mut self) -> &mut [MaybeUninit<u8>];
 }
 
 #[cfg(feature = "container-arrayvec")]
 mod impl_arrayvec {
+    use core::mem::size_of;
+
     use crate::encode::PbWrite;
 
     use super::*;
 
     use arrayvec::{ArrayString, ArrayVec, CapacityError};
 
+    impl<T, const N: usize> PbContainer for ArrayVec<T, N> {
+        fn pb_clear(&mut self) {
+            self.clear()
+        }
+
+        unsafe fn pb_set_len(&mut self, len: usize) {
+            self.set_len(len)
+        }
+    }
+
+    impl<const N: usize> PbContainer for ArrayString<N> {
+        fn pb_clear(&mut self) {
+            self.clear()
+        }
+
+        unsafe fn pb_set_len(&mut self, len: usize) {
+            self.set_len(len)
+        }
+    }
+
     impl<T, const N: usize> PbVec<T> for ArrayVec<T, N> {
-        fn push(&mut self, elem: T) -> Result<(), ()> {
+        fn pb_push(&mut self, elem: T) -> Result<(), ()> {
             self.try_push(elem).map_err(drop)
         }
 
-        fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), ()>
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>]
         where
-            T: Copy,
+            T: Num + Copy,
         {
-            self.try_extend_from_slice(slice).map_err(drop)
-        }
-
-        fn write_slice(&mut self, slice: &[T]) -> Result<(), ()>
-        where
-            T: Copy,
-        {
-            self.clear();
-            self.try_extend_from_slice(slice).map_err(drop)
+            let cap_bytes = N * size_of::<T>();
+            let len_bytes = self.len() * size_of::<T>();
+            // SAFETY: Underlying storage is static array of size N, so cap_bytes must be allocated
+            let slice = unsafe {
+                core::slice::from_raw_parts_mut(
+                    self.as_mut_ptr() as *mut MaybeUninit<u8>,
+                    cap_bytes,
+                )
+            };
+            &mut slice[len_bytes..]
         }
     }
 
     impl<const N: usize> PbString for ArrayString<N> {
-        fn write_str(&mut self, s: &str) -> Result<(), ()> {
-            self.clear();
-            self.try_push_str(s).map_err(drop)
+        fn pb_cap_bytes(&mut self) -> &mut [MaybeUninit<u8>] {
+            // SAFETY: Underlying storage is array of N bytes, so the slice is valid
+            unsafe {
+                core::slice::from_raw_parts_mut(
+                    self.as_bytes_mut().as_mut_ptr() as *mut MaybeUninit<u8>,
+                    N,
+                )
+            }
         }
     }
 

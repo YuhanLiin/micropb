@@ -1,9 +1,12 @@
-use crate::decode::{DecodeError, PbDecoder};
+use crate::decode::{DecodeError, PbDecoder, PbRead};
 
 pub trait Message: Default {
-    fn decode_update(&mut self, reader: &mut PbDecoder) -> Result<(), DecodeError>;
+    fn decode_update<R: PbRead>(
+        &mut self,
+        reader: &mut PbDecoder<R>,
+    ) -> Result<(), DecodeError<R::Error>>;
 
-    fn decode(reader: &mut PbDecoder) -> Result<Self, DecodeError>
+    fn decode<R: PbRead>(reader: &mut PbDecoder<R>) -> Result<Self, DecodeError<R::Error>>
     where
         Self: Sized,
     {
