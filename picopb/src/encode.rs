@@ -17,16 +17,27 @@ impl<W: PbWrite> PbWrite for &mut W {
 
 pub struct PbEncoder<W: PbWrite> {
     writer: W,
+    bytes_written: usize,
 }
 
 impl<W: PbWrite> PbEncoder<W> {
     pub fn new(writer: W) -> Self {
-        Self { writer }
+        Self {
+            writer,
+            bytes_written: 0,
+        }
+    }
+
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) -> Result<(), W::Error> {
+        self.writer.pb_write(bytes)?;
+        self.bytes_written += bytes.len();
+        Ok(())
     }
 
     #[inline]
     fn encode_byte(&mut self, b: u8) -> Result<(), W::Error> {
-        self.writer.pb_write(&[b])
+        self.write(&[b])
     }
 
     fn encode_varint<U: VarInt>(&mut self, mut varint: U) -> Result<(), W::Error> {
@@ -82,11 +93,11 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     pub fn encode_fixed32(&mut self, u: u32) -> Result<(), W::Error> {
-        self.writer.pb_write(&u.to_le_bytes())
+        self.write(&u.to_le_bytes())
     }
 
     pub fn encode_fixed64(&mut self, u: u64) -> Result<(), W::Error> {
-        self.writer.pb_write(&u.to_le_bytes())
+        self.write(&u.to_le_bytes())
     }
 
     pub fn encode_sfixed32(&mut self, i: i32) -> Result<(), W::Error> {
@@ -112,7 +123,7 @@ impl<W: PbWrite> PbEncoder<W> {
 
     pub fn encode_bytes(&mut self, bytes: &[u8]) -> Result<(), W::Error> {
         self.encode_varint32(bytes.len() as u32)?;
-        self.writer.pb_write(bytes)
+        self.write(bytes)
     }
 
     pub fn encode_string(&mut self, string: &str) -> Result<(), W::Error> {
@@ -224,6 +235,7 @@ mod tests {
             let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
             encoder.$encode($($arg),+).unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
+            assert_eq!(encoder.bytes_written, encoder.writer.len());
             assert_eq!(encoder.writer.len(), $sizeof($($arg),+));
         }
     }
@@ -232,6 +244,7 @@ mod tests {
         ($expected:expr, $encode:ident( $($arg:expr),+ )) => {
             let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
             encoder.$encode($($arg),+).unwrap();
+            assert_eq!(encoder.bytes_written, encoder.writer.len());
             assert_eq!($expected, encoder.writer.as_slice());
         }
     }
@@ -416,14 +429,16 @@ mod tests {
             .encode_packed(len, &[0u32; 0], PbEncoder::encode_varint32)
             .unwrap();
         assert_eq!([0], encoder.writer.as_slice());
+        assert_eq!(encoder.bytes_written, encoder.writer.len());
         assert_eq!(1, sizeof_len_record(len));
 
-        encoder.writer.clear();
+        let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
         let len = sizeof_packed(&[1, 156], sizeof_varint32);
         encoder
             .encode_packed(len, &[1, 156], PbEncoder::encode_varint32)
             .unwrap();
         assert_eq!([3, 0x01, 0x9C, 0x01], encoder.writer.as_slice());
+        assert_eq!(encoder.bytes_written, encoder.writer.len());
         assert_eq!(4, sizeof_len_record(len));
     }
 
@@ -448,6 +463,7 @@ mod tests {
                 )
                 .unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
+            assert_eq!(encoder.bytes_written, encoder.writer.len());
             assert_eq!($expected.len(), sizeof_len_record(len));
         };
     }
@@ -471,6 +487,7 @@ mod tests {
                 .$encode($tag, $val, |wr, v| wr.encode_varint32(*v))
                 .unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
+            assert_eq!(encoder.bytes_written, encoder.writer.len());
             assert_eq!(
                 $expected.len(),
                 $sizeof($tag, $val, |v| sizeof_varint32(*v))
@@ -577,6 +594,7 @@ mod tests {
             ],
             encoder.writer.as_slice()
         );
+        assert_eq!(encoder.bytes_written, encoder.writer.len());
         assert_eq!(24, len);
     }
 }

@@ -8,6 +8,10 @@ pub trait PbContainer: Default {
     fn pb_clear(&mut self);
 
     unsafe fn pb_set_len(&mut self, len: usize);
+
+    /// Reserves capacity for at least `additional` more elements to be inserted. No-op for
+    /// fixed-capacity containers.
+    fn pb_reserve(&mut self, _additional: usize) {}
 }
 
 pub trait PbVec<T>: PbContainer + DerefMut<Target = [T]> {

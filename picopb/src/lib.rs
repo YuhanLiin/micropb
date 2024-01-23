@@ -6,7 +6,7 @@ pub mod container;
 pub mod decode;
 pub mod encode;
 pub mod message;
-pub mod misc;
+mod misc;
 pub mod size;
 
 pub const WIRE_TYPE_VARINT: u8 = 0;

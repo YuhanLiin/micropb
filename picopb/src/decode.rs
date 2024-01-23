@@ -5,6 +5,7 @@ use core::{
 
 use crate::{
     container::{PbString, PbVec},
+    message::Message,
     misc::{
         maybe_uninit_slice_assume_init_ref, maybe_uninit_write_slice,
         maybe_ununit_array_assume_init,
@@ -22,7 +23,7 @@ pub enum DecodeError<E> {
     BadWireType(u8),
     Utf8(Utf8Error),
     Capacity,
-    WrongLen(usize),
+    WrongLen { expected: usize, actual: usize },
     Reader(E),
 }
 
@@ -32,6 +33,9 @@ impl<E> From<Utf8Error> for DecodeError<E> {
     }
 }
 
+/// Implemented only for types decoded from fixed-size fields. These types must have no invalid
+/// bit-patterns in their representation.
+// TODO seal
 pub trait DecodeFixedSize: Copy {}
 
 impl DecodeFixedSize for u8 {}
@@ -72,6 +76,10 @@ impl<R: PbRead> PbDecoder<R> {
     #[inline]
     pub fn new(reader: R) -> Self {
         Self { reader, idx: 0 }
+    }
+
+    pub fn bytes_read(&self) -> usize {
+        self.idx
     }
 
     fn advance(&mut self, bytes: usize) {
@@ -210,7 +218,6 @@ impl<R: PbRead> PbDecoder<R> {
         string.pb_clear();
         let spare_cap = string.pb_cap_bytes();
         if spare_cap.len() < len {
-            self.idx += spare_cap.len();
             return Err(DecodeError::Capacity);
         }
         let target = &mut spare_cap[..len];
@@ -230,15 +237,43 @@ impl<R: PbRead> PbDecoder<R> {
     ) -> Result<(), DecodeError<R::Error>> {
         let len = self.decode_varint32()? as usize;
         bytes.pb_clear();
+        bytes.pb_reserve(len);
         let spare_cap = bytes.pb_spare_cap();
         if spare_cap.len() < len {
-            self.idx += spare_cap.len();
             return Err(DecodeError::Capacity);
         }
         self.read_exact(&mut spare_cap[..len])?;
         // SAFETY: read_exact guarantees that `len` bytes have been written into the buffer
         unsafe { bytes.pb_set_len(len) };
         Ok(())
+    }
+
+    fn decode_len_record<
+        T,
+        F: FnOnce(usize, usize, &mut Self) -> Result<T, DecodeError<R::Error>>,
+    >(
+        &mut self,
+        decoder: F,
+    ) -> Result<T, DecodeError<R::Error>> {
+        let len = self.decode_varint32()? as usize;
+        let before = self.bytes_read();
+        let val = decoder(len, before, self)?;
+        let actual_len = self.bytes_read() - before;
+        if actual_len != len {
+            Err(DecodeError::WrongLen {
+                expected: len,
+                actual: actual_len,
+            })
+        } else {
+            Ok(val)
+        }
+    }
+
+    pub fn decode_message<M: Message>(
+        &mut self,
+        message: &mut M,
+    ) -> Result<(), DecodeError<R::Error>> {
+        self.decode_len_record(|_, _, this| message.decode_update(this))
     }
 
     pub fn decode_packed<
@@ -250,18 +285,13 @@ impl<R: PbRead> PbDecoder<R> {
         vec: &mut S,
         decoder: F,
     ) -> Result<(), DecodeError<R::Error>> {
-        let len = self.decode_varint32()? as usize;
-        let cur = self.idx;
-        while self.idx - cur < len {
-            let val = decoder(self)?;
-            vec.pb_push(val).map_err(|_| DecodeError::Capacity)?;
-        }
-        if self.idx - cur != len {
-            // TODO replace
-            Err(DecodeError::WrongLen(len))
-        } else {
+        self.decode_len_record(|len, before, this| {
+            while this.bytes_read() - before < len {
+                let val = decoder(this)?;
+                vec.pb_push(val).map_err(|_| DecodeError::Capacity)?;
+            }
             Ok(())
-        }
+        })
     }
 
     #[cfg(target_endian = "little")]
@@ -271,14 +301,19 @@ impl<R: PbRead> PbDecoder<R> {
     ) -> Result<(), DecodeError<R::Error>> {
         let len = self.decode_varint32()? as usize;
         let elem_size = core::mem::size_of::<T>();
-        if len % elem_size != 0 {
-            // TODO replace
-            return Err(DecodeError::WrongLen(len));
+        let modulo = len % elem_size;
+        // Length must be a multiple of elem_size
+        if modulo > 0 {
+            return Err(DecodeError::WrongLen {
+                expected: len,
+                // Previous multiple of elem_size
+                actual: len - modulo,
+            });
         }
         let elem_num = len / elem_size;
+        vec.pb_reserve(elem_num);
         let spare_cap = vec.pb_spare_cap();
         if spare_cap.len() < len {
-            self.idx += spare_cap.len();
             return Err(DecodeError::Capacity);
         }
         self.read_exact(&mut spare_cap[..len])?;
@@ -298,23 +333,20 @@ impl<R: PbRead> PbDecoder<R> {
         key_update: UK,
         val_update: UV,
     ) -> Result<Option<(K, V)>, DecodeError<R::Error>> {
-        let len = self.decode_varint32()? as usize;
-        let cur = self.idx;
         let mut key = None;
         let mut val = None;
-        while self.idx - cur < len {
-            let tag = self.decode_tag()?;
-            match tag.field_num() {
-                1 => self.decode_optional(&mut key, &key_update)?,
-                2 => self.decode_optional(&mut val, &val_update)?,
-                _ => self.skip_wire_value(tag.wire_type())?,
+        self.decode_len_record(|len, before, this| {
+            while this.bytes_read() - before < len {
+                let tag = this.decode_tag()?;
+                match tag.field_num() {
+                    1 => this.decode_optional(&mut key, &key_update)?,
+                    2 => this.decode_optional(&mut val, &val_update)?,
+                    _ => this.skip_wire_value(tag.wire_type())?,
+                }
             }
-        }
+            Ok(())
+        })?;
 
-        if self.idx - cur != len {
-            // TODO replace
-            return Err(DecodeError::WrongLen(len));
-        }
         if let (Some(key), Some(val)) = (key, val) {
             Ok(Some((key, val)))
         } else {
@@ -432,8 +464,9 @@ mod tests {
             // Check that the reader is empty only when the decoding is successful
             if res.is_ok() {
                 assert!(decoder.reader.is_empty());
-                assert_eq!(decoder.idx, total);
             }
+            // Check that # of bytes read is correct
+            assert_eq!(decoder.bytes_read(), total - decoder.reader.len());
         };
 
         ($expected:expr, $arr:expr, $($op:tt)+) => {
@@ -727,8 +760,11 @@ mod tests {
             // Check that the decoder is empty only when the decoding is successful
             if res.is_ok() {
                 assert!(decoder.reader.is_empty());
-                assert_eq!(decoder.idx, total);
+            } else {
+                $container.clear();
             }
+            // Check that # of bytes read is correct
+            assert_eq!(decoder.bytes_read(), total - decoder.reader.len());
         };
 
         ($pattern:pat $(if $guard:expr)?, $arr:expr, $func:ident ($container:ident $(, $($args:tt)+)?)) => {
@@ -806,6 +842,14 @@ mod tests {
             decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
         assert_decode_vec!(
+            Err(DecodeError::WrongLen {
+                expected: 1,
+                actual: 2
+            }),
+            [1, 0x90, 0x01],
+            decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
+        );
+        assert_decode_vec!(
             Ok(&[150, 5]),
             [3, 0x96, 0x01, 0x05],
             decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
@@ -844,7 +888,10 @@ mod tests {
             decode_packed_fixed(vec1 | vec2)
         );
         assert_decode_vec!(
-            Err(DecodeError::WrongLen(1)),
+            Err(DecodeError::WrongLen {
+                expected: 1,
+                actual: 0
+            }),
             [1, 0x01],
             decode_packed_fixed(vec1 | vec2)
         );
