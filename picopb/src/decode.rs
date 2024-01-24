@@ -224,10 +224,22 @@ impl<R: PbRead> PbDecoder<R> {
         &mut self,
         string: &mut S,
     ) -> Result<(), DecodeError<R::Error>> {
+        // Drop guard is only necessary here because of `ArrayString` needing a hacky
+        // `pb_spare_cap` impl that sets the length to maximum, so we need to ensure that the
+        // length is reset if this function fails. TODO remove once resolved.
+        struct DropGuard<'a, S: PbString>(&'a mut S);
+        impl<'a, S: PbString> Drop for DropGuard<'a, S> {
+            #[inline]
+            fn drop(&mut self) {
+                self.0.pb_clear();
+            }
+        }
+
+        let guard = DropGuard(string);
         let len = self.decode_varint32()? as usize;
-        string.pb_clear();
-        string.pb_reserve(len);
-        let spare_cap = string.pb_spare_cap();
+        guard.0.pb_clear();
+        guard.0.pb_reserve(len);
+        let spare_cap = guard.0.pb_spare_cap();
         if spare_cap.len() < len {
             return Err(DecodeError::Capacity);
         }
@@ -238,7 +250,9 @@ impl<R: PbRead> PbDecoder<R> {
 
         // SAFETY: read_exact guarantees that `len` bytes have been written into the string.
         // Also, we just checked the UTF-8 validity of the written bytes, so the string is valid.
-        unsafe { string.pb_set_len(len) };
+        unsafe { guard.0.pb_set_len(len) };
+        // If successful, don't reset the length
+        core::mem::forget(guard);
         Ok(())
     }
 

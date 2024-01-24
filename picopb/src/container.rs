@@ -56,25 +56,38 @@ mod impl_arrayvec {
         }
 
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
+            let len = self.len();
             // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
             // of N values
             let slice = unsafe {
                 core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<T>, N)
             };
-            &mut slice[self.len()..]
+            &mut slice[len..]
         }
     }
 
     impl<const N: usize> PbString for ArrayString<N> {
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            let len = self.len();
+            // SAFETY: Setting length to N is necessary because `deref_mut()` shrinks the
+            // provenance of the pointer to the length of the string. This means creating a slice
+            // of N via `from_raw_parts_mut()` ends up expanding the provenance of the pointer,
+            // which isn't allowed by Miri. The way to prevent this is to make it so `deref_mut()`
+            // returns a string of size N. This does lead to `s` containing invalid UTF8 bytes, but
+            // according to https://doc.rust-lang.org/std/primitive.str.html#invariant constructing
+            // non-UTF8 strings isn't immediate UB until calling string operations. Since we
+            // convert the string slice into a pointer right after, there shouldn't be UB as long
+            // as we always reset the length afterwards, which is done in the string decoding logic.
+            //
+            // All of this can be prevented if ArrayString had `as_mut_ptr` or `as_mut_vec`, which
+            // is definitedly a TODO
+            unsafe { self.set_len(N) };
+            let s = self.deref_mut();
             // SAFETY: Underlying storage is array of N bytes, so the slice is valid
             let slice = unsafe {
-                core::slice::from_raw_parts_mut(
-                    self.as_bytes_mut().as_mut_ptr() as *mut MaybeUninit<u8>,
-                    N,
-                )
+                core::slice::from_raw_parts_mut(s.as_mut_ptr() as *mut MaybeUninit<u8>, N)
             };
-            &mut slice[self.len()..]
+            &mut slice[len..]
         }
     }
 
@@ -121,25 +134,27 @@ mod impl_heapless {
         }
 
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
+            let len = self.len();
             // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
             // of N values
             let slice = unsafe {
                 core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<T>, N)
             };
-            &mut slice[self.len()..]
+            &mut slice[len..]
         }
     }
 
     impl<const N: usize> PbString for String<N> {
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            let len = self.len();
             // SAFETY: Underlying storage is array of N bytes, so the slice is valid
             let slice = unsafe {
                 core::slice::from_raw_parts_mut(
-                    self.as_bytes_mut().as_mut_ptr() as *mut MaybeUninit<u8>,
+                    self.as_mut_vec().as_mut_ptr() as *mut MaybeUninit<u8>,
                     N,
                 )
             };
-            &mut slice[self.len()..]
+            &mut slice[len..]
         }
     }
 
