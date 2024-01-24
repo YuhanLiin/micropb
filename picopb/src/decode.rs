@@ -225,8 +225,8 @@ impl<R: PbRead> PbDecoder<R> {
         string: &mut S,
     ) -> Result<(), DecodeError<R::Error>> {
         let len = self.decode_varint32()? as usize;
-        string.pb_clear();
-        let spare_cap = string.pb_cap_bytes();
+        string.pb_reserve(len.saturating_sub(string.len()));
+        let spare_cap = string.pb_clear_spare_cap();
         if spare_cap.len() < len {
             return Err(DecodeError::Capacity);
         }
@@ -323,10 +323,16 @@ impl<R: PbRead> PbDecoder<R> {
         let elem_num = len / elem_size;
         vec.pb_reserve(elem_num);
         let spare_cap = vec.pb_spare_cap();
-        if spare_cap.len() < len {
+        if spare_cap.len() < elem_num {
             return Err(DecodeError::Capacity);
         }
-        self.read_exact(&mut spare_cap[..len])?;
+        // SAFETY: Converting slice into uninitialized bytes is always valid. Moreover, we know
+        // that `spare_cap` has equal or more than `elem_num` values, so it's size in bytes can't
+        // be less than `len`, because `len` is equal to `elem_num * size_of<T>()`.
+        let spare_bytes = unsafe {
+            core::slice::from_raw_parts_mut(spare_cap.as_mut_ptr() as *mut MaybeUninit<u8>, len)
+        };
+        self.read_exact(spare_bytes)?;
         // SAFETY: We just wrote elem_num of elements into the spare space, so we can
         // increase the length by that much
         unsafe { vec.pb_set_len(vec.len() + elem_num) };
@@ -432,8 +438,6 @@ impl<R: PbRead> PbDecoder<R> {
 
 #[cfg(test)]
 mod tests {
-    use core::ops::Deref;
-
     use arrayvec::{ArrayString, ArrayVec};
 
     use super::*;
@@ -770,8 +774,6 @@ mod tests {
             // Check that the decoder is empty only when the decoding is successful
             if res.is_ok() {
                 assert!(decoder.reader.is_empty());
-            } else {
-                $container.clear();
             }
             // Check that # of bytes read is correct
             assert_eq!(decoder.bytes_read(), total - decoder.reader.len());
@@ -788,9 +790,17 @@ mod tests {
         };
     }
 
-    #[test]
-    fn string() {
-        let mut string = ArrayString::<4>::new();
+    macro_rules! container_test {
+        ($test:ident, $name:ident, $container:ty, $fixed_cap:literal) => {
+            #[test]
+            fn $name() {
+                $test::<$container>($fixed_cap);
+            }
+        };
+    }
+
+    fn string<S: PbString>(fixed_cap: bool) {
+        let mut string = S::default();
         assert_decode_vec!(Ok(""), [0], decode_string(string));
         assert_decode_vec!(Ok("a"), [1, b'a'], decode_string(string));
         assert_decode_vec!(
@@ -806,11 +816,13 @@ mod tests {
             [4, b'b', b'c', b'd'],
             decode_string(string)
         );
-        assert_decode_vec!(
-            Err(DecodeError::Capacity),
-            [5, b'a', b'b', b'c', b'd', b'e'],
-            decode_string(string)
-        );
+        if fixed_cap {
+            assert_decode_vec!(
+                Err(DecodeError::Capacity),
+                [5, b'a', b'b', b'c', b'd', b'e'],
+                decode_string(string)
+            );
+        }
         assert_decode_vec!(
             Err(DecodeError::Utf8(_)),
             [4, 0x80, 0x80, 0x80, 0x80],
@@ -818,9 +830,11 @@ mod tests {
         );
     }
 
-    #[test]
-    fn bytes() {
-        let mut bytes = ArrayVec::<u8, 3>::new();
+    container_test!(string, string_arrayvec, ArrayString::<4>, true);
+    container_test!(string, string_alloc, String, false);
+
+    fn bytes<S: PbVec<u8>>(fixed_cap: bool) {
+        let mut bytes = S::default();
         assert_decode_vec!(Ok(&[]), [0], decode_bytes(bytes));
         assert_decode_vec!(Ok(b"a"), [1, b'a'], decode_bytes(bytes));
         assert_decode_vec!(
@@ -830,11 +844,13 @@ mod tests {
         );
 
         assert_decode_vec!(Err(DecodeError::UnexpectedEof), [], decode_bytes(bytes));
-        assert_decode_vec!(
-            Err(DecodeError::Capacity),
-            [4, 0x10, 0x20, 0x30, 0x40],
-            decode_bytes(bytes)
-        );
+        if fixed_cap {
+            assert_decode_vec!(
+                Err(DecodeError::Capacity),
+                [4, 0x10, 0x20, 0x30, 0x40],
+                decode_bytes(bytes)
+            );
+        }
         assert_decode_vec!(
             Err(DecodeError::UnexpectedEof),
             [3, 0x20, 0x30],
@@ -842,10 +858,12 @@ mod tests {
         );
     }
 
-    #[test]
-    fn packed() {
-        let mut vec1 = ArrayVec::<u32, 5>::new();
-        let mut vec2 = ArrayVec::<u32, 5>::new();
+    container_test!(bytes, bytes_arrayvec, ArrayVec::<_, 3>, true);
+    container_test!(bytes, bytes_alloc, Vec<_>, false);
+
+    fn packed<S: PbVec<u32>>(fixed_cap: bool) {
+        let mut vec1 = S::default();
+        let mut vec2 = S::default();
         assert_decode_vec!(
             Ok(&[]),
             [0],
@@ -859,6 +877,10 @@ mod tests {
             [1, 0x90, 0x01],
             decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
+        // Reset vecs after an error
+        vec1.pb_clear();
+        vec2.pb_clear();
+
         assert_decode_vec!(
             Ok(&[150, 5]),
             [3, 0x96, 0x01, 0x05],
@@ -869,18 +891,22 @@ mod tests {
             [5, 0x90, 0x01, 0x80, 0x04, 0x01],
             decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
-        assert_decode_vec!(
-            Err(DecodeError::Capacity),
-            [1, 0x01],
-            decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
-        );
+        if fixed_cap {
+            assert_decode_vec!(
+                Err(DecodeError::Capacity),
+                [1, 0x01],
+                decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
+            );
+        }
     }
 
-    #[test]
+    container_test!(packed, packed_arrayvec, ArrayVec::<_, 5>, true);
+    container_test!(packed, packed_alloc, Vec<_>, false);
+
     #[cfg(target_endian = "little")]
-    fn packed_fixed() {
-        let mut vec1 = ArrayVec::<u32, 3>::new();
-        let mut vec2 = ArrayVec::<u32, 3>::new();
+    fn packed_fixed<S: PbVec<u32>>(fixed_cap: bool) {
+        let mut vec1 = S::default();
+        let mut vec2 = S::default();
         assert_decode_vec!(Ok(&[]), [0], decode_packed_fixed(vec1 | vec2));
         assert_decode_vec!(
             Ok(&[0x04030201]),
@@ -892,11 +918,13 @@ mod tests {
             [8, 0x0A, 0x0B, 0x0C, 0x0D, 0x11, 0x22, 0x33, 0x44],
             decode_packed_fixed(vec1 | vec2)
         );
-        assert_decode_vec!(
-            Err(DecodeError::Capacity),
-            [4, 0x01, 0x02, 0x03, 0x04],
-            decode_packed_fixed(vec1 | vec2)
-        );
+        if fixed_cap {
+            assert_decode_vec!(
+                Err(DecodeError::Capacity),
+                [4, 0x01, 0x02, 0x03, 0x04],
+                decode_packed_fixed(vec1 | vec2)
+            );
+        }
         assert_decode_vec!(
             Err(DecodeError::WrongLen {
                 expected: 1,
@@ -906,6 +934,11 @@ mod tests {
             decode_packed_fixed(vec1 | vec2)
         );
     }
+
+    #[cfg(target_endian = "little")]
+    container_test!(packed_fixed, packed_fixed_arrayvec, ArrayVec::<_, 3>, true);
+    #[cfg(target_endian = "little")]
+    container_test!(packed_fixed, packed_fixed_alloc, Vec<_>, false);
 
     /// Test decoding of a map element with varint32 key and string value
     macro_rules! assert_decode_map_elem {
