@@ -22,6 +22,16 @@ pub trait PbString: PbContainer + DerefMut<Target = str> {
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
 }
 
+pub trait PbMap<K: 'static, V: 'static>: Default {
+    type Iter<'a>: Iterator<Item = (&'a K, &'a V)>
+    where
+        Self: 'a;
+
+    fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()>;
+
+    fn pb_iter(&self) -> Self::Iter<'_>;
+}
+
 #[cfg(feature = "container-arrayvec")]
 mod impl_arrayvec {
     use crate::encode::PbWrite;
@@ -106,7 +116,7 @@ mod impl_heapless {
 
     use super::*;
 
-    use heapless::{String, Vec};
+    use heapless::{FnvIndexMap, IndexMapIter, String, Vec};
 
     impl<T, const N: usize> PbContainer for Vec<T, N> {
         fn pb_clear(&mut self) {
@@ -158,6 +168,21 @@ mod impl_heapless {
         }
     }
 
+    impl<K: 'static + Eq + core::hash::Hash, V: 'static, const N: usize> PbMap<K, V>
+        for FnvIndexMap<K, V, N>
+    {
+        type Iter<'a> = IndexMapIter<'a, K, V>;
+
+        fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
+            self.insert(key, val).map_err(drop)?;
+            Ok(())
+        }
+
+        fn pb_iter(&self) -> Self::Iter<'_> {
+            self.iter()
+        }
+    }
+
     impl<const N: usize> PbWrite for Vec<u8, N> {
         type Error = ();
 
@@ -171,7 +196,11 @@ mod impl_heapless {
 mod impl_alloc {
     use super::*;
 
-    use alloc::{string::String, vec::Vec};
+    use alloc::{
+        collections::{btree_map, BTreeMap},
+        string::String,
+        vec::Vec,
+    };
 
     impl<T> PbContainer for Vec<T> {
         fn pb_clear(&mut self) {
@@ -216,6 +245,35 @@ mod impl_alloc {
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
             unsafe { self.as_mut_vec().spare_capacity_mut() }
+        }
+    }
+
+    impl<K: 'static + Ord, V: 'static> PbMap<K, V> for BTreeMap<K, V> {
+        type Iter<'a> = btree_map::Iter<'a, K, V>;
+
+        fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
+            self.insert(key, val);
+            Ok(())
+        }
+
+        fn pb_iter(&self) -> Self::Iter<'_> {
+            self.iter()
+        }
+    }
+
+    #[cfg(feature = "std")]
+    impl<K: 'static + Eq + core::hash::Hash, V: 'static> PbMap<K, V>
+        for std::collections::HashMap<K, V>
+    {
+        type Iter<'a> = std::collections::hash_map::Iter<'a, K, V>;
+
+        fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
+            self.insert(key, val);
+            Ok(())
+        }
+
+        fn pb_iter(&self) -> Self::Iter<'_> {
+            self.iter()
         }
     }
 }
