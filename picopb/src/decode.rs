@@ -225,8 +225,9 @@ impl<R: PbRead> PbDecoder<R> {
         string: &mut S,
     ) -> Result<(), DecodeError<R::Error>> {
         let len = self.decode_varint32()? as usize;
-        string.pb_reserve(len.saturating_sub(string.len()));
-        let spare_cap = string.pb_clear_spare_cap();
+        string.pb_clear();
+        string.pb_reserve(len);
+        let spare_cap = string.pb_spare_cap();
         if spare_cap.len() < len {
             return Err(DecodeError::Capacity);
         }
@@ -831,6 +832,7 @@ mod tests {
     }
 
     container_test!(string, string_arrayvec, ArrayString::<4>, true);
+    container_test!(string, string_heapless, heapless::String::<4>, true);
     container_test!(string, string_alloc, String, false);
 
     fn bytes<S: PbVec<u8>>(fixed_cap: bool) {
@@ -859,6 +861,7 @@ mod tests {
     }
 
     container_test!(bytes, bytes_arrayvec, ArrayVec::<_, 3>, true);
+    container_test!(bytes, bytes_heapless, heapless::Vec::<_, 3>, true);
     container_test!(bytes, bytes_alloc, Vec<_>, false);
 
     fn packed<S: PbVec<u32>>(fixed_cap: bool) {
@@ -901,6 +904,7 @@ mod tests {
     }
 
     container_test!(packed, packed_arrayvec, ArrayVec::<_, 5>, true);
+    container_test!(packed, packed_heapless, heapless::Vec::<_, 5>, true);
     container_test!(packed, packed_alloc, Vec<_>, false);
 
     #[cfg(target_endian = "little")]
@@ -936,9 +940,11 @@ mod tests {
     }
 
     #[cfg(target_endian = "little")]
-    container_test!(packed_fixed, packed_fixed_arrayvec, ArrayVec::<_, 3>, true);
+    container_test!(packed_fixed, pf_arrayvec, ArrayVec::<_, 3>, true);
     #[cfg(target_endian = "little")]
-    container_test!(packed_fixed, packed_fixed_alloc, Vec<_>, false);
+    container_test!(packed_fixed, pf_heapless, heapless::Vec::<_, 3>, true);
+    #[cfg(target_endian = "little")]
+    container_test!(packed_fixed, pf_alloc, Vec<_>, false);
 
     /// Test decoding of a map element with varint32 key and string value
     macro_rules! assert_decode_map_elem {

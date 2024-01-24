@@ -7,11 +7,13 @@ edition = "2021"
 alloc = []
 std = ["alloc"]
 container-arrayvec = ["dep:arrayvec"]
+container-heapless = ["dep:heapless"]
 
 [dependencies]
-arrayvec = { version = "0.7", optional = true }
+arrayvec = { version = "0.7", optional = true, default-features = false }
+heapless = { version = "0.8", optional = true }
 num-traits = { version = "0.2", default-features = false }
 never = { version = "0.1", default-features = false }
 
 [dev-dependencies]
-picopb = { path = ".", features = ["std" ,"container-arrayvec"] }
+picopb = { path = ".", features = ["std" ,"container-arrayvec", "container-heapless"] }
