@@ -1,9 +1,10 @@
-use crate::{
-    decode::{DecodeError, PbDecoder, PbRead},
-    encode::{PbEncoder, PbWrite},
-};
+#[cfg(feature = "decode")]
+use crate::decode::{DecodeError, PbDecoder, PbRead};
+#[cfg(feature = "encode")]
+use crate::encode::{PbEncoder, PbWrite};
 
-pub trait Message: Default {
+#[cfg(feature = "decode")]
+pub trait MessageDecode: Default {
     fn decode_update<R: PbRead>(
         &mut self,
         reader: &mut PbDecoder<R>,
@@ -17,7 +18,10 @@ pub trait Message: Default {
         this.decode_update(reader)?;
         Ok(this)
     }
+}
 
+#[cfg(feature = "encode")]
+pub trait MessageEncode: Default {
     fn encode<W: PbWrite>(&self, writer: &mut PbEncoder<W>) -> Result<(), W::Error>;
 
     fn encode_no_cache<W: PbWrite>(&self, writer: &mut PbEncoder<W>) -> Result<(), W::Error>;

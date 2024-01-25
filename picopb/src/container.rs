@@ -34,11 +34,9 @@ pub trait PbMap<K: 'static, V: 'static>: Default {
 
 #[cfg(feature = "container-arrayvec")]
 mod impl_arrayvec {
-    use crate::encode::PbWrite;
-
     use super::*;
 
-    use arrayvec::{ArrayString, ArrayVec, CapacityError};
+    use arrayvec::{ArrayString, ArrayVec};
 
     impl<T, const N: usize> PbContainer for ArrayVec<T, N> {
         unsafe fn pb_set_len(&mut self, len: usize) {
@@ -101,8 +99,9 @@ mod impl_arrayvec {
         }
     }
 
-    impl<const N: usize> PbWrite for ArrayVec<u8, N> {
-        type Error = CapacityError;
+    #[cfg(feature = "encode")]
+    impl<const N: usize> crate::encode::PbWrite for ArrayVec<u8, N> {
+        type Error = arrayvec::CapacityError;
 
         fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
             self.try_extend_from_slice(data)
@@ -112,11 +111,11 @@ mod impl_arrayvec {
 
 #[cfg(feature = "container-heapless")]
 mod impl_heapless {
-    use crate::encode::PbWrite;
-
     use super::*;
 
-    use heapless::{FnvIndexMap, IndexMapIter, String, Vec};
+    use core::hash::{BuildHasher, Hash};
+
+    use heapless::{IndexMap, IndexMapIter, String, Vec};
 
     impl<T, const N: usize> PbContainer for Vec<T, N> {
         fn pb_clear(&mut self) {
@@ -168,10 +167,10 @@ mod impl_heapless {
         }
     }
 
-    impl<K: 'static + Eq + core::hash::Hash, V: 'static, const N: usize> PbMap<K, V>
-        for FnvIndexMap<K, V, N>
+    impl<K: 'static + Eq + Hash, V: 'static, S: Default + BuildHasher, const N: usize> PbMap<K, V>
+        for IndexMap<K, V, S, N>
     {
-        type Iter<'a> = IndexMapIter<'a, K, V>;
+        type Iter<'a> = IndexMapIter<'a, K, V> where S: 'a;
 
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val).map_err(drop)?;
@@ -183,7 +182,8 @@ mod impl_heapless {
         }
     }
 
-    impl<const N: usize> PbWrite for Vec<u8, N> {
+    #[cfg(feature = "encode")]
+    impl<const N: usize> crate::encode::PbWrite for Vec<u8, N> {
         type Error = ();
 
         fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
@@ -274,6 +274,16 @@ mod impl_alloc {
 
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
+        }
+    }
+
+    #[cfg(feature = "encode")]
+    impl crate::encode::PbWrite for Vec<u8> {
+        type Error = never::Never;
+
+        fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+            self.extend_from_slice(data);
+            Ok(())
         }
     }
 }

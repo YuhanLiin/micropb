@@ -6,10 +6,13 @@ extern crate alloc;
 use num_traits::{AsPrimitive, PrimInt, Zero};
 
 pub mod container;
+#[cfg(feature = "decode")]
 pub mod decode;
+#[cfg(feature = "encode")]
 pub mod encode;
 pub mod message;
 mod misc;
+#[cfg(feature = "encode")]
 pub mod size;
 
 pub const WIRE_TYPE_VARINT: u8 = 0;

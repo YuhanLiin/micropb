@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use core::mem::{self, MaybeUninit};
 
 pub(crate) fn maybe_uninit_write_slice<'a, T>(
