@@ -24,7 +24,5 @@ pub trait MessageDecode: Default {
 pub trait MessageEncode: Default {
     fn encode<W: PbWrite>(&self, writer: &mut PbEncoder<W>) -> Result<(), W::Error>;
 
-    fn encode_no_cache<W: PbWrite>(&self, writer: &mut PbEncoder<W>) -> Result<(), W::Error>;
-
     fn compute_size(&self) -> usize;
 }
