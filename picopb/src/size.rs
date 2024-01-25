@@ -44,7 +44,7 @@ pub fn sizeof_sint64(i: i64) -> usize {
     sizeof_varint64(((i << 1) ^ (i >> 63)) as u64)
 }
 
-pub fn sizeof_tag(tag: &Tag) -> usize {
+pub fn sizeof_tag(tag: Tag) -> usize {
     sizeof_varint32(tag.varint())
 }
 
@@ -72,7 +72,7 @@ pub fn sizeof_map_elem<K: ?Sized, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&
 }
 
 pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
-    tag: &Tag,
+    tag: Tag,
     elems: impl Iterator<Item = T>,
     mut sizer: F,
 ) -> usize {
@@ -81,7 +81,7 @@ pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
 }
 
 pub fn sizeof_with_tag<T: ?Sized + ImplicitPresence, F: FnMut(&T) -> usize>(
-    tag: &Tag,
+    tag: Tag,
     val: &T,
     mut sizer: F,
 ) -> usize {
@@ -93,7 +93,7 @@ pub fn sizeof_with_tag<T: ?Sized + ImplicitPresence, F: FnMut(&T) -> usize>(
 }
 
 pub fn sizeof_optional_with_tag<T: ?Sized, F: FnMut(&T) -> usize>(
-    tag: &Tag,
+    tag: Tag,
     val: Option<&T>,
     mut sizer: F,
 ) -> usize {
