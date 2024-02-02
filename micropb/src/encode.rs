@@ -28,6 +28,10 @@ impl<W: PbWrite> PbEncoder<W> {
         }
     }
 
+    pub fn into_inner(self) -> W {
+        self.writer
+    }
+
     #[inline]
     fn write(&mut self, bytes: &[u8]) -> Result<(), W::Error> {
         self.writer.pb_write(bytes)?;

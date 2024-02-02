@@ -3,7 +3,7 @@ use crate::decode::{DecodeError, PbDecoder, PbRead};
 #[cfg(feature = "encode")]
 use crate::encode::{PbEncoder, PbWrite};
 use crate::{
-    extension::{ExtensionRegistryDecode, ExtensionRegistryEncode},
+    extension::{ExtensionRegistryDecode, ExtensionRegistryEncode, ExtensionRegistrySizeof},
     Tag,
 };
 
@@ -25,5 +25,5 @@ pub trait EncodeCallback: Default {
         registry: Option<&dyn ExtensionRegistryEncode<W>>,
     ) -> Result<(), W::Error>;
 
-    fn compute_field_size(&self) -> usize;
+    fn compute_field_size(&self, registry: Option<&dyn ExtensionRegistrySizeof>) -> usize;
 }
