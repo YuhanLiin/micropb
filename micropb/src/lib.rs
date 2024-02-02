@@ -16,6 +16,12 @@ mod misc;
 #[cfg(feature = "encode")]
 pub mod size;
 
+pub use container::{PbContainer, PbMap, PbString, PbVec};
+#[cfg(feature = "decode")]
+pub use decode::{DecodeError, DecodeFixedSize, PbDecoder, PbRead};
+#[cfg(feature = "encode")]
+pub use encode::{PbEncoder, PbWrite};
+
 pub const WIRE_TYPE_VARINT: u8 = 0;
 pub const WIRE_TYPE_I64: u8 = 1;
 pub const WIRE_TYPE_LEN: u8 = 2;
