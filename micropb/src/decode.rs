@@ -5,7 +5,6 @@ use core::{
 
 use crate::{
     container::{PbString, PbVec},
-    message::Message,
     misc::{
         maybe_uninit_slice_assume_init_ref, maybe_uninit_write_slice,
         maybe_ununit_array_assume_init,
