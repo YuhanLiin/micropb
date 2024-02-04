@@ -7,28 +7,24 @@ use crate::{
     Tag,
 };
 
-pub trait Field: Default {
-    #[cfg(feature = "decode")]
+#[cfg(feature = "decode")]
+pub trait FieldDecode: Default {
     fn decode_field<R: PbRead>(
         &mut self,
-        _tag: Tag,
-        _decoder: &mut PbDecoder<R>,
-        _registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
-    ) -> Result<(), DecodeError<R::Error>> {
-        Ok(())
-    }
+        tag: Tag,
+        decoder: &mut PbDecoder<R>,
+        registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
+    ) -> Result<(), DecodeError<R::Error>>;
+}
 
-    #[cfg(feature = "encode")]
+#[cfg(feature = "encode")]
+pub trait FieldEncode: Default {
     fn encode_field<W: PbWrite>(
         &self,
-        _encoder: &mut PbEncoder<W>,
-        _registry: Option<&dyn ExtensionRegistryEncode<W>>,
-    ) -> Result<(), W::Error> {
-        Ok(())
-    }
+        encoder: &mut PbEncoder<W>,
+        registry: Option<&dyn ExtensionRegistryEncode<W>>,
+    ) -> Result<(), W::Error>;
 
     #[cfg(feature = "encode")]
-    fn compute_field_size(&self, _registry: Option<&dyn ExtensionRegistrySizeof>) -> usize {
-        0
-    }
+    fn compute_field_size(&self, registry: Option<&dyn ExtensionRegistrySizeof>) -> usize;
 }

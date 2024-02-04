@@ -181,7 +181,7 @@ macro_rules! map_extension_registry {
                 decoder: &mut $crate::PbDecoder<R>,
             ) -> Result<bool, $crate::DecodeError<R::Error>>
             {
-                use $crate::{field::Field, PbMap};
+                use $crate::{field::FieldDecode, PbMap};
                 paste::paste! {
                     $(if let Some(mut ext) = self.[<map_ $Msg>].pb_remove(&id) {
                         let mut written = true;
@@ -201,7 +201,7 @@ macro_rules! map_extension_registry {
     (@encode $Name:ident, $($Msg:ident => { $($extname:ident : $Ext:ty),+ })+) => {
         impl ExtensionRegistrySizeof for $Name {
             fn compute_ext_size(&self, id: $crate::extension::ExtensionId) -> Option<usize> {
-                use $crate::{field::Field, PbMap};
+                use $crate::{field::FieldEncode, PbMap};
                 paste::paste! {
                     $(if let Some(ext) = self.[<map_ $Msg>].pb_get(&id) {
                         let mut size = 0;
@@ -215,7 +215,7 @@ macro_rules! map_extension_registry {
 
         impl<W: $crate::PbWrite> ExtensionRegistryEncode<W> for $Name {
             fn encode_ext(&self, id: $crate::extension::ExtensionId, encoder: &mut $crate::PbEncoder<W>) -> Result<bool, W::Error> {
-                use $crate::{field::Field, PbMap};
+                use $crate::{field::FieldEncode, PbMap};
                 paste::paste! {
                     $(if let Some(ext) = self.[<map_ $Msg>].pb_get(&id) {
                         $(ext.$extname.encode_field(encoder, Some(self))?;)+
@@ -260,7 +260,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        field::Field,
+        field::{FieldDecode, FieldEncode},
         size::{sizeof_tag, sizeof_varint32},
     };
 
@@ -274,13 +274,11 @@ mod tests {
 
     #[derive(Debug, Default)]
     struct NumExtension1(u32);
-
     impl ExtensionField for NumExtension1 {
         const FIELD_NUM: u32 = 1;
         type MESSAGE = NumMsg;
     }
-
-    impl Field for NumExtension1 {
+    impl FieldDecode for NumExtension1 {
         fn decode_field<R: PbRead>(
             &mut self,
             _tag: Tag,
@@ -290,7 +288,8 @@ mod tests {
             self.0 = decoder.decode_varint32()?;
             Ok(())
         }
-
+    }
+    impl FieldEncode for NumExtension1 {
         fn encode_field<W: PbWrite>(
             &self,
             encoder: &mut PbEncoder<W>,
@@ -309,13 +308,11 @@ mod tests {
     // Extension for RecursiveMsg instead of NumMsg
     #[derive(Debug, Default)]
     struct NumExtension2(u32);
-
     impl ExtensionField for NumExtension2 {
         const FIELD_NUM: u32 = 1;
         type MESSAGE = RecursiveMsg;
     }
-
-    impl Field for NumExtension2 {
+    impl FieldDecode for NumExtension2 {
         fn decode_field<R: PbRead>(
             &mut self,
             _tag: Tag,
@@ -325,7 +322,8 @@ mod tests {
             self.0 = decoder.decode_varint32()?;
             Ok(())
         }
-
+    }
+    impl FieldEncode for NumExtension2 {
         fn encode_field<W: PbWrite>(
             &self,
             encoder: &mut PbEncoder<W>,
@@ -348,8 +346,7 @@ mod tests {
         const FIELD_NUM: u32 = 2;
         type MESSAGE = RecursiveMsg;
     }
-
-    impl Field for RecursiveExtension {
+    impl FieldDecode for RecursiveExtension {
         fn decode_field<R: PbRead>(
             &mut self,
             _tag: Tag,
@@ -369,7 +366,8 @@ mod tests {
                 registry.decode_ext_field(id, tag, decoder)?;
             }
         }
-
+    }
+    impl FieldEncode for RecursiveExtension {
         fn encode_field<W: PbWrite>(
             &self,
             encoder: &mut PbEncoder<W>,
