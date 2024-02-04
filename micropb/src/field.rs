@@ -7,7 +7,7 @@ use crate::{
     Tag,
 };
 
-pub trait Field {
+pub trait Field: Default {
     #[cfg(feature = "decode")]
     fn decode_field<R: PbRead>(
         &mut self,

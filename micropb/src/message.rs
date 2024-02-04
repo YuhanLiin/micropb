@@ -3,26 +3,27 @@ use crate::decode::{DecodeError, PbDecoder, PbRead};
 #[cfg(feature = "encode")]
 use crate::encode::{PbEncoder, PbWrite};
 
-#[cfg(feature = "decode")]
-pub trait MessageDecode: Default {
-    fn decode_update<R: PbRead>(
+pub trait Message: Default {
+    #[cfg(feature = "decode")]
+    fn decode<R: PbRead>(
         &mut self,
-        reader: &mut PbDecoder<R>,
-    ) -> Result<(), DecodeError<R::Error>>;
-
-    fn decode<R: PbRead>(reader: &mut PbDecoder<R>) -> Result<Self, DecodeError<R::Error>>
-    where
-        Self: Sized,
-    {
-        let mut this = Self::default();
-        this.decode_update(reader)?;
-        Ok(this)
+        _reader: &mut PbDecoder<R>,
+        _len: Option<usize>,
+    ) -> Result<(), DecodeError<R::Error>> {
+        Ok(())
     }
-}
 
-#[cfg(feature = "encode")]
-pub trait MessageEncode: Default {
-    fn encode<W: PbWrite>(&self, writer: &mut PbEncoder<W>) -> Result<(), W::Error>;
+    #[cfg(feature = "encode")]
+    fn encode<W: PbWrite>(
+        &self,
+        _writer: &mut PbEncoder<W>,
+        _encode_len: bool,
+    ) -> Result<(), W::Error> {
+        Ok(())
+    }
 
-    fn compute_size(&self) -> usize;
+    #[cfg(feature = "encode")]
+    fn compute_size(&self) -> usize {
+        0
+    }
 }

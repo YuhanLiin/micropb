@@ -5,7 +5,7 @@ use core::{
 
 use crate::{
     container::{PbString, PbVec},
-    message::MessageDecode,
+    message::Message,
     misc::{
         maybe_uninit_slice_assume_init_ref, maybe_uninit_write_slice,
         maybe_ununit_array_assume_init,
@@ -278,13 +278,6 @@ impl<R: PbRead> PbDecoder<R> {
         } else {
             Ok(val)
         }
-    }
-
-    pub fn decode_message<M: MessageDecode>(
-        &mut self,
-        message: &mut M,
-    ) -> Result<(), DecodeError<R::Error>> {
-        self.decode_len_record(|_, _, this| message.decode_update(this))
     }
 
     pub fn decode_packed<
