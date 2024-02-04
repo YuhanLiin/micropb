@@ -36,6 +36,8 @@ pub trait PbMap<K: 'static, V: 'static>: Default {
     fn pb_get_mut(&mut self, key: &K) -> Option<&mut V>;
 
     fn pb_remove(&mut self, key: &K) -> Option<V>;
+
+    fn pb_clear(&mut self);
 }
 
 #[cfg(feature = "container-arrayvec")]
@@ -186,6 +188,10 @@ mod impl_heapless {
         fn pb_remove(&mut self, key: &K) -> Option<V> {
             self.remove(key)
         }
+
+        fn pb_clear(&mut self) {
+            self.clear();
+        }
     }
 
     #[cfg(feature = "encode")]
@@ -277,6 +283,10 @@ mod impl_alloc {
         fn pb_remove(&mut self, key: &K) -> Option<V> {
             self.remove(key)
         }
+
+        fn pb_clear(&mut self) {
+            self.clear();
+        }
     }
 
     #[cfg(feature = "std")]
@@ -304,6 +314,10 @@ mod impl_alloc {
 
         fn pb_remove(&mut self, key: &K) -> Option<V> {
             self.remove(key)
+        }
+
+        fn pb_clear(&mut self) {
+            self.clear();
         }
     }
 

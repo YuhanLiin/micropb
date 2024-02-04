@@ -6,8 +6,6 @@ use crate::decode::{DecodeError, PbDecoder, PbRead};
 use crate::encode::{PbEncoder, PbWrite};
 use crate::Tag;
 
-use paste::paste;
-
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct ExtensionId(NonZeroU32);
 
@@ -32,6 +30,11 @@ pub trait ExtensionRegistry {
     fn get_field_mut<F: ExtensionField>(&mut self, id: ExtensionId) -> Option<&mut F>
     where
         Self: Sized;
+
+    #[must_use]
+    fn remove(&mut self, id: ExtensionId) -> bool;
+
+    fn reset(&mut self);
 }
 
 #[cfg(feature = "decode")]
@@ -70,7 +73,7 @@ pub trait ExtensionRegistryEncode<W: PbWrite>: DynExtensionRegistrySizeof {
 #[macro_export]
 macro_rules! map_extension_registry {
     (@base $Name:ident, $($Msg:ident [ $Map:ident $(<$N:literal>)? ] => { $($extname:ident : $Ext:path),+ })+) => {
-        paste! {
+        paste::paste! {
             $(
                 #[allow(non_snake_case)]
                 mod [<mod_ $Msg>] {
@@ -94,7 +97,7 @@ macro_rules! map_extension_registry {
         impl ExtensionRegistry for $Name {
             fn alloc_ext(&mut self, msg_type: &core::any::TypeId) -> Option<$crate::extension::ExtensionId> {
                 use $crate::PbMap;
-                paste! {
+                paste::paste! {
                     $(if msg_type == &core::any::TypeId::of::<$Msg>() {
                         // Return None on overflow
                         self.id_counter = self.id_counter.checked_add(1)?;
@@ -111,7 +114,7 @@ macro_rules! map_extension_registry {
             {
                 use $crate::PbMap;
                 use core::any::{TypeId, Any};
-                paste! {
+                paste::paste! {
                     match TypeId::of::<F::MESSAGE>() {
                         $(t if t == TypeId::of::<$Msg>() => {
                             let ext = self.[<map_ $Msg>].pb_get(&id)?;
@@ -132,7 +135,7 @@ macro_rules! map_extension_registry {
             {
                 use $crate::PbMap;
                 use core::any::{TypeId, Any};
-                paste! {
+                paste::paste! {
                     match TypeId::of::<F::MESSAGE>() {
                         $(t if t == TypeId::of::<$Msg>() => {
                             let ext = self.[<map_ $Msg>].pb_get_mut(&id)?;
@@ -145,6 +148,25 @@ macro_rules! map_extension_registry {
                         _ => None
                     }
                 }
+            }
+
+            #[must_use]
+            fn remove(&mut self, id: $crate::extension::ExtensionId) -> bool {
+                use $crate::PbMap;
+                paste::paste! {
+                    $(if self.[<map_ $Msg>].pb_remove(&id).is_some() {
+                        return true;
+                    })+
+                }
+                false
+            }
+
+            fn reset(&mut self) {
+                use $crate::PbMap;
+                paste::paste! {
+                    $(self.[<map_ $Msg>].pb_clear();)+
+                }
+                self.id_counter = 0;
             }
         }
     };
@@ -159,7 +181,7 @@ macro_rules! map_extension_registry {
             ) -> Result<bool, $crate::DecodeError<R::Error>>
             {
                 use $crate::{callback::DecodeCallback, PbMap};
-                paste! {
+                paste::paste! {
                     $(if let Some(mut ext) = self.[<map_ $Msg>].pb_remove(&id) {
                         let mut written = true;
                         match tag.field_num() {
@@ -179,7 +201,7 @@ macro_rules! map_extension_registry {
         impl ExtensionRegistrySizeof for $Name {
             fn compute_ext_size(&self, id: $crate::extension::ExtensionId) -> Option<usize> {
                 use $crate::{callback::EncodeCallback, PbMap};
-                paste! {
+                paste::paste! {
                     $(if let Some(ext) = self.[<map_ $Msg>].pb_get(&id) {
                         let mut size = 0;
                         $(size += ext.$extname.compute_field_size(Some(self));)+
@@ -193,7 +215,7 @@ macro_rules! map_extension_registry {
         impl<W: $crate::PbWrite> ExtensionRegistryEncode<W> for $Name {
             fn encode_ext(&self, id: $crate::extension::ExtensionId, encoder: &mut $crate::PbEncoder<W>) -> Result<bool, W::Error> {
                 use $crate::{callback::EncodeCallback, PbMap};
-                paste! {
+                paste::paste! {
                     $(if let Some(ext) = self.[<map_ $Msg>].pb_get(&id) {
                         $(ext.$extname.encode_field(encoder, Some(self))?;)+
                         return Ok(true);
@@ -410,6 +432,10 @@ mod tests {
         // encoding also outputs the tag
         assert_eq!(encoder.into_inner(), &[0x08, 0x69]);
         assert_eq!(registry.compute_ext_size(id).unwrap(), 2);
+
+        assert!(registry.remove(id));
+        assert!(!registry.remove(id));
+        assert!(registry.get_field_mut::<NumExtension1>(id).is_none());
     }
 
     #[test]
