@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[cfg(feature = "decode")]
-pub trait MessageDecode: Default {
+pub trait MessageDecode {
     fn decode<R: PbRead>(
         &mut self,
         decoder: &mut PbDecoder<R>,
@@ -26,7 +26,7 @@ pub trait MessageDecode: Default {
 }
 
 #[cfg(feature = "encode")]
-pub trait MessageEncode: Default {
+pub trait MessageEncode {
     fn encode<W: PbWrite>(
         &self,
         encoder: &mut PbEncoder<W>,

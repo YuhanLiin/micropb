@@ -15,7 +15,7 @@ impl ExtensionId {
     }
 }
 
-pub trait ExtensionField: Default + 'static {
+pub trait ExtensionField: 'static {
     const FIELD_NUM: u32;
     type MESSAGE: 'static;
 }

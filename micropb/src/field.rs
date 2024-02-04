@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[cfg(feature = "decode")]
-pub trait FieldDecode: Default {
+pub trait FieldDecode {
     fn decode_field<R: PbRead>(
         &mut self,
         tag: Tag,
@@ -18,7 +18,7 @@ pub trait FieldDecode: Default {
 }
 
 #[cfg(feature = "encode")]
-pub trait FieldEncode: Default {
+pub trait FieldEncode {
     fn encode_field<W: PbWrite>(
         &self,
         encoder: &mut PbEncoder<W>,
