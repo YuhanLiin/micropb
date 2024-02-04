@@ -3,6 +3,11 @@
 use core::{mem::MaybeUninit, ops::DerefMut};
 
 pub trait PbContainer: Default {
+    /// Sets length of string
+    ///
+    /// # Safety
+    /// New length must be smaller than the capacity, and the elements between the old
+    /// and new lengths must be initialized and valid.
     unsafe fn pb_set_len(&mut self, len: usize);
 
     /// Reserves capacity for at least `additional` more elements to be inserted. No-op for
