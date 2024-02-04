@@ -9,15 +9,17 @@ pub trait MessageDecode: Default {
     fn decode<R: PbRead>(
         &mut self,
         decoder: &mut PbDecoder<R>,
-        len: Option<usize>,
+        len: usize,
         registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
     ) -> Result<(), DecodeError<R::Error>>;
 
-    fn decode_with_len<R: PbRead>(
+    fn decode_len_delimited<R: PbRead>(
         &mut self,
         decoder: &mut PbDecoder<R>,
         registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
-    ) -> Result<(), DecodeError<R::Error>>;
+    ) -> Result<(), DecodeError<R::Error>> {
+        decoder.decode_len_record(|len, _, decoder| self.decode(decoder, len, registry))
+    }
 }
 
 #[cfg(feature = "encode")]

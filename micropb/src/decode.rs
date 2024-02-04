@@ -258,7 +258,7 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(())
     }
 
-    fn decode_len_record<
+    pub(crate) fn decode_len_record<
         T,
         F: FnOnce(usize, usize, &mut Self) -> Result<T, DecodeError<R::Error>>,
     >(
