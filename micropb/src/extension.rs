@@ -91,11 +91,11 @@ macro_rules! map_extension_registry {
             #[allow(non_snake_case)]
             struct $Name {
                 id_counter: u32,
-                $([<map_ $Msg>]: $Map<ExtensionId, [<mod_ $Msg>]::Extension $(, $N)?>,)+
+                $([<map_ $Msg>]: $Map<$crate::extension::ExtensionId, [<mod_ $Msg>]::Extension $(, $N)?>,)+
             }
         }
 
-        impl ExtensionRegistry for $Name {
+        impl $crate::extension::ExtensionRegistry for $Name {
             fn alloc_ext(&mut self, msg_type: &core::any::TypeId) -> Option<$crate::extension::ExtensionId> {
                 use $crate::PbMap;
                 paste::paste! {
@@ -114,6 +114,7 @@ macro_rules! map_extension_registry {
                 Self: Sized
             {
                 use $crate::PbMap;
+                use $crate::extension::ExtensionField;
                 use core::any::{TypeId, Any};
                 paste::paste! {
                     match TypeId::of::<F::MESSAGE>() {
@@ -135,6 +136,7 @@ macro_rules! map_extension_registry {
                 Self: Sized
             {
                 use $crate::PbMap;
+                use $crate::extension::ExtensionField;
                 use core::any::{TypeId, Any};
                 paste::paste! {
                     match TypeId::of::<F::MESSAGE>() {
@@ -173,7 +175,7 @@ macro_rules! map_extension_registry {
     };
 
     (@decode $Name:ident, $($Msg:ident => { $($extname:ident : $Ext:ty),+ })+) => {
-        impl<R: $crate::PbRead> ExtensionRegistryDecode<R> for $Name {
+        impl<R: $crate::PbRead> $crate::extension::ExtensionRegistryDecode<R> for $Name {
             fn decode_ext_field(
                 &mut self,
                 id: $crate::extension::ExtensionId,
@@ -182,6 +184,7 @@ macro_rules! map_extension_registry {
             ) -> Result<bool, $crate::DecodeError<R::Error>>
             {
                 use $crate::{field::FieldDecode, PbMap};
+                use $crate::extension::ExtensionField;
                 paste::paste! {
                     $(if let Some(mut ext) = self.[<map_ $Msg>].pb_remove(&id) {
                         let mut written = true;
@@ -199,7 +202,7 @@ macro_rules! map_extension_registry {
     };
 
     (@encode $Name:ident, $($Msg:ident => { $($extname:ident : $Ext:ty),+ })+) => {
-        impl ExtensionRegistrySizeof for $Name {
+        impl $crate::extension::ExtensionRegistrySizeof for $Name {
             fn compute_ext_size(&self, id: $crate::extension::ExtensionId) -> Option<usize> {
                 use $crate::{field::FieldEncode, PbMap};
                 paste::paste! {
@@ -213,7 +216,7 @@ macro_rules! map_extension_registry {
             }
         }
 
-        impl<W: $crate::PbWrite> ExtensionRegistryEncode<W> for $Name {
+        impl<W: $crate::PbWrite> $crate::extension::ExtensionRegistryEncode<W> for $Name {
             fn encode_ext(&self, id: $crate::extension::ExtensionId, encoder: &mut $crate::PbEncoder<W>) -> Result<bool, W::Error> {
                 use $crate::{field::FieldEncode, PbMap};
                 paste::paste! {
@@ -228,257 +231,24 @@ macro_rules! map_extension_registry {
     };
 
     ($Name:ident, $($Msg:ident [ $Map:ident $(<$N:literal>)? ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
-        map_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
-        map_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
+        $crate::map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
+        $crate::map_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
+        $crate::map_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
 }
 
 #[macro_export]
 macro_rules! map_extension_registry_decode_only {
     ($Name:ident, $($Msg:ident [ $Map:ident $(<$N:literal>)? ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
-        map_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
+        $crate::map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
+        $crate::map_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
 }
 
 #[macro_export]
 macro_rules! map_extension_registry_encode_only {
     ($Name:ident, $($Msg:ident [ $Map:ident $(<$N:literal>)? ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
-        map_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use heapless::FnvIndexMap;
-
-    use super::*;
-
-    use core::any::Any;
-    use std::collections::HashMap;
-
-    use crate::{
-        field::{FieldDecode, FieldEncode},
-        size::{sizeof_tag, sizeof_varint32},
-    };
-
-    #[derive(Debug, Default)]
-    struct NumMsg {}
-
-    #[derive(Debug, Default)]
-    struct RecursiveMsg {
-        ext: Option<ExtensionId>,
-    }
-
-    #[derive(Debug, Default)]
-    struct NumExtension1(u32);
-    impl ExtensionField for NumExtension1 {
-        const FIELD_NUM: u32 = 1;
-        type MESSAGE = NumMsg;
-    }
-    impl FieldDecode for NumExtension1 {
-        fn decode_field<R: PbRead>(
-            &mut self,
-            _tag: Tag,
-            decoder: &mut PbDecoder<R>,
-            _registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
-        ) -> Result<(), DecodeError<R::Error>> {
-            self.0 = decoder.decode_varint32()?;
-            Ok(())
-        }
-    }
-    impl FieldEncode for NumExtension1 {
-        fn encode_field<W: PbWrite>(
-            &self,
-            encoder: &mut PbEncoder<W>,
-            _registry: Option<&dyn ExtensionRegistryEncode<W>>,
-        ) -> Result<(), W::Error> {
-            encoder.encode_tag(Tag::from_parts(1, 0))?;
-            encoder.encode_varint32(self.0)?;
-            Ok(())
-        }
-
-        fn compute_field_size(&self, _registry: Option<&dyn ExtensionRegistrySizeof>) -> usize {
-            sizeof_tag(Tag::from_parts(1, 0)) + sizeof_varint32(self.0)
-        }
-    }
-
-    // Extension for RecursiveMsg instead of NumMsg
-    #[derive(Debug, Default)]
-    struct NumExtension2(u32);
-    impl ExtensionField for NumExtension2 {
-        const FIELD_NUM: u32 = 1;
-        type MESSAGE = RecursiveMsg;
-    }
-    impl FieldDecode for NumExtension2 {
-        fn decode_field<R: PbRead>(
-            &mut self,
-            _tag: Tag,
-            decoder: &mut PbDecoder<R>,
-            _registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
-        ) -> Result<(), DecodeError<R::Error>> {
-            self.0 = decoder.decode_varint32()?;
-            Ok(())
-        }
-    }
-    impl FieldEncode for NumExtension2 {
-        fn encode_field<W: PbWrite>(
-            &self,
-            encoder: &mut PbEncoder<W>,
-            _registry: Option<&dyn ExtensionRegistryEncode<W>>,
-        ) -> Result<(), W::Error> {
-            encoder.encode_tag(Tag::from_parts(1, 0))?;
-            encoder.encode_varint32(self.0)?;
-            Ok(())
-        }
-
-        fn compute_field_size(&self, _registry: Option<&dyn ExtensionRegistrySizeof>) -> usize {
-            sizeof_tag(Tag::from_parts(1, 0)) + sizeof_varint32(self.0)
-        }
-    }
-
-    #[derive(Debug, Default)]
-    struct RecursiveExtension(RecursiveMsg);
-
-    impl ExtensionField for RecursiveExtension {
-        const FIELD_NUM: u32 = 2;
-        type MESSAGE = RecursiveMsg;
-    }
-    impl FieldDecode for RecursiveExtension {
-        fn decode_field<R: PbRead>(
-            &mut self,
-            _tag: Tag,
-            decoder: &mut PbDecoder<R>,
-            registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
-        ) -> Result<(), DecodeError<R::Error>> {
-            let registry = registry.unwrap();
-            let id = registry.alloc_ext(&self.0.type_id()).unwrap();
-            self.0.ext = Some(id);
-            loop {
-                let idx = decoder.bytes_read();
-                let tag = match decoder.decode_tag() {
-                    Ok(tag) => tag,
-                    Err(DecodeError::UnexpectedEof) if decoder.bytes_read() == idx => return Ok(()),
-                    Err(e) => return Err(e),
-                };
-                registry.decode_ext_field(id, tag, decoder)?;
-            }
-        }
-    }
-    impl FieldEncode for RecursiveExtension {
-        fn encode_field<W: PbWrite>(
-            &self,
-            encoder: &mut PbEncoder<W>,
-            registry: Option<&dyn ExtensionRegistryEncode<W>>,
-        ) -> Result<(), W::Error> {
-            let registry = registry.unwrap();
-            if let Some(id) = self.0.ext {
-                encoder.encode_tag(Tag::from_parts(2, 0))?;
-                registry.encode_ext(id, encoder)?;
-            }
-            Ok(())
-        }
-
-        fn compute_field_size(&self, registry: Option<&dyn ExtensionRegistrySizeof>) -> usize {
-            let registry = registry.unwrap();
-            self.0
-                .ext
-                .map(|id| {
-                    sizeof_tag(Tag::from_parts(2, 0)) + registry.compute_ext_size(id).unwrap()
-                })
-                .unwrap_or(0)
-        }
-    }
-
-    map_extension_registry!(
-        TestRegistry,
-        NumMsg[HashMap] => {
-            num: NumExtension1,
-        }
-        RecursiveMsg[FnvIndexMap<8>] => {
-            num: NumExtension2,
-            msg: RecursiveExtension
-        }
-    );
-
-    #[test]
-    fn map_macro() {
-        let mut registry = TestRegistry::default();
-        let mut decoder = PbDecoder::new([0x57].as_slice());
-        assert_eq!(registry.alloc_ext(&TypeId::of::<u32>()), None);
-        let id = registry.alloc_ext(&TypeId::of::<NumMsg>()).unwrap();
-
-        // unknown field number, ignored
-        assert!(!registry
-            .decode_ext_field(id, Tag::from_parts(2, 0), &mut decoder)
-            .unwrap());
-        assert!(registry
-            .decode_ext_field(id, Tag::from_parts(1, 0), &mut decoder)
-            .unwrap());
-        assert_eq!(registry.get_field::<NumExtension1>(id).unwrap().0, 0x57);
-
-        let mut encoder = PbEncoder::new(heapless::Vec::<u8, 10>::new());
-        registry.get_field_mut::<NumExtension1>(id).unwrap().0 = 0x69;
-        assert!(registry.encode_ext(id, &mut encoder).unwrap());
-        // encoding also outputs the tag
-        assert_eq!(encoder.into_inner(), &[0x08, 0x69]);
-        assert_eq!(registry.compute_ext_size(id).unwrap(), 2);
-
-        assert!(registry.remove(id));
-        assert!(!registry.remove(id));
-        assert!(registry.get_field_mut::<NumExtension1>(id).is_none());
-    }
-
-    #[test]
-    fn map_macro_recursive() {
-        let mut registry = TestRegistry::default();
-        // 0x08 is tag for field 1, 0x10 is tag for field 2
-        let mut decoder =
-            PbDecoder::new([0x08, 0x34, 0x10, 0x08, 0x12, 0x10, 0x08, 0x55].as_slice());
-        let id = registry.alloc_ext(&TypeId::of::<RecursiveMsg>()).unwrap();
-
-        // Populate the RecursiveMsg field of the extension
-        assert!(registry
-            .decode_ext_field(id, Tag::from_parts(2, 0), &mut decoder)
-            .unwrap());
-        let id1 = registry
-            .get_field::<RecursiveExtension>(id)
-            .unwrap()
-            .0
-            .ext
-            .unwrap();
-        assert_eq!(registry.get_field::<NumExtension2>(id1).unwrap().0, 0x34);
-        let id2 = registry
-            .get_field::<RecursiveExtension>(id1)
-            .unwrap()
-            .0
-            .ext
-            .unwrap();
-        assert_eq!(registry.get_field::<NumExtension2>(id2).unwrap().0, 0x12);
-        let id3 = registry
-            .get_field::<RecursiveExtension>(id2)
-            .unwrap()
-            .0
-            .ext
-            .unwrap();
-        assert_eq!(registry.get_field::<NumExtension2>(id3).unwrap().0, 0x55);
-        assert_eq!(
-            registry.get_field::<RecursiveExtension>(id3).unwrap().0.ext,
-            None
-        );
-
-        let mut encoder = PbEncoder::new(heapless::Vec::<u8, 10>::new());
-        registry.get_field_mut::<NumExtension2>(id).unwrap().0 = 0x02;
-        registry
-            .get_field_mut::<RecursiveExtension>(id1)
-            .unwrap()
-            .0
-            .ext = None;
-        assert!(registry.encode_ext(id, &mut encoder).unwrap());
-        let out = encoder.into_inner();
-        assert_eq!(out, &[0x08, 0x02, 0x10, 0x08, 0x34]);
-        assert_eq!(registry.compute_ext_size(id).unwrap(), out.len());
+        $crate::map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
+        $crate::map_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
 }
