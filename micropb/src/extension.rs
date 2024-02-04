@@ -53,8 +53,9 @@ pub trait ExtensionRegistrySizeof: ExtensionRegistry {
 }
 
 #[cfg(feature = "encode")]
-/// Allows `&dyn ExtensionRegistryEncode` to be downcasted into `&dyn ExtensionRegistrySizeof`. Do
-/// not implement.
+/// Allows `&dyn ExtensionRegistryEncode` to be downcasted into `&dyn ExtensionRegistrySizeof`.
+///
+/// This trait is automatically implemented for all applicable types.
 pub trait DynExtensionRegistrySizeof: ExtensionRegistrySizeof {
     fn as_dyn(&self) -> &dyn ExtensionRegistrySizeof;
 }
@@ -180,12 +181,12 @@ macro_rules! map_extension_registry {
                 decoder: &mut $crate::PbDecoder<R>,
             ) -> Result<bool, $crate::DecodeError<R::Error>>
             {
-                use $crate::{callback::DecodeCallback, PbMap};
+                use $crate::{field::Field, PbMap};
                 paste::paste! {
                     $(if let Some(mut ext) = self.[<map_ $Msg>].pb_remove(&id) {
                         let mut written = true;
                         match tag.field_num() {
-                            $($Ext::FIELD_NUM => ext.$extname.decode_field(tag, decoder, Some(self))?,)+
+                            $($Ext::FIELD_NUM => ext.$extname.decode_field_ext(tag, decoder, self)?,)+
                             _ => written = false,
                         }
                         self.[<map_ $Msg>].pb_insert(id, ext).unwrap();
@@ -200,11 +201,11 @@ macro_rules! map_extension_registry {
     (@encode $Name:ident, $($Msg:ident => { $($extname:ident : $Ext:ty),+ })+) => {
         impl ExtensionRegistrySizeof for $Name {
             fn compute_ext_size(&self, id: $crate::extension::ExtensionId) -> Option<usize> {
-                use $crate::{callback::EncodeCallback, PbMap};
+                use $crate::{field::Field, PbMap};
                 paste::paste! {
                     $(if let Some(ext) = self.[<map_ $Msg>].pb_get(&id) {
                         let mut size = 0;
-                        $(size += ext.$extname.compute_field_size(Some(self));)+
+                        $(size += ext.$extname.compute_field_size_ext(self);)+
                         return Some(size);
                     })+
                 }
@@ -214,10 +215,10 @@ macro_rules! map_extension_registry {
 
         impl<W: $crate::PbWrite> ExtensionRegistryEncode<W> for $Name {
             fn encode_ext(&self, id: $crate::extension::ExtensionId, encoder: &mut $crate::PbEncoder<W>) -> Result<bool, W::Error> {
-                use $crate::{callback::EncodeCallback, PbMap};
+                use $crate::{field::Field, PbMap};
                 paste::paste! {
                     $(if let Some(ext) = self.[<map_ $Msg>].pb_get(&id) {
-                        $(ext.$extname.encode_field(encoder, Some(self))?;)+
+                        $(ext.$extname.encode_field_ext(encoder, self)?;)+
                         return Ok(true);
                     })+
                 }
@@ -259,7 +260,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        callback::{DecodeCallback, EncodeCallback},
+        field::Field,
         size::{sizeof_tag, sizeof_varint32},
     };
 
@@ -279,30 +280,28 @@ mod tests {
         type MESSAGE = NumMsg;
     }
 
-    impl DecodeCallback for NumExtension1 {
-        fn decode_field<R: PbRead>(
+    impl Field for NumExtension1 {
+        fn decode_field_ext<R: PbRead>(
             &mut self,
             _tag: Tag,
             decoder: &mut PbDecoder<R>,
-            _registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
+            _registry: &mut dyn ExtensionRegistryDecode<R>,
         ) -> Result<(), DecodeError<R::Error>> {
             self.0 = decoder.decode_varint32()?;
             Ok(())
         }
-    }
 
-    impl EncodeCallback for NumExtension1 {
-        fn encode_field<W: PbWrite>(
+        fn encode_field_ext<W: PbWrite>(
             &self,
             encoder: &mut PbEncoder<W>,
-            _registry: Option<&dyn ExtensionRegistryEncode<W>>,
+            _registry: &dyn ExtensionRegistryEncode<W>,
         ) -> Result<(), W::Error> {
             encoder.encode_tag(Tag::from_parts(1, 0))?;
             encoder.encode_varint32(self.0)?;
             Ok(())
         }
 
-        fn compute_field_size(&self, _registry: Option<&dyn ExtensionRegistrySizeof>) -> usize {
+        fn compute_field_size_ext(&self, _registry: &dyn ExtensionRegistrySizeof) -> usize {
             sizeof_tag(Tag::from_parts(1, 0)) + sizeof_varint32(self.0)
         }
     }
@@ -316,30 +315,28 @@ mod tests {
         type MESSAGE = RecursiveMsg;
     }
 
-    impl DecodeCallback for NumExtension2 {
-        fn decode_field<R: PbRead>(
+    impl Field for NumExtension2 {
+        fn decode_field_ext<R: PbRead>(
             &mut self,
             _tag: Tag,
             decoder: &mut PbDecoder<R>,
-            _registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
+            _registry: &mut dyn ExtensionRegistryDecode<R>,
         ) -> Result<(), DecodeError<R::Error>> {
             self.0 = decoder.decode_varint32()?;
             Ok(())
         }
-    }
 
-    impl EncodeCallback for NumExtension2 {
-        fn encode_field<W: PbWrite>(
+        fn encode_field_ext<W: PbWrite>(
             &self,
             encoder: &mut PbEncoder<W>,
-            _registry: Option<&dyn ExtensionRegistryEncode<W>>,
+            _registry: &dyn ExtensionRegistryEncode<W>,
         ) -> Result<(), W::Error> {
             encoder.encode_tag(Tag::from_parts(1, 0))?;
             encoder.encode_varint32(self.0)?;
             Ok(())
         }
 
-        fn compute_field_size(&self, _registry: Option<&dyn ExtensionRegistrySizeof>) -> usize {
+        fn compute_field_size_ext(&self, _registry: &dyn ExtensionRegistrySizeof) -> usize {
             sizeof_tag(Tag::from_parts(1, 0)) + sizeof_varint32(self.0)
         }
     }
@@ -352,14 +349,13 @@ mod tests {
         type MESSAGE = RecursiveMsg;
     }
 
-    impl DecodeCallback for RecursiveExtension {
-        fn decode_field<R: PbRead>(
+    impl Field for RecursiveExtension {
+        fn decode_field_ext<R: PbRead>(
             &mut self,
             _tag: Tag,
             decoder: &mut PbDecoder<R>,
-            registry: Option<&mut dyn ExtensionRegistryDecode<R>>,
+            registry: &mut dyn ExtensionRegistryDecode<R>,
         ) -> Result<(), DecodeError<R::Error>> {
-            let registry = registry.unwrap();
             let id = registry.alloc_ext(&self.0.type_id()).unwrap();
             self.0.ext = Some(id);
             loop {
@@ -372,15 +368,12 @@ mod tests {
                 registry.decode_ext_field(id, tag, decoder)?;
             }
         }
-    }
 
-    impl EncodeCallback for RecursiveExtension {
-        fn encode_field<W: PbWrite>(
+        fn encode_field_ext<W: PbWrite>(
             &self,
             encoder: &mut PbEncoder<W>,
-            registry: Option<&dyn ExtensionRegistryEncode<W>>,
+            registry: &dyn ExtensionRegistryEncode<W>,
         ) -> Result<(), W::Error> {
-            let registry = registry.unwrap();
             if let Some(id) = self.0.ext {
                 encoder.encode_tag(Tag::from_parts(2, 0))?;
                 registry.encode_ext(id, encoder)?;
@@ -388,8 +381,7 @@ mod tests {
             Ok(())
         }
 
-        fn compute_field_size(&self, registry: Option<&dyn ExtensionRegistrySizeof>) -> usize {
-            let registry = registry.unwrap();
+        fn compute_field_size_ext(&self, registry: &dyn ExtensionRegistrySizeof) -> usize {
             self.0
                 .ext
                 .map(|id| {

@@ -5,13 +5,13 @@ extern crate alloc;
 
 use num_traits::{AsPrimitive, PrimInt, Zero};
 
-pub mod callback;
 pub mod container;
 #[cfg(feature = "decode")]
 pub mod decode;
 #[cfg(feature = "encode")]
 pub mod encode;
 pub mod extension;
+pub mod field;
 pub mod message;
 mod misc;
 #[cfg(feature = "encode")]
