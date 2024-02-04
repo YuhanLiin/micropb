@@ -1,8 +1,11 @@
 #[cfg(feature = "decode")]
 use crate::decode::{DecodeError, PbDecoder, PbRead};
-#[cfg(feature = "encode")]
-use crate::encode::{PbEncoder, PbWrite};
 use crate::extension::{ExtensionRegistryDecode, ExtensionRegistryEncode, ExtensionRegistrySizeof};
+#[cfg(feature = "encode")]
+use crate::{
+    encode::{PbEncoder, PbWrite},
+    size::SizeCache,
+};
 
 #[cfg(feature = "decode")]
 pub trait MessageDecode: Default {
@@ -31,5 +34,23 @@ pub trait MessageEncode: Default {
         registry: Option<&dyn ExtensionRegistryEncode<W>>,
     ) -> Result<(), W::Error>;
 
+    fn encode_cached<W: PbWrite>(
+        &self,
+        encoder: &mut PbEncoder<W>,
+        encode_len: bool,
+        _cache: &dyn SizeCache,
+        registry: Option<&dyn ExtensionRegistryEncode<W>>,
+    ) -> Result<(), W::Error> {
+        self.encode(encoder, encode_len, registry)
+    }
+
     fn compute_size(&self, registry: Option<&dyn ExtensionRegistrySizeof>) -> usize;
+
+    fn compute_size_cached(
+        &self,
+        _cache: &mut dyn SizeCache,
+        registry: Option<&dyn ExtensionRegistrySizeof>,
+    ) -> usize {
+        self.compute_size(registry)
+    }
 }

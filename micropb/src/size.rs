@@ -99,3 +99,13 @@ pub fn sizeof_optional_with_tag<T: ?Sized, F: FnMut(&T) -> usize>(
 ) -> usize {
     val.map_or(0, |v| sizeof_tag(tag) + sizer(v))
 }
+
+pub trait SizeCache {
+    fn set_total_size(&mut self, size: usize);
+
+    fn get_total_size(&self) -> Option<usize>;
+
+    fn set_field_size(&mut self, field_num: u32, size: usize);
+
+    fn get_field_size(&mut self, field_num: u32) -> Option<usize>;
+}
