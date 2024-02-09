@@ -17,6 +17,7 @@ mod misc;
 #[cfg(feature = "encode")]
 pub mod size;
 
+pub use bitvec;
 pub use container::{PbContainer, PbMap, PbString, PbVec};
 #[cfg(feature = "decode")]
 pub use decode::{DecodeError, DecodeFixedSize, PbDecoder, PbRead};
