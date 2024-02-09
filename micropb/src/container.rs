@@ -1,6 +1,9 @@
 #![allow(clippy::result_unit_err)]
 
-use core::{mem::MaybeUninit, ops::DerefMut};
+use core::{
+    mem::MaybeUninit,
+    ops::{Deref, DerefMut},
+};
 
 pub trait PbContainer: Default {
     /// Sets length of string
@@ -17,13 +20,13 @@ pub trait PbContainer: Default {
     fn pb_clear(&mut self);
 }
 
-pub trait PbVec<T>: PbContainer + DerefMut<Target = [T]> {
+pub trait PbVec<T>: PbContainer + Deref<Target = [T]> {
     fn pb_push(&mut self, elem: T) -> Result<(), ()>;
 
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>];
 }
 
-pub trait PbString: PbContainer + DerefMut<Target = str> {
+pub trait PbString: PbContainer + Deref<Target = str> {
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
 }
 
@@ -216,6 +219,7 @@ mod impl_alloc {
     use super::*;
 
     use alloc::{
+        borrow::Cow,
         collections::{btree_map, BTreeMap},
         string::String,
         vec::Vec,
@@ -235,6 +239,23 @@ mod impl_alloc {
         }
     }
 
+    impl<'a, T> PbContainer for Cow<'a, [T]>
+    where
+        [T]: ToOwned<Owned = Vec<T>>,
+    {
+        unsafe fn pb_set_len(&mut self, len: usize) {
+            self.to_mut().set_len(len);
+        }
+
+        fn pb_clear(&mut self) {
+            self.to_mut().clear()
+        }
+
+        fn pb_reserve(&mut self, additional: usize) {
+            self.to_mut().reserve(additional)
+        }
+    }
+
     impl PbContainer for String {
         fn pb_clear(&mut self) {
             self.clear()
@@ -249,6 +270,20 @@ mod impl_alloc {
         }
     }
 
+    impl<'a> PbContainer for Cow<'a, str> {
+        unsafe fn pb_set_len(&mut self, len: usize) {
+            self.to_mut().as_mut_vec().set_len(len);
+        }
+
+        fn pb_clear(&mut self) {
+            self.to_mut().clear()
+        }
+
+        fn pb_reserve(&mut self, additional: usize) {
+            self.to_mut().reserve(additional)
+        }
+    }
+
     impl<T> PbVec<T> for Vec<T> {
         fn pb_push(&mut self, elem: T) -> Result<(), ()> {
             self.push(elem);
@@ -260,10 +295,31 @@ mod impl_alloc {
         }
     }
 
+    impl<'a, T> PbVec<T> for Cow<'a, [T]>
+    where
+        [T]: ToOwned<Owned = Vec<T>>,
+    {
+        fn pb_push(&mut self, elem: T) -> Result<(), ()> {
+            self.to_mut().push(elem);
+            Ok(())
+        }
+
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
+            self.to_mut().spare_capacity_mut()
+        }
+    }
+
     impl PbString for String {
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
             unsafe { self.as_mut_vec().spare_capacity_mut() }
+        }
+    }
+
+    impl<'a> PbString for Cow<'a, str> {
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
+            unsafe { self.to_mut().as_mut_vec().spare_capacity_mut() }
         }
     }
 
