@@ -14,7 +14,8 @@ use crate::{
 
 use never::Never;
 
-#[derive(Debug, PartialEq)]
+#[non_exhaustive]
+#[derive(Debug, PartialEq, Eq)]
 pub enum DecodeError<E> {
     VarIntLimit(u8),
     UnexpectedEof,
