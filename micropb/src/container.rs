@@ -27,10 +27,12 @@ pub trait PbString: PbContainer + DerefMut<Target = str> {
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
 }
 
-pub trait PbMap<K: 'static, V: 'static>: Default {
+pub trait PbMap<K, V>: Default {
     type Iter<'a>: Iterator<Item = (&'a K, &'a V)>
     where
-        Self: 'a;
+        Self: 'a,
+        K: 'a,
+        V: 'a;
 
     fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()>;
 
@@ -168,10 +170,10 @@ mod impl_heapless {
         }
     }
 
-    impl<K: 'static + Eq + Hash, V: 'static, S: Default + BuildHasher, const N: usize> PbMap<K, V>
+    impl<K: Eq + Hash, V, S: Default + BuildHasher, const N: usize> PbMap<K, V>
         for IndexMap<K, V, S, N>
     {
-        type Iter<'a> = IndexMapIter<'a, K, V> where S: 'a;
+        type Iter<'a> = IndexMapIter<'a, K, V> where S: 'a, K: 'a, V: 'a;
 
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val).map_err(drop)?;
@@ -265,8 +267,8 @@ mod impl_alloc {
         }
     }
 
-    impl<K: 'static + Ord, V: 'static> PbMap<K, V> for BTreeMap<K, V> {
-        type Iter<'a> = btree_map::Iter<'a, K, V>;
+    impl<K: Ord, V> PbMap<K, V> for BTreeMap<K, V> {
+        type Iter<'a> = btree_map::Iter<'a, K, V> where K: 'a, V: 'a;
 
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val);
@@ -295,10 +297,8 @@ mod impl_alloc {
     }
 
     #[cfg(feature = "std")]
-    impl<K: 'static + Eq + core::hash::Hash, V: 'static> PbMap<K, V>
-        for std::collections::HashMap<K, V>
-    {
-        type Iter<'a> = std::collections::hash_map::Iter<'a, K, V>;
+    impl<K: Eq + core::hash::Hash, V> PbMap<K, V> for std::collections::HashMap<K, V> {
+        type Iter<'a> = std::collections::hash_map::Iter<'a, K, V> where K: 'a, V: 'a;
 
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val);
