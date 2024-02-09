@@ -15,6 +15,19 @@ impl<W: PbWrite> PbWrite for &mut W {
     }
 }
 
+#[cfg(feature = "std")]
+#[derive(Debug, Clone)]
+pub struct PbWriter<W>(pub W);
+
+#[cfg(feature = "std")]
+impl<W: std::io::Write> PbWrite for PbWriter<W> {
+    type Error = std::io::Error;
+
+    fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+        self.0.write_all(data)
+    }
+}
+
 pub struct PbEncoder<W: PbWrite> {
     writer: W,
     bytes_written: usize,
