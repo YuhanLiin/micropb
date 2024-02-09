@@ -1,4 +1,4 @@
-use crate::{ImplicitPresence, Tag};
+use crate::Tag;
 
 pub fn sizeof_varint32(v: u32) -> usize {
     match v {
@@ -78,26 +78,6 @@ pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
 ) -> usize {
     let tag_size = sizeof_tag(tag);
     elems.map(|e| tag_size + sizer(e)).sum()
-}
-
-pub fn sizeof_with_tag<T: ?Sized + ImplicitPresence, F: FnMut(&T) -> usize>(
-    tag: Tag,
-    val: &T,
-    mut sizer: F,
-) -> usize {
-    if val.pb_is_present() {
-        sizeof_tag(tag) + sizer(val)
-    } else {
-        0
-    }
-}
-
-pub fn sizeof_optional_with_tag<T: ?Sized, F: FnMut(&T) -> usize>(
-    tag: Tag,
-    val: Option<&T>,
-    mut sizer: F,
-) -> usize {
-    val.map_or(0, |v| sizeof_tag(tag) + sizer(v))
 }
 
 pub trait SizeCache {

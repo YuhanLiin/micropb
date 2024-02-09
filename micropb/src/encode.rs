@@ -1,4 +1,4 @@
-use crate::{size::sizeof_packed_fixed, ImplicitPresence, Tag, VarInt};
+use crate::{size::sizeof_packed_fixed, Tag, VarInt};
 
 pub trait PbWrite {
     type Error;
@@ -191,36 +191,6 @@ impl<W: PbWrite> PbEncoder<W> {
         for e in elems {
             self.encode_tag(tag)?;
             encoder(self, e)?;
-        }
-        Ok(())
-    }
-
-    pub fn encode_with_tag<
-        T: ?Sized + ImplicitPresence,
-        F: FnMut(&mut Self, &T) -> Result<(), W::Error>,
-    >(
-        &mut self,
-        tag: Tag,
-        val: &T,
-        mut encoder: F,
-    ) -> Result<(), W::Error> {
-        // Implicit field presence, only encode if value is non-default
-        if val.pb_is_present() {
-            self.encode_tag(tag)?;
-            encoder(self, val)?;
-        }
-        Ok(())
-    }
-
-    pub fn encode_optional_with_tag<T: ?Sized, F: FnMut(&mut Self, &T) -> Result<(), W::Error>>(
-        &mut self,
-        tag: Tag,
-        val: Option<&T>,
-        mut encoder: F,
-    ) -> Result<(), W::Error> {
-        if let Some(val) = val {
-            self.encode_tag(tag)?;
-            encoder(self, val)?;
         }
         Ok(())
     }
@@ -485,28 +455,18 @@ mod tests {
     }
 
     macro_rules! assert_encode_with_tag {
-        ($expected:expr, $encode:ident($tag:expr, $val:expr), $sizeof:ident) => {
+        ($expected:expr, $encode:ident($($args:tt)+), $sizeof:ident) => {
             let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
             encoder
-                .$encode($tag, $val, |wr, v| wr.encode_varint32(*v))
+                .$encode($($args)+, |wr, v| wr.encode_varint32(*v))
                 .unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
             assert_eq!(encoder.bytes_written, encoder.writer.len());
             assert_eq!(
                 $expected.len(),
-                $sizeof($tag, $val, |v| sizeof_varint32(*v))
+                $sizeof($($args)+, |v| sizeof_varint32(*v))
             );
         };
-    }
-
-    #[test]
-    fn with_tag() {
-        let tag = Tag::from_parts(16, WIRE_TYPE_VARINT);
-        assert_encode_with_tag!(
-            [0x80, 0x01, 0x09],
-            encode_with_tag(tag, &9),
-            sizeof_with_tag
-        );
     }
 
     #[test]
@@ -522,41 +482,6 @@ mod tests {
             encode_repeated_with_tag(tag, [1, 150].iter()),
             sizeof_repeated_with_tag
         );
-    }
-
-    #[test]
-    fn optional_with_tag() {
-        let tag = Tag::from_parts(1, WIRE_TYPE_VARINT);
-        assert_encode_with_tag!(
-            b"",
-            encode_optional_with_tag(tag, None),
-            sizeof_optional_with_tag
-        );
-        assert_encode_with_tag!(
-            [0x08, 0xE],
-            encode_optional_with_tag(tag, Some(&14)),
-            sizeof_optional_with_tag
-        );
-    }
-
-    #[test]
-    fn implicit_presence() {
-        let tag = Tag::from_parts(1, WIRE_TYPE_VARINT);
-        assert_eq!(0, sizeof_with_tag(tag, &0u32, |_| 4));
-        assert_eq!(0, sizeof_with_tag(tag, &0.0, |_| 4));
-        assert_eq!(0, sizeof_with_tag(tag, &false, |_| 4));
-        assert_eq!(0, sizeof_with_tag(tag, "", |_| 4));
-        assert_eq!(0, sizeof_with_tag(tag, b"".as_slice(), |_| 4));
-
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 1>::new());
-        encoder.encode_with_tag(tag, &0u32, |_, _| Ok(())).unwrap();
-        encoder.encode_with_tag(tag, &0.0, |_, _| Ok(())).unwrap();
-        encoder.encode_with_tag(tag, &false, |_, _| Ok(())).unwrap();
-        encoder.encode_with_tag(tag, "", |_, _| Ok(())).unwrap();
-        encoder
-            .encode_with_tag(tag, b"".as_slice(), |_, _| Ok(()))
-            .unwrap();
-        assert!(encoder.writer.is_empty());
     }
 
     #[test]

@@ -66,14 +66,20 @@ impl VarInt for u64 {
     const BYTES: u8 = 10;
 }
 
-pub trait ImplicitPresence: sealed::Sealed {
-    fn pb_is_present(&self) -> bool;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Presence {
+    Implicit,
+    Explicit,
+}
+
+pub trait BasicPbType {
+    fn implicit_presence(&self) -> bool;
 }
 
 macro_rules! impl_implicit_presence_num {
     ($typ:ty) => {
-        impl ImplicitPresence for $typ {
-            fn pb_is_present(&self) -> bool {
+        impl BasicPbType for $typ {
+            fn implicit_presence(&self) -> bool {
                 !self.is_zero()
             }
         }
@@ -87,42 +93,28 @@ impl_implicit_presence_num!(i64);
 impl_implicit_presence_num!(f32);
 impl_implicit_presence_num!(f64);
 
-impl ImplicitPresence for bool {
-    fn pb_is_present(&self) -> bool {
+impl BasicPbType for bool {
+    fn implicit_presence(&self) -> bool {
         *self
     }
 }
 
-impl ImplicitPresence for str {
-    fn pb_is_present(&self) -> bool {
+impl BasicPbType for str {
+    fn implicit_presence(&self) -> bool {
         !self.is_empty()
     }
 }
 
-impl ImplicitPresence for [u8] {
-    fn pb_is_present(&self) -> bool {
+impl BasicPbType for [u8] {
+    fn implicit_presence(&self) -> bool {
         !self.is_empty()
     }
 }
 
-impl<T: ImplicitPresence> ImplicitPresence for &T {
-    fn pb_is_present(&self) -> bool {
-        (*self).pb_is_present()
+impl<T: BasicPbType> BasicPbType for &T {
+    fn implicit_presence(&self) -> bool {
+        (*self).implicit_presence()
     }
-}
-
-mod sealed {
-    pub trait Sealed {}
-    impl Sealed for u32 {}
-    impl Sealed for i32 {}
-    impl Sealed for u64 {}
-    impl Sealed for i64 {}
-    impl Sealed for f32 {}
-    impl Sealed for f64 {}
-    impl Sealed for bool {}
-    impl Sealed for str {}
-    impl Sealed for [u8] {}
-    impl<T: Sealed> Sealed for &T {}
 }
 
 #[cfg(test)]

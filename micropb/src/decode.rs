@@ -9,7 +9,7 @@ use crate::{
         maybe_uninit_slice_assume_init_ref, maybe_uninit_write_slice,
         maybe_ununit_array_assume_init,
     },
-    Tag, VarInt, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
+    Presence, Tag, VarInt, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
 };
 
 use never::Never;
@@ -32,17 +32,19 @@ impl<E> From<Utf8Error> for DecodeError<E> {
     }
 }
 
-/// Implemented only for types decoded from fixed-size fields. These types must have no invalid
-/// bit-patterns in their representation.
-pub trait DecodeFixedSize: sealed::Sealed + Copy {}
+/// Implemented only for types decoded from fixed-size fields.
+///
+/// # Safety
+/// Implementers must have no invalid bit-patterns.
+pub unsafe trait DecodeFixedSize: sealed::Sealed + Copy {}
 
-impl DecodeFixedSize for u8 {}
-impl DecodeFixedSize for u32 {}
-impl DecodeFixedSize for i32 {}
-impl DecodeFixedSize for u64 {}
-impl DecodeFixedSize for i64 {}
-impl DecodeFixedSize for f32 {}
-impl DecodeFixedSize for f64 {}
+unsafe impl DecodeFixedSize for u8 {}
+unsafe impl DecodeFixedSize for u32 {}
+unsafe impl DecodeFixedSize for i32 {}
+unsafe impl DecodeFixedSize for u64 {}
+unsafe impl DecodeFixedSize for i64 {}
+unsafe impl DecodeFixedSize for f32 {}
+unsafe impl DecodeFixedSize for f64 {}
 
 mod sealed {
     pub trait Sealed {}
@@ -222,8 +224,14 @@ impl<R: PbRead> PbDecoder<R> {
     pub fn decode_string<S: PbString>(
         &mut self,
         string: &mut S,
+        presence: Presence,
     ) -> Result<(), DecodeError<R::Error>> {
         let len = self.decode_varint32()? as usize;
+        // With implicit presence, ignore empty strings
+        if len == 0 && presence == Presence::Implicit {
+            return Ok(());
+        }
+
         string.pb_clear();
         string.pb_reserve(len);
         let spare_cap = string.pb_spare_cap();
@@ -244,8 +252,14 @@ impl<R: PbRead> PbDecoder<R> {
     pub fn decode_bytes<S: PbVec<u8>>(
         &mut self,
         bytes: &mut S,
+        presence: Presence,
     ) -> Result<(), DecodeError<R::Error>> {
         let len = self.decode_varint32()? as usize;
+        // With implicit presence, ignore empty strings
+        if len == 0 && presence == Presence::Implicit {
+            return Ok(());
+        }
+
         bytes.pb_clear();
         bytes.pb_reserve(len);
         let spare_cap = bytes.pb_spare_cap();
@@ -348,8 +362,8 @@ impl<R: PbRead> PbDecoder<R> {
             while this.bytes_read() - before < len {
                 let tag = this.decode_tag()?;
                 match tag.field_num() {
-                    1 => this.decode_optional(&mut key, &key_update)?,
-                    2 => this.decode_optional(&mut val, &val_update)?,
+                    1 => key_update(key.get_or_insert_with(K::default), this)?,
+                    2 => val_update(val.get_or_insert_with(V::default), this)?,
                     _ => this.skip_wire_value(tag.wire_type())?,
                 }
             }
@@ -361,18 +375,6 @@ impl<R: PbRead> PbDecoder<R> {
         } else {
             Ok(None)
         }
-    }
-
-    pub fn decode_optional<
-        T: Default,
-        U: Fn(&mut T, &mut Self) -> Result<(), DecodeError<R::Error>>,
-    >(
-        &mut self,
-        optional: &mut Option<T>,
-        update: U,
-    ) -> Result<(), DecodeError<R::Error>> {
-        let val = optional.get_or_insert_with(T::default);
-        update(val, self)
     }
 
     pub fn decode_repeated_elem<
@@ -794,32 +796,45 @@ mod tests {
 
     fn string<S: PbString>(fixed_cap: bool) {
         let mut string = S::default();
-        assert_decode_vec!(Ok(""), [0], decode_string(string));
-        assert_decode_vec!(Ok("a"), [1, b'a'], decode_string(string));
+        assert_decode_vec!(Ok(""), [0], decode_string(string, Presence::Explicit));
+        assert_decode_vec!(
+            Ok("a"),
+            [1, b'a'],
+            decode_string(string, Presence::Implicit)
+        );
         assert_decode_vec!(
             Ok("abcd"),
             [4, b'a', b'b', b'c', b'd'],
-            decode_string(string)
+            decode_string(string, Presence::Explicit)
         );
-        assert_decode_vec!(Ok("Зд"), [4, 208, 151, 208, 180], decode_string(string));
+        assert_decode_vec!(
+            Ok("Зд"),
+            [4, 208, 151, 208, 180],
+            decode_string(string, Presence::Implicit)
+        );
+        assert_decode_vec!(Ok("Зд"), [0], decode_string(string, Presence::Implicit));
 
-        assert_decode_vec!(Err(DecodeError::UnexpectedEof), [], decode_string(string));
+        assert_decode_vec!(
+            Err(DecodeError::UnexpectedEof),
+            [],
+            decode_string(string, Presence::Explicit)
+        );
         assert_decode_vec!(
             Err(DecodeError::UnexpectedEof),
             [4, b'b', b'c', b'd'],
-            decode_string(string)
+            decode_string(string, Presence::Explicit)
         );
         if fixed_cap {
             assert_decode_vec!(
                 Err(DecodeError::Capacity),
                 [5, b'a', b'b', b'c', b'd', b'e'],
-                decode_string(string)
+                decode_string(string, Presence::Explicit)
             );
         }
         assert_decode_vec!(
             Err(DecodeError::Utf8(_)),
             [4, 0x80, 0x80, 0x80, 0x80],
-            decode_string(string)
+            decode_string(string, Presence::Explicit)
         );
     }
 
@@ -829,26 +844,35 @@ mod tests {
 
     fn bytes<S: PbVec<u8>>(fixed_cap: bool) {
         let mut bytes = S::default();
-        assert_decode_vec!(Ok(&[]), [0], decode_bytes(bytes));
-        assert_decode_vec!(Ok(b"a"), [1, b'a'], decode_bytes(bytes));
+        assert_decode_vec!(Ok(&[]), [0], decode_bytes(bytes, Presence::Explicit));
+        assert_decode_vec!(Ok(b"a"), [1, b'a'], decode_bytes(bytes, Presence::Implicit));
         assert_decode_vec!(
             Ok(&[0x10, 0x20, 0x30]),
             [3, 0x10, 0x20, 0x30],
-            decode_bytes(bytes)
+            decode_bytes(bytes, Presence::Explicit)
+        );
+        assert_decode_vec!(
+            Ok(&[0x10, 0x20, 0x30]),
+            [0],
+            decode_bytes(bytes, Presence::Implicit)
         );
 
-        assert_decode_vec!(Err(DecodeError::UnexpectedEof), [], decode_bytes(bytes));
+        assert_decode_vec!(
+            Err(DecodeError::UnexpectedEof),
+            [],
+            decode_bytes(bytes, Presence::Explicit)
+        );
         if fixed_cap {
             assert_decode_vec!(
                 Err(DecodeError::Capacity),
                 [4, 0x10, 0x20, 0x30, 0x40],
-                decode_bytes(bytes)
+                decode_bytes(bytes, Presence::Explicit)
             );
         }
         assert_decode_vec!(
             Err(DecodeError::UnexpectedEof),
             [3, 0x20, 0x30],
-            decode_bytes(bytes)
+            decode_bytes(bytes, Presence::Explicit)
         );
     }
 
@@ -946,7 +970,7 @@ mod tests {
                 $arr,
                 decode_map_elem(
                     |v, rd| rd.decode_varint32().map(|u| *v = u),
-                    |v, rd| rd.decode_string::<ArrayString<5>>(v)
+                    |v, rd| rd.decode_string::<ArrayString<5>>(v, Presence::Explicit)
                 )
             );
         };
@@ -1004,8 +1028,8 @@ mod tests {
             ))),
             [8, 0x0A, 2, b'a', b'c', 0x12, 2, b'b', b'd'],
             decode_map_elem(
-                |v, rd| rd.decode_string::<ArrayString<5>>(v),
-                |v, rd| rd.decode_string::<ArrayString<5>>(v)
+                |v, rd| rd.decode_string::<ArrayString<5>>(v, Presence::Explicit),
+                |v, rd| rd.decode_string::<ArrayString<5>>(v, Presence::Explicit)
             )
         );
     }
