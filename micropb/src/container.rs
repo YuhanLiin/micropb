@@ -40,14 +40,6 @@ pub trait PbMap<K, V>: Default {
     fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()>;
 
     fn pb_iter(&self) -> Self::Iter<'_>;
-
-    fn pb_get(&self, key: &K) -> Option<&V>;
-
-    fn pb_get_mut(&mut self, key: &K) -> Option<&mut V>;
-
-    fn pb_remove(&mut self, key: &K) -> Option<V>;
-
-    fn pb_clear(&mut self);
 }
 
 #[cfg(feature = "container-arrayvec")]
@@ -186,22 +178,6 @@ mod impl_heapless {
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
         }
-
-        fn pb_get(&self, key: &K) -> Option<&V> {
-            self.get(key)
-        }
-
-        fn pb_get_mut(&mut self, key: &K) -> Option<&mut V> {
-            self.get_mut(key)
-        }
-
-        fn pb_remove(&mut self, key: &K) -> Option<V> {
-            self.remove(key)
-        }
-
-        fn pb_clear(&mut self) {
-            self.clear();
-        }
     }
 
     #[cfg(feature = "encode")]
@@ -334,22 +310,6 @@ mod impl_alloc {
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
         }
-
-        fn pb_get(&self, key: &K) -> Option<&V> {
-            self.get(key)
-        }
-
-        fn pb_get_mut(&mut self, key: &K) -> Option<&mut V> {
-            self.get_mut(key)
-        }
-
-        fn pb_remove(&mut self, key: &K) -> Option<V> {
-            self.remove(key)
-        }
-
-        fn pb_clear(&mut self) {
-            self.clear();
-        }
     }
 
     #[cfg(feature = "std")]
@@ -363,22 +323,6 @@ mod impl_alloc {
 
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
-        }
-
-        fn pb_get(&self, key: &K) -> Option<&V> {
-            self.get(key)
-        }
-
-        fn pb_get_mut(&mut self, key: &K) -> Option<&mut V> {
-            self.get_mut(key)
-        }
-
-        fn pb_remove(&mut self, key: &K) -> Option<V> {
-            self.remove(key)
-        }
-
-        fn pb_clear(&mut self) {
-            self.clear();
         }
     }
 
