@@ -195,7 +195,6 @@ mod impl_alloc {
     use super::*;
 
     use alloc::{
-        borrow::Cow,
         collections::{btree_map, BTreeMap},
         string::String,
         vec::Vec,
@@ -215,22 +214,22 @@ mod impl_alloc {
         }
     }
 
-    impl<'a, T> PbContainer for Cow<'a, [T]>
-    where
-        [T]: ToOwned<Owned = Vec<T>>,
-    {
-        unsafe fn pb_set_len(&mut self, len: usize) {
-            self.to_mut().set_len(len);
-        }
+    //impl<'a, T> PbContainer for alloc::borrow::Cow<'a, [T]>
+    //where
+    //[T]: ToOwned<Owned = Vec<T>>,
+    //{
+    //unsafe fn pb_set_len(&mut self, len: usize) {
+    //self.to_mut().set_len(len);
+    //}
 
-        fn pb_clear(&mut self) {
-            self.to_mut().clear()
-        }
+    //fn pb_clear(&mut self) {
+    //self.to_mut().clear()
+    //}
 
-        fn pb_reserve(&mut self, additional: usize) {
-            self.to_mut().reserve(additional)
-        }
-    }
+    //fn pb_reserve(&mut self, additional: usize) {
+    //self.to_mut().reserve(additional)
+    //}
+    //}
 
     impl PbContainer for String {
         fn pb_clear(&mut self) {
@@ -246,19 +245,19 @@ mod impl_alloc {
         }
     }
 
-    impl<'a> PbContainer for Cow<'a, str> {
-        unsafe fn pb_set_len(&mut self, len: usize) {
-            self.to_mut().as_mut_vec().set_len(len);
-        }
+    //impl<'a> PbContainer for alloc::borrow::Cow<'a, str> {
+    //unsafe fn pb_set_len(&mut self, len: usize) {
+    //self.to_mut().as_mut_vec().set_len(len);
+    //}
 
-        fn pb_clear(&mut self) {
-            self.to_mut().clear()
-        }
+    //fn pb_clear(&mut self) {
+    //self.to_mut().clear()
+    //}
 
-        fn pb_reserve(&mut self, additional: usize) {
-            self.to_mut().reserve(additional)
-        }
-    }
+    //fn pb_reserve(&mut self, additional: usize) {
+    //self.to_mut().reserve(additional)
+    //}
+    //}
 
     impl<T> PbVec<T> for Vec<T> {
         fn pb_push(&mut self, elem: T) -> Result<(), ()> {
@@ -271,19 +270,19 @@ mod impl_alloc {
         }
     }
 
-    impl<'a, T> PbVec<T> for Cow<'a, [T]>
-    where
-        [T]: ToOwned<Owned = Vec<T>>,
-    {
-        fn pb_push(&mut self, elem: T) -> Result<(), ()> {
-            self.to_mut().push(elem);
-            Ok(())
-        }
+    //impl<'a, T> PbVec<T> for alloc::borrow::Cow<'a, [T]>
+    //where
+    //[T]: ToOwned<Owned = Vec<T>>,
+    //{
+    //fn pb_push(&mut self, elem: T) -> Result<(), ()> {
+    //self.to_mut().push(elem);
+    //Ok(())
+    //}
 
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
-            self.to_mut().spare_capacity_mut()
-        }
-    }
+    //fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
+    //self.to_mut().spare_capacity_mut()
+    //}
+    //}
 
     impl PbString for String {
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
@@ -292,12 +291,12 @@ mod impl_alloc {
         }
     }
 
-    impl<'a> PbString for Cow<'a, str> {
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
-            // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
-            unsafe { self.to_mut().as_mut_vec().spare_capacity_mut() }
-        }
-    }
+    //impl<'a> PbString for alloc::borrow::Cow<'a, str> {
+    //fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+    // // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
+    //unsafe { self.to_mut().as_mut_vec().spare_capacity_mut() }
+    //}
+    //}
 
     impl<K: Ord, V> PbMap<K, V> for BTreeMap<K, V> {
         type Iter<'a> = btree_map::Iter<'a, K, V> where K: 'a, V: 'a;
