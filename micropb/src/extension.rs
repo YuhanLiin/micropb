@@ -100,12 +100,12 @@ macro_rules! static_extension_registry {
 
             #[derive(Debug, Default)]
             #[allow(non_snake_case)]
-            struct $Name {
+            struct $Name<const NESTED_DECODE: bool = false> {
                 $([<alloc_ $Msg>]: [Option<[<mod_ $Msg>]::Extension>; $len],)+
             }
         }
 
-        impl $crate::extension::ExtensionRegistry for $Name {
+        impl<const NESTED_DECODE: bool> $crate::extension::ExtensionRegistry for $Name<NESTED_DECODE> {
             fn alloc_ext(&mut self, msg_type: &core::any::TypeId) -> Option<$crate::extension::ExtensionId> {
                 let mut id = 0;
                 paste::paste! {
@@ -248,7 +248,7 @@ macro_rules! static_extension_registry {
     };
 
     (@decode $Name:ident, $($Msg:ident => { $($extname:ident : $Ext:ty),+ })+) => {
-        impl<R: $crate::PbRead> $crate::extension::ExtensionRegistryDecode<R> for $Name {
+        impl<R: $crate::PbRead, const NESTED_DECODE: bool> $crate::extension::ExtensionRegistryDecode<R> for $Name<NESTED_DECODE> {
             fn decode_ext_field(
                 &mut self,
                 id: $crate::extension::ExtensionId,
@@ -260,25 +260,40 @@ macro_rules! static_extension_registry {
                 use $crate::extension::ExtensionField;
                 let mut id = id.0.get() - 1;
                 paste::paste! {
-                    $(if id < self.[<alloc_ $Msg>].len() {
-                        let slot = &mut self.[<alloc_ $Msg>][id];
-                        if slot.is_none() { return Ok(false); }
-                        // Write `Some` into the slot temporarily so it doesn't get overwritten
-                        let mut ext = core::mem::replace(slot, Some(Default::default())).unwrap();
-                        let res = match tag.field_num() {
-                            $($Ext::FIELD_NUM => {
-                                let res = ext.$extname.decode_field(tag, decoder, Some(self));
-                                if res.is_ok() {
+                    if NESTED_DECODE {
+                        $(if id < self.[<alloc_ $Msg>].len() {
+                            let slot = &mut self.[<alloc_ $Msg>][id];
+                            if slot.is_none() { return Ok(false); }
+                            // Write `Some` into the slot temporarily so it doesn't get overwritten
+                            let mut ext = core::mem::replace(slot, Some(Default::default())).unwrap();
+                            let res = match tag.field_num() {
+                                $($Ext::FIELD_NUM => {
+                                    let res = ext.$extname.decode_field(tag, decoder, Some(self));
+                                    if res.is_ok() {
+                                        ext.[<has_ $extname>] = true;
+                                    }
+                                    res.map(|_| true)
+                                })+
+                                _ => Ok(false)
+                            };
+                            self.[<alloc_ $Msg>][id] = Some(ext);
+                            return res;
+                        }
+                        id -= self.[<alloc_ $Msg>].len();)+
+                    } else {
+                        $(if id < self.[<alloc_ $Msg>].len() {
+                            let Some(ext) = self.[<alloc_ $Msg>][id].as_mut() else { return Ok(false) };
+                            return match tag.field_num() {
+                                $($Ext::FIELD_NUM => {
+                                    ext.$extname.decode_field(tag, decoder, None)?;
                                     ext.[<has_ $extname>] = true;
-                                }
-                                res.map(|_| true)
-                            })+
-                            _ => Ok(false)
-                        };
-                        self.[<alloc_ $Msg>][id] = Some(ext);
-                        return res;
+                                    Ok(true)
+                                })+
+                                _ => Ok(false)
+                            };
+                        }
+                        id -= self.[<alloc_ $Msg>].len();)+
                     }
-                    id -= self.[<alloc_ $Msg>].len();)+
                 }
                 Ok(false)
             }
@@ -286,7 +301,7 @@ macro_rules! static_extension_registry {
     };
 
     (@encode $Name:ident, $($Msg:ident => { $($extname:ident : $Ext:ty),+ })+) => {
-        impl $crate::extension::ExtensionRegistrySizeof for $Name {
+        impl<const NESTED_DECODE: bool> $crate::extension::ExtensionRegistrySizeof for $Name<NESTED_DECODE> {
             fn compute_ext_size(&self, id: $crate::extension::ExtensionId) -> Option<usize> {
                 use $crate::field::FieldEncode;
                 let mut id = id.0.get() - 1;
@@ -305,7 +320,7 @@ macro_rules! static_extension_registry {
             }
         }
 
-        impl<W: $crate::PbWrite> $crate::extension::ExtensionRegistryEncode<W> for $Name {
+        impl<W: $crate::PbWrite, const NESTED_DECODE: bool> $crate::extension::ExtensionRegistryEncode<W> for $Name<NESTED_DECODE> {
             fn encode_ext(&self, id: $crate::extension::ExtensionId, encoder: &mut $crate::PbEncoder<W>) -> Result<bool, W::Error> {
                 use $crate::field::FieldEncode;
                 let mut id = id.0.get() - 1;

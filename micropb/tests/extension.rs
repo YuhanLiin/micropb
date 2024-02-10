@@ -148,8 +148,8 @@ static_extension_registry!(
 );
 
 #[test]
-fn map_macro() {
-    let mut registry = TestRegistry::default();
+fn static_macro() {
+    let mut registry = TestRegistry::<false>::default();
     let mut decoder = PbDecoder::new([0x57].as_slice());
     assert_eq!(registry.alloc_ext(&TypeId::of::<u32>()), None);
     let id = registry.alloc_ext(&TypeId::of::<NumMsg>()).unwrap();
@@ -203,8 +203,8 @@ fn map_macro() {
 }
 
 #[test]
-fn map_macro_recursive() {
-    let mut registry = TestRegistry::default();
+fn static_macro_recursive() {
+    let mut registry = TestRegistry::<true>::default();
     // 0x08 is tag for field 1, 0x10 is tag for field 2
     let mut decoder = PbDecoder::new([0x08, 0x34, 0x10, 0x08, 0x12, 0x10, 0x08, 0x55].as_slice());
     let id = registry.alloc_ext(&TypeId::of::<RecursiveMsg>()).unwrap();
