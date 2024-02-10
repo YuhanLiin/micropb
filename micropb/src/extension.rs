@@ -1,4 +1,4 @@
-use core::any::TypeId;
+use core::{any::TypeId, num::NonZeroUsize};
 
 #[cfg(feature = "decode")]
 use crate::decode::{DecodeError, PbDecoder, PbRead};
@@ -7,7 +7,7 @@ use crate::encode::{PbEncoder, PbWrite};
 use crate::Tag;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct ExtensionId(pub usize);
+pub struct ExtensionId(pub NonZeroUsize);
 
 pub trait ExtensionField: 'static {
     const FIELD_NUM: u32;
@@ -113,7 +113,7 @@ macro_rules! static_extension_registry {
                         for (i, slot) in self.[<alloc_ $Msg>].iter_mut().enumerate() {
                             if slot.is_none() {
                                 *slot = Some(Default::default());
-                                return Some($crate::extension::ExtensionId(id + i));
+                                return Some($crate::extension::ExtensionId(core::num::NonZeroUsize::new(id + i + 1).unwrap()));
                             }
                         }
                         return None;
@@ -129,7 +129,7 @@ macro_rules! static_extension_registry {
             {
                 use $crate::extension::ExtensionField;
                 use core::any::{TypeId, Any};
-                let mut id = id.0;
+                let mut id = id.0.get() - 1;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         if TypeId::of::<F::MESSAGE>() == TypeId::of::<$Msg>() {
@@ -154,7 +154,7 @@ macro_rules! static_extension_registry {
             {
                 use $crate::extension::ExtensionField;
                 use core::any::{TypeId, Any};
-                let mut id = id.0;
+                let mut id = id.0.get() - 1;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         if TypeId::of::<F::MESSAGE>() == TypeId::of::<$Msg>() {
@@ -179,7 +179,7 @@ macro_rules! static_extension_registry {
             {
                 use $crate::extension::ExtensionField;
                 use core::any::{TypeId, Any};
-                let mut id = id.0;
+                let mut id = id.0.get() - 1;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         if TypeId::of::<F::MESSAGE>() == TypeId::of::<$Msg>() {
@@ -206,7 +206,7 @@ macro_rules! static_extension_registry {
             {
                 use core::any::{Any, TypeId};
                 use $crate::extension::ExtensionField;
-                let mut id = id.0;
+                let mut id = id.0.get() - 1;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         if TypeId::of::<F::MESSAGE>() == TypeId::of::<$Msg>() {
@@ -230,7 +230,7 @@ macro_rules! static_extension_registry {
 
             #[must_use]
             fn dealloc_ext(&mut self, id: $crate::extension::ExtensionId) -> Result<(), $crate::extension::RegistryError> {
-                let mut id = id.0;
+                let mut id = id.0.get() - 1;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         self.[<alloc_ $Msg>][id] = None;
@@ -258,7 +258,7 @@ macro_rules! static_extension_registry {
             {
                 use $crate::field::FieldDecode;
                 use $crate::extension::ExtensionField;
-                let mut id = id.0;
+                let mut id = id.0.get() - 1;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         let slot = &mut self.[<alloc_ $Msg>][id];
@@ -289,7 +289,7 @@ macro_rules! static_extension_registry {
         impl $crate::extension::ExtensionRegistrySizeof for $Name {
             fn compute_ext_size(&self, id: $crate::extension::ExtensionId) -> Option<usize> {
                 use $crate::field::FieldEncode;
-                let mut id = id.0;
+                let mut id = id.0.get() - 1;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         let ext = self.[<alloc_ $Msg>][id].as_ref()?;
@@ -308,7 +308,7 @@ macro_rules! static_extension_registry {
         impl<W: $crate::PbWrite> $crate::extension::ExtensionRegistryEncode<W> for $Name {
             fn encode_ext(&self, id: $crate::extension::ExtensionId, encoder: &mut $crate::PbEncoder<W>) -> Result<bool, W::Error> {
                 use $crate::field::FieldEncode;
-                let mut id = id.0;
+                let mut id = id.0.get() - 1;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         let Some(ext) = self.[<alloc_ $Msg>][id].as_ref() else { return Ok(false) };
