@@ -28,7 +28,7 @@ pub trait ExtensionRegistry {
     where
         Self: Sized;
 
-    fn get_field_mut<F: ExtensionField>(
+    fn mut_field<F: ExtensionField>(
         &mut self,
         id: ExtensionId,
     ) -> Result<Option<&mut F>, RegistryError>
@@ -83,7 +83,7 @@ pub trait ExtensionRegistryEncode<W: PbWrite>: DynExtensionRegistrySizeof {
 }
 
 #[macro_export]
-macro_rules! map_extension_registry {
+macro_rules! static_extension_registry {
     (@base $Name:ident, $($Msg:ident [ $len:expr ] => { $($extname:ident : $Ext:path),+ })+) => {
         paste::paste! {
             $(
@@ -148,7 +148,7 @@ macro_rules! map_extension_registry {
                 Err($crate::extension::RegistryError::IdNotFound)
             }
 
-            fn get_field_mut<F: $crate::extension::ExtensionField>(&mut self, id: $crate::extension::ExtensionId) -> Result<Option<&mut F>, $crate::extension::RegistryError>
+            fn mut_field<F: $crate::extension::ExtensionField>(&mut self, id: $crate::extension::ExtensionId) -> Result<Option<&mut F>, $crate::extension::RegistryError>
             where
                 Self: Sized
             {
@@ -325,24 +325,24 @@ macro_rules! map_extension_registry {
     };
 
     ($Name:ident, $($Msg:ident [ $len:expr ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        $crate::map_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
-        $crate::map_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
-        $crate::map_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
+        $crate::static_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
+        $crate::static_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
+        $crate::static_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
 }
 
 #[macro_export]
-macro_rules! map_extension_registry_decode_only {
+macro_rules! static_extension_registry_decode_only {
     ($Name:ident, $($Msg:ident [ $len:expr ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        $crate::map_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
-        $crate::map_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
+        $crate::static_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
+        $crate::static_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
 }
 
 #[macro_export]
-macro_rules! map_extension_registry_encode_only {
+macro_rules! static_extension_registry_encode_only {
     ($Name:ident, $($Msg:ident [ $len:expr ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        $crate::map_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
-        $crate::map_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
+        $crate::static_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
+        $crate::static_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
 }

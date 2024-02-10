@@ -6,9 +6,8 @@ use micropb::{
         ExtensionRegistryEncode, ExtensionRegistrySizeof, RegistryError,
     },
     field::{FieldDecode, FieldEncode},
-    map_extension_registry,
     size::{sizeof_tag, sizeof_varint32},
-    DecodeError, PbDecoder, PbEncoder, PbRead, PbWrite, Tag,
+    static_extension_registry, DecodeError, PbDecoder, PbEncoder, PbRead, PbWrite, Tag,
 };
 
 #[derive(Debug, Default)]
@@ -137,7 +136,7 @@ impl FieldEncode for RecursiveExtension {
     }
 }
 
-map_extension_registry!(
+static_extension_registry!(
     TestRegistry,
     NumMsg[5] => {
         num: NumExtension1,
@@ -156,10 +155,7 @@ fn map_macro() {
     let id = registry.alloc_ext(&TypeId::of::<NumMsg>()).unwrap();
 
     assert!(registry.get_field::<NumExtension1>(id).unwrap().is_none());
-    assert!(registry
-        .get_field_mut::<NumExtension1>(id)
-        .unwrap()
-        .is_none());
+    assert!(registry.mut_field::<NumExtension1>(id).unwrap().is_none());
     // unknown field number, ignored
     assert!(!registry
         .decode_ext_field(id, Tag::from_parts(2, 0), &mut decoder)
@@ -173,11 +169,7 @@ fn map_macro() {
     );
 
     let mut encoder = PbEncoder::new(heapless::Vec::<u8, 10>::new());
-    registry
-        .get_field_mut::<NumExtension1>(id)
-        .unwrap()
-        .unwrap()
-        .0 = 0x69;
+    registry.mut_field::<NumExtension1>(id).unwrap().unwrap().0 = 0x69;
     assert!(registry.encode_ext(id, &mut encoder).unwrap());
     // encoding also outputs the tag
     assert_eq!(encoder.into_inner(), &[0x08, 0x69]);
@@ -189,10 +181,7 @@ fn map_macro() {
     );
     registry.clear_field::<NumExtension1>(id).unwrap();
     registry.clear_field::<NumExtension1>(id).unwrap();
-    assert!(registry
-        .get_field_mut::<NumExtension1>(id)
-        .unwrap()
-        .is_none());
+    assert!(registry.mut_field::<NumExtension1>(id).unwrap().is_none());
     let mut encoder = PbEncoder::new(heapless::Vec::<u8, 10>::new());
     assert!(registry.encode_ext(id, &mut encoder).unwrap());
     // Encode with no fields
@@ -208,7 +197,7 @@ fn map_macro() {
     // Deallocating a "null" ID is not an error
     registry.dealloc_ext(id).unwrap();
     assert_eq!(
-        registry.get_field_mut::<NumExtension1>(id).unwrap_err(),
+        registry.mut_field::<NumExtension1>(id).unwrap_err(),
         RegistryError::IdNotFound
     );
 }
@@ -275,9 +264,9 @@ fn map_macro_recursive() {
 mod decode_only {
     use super::{NumExtension1, NumExtension2, NumMsg, RecursiveExtension, RecursiveMsg};
 
-    use micropb::map_extension_registry_decode_only;
+    use micropb::static_extension_registry_decode_only;
 
-    map_extension_registry_decode_only!(
+    static_extension_registry_decode_only!(
         TestRegistry,
         NumMsg[5] => {
             num: NumExtension1,
@@ -293,9 +282,9 @@ mod decode_only {
 mod encode_only {
     use super::{NumExtension1, NumExtension2, NumMsg, RecursiveExtension, RecursiveMsg};
 
-    use micropb::map_extension_registry_encode_only;
+    use micropb::static_extension_registry_encode_only;
 
-    map_extension_registry_encode_only!(
+    static_extension_registry_encode_only!(
         TestRegistry,
         NumMsg[5] => {
             num: NumExtension1,
