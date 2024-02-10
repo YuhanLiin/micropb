@@ -1,4 +1,4 @@
-use core::{any::TypeId, num::NonZeroU32};
+use core::any::TypeId;
 
 #[cfg(feature = "decode")]
 use crate::decode::{DecodeError, PbDecoder, PbRead};
@@ -6,33 +6,42 @@ use crate::decode::{DecodeError, PbDecoder, PbRead};
 use crate::encode::{PbEncoder, PbWrite};
 use crate::Tag;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct ExtensionId(NonZeroU32);
-
-impl ExtensionId {
-    pub fn new(u: NonZeroU32) -> Self {
-        Self(u)
-    }
-}
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct ExtensionId(pub usize);
 
 pub trait ExtensionField: 'static {
     const FIELD_NUM: u32;
     type MESSAGE: 'static;
 }
 
+pub enum RegistryError {
+    IdNotFound,
+    BadField,
+}
+
 pub trait ExtensionRegistry {
     fn alloc_ext(&mut self, msg_type: &TypeId) -> Option<ExtensionId>;
 
-    fn get_field<F: ExtensionField>(&self, id: ExtensionId) -> Option<&F>
+    fn get_field<F: ExtensionField>(&self, id: ExtensionId) -> Result<Option<&F>, RegistryError>
     where
         Self: Sized;
 
-    fn get_field_mut<F: ExtensionField>(&mut self, id: ExtensionId) -> Option<&mut F>
+    fn get_field_mut<F: ExtensionField>(
+        &mut self,
+        id: ExtensionId,
+    ) -> Result<Option<&mut F>, RegistryError>
     where
         Self: Sized;
 
-    #[must_use]
-    fn remove(&mut self, id: ExtensionId) -> bool;
+    fn add_field<F: ExtensionField>(&mut self, id: ExtensionId) -> Result<&mut F, RegistryError>
+    where
+        Self: Sized;
+
+    fn clear_field<F: ExtensionField>(&mut self, id: ExtensionId) -> Result<(), RegistryError>
+    where
+        Self: Sized;
+
+    fn dealloc_ext(&mut self, id: ExtensionId) -> Result<(), RegistryError>;
 
     fn reset(&mut self);
 }
@@ -73,7 +82,7 @@ pub trait ExtensionRegistryEncode<W: PbWrite>: DynExtensionRegistrySizeof {
 
 #[macro_export]
 macro_rules! map_extension_registry {
-    (@base $Name:ident, $($Msg:ident [ $Map:ident $(<$N:literal>)? ] => { $($extname:ident : $Ext:path),+ })+) => {
+    (@base $Name:ident, $($Msg:ident [ $len:expr ] => { $($extname:ident : $Ext:path),+ })+) => {
         paste::paste! {
             $(
                 #[allow(non_snake_case)]
@@ -82,7 +91,7 @@ macro_rules! map_extension_registry {
 
                     #[derive(Debug, Default)]
                     pub(crate) struct Extension {
-                        $(pub(crate) $extname: $Ext),+
+                        $(pub(crate) $extname: $Ext, pub(crate) [<has_ $extname>]: bool),+
                     }
                 }
             )+
@@ -90,86 +99,146 @@ macro_rules! map_extension_registry {
             #[derive(Debug, Default)]
             #[allow(non_snake_case)]
             struct $Name {
-                id_counter: u32,
-                $([<map_ $Msg>]: $Map<$crate::extension::ExtensionId, [<mod_ $Msg>]::Extension $(, $N)?>,)+
+                $([<alloc_ $Msg>]: [Option<[<mod_ $Msg>]::Extension>; $len],)+
             }
         }
 
         impl $crate::extension::ExtensionRegistry for $Name {
             fn alloc_ext(&mut self, msg_type: &core::any::TypeId) -> Option<$crate::extension::ExtensionId> {
-                use $crate::PbMap;
+                let mut id = 0;
                 paste::paste! {
                     $(if msg_type == &core::any::TypeId::of::<$Msg>() {
-                        // Return None on overflow
-                        self.id_counter = self.id_counter.checked_add(1)?;
-                        let id = $crate::extension::ExtensionId::new(self.id_counter.try_into().unwrap());
-                        return self.[<map_ $Msg>].pb_insert(id, Default::default()).ok().map(|_| id);
-                    })+
+                        for (i, slot) in self.[<alloc_ $Msg>].iter_mut().enumerate() {
+                            if slot.is_none() {
+                                *slot = Some(Default::default());
+                                return Some($crate::extension::ExtensionId(id + i));
+                            }
+                        }
+                        return None;
+                    }
+                    id += self.[<alloc_ $Msg>].len();)+
                 }
                 None
             }
 
-            fn get_field<F: $crate::extension::ExtensionField>(&self, id: $crate::extension::ExtensionId) -> Option<&F>
+            fn get_field<F: $crate::extension::ExtensionField>(&self, id: $crate::extension::ExtensionId) -> Result<Option<&F>, $crate::extension::RegistryError>
             where
                 Self: Sized
             {
-                use $crate::PbMap;
                 use $crate::extension::ExtensionField;
                 use core::any::{TypeId, Any};
+                let mut id = id.0;
                 paste::paste! {
-                    match TypeId::of::<F::MESSAGE>() {
-                        $(t if t == TypeId::of::<$Msg>() => {
-                            let ext = self.[<map_ $Msg>].pb_get(&id)?;
-                            let field: &dyn Any = match F::FIELD_NUM {
-                                $($Ext::FIELD_NUM => &ext.$extname,)+
-                                _ => return None,
+                    $(if id < self.[<alloc_ $Msg>].len() {
+                        if TypeId::of::<F::MESSAGE>() == TypeId::of::<$Msg>() {
+                            let ext = self.[<alloc_ $Msg>][id].as_ref().ok_or($crate::extension::RegistryError::IdNotFound)?;
+                            let field: Option<&dyn Any> = match F::FIELD_NUM {
+                                $($Ext::FIELD_NUM => ext.[<has_$extname>].then_some(&ext.$extname),)+
+                                _ => return Err($crate::extension::RegistryError::BadField),
                             };
-                            field.downcast_ref::<F>()
-                        })+
-                        _ => None
+                            return field.map(|f| f.downcast_ref::<F>().ok_or($crate::extension::RegistryError::BadField)).transpose();
+                        } else {
+                            return Err($crate::extension::RegistryError::BadField);
+                        }
                     }
+                    id -= self.[<alloc_ $Msg>].len();)+
                 }
+                Err($crate::extension::RegistryError::IdNotFound)
             }
 
-            fn get_field_mut<F: $crate::extension::ExtensionField>(&mut self, id: $crate::extension::ExtensionId) -> Option<&mut F>
+            fn get_field_mut<F: $crate::extension::ExtensionField>(&mut self, id: $crate::extension::ExtensionId) -> Result<Option<&mut F>, $crate::extension::RegistryError>
             where
                 Self: Sized
             {
-                use $crate::PbMap;
                 use $crate::extension::ExtensionField;
                 use core::any::{TypeId, Any};
+                let mut id = id.0;
                 paste::paste! {
-                    match TypeId::of::<F::MESSAGE>() {
-                        $(t if t == TypeId::of::<$Msg>() => {
-                            let ext = self.[<map_ $Msg>].pb_get_mut(&id)?;
-                            let field: &mut dyn Any = match F::FIELD_NUM {
-                                $($Ext::FIELD_NUM => &mut ext.$extname,)+
-                                _ => return None,
+                    $(if id < self.[<alloc_ $Msg>].len() {
+                        if TypeId::of::<F::MESSAGE>() == TypeId::of::<$Msg>() {
+                            let ext = self.[<alloc_ $Msg>][id].as_mut().ok_or($crate::extension::RegistryError::IdNotFound)?;
+                            let field: Option<&mut dyn Any> = match F::FIELD_NUM {
+                                $($Ext::FIELD_NUM => ext.[<has_$extname>].then_some(&mut ext.$extname),)+
+                                _ => return Err($crate::extension::RegistryError::BadField),
                             };
-                            return field.downcast_mut::<F>();
-                        })+
-                        _ => None
+                            return field.map(|f| f.downcast_mut::<F>().ok_or($crate::extension::RegistryError::BadField)).transpose();
+                        } else {
+                            return Err($crate::extension::RegistryError::BadField);
+                        }
                     }
+                    id -= self.[<alloc_ $Msg>].len();)+
                 }
+                Err($crate::extension::RegistryError::IdNotFound)
+            }
+
+            fn add_field<F: $crate::extension::ExtensionField>(&mut self, id: $crate::extension::ExtensionId) -> Result<&mut F, $crate::extension::RegistryError>
+            where
+                Self: Sized
+            {
+                use $crate::extension::ExtensionField;
+                use core::any::{TypeId, Any};
+                let mut id = id.0;
+                paste::paste! {
+                    $(if id < self.[<alloc_ $Msg>].len() {
+                        if TypeId::of::<F::MESSAGE>() == TypeId::of::<$Msg>() {
+                            let ext = self.[<alloc_ $Msg>][id].as_mut().ok_or($crate::extension::RegistryError::IdNotFound)?;
+                            let (field, has): (&mut dyn Any, &mut bool) = match F::FIELD_NUM {
+                                $($Ext::FIELD_NUM => (&mut ext.$extname, &mut ext.[<has_$extname>]),)+
+                                _ => return Err($crate::extension::RegistryError::BadField),
+                            };
+                            let field = field.downcast_mut::<F>().ok_or($crate::extension::RegistryError::BadField)?;
+                            *has = true;
+                            return Ok(field);
+                        } else {
+                            return Err($crate::extension::RegistryError::BadField);
+                        }
+                    }
+                    id -= self.[<alloc_ $Msg>].len();)+
+                }
+                Err($crate::extension::RegistryError::IdNotFound)
+            }
+
+            fn clear_field<F: $crate::extension::ExtensionField>(&mut self, id: $crate::extension::ExtensionId) -> Result<(), $crate::extension::RegistryError>
+            where
+                Self: Sized
+            {
+                let mut id = id.0;
+                paste::paste! {
+                    $(if id < self.[<alloc_ $Msg>].len() {
+                        if TypeId::of::<F::MESSAGE>() == TypeId::of::<$Msg>() {
+                            let ext = self.[<alloc_ $Msg>][id].as_mut().ok_or($crate::extension::RegistryError::IdNotFound)?;
+                            let (field, has): (&mut dyn Any, &mut bool) = match F::FIELD_NUM {
+                                $($Ext::FIELD_NUM => (&mut ext.$extname, &mut ext.[<has_$extname>]),)+
+                                _ => return Err($crate::extension::RegistryError::BadField),
+                            };
+                            // Check if the field type is correct before clearing it
+                            field.downcast_mut::<F>().ok_or($crate::extension::RegistryError::BadField)?;
+                            *has = false;
+                            return Ok(());
+                        } else {
+                            return Err($crate::extension::RegistryError::BadField);
+                        }
+                    }
+                    id -= self.[<alloc_ $Msg>].len();)+
+                }
+                Err($crate::extension::RegistryError::IdNotFound)
             }
 
             #[must_use]
-            fn remove(&mut self, id: $crate::extension::ExtensionId) -> bool {
-                use $crate::PbMap;
+            fn dealloc_ext(&mut self, id: $crate::extension::ExtensionId) -> Result<(), $crate::extension::RegistryError> {
+                let mut id = id.0;
                 paste::paste! {
-                    $(if self.[<map_ $Msg>].pb_remove(&id).is_some() {
-                        return true;
-                    })+
+                    $(if id < self.[<alloc_ $Msg>].len() {
+                        self.[<alloc_ $Msg>][id] = None;
+                        return Ok(());
+                    }
+                    id -= self.[<alloc_ $Msg>].len();)+
                 }
-                false
+                Err($crate::extension::RegistryError::IdNotFound)
             }
 
             fn reset(&mut self) {
-                use $crate::PbMap;
-                paste::paste! {
-                    $(self.[<map_ $Msg>].pb_clear();)+
-                }
-                self.id_counter = 0;
+                *self = Default::default();
             }
         }
     };
@@ -183,18 +252,21 @@ macro_rules! map_extension_registry {
                 decoder: &mut $crate::PbDecoder<R>,
             ) -> Result<bool, $crate::DecodeError<R::Error>>
             {
-                use $crate::{field::FieldDecode, PbMap};
+                use $crate::field::FieldDecode;
                 use $crate::extension::ExtensionField;
+                let mut id = id.0;
                 paste::paste! {
-                    $(if let Some(mut ext) = self.[<map_ $Msg>].pb_remove(&id) {
+                    $(if id < self.[<alloc_ $Msg>].len() {
+                        let Some(mut ext) = self.[<alloc_ $Msg>][id].take() else { return Ok(false) };
                         let mut written = true;
                         match tag.field_num() {
                             $($Ext::FIELD_NUM => ext.$extname.decode_field(tag, decoder, Some(self))?,)+
                             _ => written = false,
                         }
-                        self.[<map_ $Msg>].pb_insert(id, ext).unwrap();
+                        self.[<alloc_ $Msg>][id] = Some(ext);
                         return Ok(written);
-                    })+
+                    }
+                    id -= self.[<alloc_ $Msg>].len();)+
                 }
                 Ok(false)
             }
@@ -204,13 +276,16 @@ macro_rules! map_extension_registry {
     (@encode $Name:ident, $($Msg:ident => { $($extname:ident : $Ext:ty),+ })+) => {
         impl $crate::extension::ExtensionRegistrySizeof for $Name {
             fn compute_ext_size(&self, id: $crate::extension::ExtensionId) -> Option<usize> {
-                use $crate::{field::FieldEncode, PbMap};
+                use $crate::field::FieldEncode;
+                let mut id = id.0;
                 paste::paste! {
-                    $(if let Some(ext) = self.[<map_ $Msg>].pb_get(&id) {
+                    $(if id < self.[<alloc_ $Msg>].len() {
+                        let ext = self.[<alloc_ $Msg>][id].as_ref()?;
                         let mut size = 0;
                         $(size += ext.$extname.compute_field_size(Some(self));)+
                         return Some(size);
-                    })+
+                    }
+                    id -= self.[<alloc_ $Msg>].len();)+
                 }
                 None
             }
@@ -218,20 +293,23 @@ macro_rules! map_extension_registry {
 
         impl<W: $crate::PbWrite> $crate::extension::ExtensionRegistryEncode<W> for $Name {
             fn encode_ext(&self, id: $crate::extension::ExtensionId, encoder: &mut $crate::PbEncoder<W>) -> Result<bool, W::Error> {
-                use $crate::{field::FieldEncode, PbMap};
+                use $crate::field::FieldEncode;
+                let mut id = id.0;
                 paste::paste! {
-                    $(if let Some(ext) = self.[<map_ $Msg>].pb_get(&id) {
+                    $(if id < self.[<alloc_ $Msg>].len() {
+                        let Some(ext) = self.[<alloc_ $Msg>][id].as_ref() else { return Ok(false) };
                         $(ext.$extname.encode_field(encoder, Some(self))?;)+
                         return Ok(true);
-                    })+
+                    }
+                    id -= self.[<alloc_ $Msg>].len();)+
                 }
                 Ok(false)
             }
         }
     };
 
-    ($Name:ident, $($Msg:ident [ $Map:ident $(<$N:literal>)? ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        $crate::map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
+    ($Name:ident, $($Msg:ident [ $len:expr ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
+        $crate::map_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
         $crate::map_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
         $crate::map_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
@@ -239,16 +317,16 @@ macro_rules! map_extension_registry {
 
 #[macro_export]
 macro_rules! map_extension_registry_decode_only {
-    ($Name:ident, $($Msg:ident [ $Map:ident $(<$N:literal>)? ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        $crate::map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
+    ($Name:ident, $($Msg:ident [ $len:expr ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
+        $crate::map_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
         $crate::map_extension_registry!(@decode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
 }
 
 #[macro_export]
 macro_rules! map_extension_registry_encode_only {
-    ($Name:ident, $($Msg:ident [ $Map:ident $(<$N:literal>)? ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
-        $crate::map_extension_registry!(@base $Name, $($Msg[$Map $(<$N>)?] => { $($extname: $Ext),+ })+);
+    ($Name:ident, $($Msg:ident [ $len:expr ] => { $($extname:ident : $Ext:path),+ $(,)? })+) => {
+        $crate::map_extension_registry!(@base $Name, $($Msg[$len] => { $($extname: $Ext),+ })+);
         $crate::map_extension_registry!(@encode $Name, $($Msg => { $($extname: $Ext),+ })+);
     }
 }
