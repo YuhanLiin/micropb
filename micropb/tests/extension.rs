@@ -1,11 +1,9 @@
 use core::any::{Any, TypeId};
-use heapless::FnvIndexMap;
-use std::collections::HashMap;
 
 use micropb::{
     extension::{
         ExtensionField, ExtensionId, ExtensionRegistry, ExtensionRegistryDecode,
-        ExtensionRegistryEncode, ExtensionRegistrySizeof,
+        ExtensionRegistryEncode, ExtensionRegistrySizeof, RegistryError,
     },
     field::{FieldDecode, FieldEncode},
     map_extension_registry,
@@ -141,10 +139,10 @@ impl FieldEncode for RecursiveExtension {
 
 map_extension_registry!(
     TestRegistry,
-    NumMsg[HashMap] => {
+    NumMsg[5] => {
         num: NumExtension1,
     }
-    RecursiveMsg[FnvIndexMap<8>] => {
+    RecursiveMsg[8] => {
         num: NumExtension2,
         msg: RecursiveExtension
     }
@@ -157,6 +155,11 @@ fn map_macro() {
     assert_eq!(registry.alloc_ext(&TypeId::of::<u32>()), None);
     let id = registry.alloc_ext(&TypeId::of::<NumMsg>()).unwrap();
 
+    assert!(registry.get_field::<NumExtension1>(id).unwrap().is_none());
+    assert!(registry
+        .get_field_mut::<NumExtension1>(id)
+        .unwrap()
+        .is_none());
     // unknown field number, ignored
     assert!(!registry
         .decode_ext_field(id, Tag::from_parts(2, 0), &mut decoder)
@@ -164,18 +167,50 @@ fn map_macro() {
     assert!(registry
         .decode_ext_field(id, Tag::from_parts(1, 0), &mut decoder)
         .unwrap());
-    assert_eq!(registry.get_field::<NumExtension1>(id).unwrap().0, 0x57);
+    assert_eq!(
+        registry.get_field::<NumExtension1>(id).unwrap().unwrap().0,
+        0x57
+    );
 
     let mut encoder = PbEncoder::new(heapless::Vec::<u8, 10>::new());
-    registry.get_field_mut::<NumExtension1>(id).unwrap().0 = 0x69;
+    registry
+        .get_field_mut::<NumExtension1>(id)
+        .unwrap()
+        .unwrap()
+        .0 = 0x69;
     assert!(registry.encode_ext(id, &mut encoder).unwrap());
     // encoding also outputs the tag
     assert_eq!(encoder.into_inner(), &[0x08, 0x69]);
     assert_eq!(registry.compute_ext_size(id).unwrap(), 2);
 
-    assert!(registry.remove(id));
-    assert!(!registry.remove(id));
-    assert!(registry.get_field_mut::<NumExtension1>(id).is_none());
+    assert_eq!(
+        registry.clear_field::<NumExtension2>(id).unwrap_err(),
+        RegistryError::BadField,
+    );
+    registry.clear_field::<NumExtension1>(id).unwrap();
+    registry.clear_field::<NumExtension1>(id).unwrap();
+    assert!(registry
+        .get_field_mut::<NumExtension1>(id)
+        .unwrap()
+        .is_none());
+    let mut encoder = PbEncoder::new(heapless::Vec::<u8, 10>::new());
+    assert!(registry.encode_ext(id, &mut encoder).unwrap());
+    // Encode with no fields
+    assert_eq!(encoder.into_inner(), &[]);
+    assert_eq!(registry.compute_ext_size(id).unwrap(), 0);
+    registry.add_field::<NumExtension1>(id).unwrap().0 = 0x13;
+    assert_eq!(
+        registry.get_field::<NumExtension1>(id).unwrap().unwrap().0,
+        0x13
+    );
+
+    registry.dealloc_ext(id).unwrap();
+    // Deallocating a "null" ID is not an error
+    registry.dealloc_ext(id).unwrap();
+    assert_eq!(
+        registry.get_field_mut::<NumExtension1>(id).unwrap_err(),
+        RegistryError::IdNotFound
+    );
 }
 
 #[test]
@@ -192,36 +227,44 @@ fn map_macro_recursive() {
     let id1 = registry
         .get_field::<RecursiveExtension>(id)
         .unwrap()
+        .unwrap()
         .0
         .ext
         .unwrap();
-    assert_eq!(registry.get_field::<NumExtension2>(id1).unwrap().0, 0x34);
+    assert_eq!(
+        registry.get_field::<NumExtension2>(id1).unwrap().unwrap().0,
+        0x34
+    );
     let id2 = registry
         .get_field::<RecursiveExtension>(id1)
         .unwrap()
+        .unwrap()
         .0
         .ext
         .unwrap();
-    assert_eq!(registry.get_field::<NumExtension2>(id2).unwrap().0, 0x12);
+    assert_eq!(
+        registry.get_field::<NumExtension2>(id2).unwrap().unwrap().0,
+        0x12
+    );
     let id3 = registry
         .get_field::<RecursiveExtension>(id2)
         .unwrap()
+        .unwrap()
         .0
         .ext
         .unwrap();
-    assert_eq!(registry.get_field::<NumExtension2>(id3).unwrap().0, 0x55);
     assert_eq!(
-        registry.get_field::<RecursiveExtension>(id3).unwrap().0.ext,
-        None
+        registry.get_field::<NumExtension2>(id3).unwrap().unwrap().0,
+        0x55
     );
+    assert!(registry
+        .get_field::<RecursiveExtension>(id3)
+        .unwrap()
+        .is_none());
 
     let mut encoder = PbEncoder::new(heapless::Vec::<u8, 10>::new());
-    registry.get_field_mut::<NumExtension2>(id).unwrap().0 = 0x02;
-    registry
-        .get_field_mut::<RecursiveExtension>(id1)
-        .unwrap()
-        .0
-        .ext = None;
+    registry.add_field::<NumExtension2>(id).unwrap().0 = 0x02;
+    registry.clear_field::<RecursiveExtension>(id1).unwrap();
     assert!(registry.encode_ext(id, &mut encoder).unwrap());
     let out = encoder.into_inner();
     assert_eq!(out, &[0x08, 0x02, 0x10, 0x08, 0x34]);
@@ -234,15 +277,12 @@ mod decode_only {
 
     use micropb::map_extension_registry_decode_only;
 
-    use heapless::FnvIndexMap;
-    use std::collections::HashMap;
-
     map_extension_registry_decode_only!(
         TestRegistry,
-        NumMsg[HashMap] => {
+        NumMsg[5] => {
             num: NumExtension1,
         }
-        RecursiveMsg[FnvIndexMap<8>] => {
+        RecursiveMsg[8] => {
             num: NumExtension2,
             msg: RecursiveExtension
         }
@@ -255,15 +295,12 @@ mod encode_only {
 
     use micropb::map_extension_registry_encode_only;
 
-    use heapless::FnvIndexMap;
-    use std::collections::HashMap;
-
     map_extension_registry_encode_only!(
         TestRegistry,
-        NumMsg[HashMap] => {
+        NumMsg[5] => {
             num: NumExtension1,
         }
-        RecursiveMsg[FnvIndexMap<8>] => {
+        RecursiveMsg[8] => {
             num: NumExtension2,
             msg: RecursiveExtension
         }

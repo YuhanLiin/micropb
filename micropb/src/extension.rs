@@ -14,6 +14,8 @@ pub trait ExtensionField: 'static {
     type MESSAGE: 'static;
 }
 
+#[non_exhaustive]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RegistryError {
     IdNotFound,
     BadField,
@@ -202,6 +204,8 @@ macro_rules! map_extension_registry {
             where
                 Self: Sized
             {
+                use core::any::{Any, TypeId};
+                use $crate::extension::ExtensionField;
                 let mut id = id.0;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
@@ -257,14 +261,22 @@ macro_rules! map_extension_registry {
                 let mut id = id.0;
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
-                        let Some(mut ext) = self.[<alloc_ $Msg>][id].take() else { return Ok(false) };
-                        let mut written = true;
-                        match tag.field_num() {
-                            $($Ext::FIELD_NUM => ext.$extname.decode_field(tag, decoder, Some(self))?,)+
-                            _ => written = false,
-                        }
+                        let slot = &mut self.[<alloc_ $Msg>][id];
+                        if slot.is_none() { return Ok(false); }
+                        // Write `Some` into the slot temporarily so it doesn't get overwritten
+                        let mut ext = core::mem::replace(slot, Some(Default::default())).unwrap();
+                        let res = match tag.field_num() {
+                            $($Ext::FIELD_NUM => {
+                                let res = ext.$extname.decode_field(tag, decoder, Some(self));
+                                if res.is_ok() {
+                                    ext.[<has_ $extname>] = true;
+                                }
+                                res.map(|_| true)
+                            })+
+                            _ => Ok(false)
+                        };
                         self.[<alloc_ $Msg>][id] = Some(ext);
-                        return Ok(written);
+                        return res;
                     }
                     id -= self.[<alloc_ $Msg>].len();)+
                 }
@@ -282,7 +294,9 @@ macro_rules! map_extension_registry {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         let ext = self.[<alloc_ $Msg>][id].as_ref()?;
                         let mut size = 0;
-                        $(size += ext.$extname.compute_field_size(Some(self));)+
+                        $(if ext.[<has_ $extname>] {
+                            size += ext.$extname.compute_field_size(Some(self));
+                        })+
                         return Some(size);
                     }
                     id -= self.[<alloc_ $Msg>].len();)+
@@ -298,7 +312,9 @@ macro_rules! map_extension_registry {
                 paste::paste! {
                     $(if id < self.[<alloc_ $Msg>].len() {
                         let Some(ext) = self.[<alloc_ $Msg>][id].as_ref() else { return Ok(false) };
-                        $(ext.$extname.encode_field(encoder, Some(self))?;)+
+                        $(if ext.[<has_ $extname>] {
+                            ext.$extname.encode_field(encoder, Some(self))?;
+                        })+
                         return Ok(true);
                     }
                     id -= self.[<alloc_ $Msg>].len();)+
