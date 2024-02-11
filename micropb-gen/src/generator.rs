@@ -59,12 +59,13 @@ struct FieldOptions {
     max_len: Option<u32>,
 }
 
-struct Field {
+struct Field<'a> {
     num: u32,
     ftype: FieldType,
-    name: String,
+    name: &'a str,
     options: FieldOptions,
-    oneof: Option<String>,
+    default: Option<&'a str>,
+    oneof: Option<&'a str>,
 }
 
 struct Generator {
@@ -140,11 +141,11 @@ impl Generator {
             .map(|oneof| oneof.name.as_deref().unwrap())
             .collect();
         let oneofs_types: Vec<_> = oneofs.iter().map(|o| o.to_case(Case::Pascal)).collect();
-        let fields: Vec<_> = msg_type
+        let (fields, oneof_fields): (Vec<_>, Vec<_>) = msg_type
             .field
             .iter()
             .map(|f| self.create_field(f, &oneofs))
-            .collect();
+            .partition(|f| f.oneof.is_none());
         let msg_mod_name = format!("mod_{name}");
 
         self.type_path.borrow_mut().push(name.to_owned());
@@ -152,9 +153,9 @@ impl Generator {
             .iter()
             .zip(oneofs_types.iter())
             .map(|(oneof, oneof_type)| {
-                let fields = fields
+                let fields = oneof_fields
                     .iter()
-                    .filter(|f| f.oneof.as_deref() == Some(*oneof))
+                    .filter(|f| f.oneof == Some(*oneof))
                     .map(|f| self.field_decl(f));
 
                 quote! {
@@ -182,25 +183,39 @@ impl Generator {
         };
         self.type_path.borrow_mut().pop();
 
-        let msg_fields = fields
-            .iter()
-            .filter(|f| f.oneof.as_deref().is_none())
-            .map(|f| self.field_decl(f));
+        let msg_fields = fields.iter().map(|f| self.field_decl(f));
+        let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
+            let defaults = fields.iter().map(|f| self.field_default(f));
+            let decl = quote! {
+                impl Default for #name {
+                    fn default() -> Self {
+                        Self {
+                            #(#defaults)*
+                        }
+                    }
+                }
+            };
+            (None, Some(decl))
+        } else {
+            (Some(DERIVE_DEFAULT), None)
+        };
 
         quote! {
             #msg_mod
 
             #DERIVE_ATTRS
-            #DERIVE_DEFAULT
+            #derive_default
             pub enum #name {
                 #(pub #msg_fields)*
                 #(pub #oneofs: Option<#msg_mod_name::#oneofs_types>)*
             }
+
+            #decl_default
         }
     }
 
-    fn create_field(&self, proto: &FieldDescriptorProto, oneofs: &[&str]) -> Field {
-        let name = proto.name.as_ref().unwrap().to_owned();
+    fn create_field<'a>(&self, proto: &'a FieldDescriptorProto, oneofs: &[&str]) -> Field<'a> {
+        let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
 
         let tspec = TypeSpec {
@@ -226,13 +241,15 @@ impl Generator {
             }
             _ => FieldType::Single(tspec),
         };
-        let oneof = proto.oneof_index.map(|i| oneofs[i as usize].to_owned());
+        let oneof = proto.oneof_index.map(|i| oneofs[i as usize]);
+        let default = proto.default_value.as_deref();
 
         Field {
             num,
             ftype,
             name,
             oneof,
+            default,
             options: todo!(),
         }
     }
@@ -289,8 +306,29 @@ impl Generator {
 
     fn field_decl(&self, field: &Field) -> TokenStream {
         let typ = self.rust_type(&field.ftype, &field.options);
-        let name = &field.name;
+        let name = field.name;
         quote! { #name : #typ, }
+    }
+
+    fn field_default(&self, field: &Field) -> TokenStream {
+        let name = field.name;
+        if let Some(default) = field.default {
+            match field.ftype {
+                FieldType::Single(ref t) | FieldType::Optional(ref t) => {
+                    return match t.typ {
+                        Type::String => todo!(),
+                        Type::Bytes => todo!(),
+                        Type::Message => {
+                            unreachable!("message fields shouldn't have custom defaults")
+                        }
+                        _ => quote! { #name: #default.into(), },
+                    }
+                }
+                FieldType::Custom(_) => {}
+                _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
+            }
+        }
+        quote! { #name: Default::default(), }
     }
 
     fn resolve_ident(&self, pb_ident: &str) -> TokenStream {
