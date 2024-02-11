@@ -9,8 +9,10 @@ use protox::prost_reflect::prost_types::{
 };
 use quote::quote;
 
-static DERIVE_ATTRS: &str = "#[derive(Debug, Clone, PartialEq)]";
+static DERIVE_MSG: &str = "#[derive(Debug, Clone, PartialEq)]";
+static DERIVE_ENUM: &str = "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]";
 static DERIVE_DEFAULT: &str = "#[derive(Default)]";
+static REPR_ENUM: &str = "#[repr(i32)]";
 
 #[derive(Debug, Clone, Copy, Default)]
 enum EncodeDecode {
@@ -114,20 +116,30 @@ impl Generator {
     fn generate_enum_type(&self, enum_type: &EnumDescriptorProto) -> TokenStream {
         let name = enum_type.name.as_ref().unwrap();
         let nums = enum_type.value.iter().map(|v| v.number.unwrap());
-        let var_names = enum_type.value.iter().map(|v| v.name.as_ref().unwrap());
+        let var_names = enum_type
+            .value
+            .iter()
+            .map(|v| v.name.as_ref().unwrap().to_case(Case::Pascal));
         let default_num = enum_type.value[0].number.unwrap();
 
         quote! {
-            #DERIVE_ATTRS
+            #DERIVE_ENUM
+            #REPR_ENUM
             pub struct #name(pub i32);
 
             impl #name {
                 #(pub const #var_names: Self = #name(#nums);)*
             }
 
-            impl Default for #name {
+            impl core::default::Default for #name {
                 fn default() -> Self {
                     #name(#default_num)
+                }
+            }
+
+            impl core::convert::From<i32> for $name {
+                fn from(val: i32) -> Self {
+                    #name(val)
                 }
             }
         }
@@ -159,7 +171,7 @@ impl Generator {
                     .map(|f| self.field_decl(f));
 
                 quote! {
-                    #DERIVE_ATTRS
+                    #DERIVE_MSG
                     pub enum #oneof_type {
                         #(#fields)*
                     }
@@ -203,9 +215,9 @@ impl Generator {
         quote! {
             #msg_mod
 
-            #DERIVE_ATTRS
+            #DERIVE_MSG
             #derive_default
-            pub enum #name {
+            pub struct #name {
                 #(pub #msg_fields)*
                 #(pub #oneofs: Option<#msg_mod_name::#oneofs_types>)*
             }
