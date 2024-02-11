@@ -1,14 +1,16 @@
-use std::{
-    borrow::{Borrow, Cow},
-    collections::HashMap,
-};
+use std::{borrow::Cow, cell::RefCell};
 
+use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use protox::prost_reflect::prost_types::{
     field_descriptor_proto::{Label, Type},
-    DescriptorProto, FieldDescriptorProto, FileDescriptorProto, FileDescriptorSet,
+    DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorProto,
+    FileDescriptorSet,
 };
 use quote::quote;
+
+static DERIVE_ATTRS: &str = "#[derive(Debug, Clone, PartialEq)]";
+static DERIVE_DEFAULT: &str = "#[derive(Default)]";
 
 #[derive(Debug, Clone, Copy, Default)]
 enum EncodeDecode {
@@ -47,7 +49,7 @@ enum FieldType {
     Single(TypeSpec),
     // Explicit presence
     Optional(TypeSpec),
-    Repeated(TypeSpec),
+    Repeated { typ: TypeSpec, packed: bool },
     Custom(String),
 }
 
@@ -69,40 +71,132 @@ struct Generator {
     config: GenConfig,
     syntax: Syntax,
     pkg_path: Vec<String>,
-    type_path: Vec<String>,
+    type_path: RefCell<Vec<String>>,
 }
 
 impl Generator {
-    fn generate_fdset(&self, fdset: &FileDescriptorSet) {
+    fn generate_fdset(&mut self, fdset: &FileDescriptorSet) {
         for file in &fdset.file {
             self.generate_fdproto(file);
         }
     }
 
-    fn generate_fdproto(&self, fdproto: &FileDescriptorProto) {
+    fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) {
         let filename = fdproto
             .package
             .as_ref()
             .unwrap_or_else(|| &self.config.default_pkg_filename)
             .to_owned();
 
-        for msg_type in &fdproto.message_type {
-            self.generate_msg_type(msg_type);
+        self.syntax = match fdproto.syntax.as_deref() {
+            Some("proto3") => Syntax::Proto3,
+            _ => Syntax::Proto2,
+        };
+        self.pkg_path = fdproto
+            .package
+            .as_ref()
+            .map(|s| s.split('.').map(ToOwned::to_owned).collect())
+            .unwrap_or_default();
+
+        let msgs = fdproto
+            .message_type
+            .iter()
+            .map(|m| self.generate_msg_type(m));
+        let enums = fdproto.enum_type.iter().map(|e| self.generate_enum_type(e));
+
+        let code = quote! {
+            #(#msgs)*
+            #(#enums)*
+        };
+    }
+
+    fn generate_enum_type(&self, enum_type: &EnumDescriptorProto) -> TokenStream {
+        let name = enum_type.name.as_ref().unwrap();
+        let nums = enum_type.value.iter().map(|v| v.number.unwrap());
+        let var_names = enum_type.value.iter().map(|v| v.name.as_ref().unwrap());
+        let default_num = enum_type.value[0].number.unwrap();
+
+        quote! {
+            #DERIVE_ATTRS
+            pub struct #name(pub i32);
+
+            impl #name {
+                #(pub const #var_names: Self = #name(#nums);)*
+            }
+
+            impl Default for #name {
+                fn default() -> Self {
+                    #name(#default_num)
+                }
+            }
         }
     }
 
-    fn generate_msg_type(&self, msg_type: &DescriptorProto) {
+    fn generate_msg_type(&self, msg_type: &DescriptorProto) -> TokenStream {
         let name = msg_type.name.as_ref().unwrap();
         let oneofs: Vec<_> = msg_type
             .oneof_decl
             .iter()
             .map(|oneof| oneof.name.as_deref().unwrap())
             .collect();
+        let oneofs_types: Vec<_> = oneofs.iter().map(|o| o.to_case(Case::Pascal)).collect();
         let fields: Vec<_> = msg_type
             .field
             .iter()
             .map(|f| self.create_field(f, &oneofs))
             .collect();
+        let msg_mod_name = format!("mod_{name}");
+
+        self.type_path.borrow_mut().push(name.to_owned());
+        let oneof_decls = oneofs
+            .iter()
+            .zip(oneofs_types.iter())
+            .map(|(oneof, oneof_type)| {
+                let fields = fields
+                    .iter()
+                    .filter(|f| f.oneof.as_deref() == Some(*oneof))
+                    .map(|f| self.field_decl(f));
+
+                quote! {
+                    #DERIVE_ATTRS
+                    pub enum #oneof_type {
+                        #(#fields)*
+                    }
+                }
+            });
+
+        let nested_msgs = msg_type
+            .nested_type
+            .iter()
+            .map(|m| self.generate_msg_type(m));
+        let nested_enums = msg_type
+            .enum_type
+            .iter()
+            .map(|e| self.generate_enum_type(e));
+        let msg_mod = quote! {
+            pub mod #msg_mod_name {
+                #(#oneof_decls)*
+                #(#nested_msgs)*
+                #(#nested_enums)*
+            }
+        };
+        self.type_path.borrow_mut().pop();
+
+        let msg_fields = fields
+            .iter()
+            .filter(|f| f.oneof.as_deref().is_none())
+            .map(|f| self.field_decl(f));
+
+        quote! {
+            #msg_mod
+
+            #DERIVE_ATTRS
+            #DERIVE_DEFAULT
+            pub enum #name {
+                #(pub #msg_fields)*
+                #(pub #oneofs: Option<#msg_mod_name::#oneofs_types>)*
+            }
+        }
     }
 
     fn create_field(&self, proto: &FieldDescriptorProto, oneofs: &[&str]) -> Field {
@@ -114,7 +208,14 @@ impl Generator {
             name: proto.name.clone(),
         };
         let ftype = match proto.label() {
-            Label::Repeated => FieldType::Repeated(tspec),
+            Label::Repeated => FieldType::Repeated {
+                typ: tspec,
+                packed: proto
+                    .options
+                    .as_ref()
+                    .and_then(|opt| opt.packed)
+                    .unwrap_or(false),
+            },
             Label::Required => FieldType::Optional(tspec),
             Label::Optional
                 if self.syntax == Syntax::Proto2
@@ -176,14 +277,20 @@ impl Generator {
                 quote! { #map_type <#k, #v, #max_len> }
             }
             FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t, options),
-            FieldType::Repeated(t) => {
+            FieldType::Repeated { typ, .. } => {
                 let vec_type = &self.config.vec_type;
                 let max_len = options.max_len.as_ref().unwrap();
-                let t = self.tspec_rust_type(t, options);
+                let t = self.tspec_rust_type(typ, options);
                 quote! { #vec_type <#t, #max_len> }
             }
             FieldType::Custom(t) => quote! {#t},
         }
+    }
+
+    fn field_decl(&self, field: &Field) -> TokenStream {
+        let typ = self.rust_type(&field.ftype, &field.options);
+        let name = &field.name;
+        quote! { #name : #typ, }
     }
 
     fn resolve_ident(&self, pb_ident: &str) -> TokenStream {
@@ -193,7 +300,8 @@ impl Generator {
         let ident_type = ident_path.next_back().unwrap();
         let mut ident_path = ident_path.peekable();
 
-        let mut local_path = self.pkg_path.iter().chain(self.type_path.iter()).peekable();
+        let type_path = self.type_path.borrow();
+        let mut local_path = self.pkg_path.iter().chain(type_path.iter()).peekable();
 
         // Skip path elements in common.
         while local_path.peek().is_some()
