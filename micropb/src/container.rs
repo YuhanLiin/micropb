@@ -24,10 +24,16 @@ pub trait PbVec<T>: PbContainer + Deref<Target = [T]> {
     fn pb_push(&mut self, elem: T) -> Result<(), ()>;
 
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>];
+
+    fn pb_from_slice(s: &[T]) -> Result<Self, ()>
+    where
+        T: Clone;
 }
 
 pub trait PbString: PbContainer + Deref<Target = str> {
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
+
+    fn pb_from_str(s: &str) -> Result<Self, ()>;
 }
 
 pub trait PbMap<K, V>: Default {
@@ -82,6 +88,13 @@ mod impl_arrayvec {
             };
             &mut slice[len..]
         }
+
+        fn pb_from_slice(s: &[T]) -> Result<Self, ()>
+        where
+            T: Clone,
+        {
+            Self::try_from(s).map_err(drop)
+        }
     }
 
     impl<const N: usize> PbString for ArrayString<N> {
@@ -94,6 +107,10 @@ mod impl_arrayvec {
             // SAFETY: Underlying storage is array of N bytes, so the slice is valid
             let slice = unsafe { core::slice::from_raw_parts_mut(s as *mut MaybeUninit<u8>, N) };
             &mut slice[len..]
+        }
+
+        fn pb_from_str(s: &str) -> Result<Self, ()> {
+            Self::try_from(s).map_err(drop)
         }
     }
 
@@ -149,6 +166,13 @@ mod impl_heapless {
             };
             &mut slice[len..]
         }
+
+        fn pb_from_slice(s: &[T]) -> Result<Self, ()>
+        where
+            T: Clone,
+        {
+            Self::try_from(s).map_err(drop)
+        }
     }
 
     impl<const N: usize> PbString for String<N> {
@@ -162,6 +186,10 @@ mod impl_heapless {
                 )
             };
             &mut slice[len..]
+        }
+
+        fn pb_from_str(s: &str) -> Result<Self, ()> {
+            Self::try_from(s).map_err(drop)
         }
     }
 
@@ -268,6 +296,13 @@ mod impl_alloc {
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
             self.spare_capacity_mut()
         }
+
+        fn pb_from_slice(s: &[T]) -> Result<Self, ()>
+        where
+            T: Clone,
+        {
+            Ok(Self::from(s))
+        }
     }
 
     //impl<'a, T> PbVec<T> for alloc::borrow::Cow<'a, [T]>
@@ -288,6 +323,10 @@ mod impl_alloc {
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
             unsafe { self.as_mut_vec().spare_capacity_mut() }
+        }
+
+        fn pb_from_str(s: &str) -> Result<Self, ()> {
+            Ok(s.to_owned())
         }
     }
 
