@@ -12,7 +12,7 @@ use quote::quote;
 static DERIVE_MSG: &str = "#[derive(Debug, Clone, PartialEq)]";
 static DERIVE_ENUM: &str = "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]";
 static DERIVE_DEFAULT: &str = "#[derive(Default)]";
-static REPR_ENUM: &str = "#[repr(i32)]";
+static REPR_ENUM: &str = "#[repr(transparent)]";
 
 #[derive(Debug, Clone, Copy, Default)]
 enum EncodeDecode {
@@ -69,6 +69,12 @@ struct Field<'a> {
     options: FieldOptions,
     default: Option<&'a str>,
     oneof: Option<&'a str>,
+}
+
+impl<'a> Field<'a> {
+    fn explicit_presence(&self) -> bool {
+        matches!(self.ftype, FieldType::Optional(_))
+    }
 }
 
 struct Generator {
@@ -214,18 +220,64 @@ impl Generator {
             (Some(DERIVE_DEFAULT), None)
         };
 
+        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
+        let (hazzer_name, hazzer_decl) = if !opt_fields.is_empty() {
+            let (n, t) = self.generate_hazzer(name, &opt_fields);
+            (Some(n), Some(t))
+        } else {
+            (None, None)
+        };
+        let hazzer_field = hazzer_name.map(|n| quote! { pub has: #n, });
+
         quote! {
             #msg_mod
+
+            #hazzer_decl
 
             #DERIVE_MSG
             #derive_default
             pub struct #name {
                 #(pub #msg_fields)*
                 #(pub #oneofs: Option<#msg_mod_name::#oneofs_types>)*
+                #hazzer_field
             }
 
             #decl_default
         }
+    }
+
+    fn generate_hazzer(&self, name: &str, fields: &[&Field]) -> (String, TokenStream) {
+        let count = fields.len();
+        let micropb_path = &self.config.micropb_path;
+        let hazzer_name = format!("{name}Hazzer");
+
+        let methods = fields.iter().enumerate().map(|(i, f)| {
+            let fname = f.name;
+            let setter = format!("set_{fname}");
+
+            quote! {
+                #[inline]
+                pub fn #fname(&self) -> bool {
+                    self.0[#i]
+                }
+
+                #[inline]
+                pub fn #setter(&mut self, val: bool) {
+                    self.0.set(#i, val);
+                }
+            }
+        });
+
+        let decl = quote! {
+            #DERIVE_MSG
+            #DERIVE_DEFAULT
+            pub struct #hazzer_name(#micropb_path::bitvec::BitArr!(for #count, in u8));
+
+            impl #hazzer_name {
+                #(#methods)*
+            }
+        };
+        (hazzer_name, decl)
     }
 
     fn create_field<'a>(&self, proto: &'a FieldDescriptorProto, oneofs: &[&str]) -> Field<'a> {
