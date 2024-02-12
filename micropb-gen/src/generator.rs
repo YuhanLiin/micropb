@@ -26,7 +26,8 @@ pub struct GenConfig {
     encode_decode: EncodeDecode,
     size_cache: bool,
     default_pkg_filename: String,
-    prefix_module: String,
+    micropb_path: String,
+    strip_enum_prefix: bool,
     vec_type: String,
     string_type: String,
     map_type: String,
@@ -119,7 +120,8 @@ impl Generator {
         let var_names = enum_type
             .value
             .iter()
-            .map(|v| v.name.as_ref().unwrap().to_case(Case::Pascal));
+            .map(|v| v.name.as_ref().unwrap().to_case(Case::Pascal))
+            .map(|v| self.strip_enum_prefix(&v, name).to_owned());
         let default_num = enum_type.value[0].number.unwrap();
 
         quote! {
@@ -324,12 +326,23 @@ impl Generator {
 
     fn field_default(&self, field: &Field) -> TokenStream {
         let name = field.name;
+        let micropb_path = &self.config.micropb_path;
         if let Some(default) = field.default {
             match field.ftype {
                 FieldType::Single(ref t) | FieldType::Optional(ref t) => {
                     return match t.typ {
-                        Type::String => todo!(),
-                        Type::Bytes => todo!(),
+                        Type::String => {
+                            let string = format!("\"{}\"", default.escape_default());
+                            quote! { #name: #micropb_path::PbString::from_str(#string).expect("default string went over capacity"), }
+                        }
+                        Type::Bytes => {
+                            let bytes: String = unescape_c_escape_string(default)
+                                .into_iter()
+                                .flat_map(|b| core::ascii::escape_default(b).map(|c| c as char))
+                                .collect();
+                            let bstr = format!("b\"{bytes}\"");
+                            quote! { #name: #micropb_path::PbVec::from_slice(#bstr).expect("default bytes went over capacity"), }
+                        }
                         Type::Message => {
                             unreachable!("message fields shouldn't have custom defaults")
                         }
@@ -375,4 +388,114 @@ impl Generator {
             Cow::Borrowed(elem)
         }
     }
+
+    fn strip_enum_prefix<'a>(&self, variant_name: &'a str, enum_name: &str) -> &'a str {
+        if self.config.strip_enum_prefix {
+            variant_name.strip_prefix(enum_name).unwrap_or(variant_name)
+        } else {
+            variant_name
+        }
+    }
+}
+
+fn unescape_c_escape_string(s: &str) -> Vec<u8> {
+    let src = s.as_bytes();
+    let len = src.len();
+    let mut dst = Vec::new();
+
+    let mut p = 0;
+
+    while p < len {
+        if src[p] != b'\\' {
+            dst.push(src[p]);
+            p += 1;
+        } else {
+            p += 1;
+            if p == len {
+                panic!(
+                    "invalid c-escaped default binary value ({}): ends with '\'",
+                    s
+                )
+            }
+            match src[p] {
+                b'a' => {
+                    dst.push(0x07);
+                    p += 1;
+                }
+                b'b' => {
+                    dst.push(0x08);
+                    p += 1;
+                }
+                b'f' => {
+                    dst.push(0x0C);
+                    p += 1;
+                }
+                b'n' => {
+                    dst.push(0x0A);
+                    p += 1;
+                }
+                b'r' => {
+                    dst.push(0x0D);
+                    p += 1;
+                }
+                b't' => {
+                    dst.push(0x09);
+                    p += 1;
+                }
+                b'v' => {
+                    dst.push(0x0B);
+                    p += 1;
+                }
+                b'\\' => {
+                    dst.push(0x5C);
+                    p += 1;
+                }
+                b'?' => {
+                    dst.push(0x3F);
+                    p += 1;
+                }
+                b'\'' => {
+                    dst.push(0x27);
+                    p += 1;
+                }
+                b'"' => {
+                    dst.push(0x22);
+                    p += 1;
+                }
+                b'0'..=b'7' => {
+                    let mut octal = 0;
+                    for _ in 0..3 {
+                        if p < len && src[p] >= b'0' && src[p] <= b'7' {
+                            octal = octal * 8 + (src[p] - b'0');
+                            p += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    dst.push(octal);
+                }
+                b'x' | b'X' => {
+                    if p + 3 > len {
+                        panic!(
+                            "invalid c-escaped default binary value ({}): incomplete hex value",
+                            s
+                        )
+                    }
+                    match u8::from_str_radix(&s[p + 1..p + 3], 16) {
+                        Ok(b) => dst.push(b),
+                        _ => panic!(
+                            "invalid c-escaped default binary value ({}): invalid hex value",
+                            &s[p..p + 2]
+                        ),
+                    }
+                    p += 3;
+                }
+                _ => panic!(
+                    "invalid c-escaped default binary value ({}): invalid escape",
+                    s
+                ),
+            }
+        }
+    }
+    dst
 }
