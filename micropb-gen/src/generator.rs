@@ -248,9 +248,9 @@ impl Generator {
             let defaults = fields.iter().map(|f| self.field_default(f));
             let hazzer_default = hazzer_name
                 .as_ref()
-                .map(|_| quote! { has: Default::default(), });
+                .map(|_| quote! { has: core::default::Default::default(), });
             let decl = quote! {
-                impl Default for #name {
+                impl core::default::Default for #name {
                     fn default() -> Self {
                         Self {
                             #(#defaults)*
@@ -467,7 +467,7 @@ impl Generator {
                 _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
             }
         }
-        quote! { #name: Default::default(), }
+        quote! { #name: core::default::Default::default(), }
     }
 
     fn resolve_ident(&self, pb_ident: &str) -> TokenStream {
