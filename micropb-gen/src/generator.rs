@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cell::RefCell};
+use std::{borrow::Cow, cell::RefCell, collections::HashMap, iter, ops::Deref};
 
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
@@ -60,6 +60,7 @@ enum FieldType {
 struct FieldOptions {
     max_bytes: Option<u32>,
     max_len: Option<u32>,
+    kv_options: Option<(Box<FieldOptions>, Box<FieldOptions>)>,
 }
 
 struct Field<'a> {
@@ -153,20 +154,53 @@ impl Generator {
         }
     }
 
+    fn create_map_type(
+        &self,
+        fq_name: &str,
+        msg_type: &DescriptorProto,
+    ) -> (String, TypeSpec, TypeSpec) {
+        let name = format!("{fq_name}.{}", msg_type.name.as_ref().unwrap());
+        let key = self.create_type_spec(&msg_type.field[0]);
+        let val = self.create_type_spec(&msg_type.field[1]);
+        (name, key, val)
+    }
+
     fn generate_msg_type(&self, msg_type: &DescriptorProto) -> TokenStream {
         let name = msg_type.name.as_ref().unwrap();
+        let fq_name = self.fq_name(name);
+        let msg_mod_name = format!("mod_{name}");
         let oneofs: Vec<_> = msg_type
             .oneof_decl
             .iter()
             .map(|oneof| oneof.name.as_deref().unwrap())
             .collect();
         let oneofs_types: Vec<_> = oneofs.iter().map(|o| o.to_case(Case::Pascal)).collect();
+        let mut map_types = HashMap::new();
+        let inner_msgs: Vec<_> = msg_type
+            .nested_type
+            .iter()
+            .filter(|m| {
+                if m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false) {
+                    let (map_name, key, val) = self.create_map_type(&fq_name, m);
+                    map_types.insert(map_name, (key, val));
+                    false
+                } else {
+                    true
+                }
+            })
+            .collect();
+
         let (fields, oneof_fields): (Vec<_>, Vec<_>) = msg_type
             .field
             .iter()
-            .map(|f| self.create_field(f, &oneofs))
+            .map(|f| {
+                if let Some((key, val)) = map_types.remove(f.type_name()) {
+                    self.create_map_field(f, key, val)
+                } else {
+                    self.create_field(f, &oneofs)
+                }
+            })
             .partition(|f| f.oneof.is_none());
-        let msg_mod_name = format!("mod_{name}");
 
         self.type_path.borrow_mut().push(name.to_owned());
         let oneof_decls = oneofs
@@ -186,10 +220,7 @@ impl Generator {
                 }
             });
 
-        let nested_msgs = msg_type
-            .nested_type
-            .iter()
-            .map(|m| self.generate_msg_type(m));
+        let nested_msgs = inner_msgs.iter().map(|m| self.generate_msg_type(m));
         let nested_enums = msg_type
             .enum_type
             .iter()
@@ -204,13 +235,26 @@ impl Generator {
         self.type_path.borrow_mut().pop();
 
         let msg_fields = fields.iter().map(|f| self.field_decl(f));
+        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
+        let (hazzer_name, hazzer_decl) = if !opt_fields.is_empty() {
+            let (n, t) = self.generate_hazzer(name, &opt_fields);
+            (Some(n), Some(t))
+        } else {
+            (None, None)
+        };
+        let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub has: #n, });
+
         let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
             let defaults = fields.iter().map(|f| self.field_default(f));
+            let hazzer_default = hazzer_name
+                .as_ref()
+                .map(|_| quote! { has: Default::default(), });
             let decl = quote! {
                 impl Default for #name {
                     fn default() -> Self {
                         Self {
                             #(#defaults)*
+                            #hazzer_default
                         }
                     }
                 }
@@ -219,15 +263,6 @@ impl Generator {
         } else {
             (Some(DERIVE_DEFAULT), None)
         };
-
-        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
-        let (hazzer_name, hazzer_decl) = if !opt_fields.is_empty() {
-            let (n, t) = self.generate_hazzer(name, &opt_fields);
-            (Some(n), Some(t))
-        } else {
-            (None, None)
-        };
-        let hazzer_field = hazzer_name.map(|n| quote! { pub has: #n, });
 
         quote! {
             #msg_mod
@@ -280,14 +315,18 @@ impl Generator {
         (hazzer_name, decl)
     }
 
+    fn create_type_spec(&self, proto: &FieldDescriptorProto) -> TypeSpec {
+        TypeSpec {
+            typ: proto.r#type(),
+            name: proto.type_name.clone(),
+        }
+    }
+
     fn create_field<'a>(&self, proto: &'a FieldDescriptorProto, oneofs: &[&str]) -> Field<'a> {
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
 
-        let tspec = TypeSpec {
-            typ: proto.r#type(),
-            name: proto.name.clone(),
-        };
+        let tspec = self.create_type_spec(proto);
         let ftype = match proto.label() {
             Label::Repeated => FieldType::Repeated {
                 typ: tspec,
@@ -316,6 +355,28 @@ impl Generator {
             name,
             oneof,
             default,
+            options: todo!(),
+        }
+    }
+
+    fn create_map_field<'a>(
+        &self,
+        proto: &'a FieldDescriptorProto,
+        key: TypeSpec,
+        val: TypeSpec,
+    ) -> Field<'a> {
+        let name = proto.name.as_ref().unwrap();
+        let num = proto.number.unwrap() as u32;
+        // TODO Possible custom type
+        let ftype = FieldType::Map(key, val);
+
+        Field {
+            num,
+            ftype,
+            name,
+            oneof: None,
+            default: None,
+            // need to create sub-options for key and value
             options: todo!(),
         }
     }
@@ -353,8 +414,9 @@ impl Generator {
     fn rust_type(&self, field_type: &FieldType, options: &FieldOptions) -> TokenStream {
         match field_type {
             FieldType::Map(k, v) => {
-                let k = self.tspec_rust_type(k, options);
-                let v = self.tspec_rust_type(v, options);
+                let (k_opt, v_opt) = options.kv_options.as_ref().unwrap();
+                let k = self.tspec_rust_type(k, k_opt);
+                let v = self.tspec_rust_type(v, v_opt);
                 let map_type = &self.config.map_type;
                 let max_len = options.max_len.as_ref().unwrap();
                 quote! { #map_type <#k, #v, #max_len> }
@@ -447,6 +509,15 @@ impl Generator {
         } else {
             variant_name
         }
+    }
+
+    fn fq_name(&self, name: &str) -> String {
+        self.pkg_path
+            .iter()
+            .map(Deref::deref)
+            .chain(self.type_path.borrow().iter().map(Deref::deref))
+            .chain(iter::once(name))
+            .fold(String::new(), |acc, s| acc + "." + s)
     }
 }
 
