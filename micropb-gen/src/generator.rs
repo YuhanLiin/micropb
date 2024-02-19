@@ -1,11 +1,14 @@
-use std::{borrow::Cow, cell::RefCell, collections::HashMap, iter, ops::Deref};
+use std::{borrow::Cow, cell::RefCell};
 
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
-use protox::prost_reflect::prost_types::{
-    field_descriptor_proto::{Label, Type},
-    DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorProto,
-    FileDescriptorSet,
+use protox::prost_reflect::{
+    prost_types::{
+        field_descriptor_proto::{Label, Type},
+        DescriptorProto, FieldDescriptorProto,
+    },
+    Cardinality, DescriptorPool, EnumDescriptor, FieldDescriptor, FileDescriptor, Kind,
+    MessageDescriptor, Syntax,
 };
 use quote::quote;
 
@@ -33,49 +36,11 @@ pub struct GenConfig {
     map_type: String,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-enum Syntax {
-    #[default]
-    Proto2,
-    Proto3,
-}
-
-struct TypeSpec {
-    typ: Type,
-    name: Option<String>,
-}
-
-enum FieldType {
-    // Can't be put in oneof, key type can't be message or enum
-    Map(TypeSpec, TypeSpec),
-    // Implicit presence
-    Single(TypeSpec),
-    // Explicit presence
-    Optional(TypeSpec),
-    Repeated { typ: TypeSpec, packed: bool },
-    Custom(String),
-}
-
 #[derive(Debug, Default)]
 struct FieldOptions {
     max_bytes: Option<u32>,
     max_len: Option<u32>,
     kv_options: Option<(Box<FieldOptions>, Box<FieldOptions>)>,
-}
-
-struct Field<'a> {
-    num: u32,
-    ftype: FieldType,
-    name: &'a str,
-    options: FieldOptions,
-    default: Option<&'a str>,
-    oneof: Option<&'a str>,
-}
-
-impl<'a> Field<'a> {
-    fn explicit_presence(&self) -> bool {
-        matches!(self.ftype, FieldType::Optional(_))
-    }
 }
 
 struct Generator {
@@ -86,34 +51,27 @@ struct Generator {
 }
 
 impl Generator {
-    fn generate_fdset(&mut self, fdset: &FileDescriptorSet) {
-        for file in &fdset.file {
+    fn generate_fdset(&mut self, fdset: DescriptorPool) {
+        for file in fdset.files() {
             self.generate_fdproto(file);
         }
     }
 
-    fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) {
-        let filename = fdproto
-            .package
-            .as_ref()
-            .unwrap_or_else(|| &self.config.default_pkg_filename)
-            .to_owned();
+    fn generate_fdproto(&mut self, fdproto: FileDescriptor) {
+        let mut filename = fdproto.package_name();
+        if filename.is_empty() {
+            filename = &self.config.default_pkg_filename;
+        }
 
-        self.syntax = match fdproto.syntax.as_deref() {
-            Some("proto3") => Syntax::Proto3,
-            _ => Syntax::Proto2,
-        };
+        self.syntax = fdproto.syntax();
         self.pkg_path = fdproto
-            .package
-            .as_ref()
-            .map(|s| s.split('.').map(ToOwned::to_owned).collect())
-            .unwrap_or_default();
+            .package_name()
+            .split('.')
+            .map(ToOwned::to_owned)
+            .collect();
 
-        let msgs = fdproto
-            .message_type
-            .iter()
-            .map(|m| self.generate_msg_type(m));
-        let enums = fdproto.enum_type.iter().map(|e| self.generate_enum_type(e));
+        let msgs = fdproto.messages().map(|m| self.generate_msg_type(m));
+        let enums = fdproto.enums().map(|e| self.generate_enum_type(e));
 
         let code = quote! {
             #(#msgs)*
@@ -121,15 +79,14 @@ impl Generator {
         };
     }
 
-    fn generate_enum_type(&self, enum_type: &EnumDescriptorProto) -> TokenStream {
-        let name = enum_type.name.as_ref().unwrap();
-        let nums = enum_type.value.iter().map(|v| v.number.unwrap());
+    fn generate_enum_type(&self, enum_type: EnumDescriptor) -> TokenStream {
+        let name = enum_type.name();
+        let nums = enum_type.values().map(|v| v.number());
         let var_names = enum_type
-            .value
-            .iter()
-            .map(|v| v.name.as_ref().unwrap().to_case(Case::Pascal))
+            .values()
+            .map(|v| v.name().to_case(Case::Pascal))
             .map(|v| self.strip_enum_prefix(&v, name).to_owned());
-        let default_num = enum_type.value[0].number.unwrap();
+        let default_num = enum_type.default_value().number();
 
         quote! {
             #DERIVE_ENUM
@@ -154,77 +111,34 @@ impl Generator {
         }
     }
 
-    fn create_map_type(
-        &self,
-        fq_name: &str,
-        msg_type: &DescriptorProto,
-    ) -> (String, TypeSpec, TypeSpec) {
-        let name = format!("{fq_name}.{}", msg_type.name.as_ref().unwrap());
-        let key = self.create_type_spec(&msg_type.field[0]);
-        let val = self.create_type_spec(&msg_type.field[1]);
-        (name, key, val)
-    }
-
-    fn generate_msg_type(&self, msg_type: &DescriptorProto) -> TokenStream {
-        let name = msg_type.name.as_ref().unwrap();
-        let fq_name = self.fq_name(name);
+    fn generate_msg_type(&self, msg_type: MessageDescriptor) -> TokenStream {
+        let name = msg_type.name();
         let msg_mod_name = format!("mod_{name}");
+        let fields: Vec<_> = msg_type
+            .fields()
+            .filter(|f| f.containing_oneof().is_none())
+            .collect();
         let oneofs: Vec<_> = msg_type
-            .oneof_decl
-            .iter()
-            .map(|oneof| oneof.name.as_deref().unwrap())
+            .oneofs()
+            .map(|oneof| (oneof.clone(), oneof.name().to_case(Case::Pascal)))
             .collect();
-        let oneofs_types: Vec<_> = oneofs.iter().map(|o| o.to_case(Case::Pascal)).collect();
-        let mut map_types = HashMap::new();
-        let inner_msgs: Vec<_> = msg_type
-            .nested_type
-            .iter()
-            .filter(|m| {
-                if m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false) {
-                    let (map_name, key, val) = self.create_map_type(&fq_name, m);
-                    map_types.insert(map_name, (key, val));
-                    false
-                } else {
-                    true
-                }
-            })
-            .collect();
-
-        let (fields, oneof_fields): (Vec<_>, Vec<_>) = msg_type
-            .field
-            .iter()
-            .map(|f| {
-                if let Some((key, val)) = map_types.remove(f.type_name()) {
-                    self.create_map_field(f, key, val)
-                } else {
-                    self.create_field(f, &oneofs)
-                }
-            })
-            .partition(|f| f.oneof.is_none());
 
         self.type_path.borrow_mut().push(name.to_owned());
-        let oneof_decls = oneofs
-            .iter()
-            .zip(oneofs_types.iter())
-            .map(|(oneof, oneof_type)| {
-                let fields = oneof_fields
-                    .iter()
-                    .filter(|f| f.oneof == Some(*oneof))
-                    .map(|f| self.field_decl(f));
-
-                quote! {
-                    #DERIVE_MSG
-                    pub enum #oneof_type {
-                        #(#fields)*
-                    }
+        let oneof_decls = oneofs.iter().map(|(oneof, oneof_type)| {
+            let fields = oneof.fields().map(|f| self.field_decl(&f));
+            quote! {
+                #DERIVE_MSG
+                pub enum #oneof_type {
+                    #(#fields)*
                 }
-            });
+            }
+        });
+        let nested_msgs = msg_type
+            .child_messages()
+            .filter(|m| !m.is_map_entry())
+            .map(|m| self.generate_msg_type(m));
+        let nested_enums = msg_type.child_enums().map(|e| self.generate_enum_type(e));
 
-        let nested_msgs = inner_msgs.iter().map(|m| self.generate_msg_type(m));
-        let nested_enums = msg_type
-            .enum_type
-            .iter()
-            .map(|e| self.generate_enum_type(e));
         let msg_mod = quote! {
             pub mod #msg_mod_name {
                 #(#oneof_decls)*
@@ -234,8 +148,8 @@ impl Generator {
         };
         self.type_path.borrow_mut().pop();
 
-        let msg_fields = fields.iter().map(|f| self.field_decl(f));
-        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
+        let msg_fields = fields.iter().cloned().map(|f| self.field_decl(&f));
+        let opt_fields: Vec<_> = fields.iter().filter(|f| f.supports_presence()).collect();
         let (hazzer_name, hazzer_decl) = if !opt_fields.is_empty() {
             let (n, t) = self.generate_hazzer(name, &opt_fields);
             (Some(n), Some(t))
@@ -243,8 +157,13 @@ impl Generator {
             (None, None)
         };
         let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub has: #n, });
+        let oneof_names = oneofs.iter().map(|(oneof, _)| oneof.name());
+        let oneof_types = oneofs.iter().map(|(_, typ)| typ);
 
-        let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
+        let (derive_default, decl_default) = if fields
+            .iter()
+            .any(|f| f.field_descriptor_proto().default_value.is_some())
+        {
             let defaults = fields.iter().map(|f| self.field_default(f));
             let hazzer_default = hazzer_name
                 .as_ref()
@@ -273,7 +192,7 @@ impl Generator {
             #derive_default
             pub struct #name {
                 #(pub #msg_fields)*
-                #(pub #oneofs: Option<#msg_mod_name::#oneofs_types>)*
+                #(pub #oneof_names: Option<#msg_mod_name::#oneof_types>)*
                 #hazzer_field
             }
 
@@ -281,13 +200,13 @@ impl Generator {
         }
     }
 
-    fn generate_hazzer(&self, name: &str, fields: &[&Field]) -> (String, TokenStream) {
+    fn generate_hazzer(&self, name: &str, fields: &[&FieldDescriptor]) -> (String, TokenStream) {
         let count = fields.len();
         let micropb_path = &self.config.micropb_path;
         let hazzer_name = format!("{name}Hazzer");
 
         let methods = fields.iter().enumerate().map(|(i, f)| {
-            let fname = f.name;
+            let fname = f.name();
             let setter = format!("set_{fname}");
 
             quote! {
@@ -315,156 +234,96 @@ impl Generator {
         (hazzer_name, decl)
     }
 
-    fn create_type_spec(&self, proto: &FieldDescriptorProto) -> TypeSpec {
-        TypeSpec {
-            typ: proto.r#type(),
-            name: proto.type_name.clone(),
-        }
-    }
-
-    fn create_field<'a>(&self, proto: &'a FieldDescriptorProto, oneofs: &[&str]) -> Field<'a> {
-        let name = proto.name.as_ref().unwrap();
-        let num = proto.number.unwrap() as u32;
-
-        let tspec = self.create_type_spec(proto);
-        let ftype = match proto.label() {
-            Label::Repeated => FieldType::Repeated {
-                typ: tspec,
-                packed: proto
-                    .options
-                    .as_ref()
-                    .and_then(|opt| opt.packed)
-                    .unwrap_or(false),
-            },
-            Label::Required => FieldType::Optional(tspec),
-            Label::Optional
-                if self.syntax == Syntax::Proto2
-                    || proto.proto3_optional()
-                    || tspec.typ == Type::Message =>
-            {
-                FieldType::Optional(tspec)
-            }
-            _ => FieldType::Single(tspec),
+    fn map_fields(&self, field: &FieldDescriptor) -> (FieldDescriptor, FieldDescriptor) {
+        assert!(field.is_map());
+        let Kind::Message(msg) = field.kind() else {
+            unreachable!()
         };
-        let oneof = proto.oneof_index.map(|i| oneofs[i as usize]);
-        let default = proto.default_value.as_deref();
-
-        Field {
-            num,
-            ftype,
-            name,
-            oneof,
-            default,
-            options: todo!(),
-        }
+        (msg.map_entry_key_field(), msg.map_entry_value_field())
     }
 
-    fn create_map_field<'a>(
-        &self,
-        proto: &'a FieldDescriptorProto,
-        key: TypeSpec,
-        val: TypeSpec,
-    ) -> Field<'a> {
-        let name = proto.name.as_ref().unwrap();
-        let num = proto.number.unwrap() as u32;
-        // TODO Possible custom type
-        let ftype = FieldType::Map(key, val);
-
-        Field {
-            num,
-            ftype,
-            name,
-            oneof: None,
-            default: None,
-            // need to create sub-options for key and value
-            options: todo!(),
-        }
-    }
-
-    fn tspec_rust_type(&self, tspec: &TypeSpec, options: &FieldOptions) -> TokenStream {
-        match tspec.typ {
-            Type::Int32 => quote! {i32},
-            Type::Int64 => quote! {i64},
-            Type::Uint32 => quote! {u32},
-            Type::Uint64 => quote! {u64},
-            Type::Sint32 => quote! {i32},
-            Type::Sint64 => quote! {i64},
-            Type::Fixed32 => quote! {u32},
-            Type::Fixed64 => quote! {u64},
-            Type::Sfixed32 => quote! {i32},
-            Type::Sfixed64 => quote! {i64},
-            Type::Float => quote! {f32},
-            Type::Double => quote! {f64},
-            Type::Bool => quote! {bool},
-            Type::String => {
+    fn kind_rust_type(&self, kind: Kind, options: &FieldOptions) -> TokenStream {
+        match kind {
+            Kind::Int32 => quote! {i32},
+            Kind::Int64 => quote! {i64},
+            Kind::Uint32 => quote! {u32},
+            Kind::Uint64 => quote! {u64},
+            Kind::Sint32 => quote! {i32},
+            Kind::Sint64 => quote! {i64},
+            Kind::Fixed32 => quote! {u32},
+            Kind::Fixed64 => quote! {u64},
+            Kind::Sfixed32 => quote! {i32},
+            Kind::Sfixed64 => quote! {i64},
+            Kind::Float => quote! {f32},
+            Kind::Double => quote! {f64},
+            Kind::Bool => quote! {bool},
+            Kind::String => {
                 let str_type = &self.config.string_type;
                 let max_bytes = options.max_bytes.as_ref().unwrap();
                 quote! { #str_type <#max_bytes> }
             }
-            Type::Bytes => {
+            Kind::Bytes => {
                 let vec_type = &self.config.vec_type;
                 let max_bytes = options.max_bytes.as_ref().unwrap();
                 quote! { #vec_type <u8, #max_bytes> }
             }
-            Type::Message | Type::Enum => self.resolve_ident(tspec.name.as_ref().unwrap()),
-            Type::Group => panic!("Group records are deprecated and unsupported"),
+            Kind::Message(msg) => self.resolve_ident(msg.full_name()),
+            Kind::Enum(en) => self.resolve_ident(en.full_name()),
         }
     }
 
-    fn rust_type(&self, field_type: &FieldType, options: &FieldOptions) -> TokenStream {
-        match field_type {
-            FieldType::Map(k, v) => {
-                let (k_opt, v_opt) = options.kv_options.as_ref().unwrap();
-                let k = self.tspec_rust_type(k, k_opt);
-                let v = self.tspec_rust_type(v, v_opt);
-                let map_type = &self.config.map_type;
-                let max_len = options.max_len.as_ref().unwrap();
-                quote! { #map_type <#k, #v, #max_len> }
-            }
-            FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t, options),
-            FieldType::Repeated { typ, .. } => {
-                let vec_type = &self.config.vec_type;
-                let max_len = options.max_len.as_ref().unwrap();
-                let t = self.tspec_rust_type(typ, options);
-                quote! { #vec_type <#t, #max_len> }
-            }
-            FieldType::Custom(t) => quote! {#t},
+    fn rust_type(&self, field_type: &FieldDescriptor, options: &FieldOptions) -> TokenStream {
+        if field_type.is_group() {
+            panic!("Groups not supported")
+        } else if field_type.is_map() {
+            let (k_opt, v_opt) = options.kv_options.as_ref().unwrap();
+            let (kfield, vfield) = self.map_fields(field_type);
+            let k = self.kind_rust_type(kfield.kind(), k_opt);
+            let v = self.kind_rust_type(vfield.kind(), v_opt);
+            let map_type = &self.config.map_type;
+            let max_len = options.max_len.as_ref().unwrap();
+            quote! { #map_type <#k, #v, #max_len> }
+        } else if field_type.is_list() {
+            let vec_type = &self.config.vec_type;
+            let max_len = options.max_len.as_ref().unwrap();
+            let t = self.kind_rust_type(field_type.kind(), options);
+            quote! { #vec_type <#t, #max_len> }
+        } else {
+            self.kind_rust_type(field_type.kind(), options)
         }
     }
 
-    fn field_decl(&self, field: &Field) -> TokenStream {
-        let typ = self.rust_type(&field.ftype, &field.options);
-        let name = field.name;
+    fn field_decl(&self, field: &FieldDescriptor) -> TokenStream {
+        let typ = self.rust_type(&field, todo!());
+        let name = field.name();
         quote! { #name : #typ, }
     }
 
-    fn field_default(&self, field: &Field) -> TokenStream {
-        let name = field.name;
+    fn field_default(&self, field: &FieldDescriptor) -> TokenStream {
+        let name = field.name();
         let micropb_path = &self.config.micropb_path;
-        if let Some(default) = field.default {
-            match field.ftype {
-                FieldType::Single(ref t) | FieldType::Optional(ref t) => {
-                    return match t.typ {
-                        Type::String => {
-                            let string = format!("\"{}\"", default.escape_default());
-                            quote! { #name: #micropb_path::PbString::from_str(#string).expect("default string went over capacity"), }
-                        }
-                        Type::Bytes => {
-                            let bytes: String = unescape_c_escape_string(default)
-                                .into_iter()
-                                .flat_map(|b| core::ascii::escape_default(b).map(|c| c as char))
-                                .collect();
-                            let bstr = format!("b\"{bytes}\"");
-                            quote! { #name: #micropb_path::PbVec::from_slice(#bstr).expect("default bytes went over capacity"), }
-                        }
-                        Type::Message => {
-                            unreachable!("message fields shouldn't have custom defaults")
-                        }
-                        _ => quote! { #name: #default.into(), },
+        if let Some(default) = field.field_descriptor_proto().default_value.as_ref() {
+            if let Cardinality::Repeated = field.cardinality() {
+                unreachable!("repeated and map fields shouldn't have custom defaults");
+            } else {
+                return match field.kind() {
+                    Kind::String => {
+                        let string = format!("\"{}\"", default.escape_default());
+                        quote! { #name: #micropb_path::PbString::from_str(#string).expect("default string went over capacity"), }
                     }
-                }
-                FieldType::Custom(_) => {}
-                _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
+                    Kind::Bytes => {
+                        let bytes: String = unescape_c_escape_string(default)
+                            .into_iter()
+                            .flat_map(|b| core::ascii::escape_default(b).map(|c| c as char))
+                            .collect();
+                        let bstr = format!("b\"{bytes}\"");
+                        quote! { #name: #micropb_path::PbVec::from_slice(#bstr).expect("default bytes went over capacity"), }
+                    }
+                    Kind::Message(_) => {
+                        unreachable!("message fields shouldn't have custom defaults")
+                    }
+                    _ => quote! { #name: #default.into(), },
+                };
             }
         }
         quote! { #name: core::default::Default::default(), }
@@ -509,15 +368,6 @@ impl Generator {
         } else {
             variant_name
         }
-    }
-
-    fn fq_name(&self, name: &str) -> String {
-        self.pkg_path
-            .iter()
-            .map(Deref::deref)
-            .chain(self.type_path.borrow().iter().map(Deref::deref))
-            .chain(iter::once(name))
-            .fold(String::new(), |acc, s| acc + "." + s)
     }
 }
 
