@@ -42,11 +42,18 @@ enum FieldType {
     Custom(String),
 }
 
+enum SubConfigs {
+    None,
+    Elem(Option<FieldConfig>),
+    KeyValue(Option<FieldConfig>, Option<FieldConfig>),
+}
+
 struct Field<'a> {
     num: u32,
     ftype: FieldType,
     name: &'a str,
-    config_node: Option<&'a Node<FieldConfig>>,
+    config: Option<FieldConfig>,
+    subconfigs: SubConfigs,
     default: Option<&'a str>,
     oneof: Option<&'a str>,
 }
@@ -329,7 +336,8 @@ impl Generator {
             name,
             oneof,
             default,
-            config_node: todo!(),
+            config: todo!(),
+            subconfigs: todo!(),
         }
     }
 
@@ -351,7 +359,8 @@ impl Generator {
             oneof: None,
             default: None,
             // need to create sub-options for key and value
-            config_node: todo!(),
+            config: todo!(),
+            subconfigs: todo!(),
         }
     }
 
@@ -398,23 +407,16 @@ impl Generator {
     fn rust_type(
         &self,
         field_type: &FieldType,
-        field_node: Option<&Node<FieldConfig>>,
+        field_conf: Option<&FieldConfig>,
+        subconfigs: &SubConfigs,
     ) -> TokenStream {
         match field_type {
             FieldType::Map(k, v) => {
-                let k = self.tspec_rust_type(
-                    k,
-                    field_node
-                        .and_then(|n| n.next("key"))
-                        .and_then(|n| n.value()),
-                );
-                let v = self.tspec_rust_type(
-                    v,
-                    field_node
-                        .and_then(|n| n.next("elem"))
-                        .and_then(|n| n.value()),
-                );
-                let field_conf = field_node.and_then(|n| n.value());
+                let SubConfigs::KeyValue(kconf, vconf) = subconfigs else {
+                    unreachable!("expected key-value sub-configs")
+                };
+                let k = self.tspec_rust_type(k, kconf.as_ref());
+                let v = self.tspec_rust_type(v, vconf.as_ref());
                 let container_type = field_conf.and_then(|c| c.container_type.as_deref());
                 if let Some(max_len) = field_conf.and_then(|c| c.fixed_len) {
                     let map_type = container_type.unwrap_or(&self.config.fixed_map_type);
@@ -425,18 +427,13 @@ impl Generator {
                 }
             }
 
-            FieldType::Single(t) | FieldType::Optional(t) => {
-                self.tspec_rust_type(t, field_node.and_then(|n| n.value()))
-            }
+            FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t, field_conf),
 
             FieldType::Repeated { typ, .. } => {
-                let t = self.tspec_rust_type(
-                    typ,
-                    field_node
-                        .and_then(|n| n.next("elem"))
-                        .and_then(|n| n.value()),
-                );
-                let field_conf = field_node.and_then(|n| n.value());
+                let SubConfigs::Elem(subconf) = subconfigs else {
+                    unreachable!("expected list sub-configs")
+                };
+                let t = self.tspec_rust_type(typ, subconf.as_ref());
                 let container_type = field_conf.and_then(|c| c.container_type.as_deref());
                 if let Some(max_len) = field_conf.and_then(|c| c.fixed_len) {
                     let vec_type = container_type.unwrap_or(&self.config.fixed_vec_type);
@@ -452,7 +449,7 @@ impl Generator {
     }
 
     fn field_decl(&self, field: &Field) -> TokenStream {
-        let typ = self.rust_type(&field.ftype, field.config_node);
+        let typ = self.rust_type(&field.ftype, field.config.as_ref(), &field.subconfigs);
         let name = field.name;
         quote! { #name : #typ, }
     }
