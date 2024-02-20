@@ -34,6 +34,31 @@ pub struct FieldConfig {
 }
 
 impl FieldConfig {
+    pub fn merge(&mut self, other: &Self) {
+        if let Some(v) = other.fixed_len {
+            self.fixed_len = Some(v);
+        }
+        if let Some(v) = other.int_type {
+            self.int_type = Some(v);
+        }
+        if let Some(v) = &other.custom_type {
+            self.custom_type = Some(v.clone());
+        }
+        if let Some(v) = &other.container_type {
+            self.container_type = Some(v.clone());
+        }
+        self.attributes += &other.attributes;
+        if other.boxed {
+            self.boxed = true;
+        }
+    }
+
+    pub fn merge_clone(&self, other: &Self) -> Self {
+        let mut c = self.clone();
+        c.merge(other);
+        c
+    }
+
     pub fn fixed_len(mut self, len: u32) -> Self {
         self.fixed_len = Some(len);
         self
@@ -73,6 +98,22 @@ pub struct TypeConfig {
 }
 
 impl TypeConfig {
+    pub fn merge(&mut self, other: &Self) {
+        if let Some(v) = other.enum_int_type {
+            self.enum_int_type = Some(v);
+        }
+        self.attributes += &other.attributes;
+        if other.skip_debug {
+            self.skip_debug = true;
+        }
+    }
+
+    pub fn merge_clone(&self, other: &Self) -> Self {
+        let mut c = self.clone();
+        c.merge(other);
+        c
+    }
+
     pub fn enum_int_type(mut self, enum_int_type: IntType) -> Self {
         self.enum_int_type = Some(enum_int_type);
         self
