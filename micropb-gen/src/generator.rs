@@ -9,29 +9,15 @@ use protox::prost_reflect::prost_types::{
 };
 use quote::quote;
 
+use crate::{
+    config::{FieldConfig, GenConfig},
+    pathtree::Node,
+};
+
 static DERIVE_MSG: &str = "#[derive(Debug, Clone, PartialEq)]";
 static DERIVE_ENUM: &str = "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]";
 static DERIVE_DEFAULT: &str = "#[derive(Default)]";
 static REPR_ENUM: &str = "#[repr(transparent)]";
-
-#[derive(Debug, Clone, Copy, Default)]
-enum EncodeDecode {
-    EncodeOnly,
-    DecodeOnly,
-    #[default]
-    Both,
-}
-
-pub struct GenConfig {
-    encode_decode: EncodeDecode,
-    size_cache: bool,
-    default_pkg_filename: String,
-    micropb_path: String,
-    strip_enum_prefix: bool,
-    vec_type: String,
-    string_type: String,
-    map_type: String,
-}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 enum Syntax {
@@ -56,18 +42,11 @@ enum FieldType {
     Custom(String),
 }
 
-#[derive(Debug, Default)]
-struct FieldOptions {
-    max_bytes: Option<u32>,
-    max_len: Option<u32>,
-    kv_options: Option<(Box<FieldOptions>, Box<FieldOptions>)>,
-}
-
 struct Field<'a> {
     num: u32,
     ftype: FieldType,
     name: &'a str,
-    options: FieldOptions,
+    config_node: Option<&'a Node<FieldConfig>>,
     default: Option<&'a str>,
     oneof: Option<&'a str>,
 }
@@ -154,15 +133,10 @@ impl Generator {
         }
     }
 
-    fn create_map_type(
-        &self,
-        fq_name: &str,
-        msg_type: &DescriptorProto,
-    ) -> (String, TypeSpec, TypeSpec) {
-        let name = format!("{fq_name}.{}", msg_type.name.as_ref().unwrap());
+    fn create_map_type(&self, msg_type: &DescriptorProto) -> (String, TypeSpec, TypeSpec) {
         let key = self.create_type_spec(&msg_type.field[0]);
         let val = self.create_type_spec(&msg_type.field[1]);
-        (name, key, val)
+        (msg_type.name.clone().unwrap(), key, val)
     }
 
     fn generate_msg_type(&self, msg_type: &DescriptorProto) -> TokenStream {
@@ -181,7 +155,7 @@ impl Generator {
             .iter()
             .filter(|m| {
                 if m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false) {
-                    let (map_name, key, val) = self.create_map_type(&fq_name, m);
+                    let (map_name, key, val) = self.create_map_type(m);
                     map_types.insert(map_name, (key, val));
                     false
                 } else {
@@ -355,7 +329,7 @@ impl Generator {
             name,
             oneof,
             default,
-            options: todo!(),
+            config_node: todo!(),
         }
     }
 
@@ -377,11 +351,11 @@ impl Generator {
             oneof: None,
             default: None,
             // need to create sub-options for key and value
-            options: todo!(),
+            config_node: todo!(),
         }
     }
 
-    fn tspec_rust_type(&self, tspec: &TypeSpec, options: &FieldOptions) -> TokenStream {
+    fn tspec_rust_type(&self, tspec: &TypeSpec, field_conf: Option<&FieldConfig>) -> TokenStream {
         match tspec.typ {
             Type::Int32 => quote! {i32},
             Type::Int64 => quote! {i64},
@@ -397,43 +371,88 @@ impl Generator {
             Type::Double => quote! {f64},
             Type::Bool => quote! {bool},
             Type::String => {
-                let str_type = &self.config.string_type;
-                let max_bytes = options.max_bytes.as_ref().unwrap();
-                quote! { #str_type <#max_bytes> }
+                let container_type = field_conf.and_then(|c| c.container_type.as_deref());
+                if let Some(max_bytes) = field_conf.and_then(|c| c.fixed_len) {
+                    let str_type = container_type.unwrap_or(&self.config.fixed_string_type);
+                    quote! { #str_type <#max_bytes> }
+                } else {
+                    let str_type = container_type.unwrap_or(&self.config.alloc_string_type);
+                    quote! { #str_type }
+                }
             }
             Type::Bytes => {
-                let vec_type = &self.config.vec_type;
-                let max_bytes = options.max_bytes.as_ref().unwrap();
-                quote! { #vec_type <u8, #max_bytes> }
+                let container_type = field_conf.and_then(|c| c.container_type.as_deref());
+                if let Some(max_len) = field_conf.and_then(|c| c.fixed_len) {
+                    let vec_type = container_type.unwrap_or(&self.config.fixed_vec_type);
+                    quote! { #vec_type <u8, #max_len> }
+                } else {
+                    let vec_type = container_type.unwrap_or(&self.config.alloc_vec_type);
+                    quote! { #vec_type <u8> }
+                }
             }
             Type::Message | Type::Enum => self.resolve_ident(tspec.name.as_ref().unwrap()),
             Type::Group => panic!("Group records are deprecated and unsupported"),
         }
     }
 
-    fn rust_type(&self, field_type: &FieldType, options: &FieldOptions) -> TokenStream {
+    fn rust_type(
+        &self,
+        field_type: &FieldType,
+        field_node: Option<&Node<FieldConfig>>,
+    ) -> TokenStream {
         match field_type {
             FieldType::Map(k, v) => {
-                let (k_opt, v_opt) = options.kv_options.as_ref().unwrap();
-                let k = self.tspec_rust_type(k, k_opt);
-                let v = self.tspec_rust_type(v, v_opt);
-                let map_type = &self.config.map_type;
-                let max_len = options.max_len.as_ref().unwrap();
-                quote! { #map_type <#k, #v, #max_len> }
+                let k = self.tspec_rust_type(
+                    k,
+                    field_node
+                        .and_then(|n| n.next("key"))
+                        .and_then(|n| n.value()),
+                );
+                let v = self.tspec_rust_type(
+                    v,
+                    field_node
+                        .and_then(|n| n.next("elem"))
+                        .and_then(|n| n.value()),
+                );
+                let field_conf = field_node.and_then(|n| n.value());
+                let container_type = field_conf.and_then(|c| c.container_type.as_deref());
+                if let Some(max_len) = field_conf.and_then(|c| c.fixed_len) {
+                    let map_type = container_type.unwrap_or(&self.config.fixed_map_type);
+                    quote! { #map_type <#k, #v, #max_len> }
+                } else {
+                    let map_type = container_type.unwrap_or(&self.config.alloc_map_type);
+                    quote! { #map_type <#k, #v> }
+                }
             }
-            FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t, options),
+
+            FieldType::Single(t) | FieldType::Optional(t) => {
+                self.tspec_rust_type(t, field_node.and_then(|n| n.value()))
+            }
+
             FieldType::Repeated { typ, .. } => {
-                let vec_type = &self.config.vec_type;
-                let max_len = options.max_len.as_ref().unwrap();
-                let t = self.tspec_rust_type(typ, options);
-                quote! { #vec_type <#t, #max_len> }
+                let t = self.tspec_rust_type(
+                    typ,
+                    field_node
+                        .and_then(|n| n.next("elem"))
+                        .and_then(|n| n.value()),
+                );
+                let field_conf = field_node.and_then(|n| n.value());
+                let container_type = field_conf.and_then(|c| c.container_type.as_deref());
+                if let Some(max_len) = field_conf.and_then(|c| c.fixed_len) {
+                    let vec_type = container_type.unwrap_or(&self.config.fixed_vec_type);
+                    quote! { #vec_type <#t, #max_len> }
+                } else {
+                    let vec_type = container_type.unwrap_or(&self.config.alloc_vec_type);
+                    quote! { #vec_type <#t> }
+                }
             }
+
             FieldType::Custom(t) => quote! {#t},
         }
     }
 
     fn field_decl(&self, field: &Field) -> TokenStream {
-        let typ = self.rust_type(&field.ftype, &field.options);
+        let typ = self.rust_type(&field.ftype, field.config_node);
         let name = field.name;
         quote! { #name : #typ, }
     }
