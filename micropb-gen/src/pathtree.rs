@@ -46,7 +46,7 @@ impl<T> Node<T> {
         &self,
         path: impl Iterator<Item = &'a str>,
         mut callback: impl FnMut(&T),
-    ) -> &Node<T> {
+    ) -> Option<&Node<T>> {
         let mut node = self;
         for segment in path {
             node.value.as_ref().map(&mut callback);
@@ -54,10 +54,10 @@ impl<T> Node<T> {
             if let Some(next) = node.next(segment) {
                 node = next;
             } else {
-                break;
+                return None;
             }
         }
-        node
+        Some(node)
     }
 }
 

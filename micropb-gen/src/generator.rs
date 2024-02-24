@@ -10,13 +10,14 @@ use protox::prost_reflect::prost_types::{
 use quote::quote;
 
 use crate::{
-    config::{Config, GenConfig},
+    config::{Config, GenConfig, IntType},
     pathtree::Node,
 };
 
-static DERIVE_MSG: &str = "#[derive(Debug, Clone, PartialEq)]";
-static DERIVE_ENUM: &str = "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]";
+static DERIVE_MSG: &str = "#[derive(Clone, PartialEq)]";
+static DERIVE_ENUM: &str = "#[derive(Clone, Copy, PartialEq, Eq, Hash)]";
 static DERIVE_DEFAULT: &str = "#[derive(Default)]";
+static DERIVE_DEBUG: &str = "#[derive(Debug)]";
 static REPR_ENUM: &str = "#[repr(transparent)]";
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -64,6 +65,30 @@ impl<'a> Field<'a> {
     }
 }
 
+struct CurrentConfig<'a> {
+    node: Option<&'a Node<Config>>,
+    config: Config,
+}
+
+impl<'a> CurrentConfig<'a> {
+    fn next_conf(&self, segment: &str) -> Self {
+        let mut config = self.config.clone();
+        if let Some(node) = self.node {
+            let next = node.next(segment);
+            if let Some(conf) = next.and_then(|n| n.value()) {
+                config.merge(conf);
+            }
+            Self { node: next, config }
+        } else {
+            Self { node: None, config }
+        }
+    }
+
+    fn derive_dbg(&self) -> Option<&str> {
+        (!self.config.no_debug_derive.unwrap_or(false)).then_some(DERIVE_DEBUG)
+    }
+}
+
 struct Generator {
     config: GenConfig,
     syntax: Syntax,
@@ -95,11 +120,25 @@ impl Generator {
             .map(|s| s.split('.').map(ToOwned::to_owned).collect())
             .unwrap_or_default();
 
+        let root_node = &self.config.field_configs.root;
+        let mut root_conf = root_node.value().expect("root config should exist").clone();
+        root_node.get(
+            fdproto.package.as_deref().unwrap_or("").split('.'),
+            |conf| root_conf.merge(conf),
+        );
+        let cur_config = CurrentConfig {
+            node: Some(root_node),
+            config: root_conf,
+        };
+
         let msgs = fdproto
             .message_type
             .iter()
-            .map(|m| self.generate_msg_type(m));
-        let enums = fdproto.enum_type.iter().map(|e| self.generate_enum_type(e));
+            .map(|m| self.generate_msg_type(m, cur_config.next_conf(m.name())));
+        let enums = fdproto
+            .enum_type
+            .iter()
+            .map(|e| self.generate_enum_type(e, cur_config.next_conf(e.name())));
 
         let code = quote! {
             #(#msgs)*
@@ -107,7 +146,15 @@ impl Generator {
         };
     }
 
-    fn generate_enum_type(&self, enum_type: &EnumDescriptorProto) -> TokenStream {
+    fn generate_enum_type(
+        &self,
+        enum_type: &EnumDescriptorProto,
+        enum_conf: CurrentConfig,
+    ) -> TokenStream {
+        if enum_conf.config.skip.unwrap_or(false) {
+            return quote! {};
+        }
+
         let name = enum_type.name.as_ref().unwrap();
         let nums = enum_type.value.iter().map(|v| v.number.unwrap());
         let var_names = enum_type
@@ -116,11 +163,17 @@ impl Generator {
             .map(|v| v.name.as_ref().unwrap().to_case(Case::Pascal))
             .map(|v| self.strip_enum_prefix(&v, name).to_owned());
         let default_num = enum_type.value[0].number.unwrap();
+        let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
+        let itype = enum_int_type.type_name();
+        let attrs = enum_conf.config.type_attributes.as_deref().unwrap_or("");
+        let derive_dbg = enum_conf.derive_dbg();
 
         quote! {
+            #derive_dbg
             #DERIVE_ENUM
             #REPR_ENUM
-            pub struct #name(pub i32);
+            #attrs
+            pub struct #name(pub #itype);
 
             impl #name {
                 #(pub const #var_names: Self = #name(#nums);)*
@@ -146,7 +199,15 @@ impl Generator {
         (msg_type.name.clone().unwrap(), key, val)
     }
 
-    fn generate_msg_type(&self, msg_type: &DescriptorProto) -> TokenStream {
+    fn generate_msg_type(
+        &self,
+        msg_type: &DescriptorProto,
+        msg_conf: CurrentConfig,
+    ) -> TokenStream {
+        if msg_conf.config.skip.unwrap_or(false) {
+            return quote! {};
+        }
+
         let name = msg_type.name.as_ref().unwrap();
         let fq_name = self.fq_name(name);
         let msg_mod_name = format!("mod_{name}");
@@ -175,10 +236,11 @@ impl Generator {
             .field
             .iter()
             .map(|f| {
+                let field_conf = msg_conf.next_conf(f.name());
                 if let Some((key, val)) = map_types.remove(f.type_name()) {
-                    self.create_map_field(f, key, val)
+                    self.create_map_field(f, key, val, field_conf)
                 } else {
-                    self.create_field(f, &oneofs)
+                    self.create_field(f, &oneofs, field_conf)
                 }
             })
             .partition(|f| f.oneof.is_none());
@@ -201,11 +263,13 @@ impl Generator {
                 }
             });
 
-        let nested_msgs = inner_msgs.iter().map(|m| self.generate_msg_type(m));
+        let nested_msgs = inner_msgs
+            .iter()
+            .map(|m| self.generate_msg_type(m, msg_conf.next_conf(m.name())));
         let nested_enums = msg_type
             .enum_type
             .iter()
-            .map(|e| self.generate_enum_type(e));
+            .map(|e| self.generate_enum_type(e, msg_conf.next_conf(e.name())));
         let msg_mod = quote! {
             pub mod #msg_mod_name {
                 #(#oneof_decls)*
@@ -218,7 +282,7 @@ impl Generator {
         let msg_fields = fields.iter().map(|f| self.field_decl(f));
         let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
         let (hazzer_name, hazzer_decl) = if !opt_fields.is_empty() {
-            let (n, t) = self.generate_hazzer(name, &opt_fields);
+            let (n, t) = self.generate_hazzer(name, &opt_fields, &msg_conf);
             (Some(n), Some(t))
         } else {
             (None, None)
@@ -245,13 +309,18 @@ impl Generator {
             (Some(DERIVE_DEFAULT), None)
         };
 
+        let attrs = msg_conf.config.type_attributes.as_deref().unwrap_or("");
+        let derive_dbg = msg_conf.derive_dbg();
+
         quote! {
             #msg_mod
 
             #hazzer_decl
 
-            #DERIVE_MSG
+            #derive_dbg
             #derive_default
+            #DERIVE_MSG
+            #attrs
             pub struct #name {
                 #(pub #msg_fields)*
                 #(pub #oneofs: Option<#msg_mod_name::#oneofs_types>)*
@@ -262,10 +331,17 @@ impl Generator {
         }
     }
 
-    fn generate_hazzer(&self, name: &str, fields: &[&Field]) -> (String, TokenStream) {
+    fn generate_hazzer(
+        &self,
+        name: &str,
+        fields: &[&Field],
+        msg_conf: &CurrentConfig,
+    ) -> (String, TokenStream) {
         let count = fields.len();
         let micropb_path = &self.config.micropb_path;
         let hazzer_name = format!("{name}Hazzer");
+        let attrs = msg_conf.config.hazzer_attributes.as_deref().unwrap_or("");
+        let derive_dbg = msg_conf.derive_dbg();
 
         let methods = fields.iter().enumerate().map(|(i, f)| {
             let fname = f.name;
@@ -285,8 +361,10 @@ impl Generator {
         });
 
         let decl = quote! {
+            #derive_dbg
             #DERIVE_MSG
             #DERIVE_DEFAULT
+            #attrs
             pub struct #hazzer_name(#micropb_path::bitvec::BitArr!(for #count, in u8));
 
             impl #hazzer_name {
@@ -303,7 +381,12 @@ impl Generator {
         }
     }
 
-    fn create_field<'a>(&self, proto: &'a FieldDescriptorProto, oneofs: &[&str]) -> Field<'a> {
+    fn create_field<'a>(
+        &self,
+        proto: &'a FieldDescriptorProto,
+        oneofs: &[&str],
+        field_conf: CurrentConfig,
+    ) -> Field<'a> {
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
 
@@ -346,6 +429,7 @@ impl Generator {
         proto: &'a FieldDescriptorProto,
         key: TypeSpec,
         val: TypeSpec,
+        field_conf: CurrentConfig,
     ) -> Field<'a> {
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;

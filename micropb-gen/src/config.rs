@@ -11,7 +11,7 @@ pub enum IntType {
 }
 
 impl IntType {
-    fn type_name(self) -> &'static str {
+    pub(crate) fn type_name(self) -> &'static str {
         match self {
             IntType::I8 => "i8",
             IntType::U8 => "u8",
