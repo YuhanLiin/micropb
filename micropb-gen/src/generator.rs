@@ -10,7 +10,7 @@ use protox::prost_reflect::prost_types::{
 use quote::quote;
 
 use crate::{
-    config::{FieldConfig, GenConfig},
+    config::{Config, GenConfig},
     pathtree::Node,
 };
 
@@ -44,15 +44,15 @@ enum FieldType {
 
 enum SubConfigs {
     None,
-    Elem(Option<FieldConfig>),
-    KeyValue(Option<FieldConfig>, Option<FieldConfig>),
+    Elem(Config),
+    KeyValue(Config, Config),
 }
 
 struct Field<'a> {
     num: u32,
     ftype: FieldType,
     name: &'a str,
-    config: Option<FieldConfig>,
+    config: Config,
     subconfigs: SubConfigs,
     default: Option<&'a str>,
     oneof: Option<&'a str>,
@@ -364,7 +364,7 @@ impl Generator {
         }
     }
 
-    fn tspec_rust_type(&self, tspec: &TypeSpec, field_conf: Option<&FieldConfig>) -> TokenStream {
+    fn tspec_rust_type(&self, tspec: &TypeSpec, field_conf: &Config) -> TokenStream {
         match tspec.typ {
             Type::Int32 => quote! {i32},
             Type::Int64 => quote! {i64},
@@ -380,22 +380,24 @@ impl Generator {
             Type::Double => quote! {f64},
             Type::Bool => quote! {bool},
             Type::String => {
-                let container_type = field_conf.and_then(|c| c.container_type.as_deref());
-                if let Some(max_bytes) = field_conf.and_then(|c| c.fixed_len) {
-                    let str_type = container_type.unwrap_or(&self.config.fixed_string_type);
+                let str_type = field_conf
+                    .string_type
+                    .as_ref()
+                    .expect("string_type should have default");
+                if let Some(max_bytes) = field_conf.fixed_len {
                     quote! { #str_type <#max_bytes> }
                 } else {
-                    let str_type = container_type.unwrap_or(&self.config.alloc_string_type);
                     quote! { #str_type }
                 }
             }
             Type::Bytes => {
-                let container_type = field_conf.and_then(|c| c.container_type.as_deref());
-                if let Some(max_len) = field_conf.and_then(|c| c.fixed_len) {
-                    let vec_type = container_type.unwrap_or(&self.config.fixed_vec_type);
+                let vec_type = field_conf
+                    .vec_type
+                    .as_ref()
+                    .expect("vec_type should have default");
+                if let Some(max_len) = field_conf.fixed_len {
                     quote! { #vec_type <u8, #max_len> }
                 } else {
-                    let vec_type = container_type.unwrap_or(&self.config.alloc_vec_type);
                     quote! { #vec_type <u8> }
                 }
             }
@@ -407,7 +409,7 @@ impl Generator {
     fn rust_type(
         &self,
         field_type: &FieldType,
-        field_conf: Option<&FieldConfig>,
+        field_conf: &Config,
         subconfigs: &SubConfigs,
     ) -> TokenStream {
         match field_type {
@@ -415,14 +417,13 @@ impl Generator {
                 let SubConfigs::KeyValue(kconf, vconf) = subconfigs else {
                     unreachable!("expected key-value sub-configs")
                 };
-                let k = self.tspec_rust_type(k, kconf.as_ref());
-                let v = self.tspec_rust_type(v, vconf.as_ref());
-                let container_type = field_conf.and_then(|c| c.container_type.as_deref());
-                if let Some(max_len) = field_conf.and_then(|c| c.fixed_len) {
-                    let map_type = container_type.unwrap_or(&self.config.fixed_map_type);
+                let k = self.tspec_rust_type(k, kconf);
+                let v = self.tspec_rust_type(v, vconf);
+                // TODO report error
+                let map_type = field_conf.map_type.as_ref().unwrap();
+                if let Some(max_len) = field_conf.fixed_len {
                     quote! { #map_type <#k, #v, #max_len> }
                 } else {
-                    let map_type = container_type.unwrap_or(&self.config.alloc_map_type);
                     quote! { #map_type <#k, #v> }
                 }
             }
@@ -430,16 +431,17 @@ impl Generator {
             FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t, field_conf),
 
             FieldType::Repeated { typ, .. } => {
-                let SubConfigs::Elem(subconf) = subconfigs else {
+                let SubConfigs::Elem(sub) = subconfigs else {
                     unreachable!("expected list sub-configs")
                 };
-                let t = self.tspec_rust_type(typ, subconf.as_ref());
-                let container_type = field_conf.and_then(|c| c.container_type.as_deref());
-                if let Some(max_len) = field_conf.and_then(|c| c.fixed_len) {
-                    let vec_type = container_type.unwrap_or(&self.config.fixed_vec_type);
+                let t = self.tspec_rust_type(typ, sub);
+                let vec_type = field_conf
+                    .vec_type
+                    .as_ref()
+                    .expect("vec_type should have default");
+                if let Some(max_len) = field_conf.fixed_len {
                     quote! { #vec_type <#t, #max_len> }
                 } else {
-                    let vec_type = container_type.unwrap_or(&self.config.alloc_vec_type);
                     quote! { #vec_type <#t> }
                 }
             }
@@ -449,7 +451,7 @@ impl Generator {
     }
 
     fn field_decl(&self, field: &Field) -> TokenStream {
-        let typ = self.rust_type(&field.ftype, field.config.as_ref(), &field.subconfigs);
+        let typ = self.rust_type(&field.ftype, &field.config, &field.subconfigs);
         let name = field.name;
         quote! { #name : #typ, }
     }
