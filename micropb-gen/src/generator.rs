@@ -27,36 +27,52 @@ enum Syntax {
     Proto3,
 }
 
+enum TypeOpt {
+    Name(String),
+    Int(IntType),
+    Container {
+        type_name: String,
+        fixed_len: Option<u32>,
+    },
+}
+
 struct TypeSpec {
     typ: Type,
+    int_type: Option<IntType>,
     name: Option<String>,
+    fixed_len: Option<u32>,
 }
 
 enum FieldType {
     // Can't be put in oneof, key type can't be message or enum
-    Map(TypeSpec, TypeSpec),
+    Map {
+        key: TypeSpec,
+        val: TypeSpec,
+        packed: bool,
+        type_name: String,
+        fixed_len: Option<u32>,
+    },
     // Implicit presence
     Single(TypeSpec),
     // Explicit presence
     Optional(TypeSpec),
-    Repeated { typ: TypeSpec, packed: bool },
+    Repeated {
+        typ: TypeSpec,
+        packed: bool,
+        type_name: String,
+        fixed_len: Option<u32>,
+    },
     Custom(String),
-}
-
-enum SubConfigs {
-    None,
-    Elem(Config),
-    KeyValue(Config, Config),
 }
 
 struct Field<'a> {
     num: u32,
     ftype: FieldType,
     name: &'a str,
-    config: Config,
-    subconfigs: SubConfigs,
     default: Option<&'a str>,
     oneof: Option<&'a str>,
+    boxed: bool,
+    attrs: Option<String>,
 }
 
 impl<'a> Field<'a> {
@@ -165,7 +181,7 @@ impl Generator {
         let default_num = enum_type.value[0].number.unwrap();
         let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
         let itype = enum_int_type.type_name();
-        let attrs = enum_conf.config.type_attributes.as_deref().unwrap_or("");
+        let attrs = &enum_conf.config.type_attributes;
         let derive_dbg = enum_conf.derive_dbg();
 
         quote! {
@@ -193,12 +209,6 @@ impl Generator {
         }
     }
 
-    fn create_map_type(&self, msg_type: &DescriptorProto) -> (String, TypeSpec, TypeSpec) {
-        let key = self.create_type_spec(&msg_type.field[0]);
-        let val = self.create_type_spec(&msg_type.field[1]);
-        (msg_type.name.clone().unwrap(), key, val)
-    }
-
     fn generate_msg_type(
         &self,
         msg_type: &DescriptorProto,
@@ -223,8 +233,7 @@ impl Generator {
             .iter()
             .filter(|m| {
                 if m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false) {
-                    let (map_name, key, val) = self.create_map_type(m);
-                    map_types.insert(map_name, (key, val));
+                    map_types.insert(m.name(), *m);
                     false
                 } else {
                     true
@@ -235,12 +244,21 @@ impl Generator {
         let (fields, oneof_fields): (Vec<_>, Vec<_>) = msg_type
             .field
             .iter()
-            .map(|f| {
+            .filter_map(|f| {
                 let field_conf = msg_conf.next_conf(f.name());
-                if let Some((key, val)) = map_types.remove(f.type_name()) {
-                    self.create_map_field(f, key, val, field_conf)
+                if field_conf.config.skip.unwrap_or(false) {
+                    return None;
+                }
+
+                let raw_msg_name = f
+                    .type_name()
+                    .rsplit_once('.')
+                    .map(|(_, r)| r)
+                    .unwrap_or(f.type_name());
+                if let Some(map_msg) = map_types.remove(raw_msg_name) {
+                    Some(self.create_map_field(f, map_msg, field_conf))
                 } else {
-                    self.create_field(f, &oneofs, field_conf)
+                    Some(self.create_field(f, &oneofs, field_conf))
                 }
             })
             .partition(|f| f.oneof.is_none());
@@ -309,7 +327,7 @@ impl Generator {
             (Some(DERIVE_DEFAULT), None)
         };
 
-        let attrs = msg_conf.config.type_attributes.as_deref().unwrap_or("");
+        let attrs = &msg_conf.config.type_attributes;
         let derive_dbg = msg_conf.derive_dbg();
 
         quote! {
@@ -340,7 +358,7 @@ impl Generator {
         let count = fields.len();
         let micropb_path = &self.config.micropb_path;
         let hazzer_name = format!("{name}Hazzer");
-        let attrs = msg_conf.config.hazzer_attributes.as_deref().unwrap_or("");
+        let attrs = &msg_conf.config.hazzer_attributes;
         let derive_dbg = msg_conf.derive_dbg();
 
         let methods = fields.iter().enumerate().map(|(i, f)| {
@@ -374,41 +392,59 @@ impl Generator {
         (hazzer_name, decl)
     }
 
-    fn create_type_spec(&self, proto: &FieldDescriptorProto) -> TypeSpec {
+    fn create_type_spec(
+        &self,
+        proto: &FieldDescriptorProto,
+        type_conf: &CurrentConfig,
+    ) -> TypeSpec {
+        let conf = &type_conf.config;
+        let typ = proto.r#type();
+        let name = match typ {
+            Type::String => conf.string_type.clone(),
+            Type::Bytes => conf.vec_type.clone(),
+            Type::Enum | Type::Message => proto.type_name.clone(),
+            _ => None,
+        };
         TypeSpec {
-            typ: proto.r#type(),
-            name: proto.type_name.clone(),
+            typ,
+            name,
+            int_type: conf.int_type,
+            fixed_len: conf.fixed_len,
         }
     }
 
     fn create_field<'a>(
         &self,
         proto: &'a FieldDescriptorProto,
-        oneofs: &[&str],
+        oneofs: &'a [&str],
         field_conf: CurrentConfig,
     ) -> Field<'a> {
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
 
-        let tspec = self.create_type_spec(proto);
-        let ftype = match proto.label() {
-            Label::Repeated => FieldType::Repeated {
-                typ: tspec,
-                packed: proto
-                    .options
-                    .as_ref()
-                    .and_then(|opt| opt.packed)
-                    .unwrap_or(false),
-            },
-            Label::Required => FieldType::Optional(tspec),
-            Label::Optional
-                if self.syntax == Syntax::Proto2
-                    || proto.proto3_optional()
-                    || tspec.typ == Type::Message =>
-            {
-                FieldType::Optional(tspec)
+        let ftype = if let Some(custom_type) = field_conf.config.custom_type {
+            FieldType::Custom(custom_type)
+        } else {
+            match proto.label() {
+                Label::Repeated => FieldType::Repeated {
+                    typ: self.create_type_spec(proto, &field_conf.next_conf("elem")),
+                    type_name: field_conf.config.vec_type.clone().unwrap(),
+                    fixed_len: field_conf.config.fixed_len,
+                    packed: proto
+                        .options
+                        .as_ref()
+                        .and_then(|opt| opt.packed)
+                        .unwrap_or(false),
+                },
+                Label::Required | Label::Optional
+                    if self.syntax == Syntax::Proto2
+                        || proto.proto3_optional()
+                        || proto.r#type() == Type::Message =>
+                {
+                    FieldType::Optional(self.create_type_spec(proto, &field_conf))
+                }
+                _ => FieldType::Single(self.create_type_spec(proto, &field_conf)),
             }
-            _ => FieldType::Single(tspec),
         };
         let oneof = proto.oneof_index.map(|i| oneofs[i as usize]);
         let default = proto.default_value.as_deref();
@@ -419,22 +455,37 @@ impl Generator {
             name,
             oneof,
             default,
-            config: todo!(),
-            subconfigs: todo!(),
+            boxed: field_conf.config.boxed.unwrap_or(false),
+            attrs: field_conf.config.field_attributes.clone(),
         }
     }
 
     fn create_map_field<'a>(
         &self,
         proto: &'a FieldDescriptorProto,
-        key: TypeSpec,
-        val: TypeSpec,
+        map_msg: &DescriptorProto,
         field_conf: CurrentConfig,
     ) -> Field<'a> {
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
-        // TODO Possible custom type
-        let ftype = FieldType::Map(key, val);
+
+        let ftype = if let Some(custom_type) = field_conf.config.custom_type {
+            FieldType::Custom(custom_type)
+        } else {
+            let key = self.create_type_spec(&map_msg.field[0], &field_conf.next_conf("key"));
+            let val = self.create_type_spec(&map_msg.field[1], &field_conf.next_conf("value"));
+            FieldType::Map {
+                key,
+                val,
+                type_name: field_conf.config.vec_type.clone().unwrap(),
+                fixed_len: field_conf.config.fixed_len,
+                packed: proto
+                    .options
+                    .as_ref()
+                    .and_then(|opt| opt.packed)
+                    .unwrap_or(false),
+            }
+        };
 
         Field {
             num,
@@ -442,44 +493,36 @@ impl Generator {
             name,
             oneof: None,
             default: None,
-            // need to create sub-options for key and value
-            config: todo!(),
-            subconfigs: todo!(),
+            boxed: field_conf.config.boxed.unwrap_or(false),
+            attrs: field_conf.config.field_attributes.clone(),
         }
     }
 
-    fn tspec_rust_type(&self, tspec: &TypeSpec, field_conf: &Config) -> TokenStream {
+    fn tspec_rust_type(&self, tspec: &TypeSpec) -> TokenStream {
+        fn int_type(itype: Option<IntType>, default: &str) -> TokenStream {
+            let typ = itype.map(IntType::type_name).unwrap_or(default);
+            quote! { #typ }
+        }
+
         match tspec.typ {
-            Type::Int32 => quote! {i32},
-            Type::Int64 => quote! {i64},
-            Type::Uint32 => quote! {u32},
-            Type::Uint64 => quote! {u64},
-            Type::Sint32 => quote! {i32},
-            Type::Sint64 => quote! {i64},
-            Type::Fixed32 => quote! {u32},
-            Type::Fixed64 => quote! {u64},
-            Type::Sfixed32 => quote! {i32},
-            Type::Sfixed64 => quote! {i64},
+            Type::Int32 | Type::Sint32 | Type::Sfixed32 => int_type(tspec.int_type, "i32"),
+            Type::Int64 | Type::Sint64 | Type::Sfixed64 => int_type(tspec.int_type, "i64"),
+            Type::Uint32 | Type::Fixed32 => int_type(tspec.int_type, "u32"),
+            Type::Uint64 | Type::Fixed64 => int_type(tspec.int_type, "u64"),
             Type::Float => quote! {f32},
             Type::Double => quote! {f64},
             Type::Bool => quote! {bool},
             Type::String => {
-                let str_type = field_conf
-                    .string_type
-                    .as_ref()
-                    .expect("string_type should have default");
-                if let Some(max_bytes) = field_conf.fixed_len {
+                let str_type = tspec.name.as_ref().unwrap();
+                if let Some(max_bytes) = tspec.fixed_len {
                     quote! { #str_type <#max_bytes> }
                 } else {
                     quote! { #str_type }
                 }
             }
             Type::Bytes => {
-                let vec_type = field_conf
-                    .vec_type
-                    .as_ref()
-                    .expect("vec_type should have default");
-                if let Some(max_len) = field_conf.fixed_len {
+                let vec_type = tspec.name.as_ref().unwrap();
+                if let Some(max_len) = tspec.fixed_len {
                     quote! { #vec_type <u8, #max_len> }
                 } else {
                     quote! { #vec_type <u8> }
@@ -490,54 +533,56 @@ impl Generator {
         }
     }
 
-    fn rust_type(
-        &self,
-        field_type: &FieldType,
-        field_conf: &Config,
-        subconfigs: &SubConfigs,
-    ) -> TokenStream {
-        match field_type {
-            FieldType::Map(k, v) => {
-                let SubConfigs::KeyValue(kconf, vconf) = subconfigs else {
-                    unreachable!("expected key-value sub-configs")
-                };
-                let k = self.tspec_rust_type(k, kconf);
-                let v = self.tspec_rust_type(v, vconf);
-                // TODO report error
-                let map_type = field_conf.map_type.as_ref().unwrap();
-                if let Some(max_len) = field_conf.fixed_len {
-                    quote! { #map_type <#k, #v, #max_len> }
+    fn rust_type(&self, field: &Field) -> TokenStream {
+        let typ = match &field.ftype {
+            FieldType::Map {
+                key,
+                val,
+                type_name,
+                fixed_len,
+                ..
+            } => {
+                let k = self.tspec_rust_type(key);
+                let v = self.tspec_rust_type(val);
+                if let Some(max_len) = fixed_len {
+                    quote! { #type_name <#k, #v, #max_len> }
                 } else {
-                    quote! { #map_type <#k, #v> }
+                    quote! { #type_name <#k, #v> }
                 }
             }
 
-            FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t, field_conf),
+            FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t),
 
-            FieldType::Repeated { typ, .. } => {
-                let SubConfigs::Elem(sub) = subconfigs else {
-                    unreachable!("expected list sub-configs")
-                };
-                let t = self.tspec_rust_type(typ, sub);
-                let vec_type = field_conf
-                    .vec_type
-                    .as_ref()
-                    .expect("vec_type should have default");
-                if let Some(max_len) = field_conf.fixed_len {
-                    quote! { #vec_type <#t, #max_len> }
+            FieldType::Repeated {
+                typ,
+                type_name,
+                fixed_len,
+                ..
+            } => {
+                let t = self.tspec_rust_type(typ);
+                if let Some(max_len) = fixed_len {
+                    quote! { #type_name <#t, #max_len> }
                 } else {
-                    quote! { #vec_type <#t> }
+                    quote! { #type_name <#t> }
                 }
             }
 
             FieldType::Custom(t) => quote! {#t},
+        };
+
+        // TODO make it optional
+        if field.boxed {
+            quote! { Box<#typ> }
+        } else {
+            typ
         }
     }
 
     fn field_decl(&self, field: &Field) -> TokenStream {
-        let typ = self.rust_type(&field.ftype, &field.config, &field.subconfigs);
+        let typ = self.rust_type(field);
         let name = field.name;
-        quote! { #name : #typ, }
+        let attrs = &field.attrs;
+        quote! { #attrs #name : #typ, }
     }
 
     fn field_default(&self, field: &Field) -> TokenStream {

@@ -28,7 +28,7 @@ macro_rules! config_decl {
         #[non_exhaustive]
         #[derive(Debug, Clone, Default)]
         pub struct Config {
-            $($(#[$attr])* pub $field: Option<$type>,)+
+            $($(#[$attr])* pub(crate) $field: Option<$type>,)+
         }
 
         impl Config {
@@ -86,6 +86,7 @@ pub struct GenConfig {
     pub(crate) default_pkg_filename: String,
     pub(crate) micropb_path: String,
     pub(crate) strip_enum_prefix: bool,
+    pub(crate) format: bool,
 
     pub(crate) field_configs: PathTree<Config>,
 }
