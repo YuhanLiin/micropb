@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use protox::prost_reflect::prost_types::{
     field_descriptor_proto::{Label, Type},
     DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorProto,
-    FileDescriptorSet,
+    FileDescriptorSet, OneofDescriptorProto,
 };
 use quote::quote;
 
@@ -70,7 +70,7 @@ struct Field<'a> {
     ftype: FieldType,
     name: &'a str,
     default: Option<&'a str>,
-    oneof: Option<&'a str>,
+    oneof: Option<usize>,
     boxed: bool,
     attrs: Option<String>,
 }
@@ -79,6 +79,22 @@ impl<'a> Field<'a> {
     fn explicit_presence(&self) -> bool {
         matches!(self.ftype, FieldType::Optional(_))
     }
+
+    fn is_hazzer(&self) -> bool {
+        self.explicit_presence() && !self.boxed
+    }
+}
+
+struct Oneof<'a> {
+    name: &'a str,
+    type_name: String,
+    boxed: bool,
+    field_attrs: Option<String>,
+    type_attrs: Option<String>,
+    derive_dbg: Option<&'static str>,
+    is_custom: bool,
+    fields: Vec<Field<'a>>,
+    idx: usize,
 }
 
 struct CurrentConfig<'a> {
@@ -100,7 +116,7 @@ impl<'a> CurrentConfig<'a> {
         }
     }
 
-    fn derive_dbg(&self) -> Option<&str> {
+    fn derive_dbg(&self) -> Option<&'static str> {
         (!self.config.no_debug_derive.unwrap_or(false)).then_some(DERIVE_DEBUG)
     }
 }
@@ -221,12 +237,14 @@ impl Generator {
         let name = msg_type.name.as_ref().unwrap();
         let fq_name = self.fq_name(name);
         let msg_mod_name = format!("mod_{name}");
-        let oneofs: Vec<_> = msg_type
+        let mut oneofs: Vec<_> = msg_type
             .oneof_decl
             .iter()
-            .map(|oneof| oneof.name.as_deref().unwrap())
+            .enumerate()
+            .filter_map(|(idx, oneof)| {
+                self.create_oneof(idx, oneof, msg_conf.next_conf(oneof.name()))
+            })
             .collect();
-        let oneofs_types: Vec<_> = oneofs.iter().map(|o| o.to_case(Case::Pascal)).collect();
         let mut map_types = HashMap::new();
         let inner_msgs: Vec<_> = msg_type
             .nested_type
@@ -241,45 +259,52 @@ impl Generator {
             })
             .collect();
 
-        let (fields, oneof_fields): (Vec<_>, Vec<_>) = msg_type
+        let fields: Vec<_> = msg_type
             .field
             .iter()
             .filter_map(|f| {
                 let field_conf = msg_conf.next_conf(f.name());
-                if field_conf.config.skip.unwrap_or(false) {
-                    return None;
-                }
-
                 let raw_msg_name = f
                     .type_name()
                     .rsplit_once('.')
                     .map(|(_, r)| r)
                     .unwrap_or(f.type_name());
                 if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                    Some(self.create_map_field(f, map_msg, field_conf))
+                    self.create_map_field(f, map_msg, field_conf)
                 } else {
-                    Some(self.create_field(f, &oneofs, field_conf))
+                    if let Some(idx) = f.oneof_index {
+                        if let Some(oneof) = oneofs.iter_mut().find(|o| o.idx == idx as usize) {
+                            if let Some(field) = self.create_field(f, field_conf) {
+                                oneof.fields.push(field);
+                            }
+                        }
+                        return None;
+                    }
+                    self.create_field(f, field_conf)
                 }
             })
-            .partition(|f| f.oneof.is_none());
+            .collect();
 
         self.type_path.borrow_mut().push(name.to_owned());
-        let oneof_decls = oneofs
-            .iter()
-            .zip(oneofs_types.iter())
-            .map(|(oneof, oneof_type)| {
-                let fields = oneof_fields
-                    .iter()
-                    .filter(|f| f.oneof == Some(*oneof))
-                    .map(|f| self.field_decl(f));
+        let oneof_decls = oneofs.iter().map(|oneof| {
+            if oneof.fields.is_empty() || oneof.is_custom {
+                return quote! {};
+            }
 
-                quote! {
-                    #DERIVE_MSG
-                    pub enum #oneof_type {
-                        #(#fields)*
-                    }
+            let type_name = &oneof.type_name;
+            let fields = oneof.fields.iter().map(|f| self.oneof_field_decl(f));
+            let derive_dbg = oneof.derive_dbg;
+            let attrs = &oneof.type_attrs;
+
+            quote! {
+                #derive_dbg
+                #DERIVE_MSG
+                #attrs
+                pub enum #type_name {
+                    #(#fields)*
                 }
-            });
+            }
+        });
 
         let nested_msgs = inner_msgs
             .iter()
@@ -290,9 +315,9 @@ impl Generator {
             .map(|e| self.generate_enum_type(e, msg_conf.next_conf(e.name())));
         let msg_mod = quote! {
             pub mod #msg_mod_name {
-                #(#oneof_decls)*
                 #(#nested_msgs)*
                 #(#nested_enums)*
+                #(#oneof_decls)*
             }
         };
         self.type_path.borrow_mut().pop();
@@ -300,12 +325,27 @@ impl Generator {
         let msg_fields = fields.iter().map(|f| self.field_decl(f));
         let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
         let (hazzer_name, hazzer_decl) = if !opt_fields.is_empty() {
-            let (n, t) = self.generate_hazzer(name, &opt_fields, &msg_conf);
+            let (n, t) = self.generate_hazzer_decl(name, &opt_fields, &msg_conf);
             (Some(n), Some(t))
         } else {
             (None, None)
         };
         let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub has: #n, });
+        let oneof_fields = oneofs.iter().map(|oneof| {
+            let name = oneof.name;
+            let type_name = if oneof.is_custom {
+                oneof.type_name.to_owned()
+            } else {
+                format!("{msg_mod_name}::{}", oneof.type_name)
+            };
+            let attrs = &oneof.field_attrs;
+            let typ = if oneof.boxed {
+                quote! { Option<Box<#type_name>> }
+            } else {
+                quote! { Option<#type_name> }
+            };
+            quote! { #attrs #name: #typ, }
+        });
 
         let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
             let defaults = fields.iter().map(|f| self.field_default(f));
@@ -341,7 +381,7 @@ impl Generator {
             #attrs
             pub struct #name {
                 #(pub #msg_fields)*
-                #(pub #oneofs: Option<#msg_mod_name::#oneofs_types>)*
+                #(pub #oneof_fields)*
                 #hazzer_field
             }
 
@@ -349,19 +389,20 @@ impl Generator {
         }
     }
 
-    fn generate_hazzer(
+    fn generate_hazzer_decl(
         &self,
         name: &str,
         fields: &[&Field],
         msg_conf: &CurrentConfig,
     ) -> (String, TokenStream) {
-        let count = fields.len();
         let micropb_path = &self.config.micropb_path;
         let hazzer_name = format!("{name}Hazzer");
         let attrs = &msg_conf.config.hazzer_attributes;
         let derive_dbg = msg_conf.derive_dbg();
 
-        let methods = fields.iter().enumerate().map(|(i, f)| {
+        let hazzers = fields.iter().filter(|f| f.is_hazzer());
+        let count = hazzers.clone().count();
+        let methods = hazzers.enumerate().map(|(i, f)| {
             let fname = f.name;
             let setter = format!("set_{fname}");
 
@@ -392,6 +433,35 @@ impl Generator {
         (hazzer_name, decl)
     }
 
+    fn create_oneof<'a>(
+        &self,
+        idx: usize,
+        proto: &'a OneofDescriptorProto,
+        oneof_conf: CurrentConfig,
+    ) -> Option<Oneof<'a>> {
+        if oneof_conf.config.skip.unwrap_or(false) {
+            return None;
+        }
+
+        let name = proto.name();
+        let (custom, type_name) = if let Some(custom_type) = &oneof_conf.config.custom_type {
+            (true, custom_type.to_owned())
+        } else {
+            (false, name.to_case(Case::Pascal))
+        };
+        Some(Oneof {
+            name,
+            idx,
+            type_name,
+            is_custom: custom,
+            derive_dbg: oneof_conf.derive_dbg(),
+            boxed: oneof_conf.config.boxed.unwrap_or(false),
+            field_attrs: oneof_conf.config.field_attributes.clone(),
+            type_attrs: oneof_conf.config.type_attributes.clone(),
+            fields: vec![],
+        })
+    }
+
     fn create_type_spec(
         &self,
         proto: &FieldDescriptorProto,
@@ -416,9 +486,12 @@ impl Generator {
     fn create_field<'a>(
         &self,
         proto: &'a FieldDescriptorProto,
-        oneofs: &'a [&str],
         field_conf: CurrentConfig,
-    ) -> Field<'a> {
+    ) -> Option<Field<'a>> {
+        if field_conf.config.skip.unwrap_or(false) {
+            return None;
+        }
+
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
 
@@ -446,18 +519,16 @@ impl Generator {
                 _ => FieldType::Single(self.create_type_spec(proto, &field_conf)),
             }
         };
-        let oneof = proto.oneof_index.map(|i| oneofs[i as usize]);
-        let default = proto.default_value.as_deref();
 
-        Field {
+        Some(Field {
             num,
             ftype,
             name,
-            oneof,
-            default,
+            oneof: proto.oneof_index.map(|i| i as usize),
+            default: proto.default_value.as_deref(),
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs: field_conf.config.field_attributes.clone(),
-        }
+        })
     }
 
     fn create_map_field<'a>(
@@ -465,7 +536,11 @@ impl Generator {
         proto: &'a FieldDescriptorProto,
         map_msg: &DescriptorProto,
         field_conf: CurrentConfig,
-    ) -> Field<'a> {
+    ) -> Option<Field<'a>> {
+        if field_conf.config.skip.unwrap_or(false) {
+            return None;
+        }
+
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
 
@@ -487,7 +562,7 @@ impl Generator {
             }
         };
 
-        Field {
+        Some(Field {
             num,
             ftype,
             name,
@@ -495,7 +570,7 @@ impl Generator {
             default: None,
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs: field_conf.config.field_attributes.clone(),
-        }
+        })
     }
 
     fn tspec_rust_type(&self, tspec: &TypeSpec) -> TokenStream {
@@ -570,9 +645,12 @@ impl Generator {
             FieldType::Custom(t) => quote! {#t},
         };
 
-        // TODO make it optional
         if field.boxed {
-            quote! { Box<#typ> }
+            if field.explicit_presence() {
+                quote! { Option<Box<#typ>> }
+            } else {
+                quote! { Box<#typ> }
+            }
         } else {
             typ
         }
@@ -583,6 +661,13 @@ impl Generator {
         let name = field.name;
         let attrs = &field.attrs;
         quote! { #attrs #name : #typ, }
+    }
+
+    fn oneof_field_decl(&self, field: &Field) -> TokenStream {
+        let typ = self.rust_type(field);
+        let name = field.name.to_case(Case::Pascal);
+        let attrs = &field.attrs;
+        quote! { #attrs #name(#typ), }
     }
 
     fn field_default(&self, field: &Field) -> TokenStream {
