@@ -100,8 +100,8 @@ impl<'a> Field<'a> {
     }
 
     fn custom_field(&self) -> Option<&str> {
-        if let FieldType::Custom(c) = &self.ftype {
-            Some(c)
+        if let FieldType::Custom(_) = &self.ftype {
+            Some(&self.rust_name)
         } else {
             None
         }
@@ -138,8 +138,8 @@ impl<'a> Oneof<'a> {
     }
 
     fn custom_field(&self) -> Option<&str> {
-        if let OneofType::Custom(c) = &self.otype {
-            Some(c)
+        if let OneofType::Custom(_) = &self.otype {
+            Some(&self.rust_name)
         } else {
             None
         }
@@ -373,7 +373,7 @@ impl Generator {
         } else {
             (None, None)
         };
-        let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub has: #n, });
+        let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub _has: #n, });
         let oneof_fields = oneofs
             .iter()
             .map(|oneof| self.oneof_field_decl(&msg_mod_name, oneof));
@@ -382,7 +382,7 @@ impl Generator {
             let defaults = fields.iter().map(|f| self.field_default(f));
             let hazzer_default = hazzer_name
                 .as_ref()
-                .map(|_| quote! { has: core::default::Default::default(), });
+                .map(|_| quote! { _has: core::default::Default::default(), });
             let decl = quote! {
                 impl core::default::Default for #name {
                     fn default() -> Self {
