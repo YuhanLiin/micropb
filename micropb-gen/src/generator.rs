@@ -728,10 +728,11 @@ impl Generator {
         };
 
         if field.boxed {
+            let box_type = self.box_type();
             if field.explicit_presence() {
-                quote! { Option<Box<#typ>> }
+                quote! { core::option::Option<#box_type<#typ>> }
             } else {
-                quote! { Box<#typ> }
+                quote! { #box_type<#typ> }
             }
         } else {
             typ
@@ -757,9 +758,10 @@ impl Generator {
         };
         let attrs = &oneof.field_attrs;
         let typ = if oneof.boxed {
-            quote! { Option<Box<#type_name>> }
+            let box_type = self.box_type();
+            quote! { core::option::Option<#box_type<#type_name>> }
         } else {
-            quote! { Option<#type_name> }
+            quote! { core::option::Option<#type_name> }
         };
         quote! { #attrs #name: #typ, }
     }
@@ -812,10 +814,11 @@ impl Generator {
                 FieldType::Single(ref t) | FieldType::Optional(ref t) => {
                     let value = self.tspec_default(t, default);
                     return if field.boxed {
+                        let box_type = self.box_type();
                         if field.explicit_presence() {
-                            quote! { #name: Some(Box::new(#value)), }
+                            quote! { #name: core::option::Option::Some(#box_type::new(#value)), }
                         } else {
-                            quote! { #name: Box::new(#value), }
+                            quote! { #name: #box_type::new(#value), }
                         }
                     } else {
                         quote! { #name: #value, }
@@ -868,6 +871,14 @@ impl Generator {
             variant_name.strip_prefix(enum_name).unwrap_or(variant_name)
         } else {
             variant_name
+        }
+    }
+
+    fn box_type(&self) -> &'static str {
+        if self.config.use_std {
+            "std::boxed::Box"
+        } else {
+            "alloc::boxed::Box"
         }
     }
 

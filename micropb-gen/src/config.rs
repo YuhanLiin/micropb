@@ -124,6 +124,7 @@ pub struct GenConfig {
     pub(crate) micropb_path: String,
     pub(crate) strip_enum_prefix: bool,
     pub(crate) format: bool,
+    pub(crate) use_std: bool,
 
     pub(crate) field_configs: PathTree<Config>,
 }
