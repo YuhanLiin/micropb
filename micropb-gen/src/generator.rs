@@ -74,6 +74,7 @@ struct Field<'a> {
     default: Option<&'a str>,
     oneof: Option<usize>,
     boxed: bool,
+    no_hazzer: bool,
     attrs: Option<String>,
 }
 
@@ -83,7 +84,7 @@ impl<'a> Field<'a> {
     }
 
     fn is_hazzer(&self) -> bool {
-        self.explicit_presence() && !self.boxed && self.oneof.is_none()
+        self.explicit_presence() && !self.boxed && !self.no_hazzer && self.oneof.is_none()
     }
 
     fn rust_variant_name(&self) -> String {
@@ -594,6 +595,7 @@ impl Generator {
             oneof,
             default: proto.default_value.as_deref(),
             boxed: field_conf.config.boxed.unwrap_or(false),
+            no_hazzer: field_conf.config.no_hazzer.unwrap_or(false),
             attrs: field_conf.config.field_attributes.clone(),
         })
     }
@@ -645,6 +647,7 @@ impl Generator {
             oneof: None,
             default: None,
             boxed: field_conf.config.boxed.unwrap_or(false),
+            no_hazzer: field_conf.config.no_hazzer.unwrap_or(false),
             attrs: field_conf.config.field_attributes.clone(),
         })
     }

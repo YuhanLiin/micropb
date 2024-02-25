@@ -84,6 +84,7 @@ config_decl! {
     vec_type: Option<String>,
     string_type: Option<String>,
     map_type: Option<String>,
+    no_hazzer: Option<bool>,
     custom_field [no_inherit]: Option<CustomField>,
     rename_field [no_inherit]: Option<String>,
 
