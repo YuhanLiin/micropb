@@ -238,11 +238,10 @@ impl Generator {
 
         let name = enum_type.name.as_ref().unwrap();
         let nums = enum_type.value.iter().map(|v| v.number.unwrap());
-        let var_names = enum_type
-            .value
-            .iter()
-            .map(|v| v.name.as_ref().unwrap().to_case(Case::Pascal))
-            .map(|v| self.strip_enum_prefix(&v, name).to_owned());
+        let var_names = enum_type.value.iter().map(|v| {
+            self.strip_enum_prefix(&v.name.as_ref().unwrap().to_case(Case::Pascal), name)
+                .to_owned()
+        });
         let default_num = enum_type.value[0].number.unwrap();
         let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
         let itype = enum_int_type.type_name();
@@ -266,8 +265,8 @@ impl Generator {
                 }
             }
 
-            impl core::convert::From<i32> for $name {
-                fn from(val: i32) -> Self {
+            impl core::convert::From<#itype> for $name {
+                fn from(val: #itype) -> Self {
                     #name(val)
                 }
             }
@@ -532,7 +531,7 @@ impl Generator {
         let name = match typ {
             Type::String => conf.string_type.clone(),
             Type::Bytes => conf.vec_type.clone(),
-            Type::Enum | Type::Message => proto.type_name.clone(),
+            Type::Enum | Type::Message => Some(self.resolve_type_name(proto.type_name())),
             _ => None,
         };
         TypeSpec {
@@ -682,7 +681,10 @@ impl Generator {
                     quote! { #vec_type <u8> }
                 }
             }
-            Type::Message | Type::Enum => self.resolve_ident(tspec.name.as_ref().unwrap()),
+            Type::Message | Type::Enum => {
+                let tname = tspec.name.as_ref().unwrap();
+                quote! { #tname }
+            }
             Type::Group => panic!("Group records are deprecated and unsupported"),
         }
     }
@@ -769,31 +771,57 @@ impl Generator {
         quote! { #attrs #name(#typ), }
     }
 
+    fn tspec_default(&self, t: &TypeSpec, default: &str) -> TokenStream {
+        let micropb_path = &self.config.micropb_path;
+        match t.typ {
+            Type::String => {
+                let string = format!("\"{}\"", default.escape_default());
+                quote! { #micropb_path::PbString::from_str(#string).expect("default string went over capacity") }
+            }
+            Type::Bytes => {
+                let bytes: String = unescape_c_escape_string(default)
+                    .into_iter()
+                    .flat_map(|b| core::ascii::escape_default(b).map(|c| c as char))
+                    .collect();
+                let bstr = format!("b\"{bytes}\"");
+                quote! { #micropb_path::PbVec::from_slice(#bstr).expect("default bytes went over capacity") }
+            }
+            Type::Message => {
+                unreachable!("message fields shouldn't have custom defaults")
+            }
+            Type::Enum => {
+                let type_name = t.name.as_ref().unwrap();
+                let default = default.to_case(Case::Pascal);
+                let variant = self.strip_enum_prefix(
+                    &default,
+                    type_name
+                        .rsplit_once('.')
+                        .map(|(_, s)| s)
+                        .unwrap_or(type_name),
+                );
+                quote! { #type_name::#variant }
+            }
+            _ => quote! { #default as _ },
+        }
+    }
+
     fn field_default(&self, field: &Field) -> TokenStream {
         let name = field.name;
-        let micropb_path = &self.config.micropb_path;
         if let Some(default) = field.default {
             match field.ftype {
                 FieldType::Single(ref t) | FieldType::Optional(ref t) => {
-                    return match t.typ {
-                        Type::String => {
-                            let string = format!("\"{}\"", default.escape_default());
-                            quote! { #name: #micropb_path::PbString::from_str(#string).expect("default string went over capacity"), }
+                    let value = self.tspec_default(t, default);
+                    return if field.boxed {
+                        if field.explicit_presence() {
+                            quote! { #name: Some(Box::new(#value)), }
+                        } else {
+                            quote! { #name: Box::new(#value), }
                         }
-                        Type::Bytes => {
-                            let bytes: String = unescape_c_escape_string(default)
-                                .into_iter()
-                                .flat_map(|b| core::ascii::escape_default(b).map(|c| c as char))
-                                .collect();
-                            let bstr = format!("b\"{bytes}\"");
-                            quote! { #name: #micropb_path::PbVec::from_slice(#bstr).expect("default bytes went over capacity"), }
-                        }
-                        Type::Message => {
-                            unreachable!("message fields shouldn't have custom defaults")
-                        }
-                        _ => quote! { #name: #default.into(), },
-                    }
+                    } else {
+                        quote! { #name: #value, }
+                    };
                 }
+                FieldType::Delegate(_) => return quote! {},
                 FieldType::Custom(_) => {}
                 _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
             }
@@ -801,10 +829,10 @@ impl Generator {
         quote! { #name: core::default::Default::default(), }
     }
 
-    fn resolve_ident(&self, pb_ident: &str) -> TokenStream {
-        assert_eq!(".", &pb_ident[1..]);
+    fn resolve_type_name(&self, pb_fq_type_name: &str) -> String {
+        assert_eq!(".", &pb_fq_type_name[1..]);
 
-        let mut ident_path = pb_ident[1..].split('.');
+        let mut ident_path = pb_fq_type_name[1..].split('.');
         let ident_type = ident_path.next_back().unwrap();
         let mut ident_path = ident_path.peekable();
 
@@ -821,8 +849,9 @@ impl Generator {
 
         let path = local_path
             .map(|_| Cow::Borrowed("super"))
-            .chain(ident_path.map(|e| self.resolve_path_elem(e)));
-        quote! { #(#path ::)* #ident_type }
+            .chain(ident_path.map(|e| self.resolve_path_elem(e)))
+            .fold(String::new(), |s, segment| s + "::" + &segment);
+        path + ident_type
     }
 
     fn resolve_path_elem<'a>(&self, elem: &'a str) -> Cow<'a, str> {

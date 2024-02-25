@@ -8,6 +8,8 @@ pub enum IntType {
     U16,
     I32,
     U32,
+    Isize,
+    Usize,
 }
 
 impl IntType {
@@ -19,7 +21,16 @@ impl IntType {
             IntType::U16 => "u16",
             IntType::I32 => "i32",
             IntType::U32 => "u32",
+            IntType::Isize => "isize",
+            IntType::Usize => "usize",
         }
+    }
+
+    pub(crate) fn is_signed(self) -> bool {
+        matches!(
+            self,
+            IntType::I8 | IntType::I16 | IntType::I32 | IntType::Isize
+        )
     }
 }
 
