@@ -342,25 +342,7 @@ impl Generator {
         }
 
         self.type_path.borrow_mut().push(name.to_owned());
-        let oneof_decls = oneofs.iter().map(|oneof| {
-            if let OneofType::Enum { type_name, fields } = &oneof.otype {
-                let fields = fields.iter().map(|f| self.oneof_field_decl(f));
-                let derive_dbg = oneof.derive_dbg;
-                let attrs = &oneof.type_attrs;
-
-                quote! {
-                    #derive_dbg
-                    #DERIVE_MSG
-                    #attrs
-                    pub enum #type_name {
-                        #(#fields)*
-                    }
-                }
-            } else {
-                quote! {}
-            }
-        });
-
+        let oneof_decls = oneofs.iter().map(|oneof| self.generate_oneof_decl(oneof));
         let nested_msgs = inner_msgs
             .iter()
             .map(|m| self.generate_msg_type(m, msg_conf.next_conf(m.name())));
@@ -386,21 +368,9 @@ impl Generator {
             (None, None)
         };
         let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub has: #n, });
-        let oneof_fields = oneofs.iter().map(|oneof| {
-            let name = oneof.name;
-            let type_name = match &oneof.otype {
-                OneofType::Enum { type_name, .. } => format!("{msg_mod_name}::{}", type_name),
-                OneofType::Custom(type_name) => type_name.to_owned(),
-                OneofType::Delegate(_) => return quote! {},
-            };
-            let attrs = &oneof.field_attrs;
-            let typ = if oneof.boxed {
-                quote! { Option<Box<#type_name>> }
-            } else {
-                quote! { Option<#type_name> }
-            };
-            quote! { #attrs #name: #typ, }
-        });
+        let oneof_fields = oneofs
+            .iter()
+            .map(|oneof| self.oneof_field_decl(&msg_mod_name, oneof));
 
         let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
             let defaults = fields.iter().map(|f| self.field_default(f));
@@ -441,6 +411,25 @@ impl Generator {
             }
 
             #decl_default
+        }
+    }
+
+    fn generate_oneof_decl(&self, oneof: &Oneof) -> TokenStream {
+        if let OneofType::Enum { type_name, fields } = &oneof.otype {
+            let fields = fields.iter().map(|f| self.oneof_subfield_decl(f));
+            let derive_dbg = oneof.derive_dbg;
+            let attrs = &oneof.type_attrs;
+
+            quote! {
+                #derive_dbg
+                #DERIVE_MSG
+                #attrs
+                pub enum #type_name {
+                    #(#fields)*
+                }
+            }
+        } else {
+            quote! {}
         }
     }
 
@@ -726,7 +715,23 @@ impl Generator {
         quote! { #attrs #name : #typ, }
     }
 
-    fn oneof_field_decl(&self, field: &Field) -> TokenStream {
+    fn oneof_field_decl(&self, msg_mod_name: &str, oneof: &Oneof) -> TokenStream {
+        let name = oneof.name;
+        let type_name = match &oneof.otype {
+            OneofType::Enum { type_name, .. } => format!("{msg_mod_name}::{}", type_name),
+            OneofType::Custom(type_name) => type_name.to_owned(),
+            OneofType::Delegate(_) => return quote! {},
+        };
+        let attrs = &oneof.field_attrs;
+        let typ = if oneof.boxed {
+            quote! { Option<Box<#type_name>> }
+        } else {
+            quote! { Option<#type_name> }
+        };
+        quote! { #attrs #name: #typ, }
+    }
+
+    fn oneof_subfield_decl(&self, field: &Field) -> TokenStream {
         let typ = self.rust_type(field);
         let name = field.name.to_case(Case::Pascal);
         let attrs = &field.attrs;
