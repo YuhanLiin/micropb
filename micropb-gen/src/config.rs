@@ -30,11 +30,11 @@ pub enum CustomField {
 }
 
 macro_rules! config_decl {
-    ($($(#[$attr:meta])* $field:ident: Option<$type:ty>,)+) => {
+    ($($(#[$attr:meta])* $field:ident $([$placeholder:ident])?: Option<$type:ty>,)+) => {
         #[non_exhaustive]
         #[derive(Debug, Clone, Default)]
         pub struct Config {
-            $($(#[$attr])* pub(crate) $field: Option<$type>,)+
+            $($(#[$attr])* pub $field: Option<$type>,)+
         }
 
         impl Config {
@@ -43,15 +43,34 @@ macro_rules! config_decl {
             }
 
             pub fn merge(&mut self, other: &Self) {
-                $(if let Some(v) = &other.$field {
-                    self.$field = Some(v.clone());
-                })+
+                $(config_decl!(@merge $field $([$placeholder])?, self, other);)+
             }
 
-            $(pub fn $field(mut self, val: $type) -> Self {
-                self.$field = Some(val);
-                self
-            })+
+            $(config_decl!(@setter $field: $type);)+
+        }
+    };
+
+    (@merge $field:ident, $self:ident, $other:ident) => {
+        if let Some(v) = &$other.$field {
+            $self.$field = Some(v.clone());
+        }
+    };
+
+    (@merge $field:ident [no_inherit], $self:ident, $other:ident) => {
+        $self.$field = $other.$field.clone();
+    };
+
+    (@setter $field:ident: String) => {
+        pub fn $field(mut self, s: &str) -> Self {
+            self.$field = Some(s.to_owned());
+            self
+        }
+    };
+
+    (@setter $field:ident: $type:ty) => {
+        pub fn $field(mut self, val: $type) -> Self {
+            self.$field = Some(val);
+            self
         }
     };
 }
@@ -65,7 +84,8 @@ config_decl! {
     vec_type: Option<String>,
     string_type: Option<String>,
     map_type: Option<String>,
-    custom_field: Option<CustomField>,
+    custom_field [no_inherit]: Option<CustomField>,
+    rename_field [no_inherit]: Option<String>,
 
     // Type configs
     enum_int_type: Option<IntType>,

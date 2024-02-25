@@ -70,6 +70,7 @@ struct Field<'a> {
     num: u32,
     ftype: FieldType,
     name: &'a str,
+    rust_name: Cow<'a, str>,
     default: Option<&'a str>,
     oneof: Option<usize>,
     boxed: bool,
@@ -83,6 +84,10 @@ impl<'a> Field<'a> {
 
     fn is_hazzer(&self) -> bool {
         self.explicit_presence() && !self.boxed && self.oneof.is_none()
+    }
+
+    fn rust_variant_name(&self) -> String {
+        self.rust_name.to_case(Case::Pascal)
     }
 
     fn delegate(&self) -> Option<&str> {
@@ -113,6 +118,7 @@ enum OneofType<'a> {
 
 struct Oneof<'a> {
     name: &'a str,
+    rust_name: Cow<'a, str>,
     otype: OneofType<'a>,
     boxed: bool,
     field_attrs: Option<String>,
@@ -488,6 +494,12 @@ impl Generator {
         }
 
         let name = proto.name();
+        let rust_name = oneof_conf
+            .config
+            .rename_field
+            .as_ref()
+            .map(|n| Cow::Owned(n.to_owned()))
+            .unwrap_or(Cow::Borrowed(name));
         let otype = match &oneof_conf.config.custom_field {
             Some(CustomField::Type(type_name)) => OneofType::Custom(type_name.to_owned()),
             Some(CustomField::Delegate(delegate)) => OneofType::Delegate(delegate.to_owned()),
@@ -496,8 +508,10 @@ impl Generator {
                 fields: vec![],
             },
         };
+
         Some(Oneof {
             name,
+            rust_name,
             idx,
             otype,
             derive_dbg: oneof_conf.derive_dbg(),
@@ -537,7 +551,13 @@ impl Generator {
             return None;
         }
 
-        let name = proto.name.as_ref().unwrap();
+        let name = proto.name();
+        let rust_name = field_conf
+            .config
+            .rename_field
+            .as_ref()
+            .map(|n| Cow::Owned(n.to_owned()))
+            .unwrap_or(Cow::Borrowed(name));
         let num = proto.number.unwrap() as u32;
         let oneof = proto.oneof_index.map(|i| i as usize);
 
@@ -570,6 +590,7 @@ impl Generator {
             num,
             ftype,
             name,
+            rust_name,
             oneof,
             default: proto.default_value.as_deref(),
             boxed: field_conf.config.boxed.unwrap_or(false),
@@ -587,7 +608,13 @@ impl Generator {
             return None;
         }
 
-        let name = proto.name.as_ref().unwrap();
+        let name = proto.name();
+        let rust_name = field_conf
+            .config
+            .rename_field
+            .as_ref()
+            .map(|n| Cow::Owned(n.to_owned()))
+            .unwrap_or(Cow::Borrowed(name));
         let num = proto.number.unwrap() as u32;
 
         let ftype = match field_conf.config.custom_field {
@@ -614,6 +641,7 @@ impl Generator {
             num,
             ftype,
             name,
+            rust_name,
             oneof: None,
             default: None,
             boxed: field_conf.config.boxed.unwrap_or(false),
@@ -710,13 +738,13 @@ impl Generator {
             return quote! {};
         }
         let typ = self.rust_type(field);
-        let name = field.name;
+        let name = &field.rust_name;
         let attrs = &field.attrs;
         quote! { #attrs #name : #typ, }
     }
 
     fn oneof_field_decl(&self, msg_mod_name: &str, oneof: &Oneof) -> TokenStream {
-        let name = oneof.name;
+        let name = &oneof.rust_name;
         let type_name = match &oneof.otype {
             OneofType::Enum { type_name, .. } => format!("{msg_mod_name}::{}", type_name),
             OneofType::Custom(type_name) => type_name.to_owned(),
@@ -733,7 +761,7 @@ impl Generator {
 
     fn oneof_subfield_decl(&self, field: &Field) -> TokenStream {
         let typ = self.rust_type(field);
-        let name = field.name.to_case(Case::Pascal);
+        let name = field.rust_variant_name();
         let attrs = &field.attrs;
         quote! { #attrs #name(#typ), }
     }
