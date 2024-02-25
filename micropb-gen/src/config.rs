@@ -23,6 +23,12 @@ impl IntType {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum CustomField {
+    Type(String),
+    Delegate(String),
+}
+
 macro_rules! config_decl {
     ($($(#[$attr:meta])* $field:ident: Option<$type:ty>,)+) => {
         #[non_exhaustive]
@@ -59,7 +65,7 @@ config_decl! {
     vec_type: Option<String>,
     string_type: Option<String>,
     map_type: Option<String>,
-    custom_type: Option<String>,
+    custom_field: Option<CustomField>,
 
     // Type configs
     enum_int_type: Option<IntType>,

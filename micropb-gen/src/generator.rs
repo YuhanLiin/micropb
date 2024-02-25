@@ -10,7 +10,7 @@ use protox::prost_reflect::prost_types::{
 use quote::quote;
 
 use crate::{
-    config::{Config, GenConfig, IntType},
+    config::{Config, CustomField, GenConfig, IntType},
     pathtree::Node,
 };
 
@@ -63,6 +63,7 @@ enum FieldType {
         fixed_len: Option<u32>,
     },
     Custom(String),
+    Delegate(String),
 }
 
 struct Field<'a> {
@@ -81,20 +82,61 @@ impl<'a> Field<'a> {
     }
 
     fn is_hazzer(&self) -> bool {
-        self.explicit_presence() && !self.boxed
+        self.explicit_presence() && !self.boxed && self.oneof.is_none()
     }
+
+    fn delegate(&self) -> Option<&str> {
+        if let FieldType::Delegate(d) = &self.ftype {
+            Some(d)
+        } else {
+            None
+        }
+    }
+
+    fn custom_field(&self) -> Option<&str> {
+        if let FieldType::Custom(c) = &self.ftype {
+            Some(c)
+        } else {
+            None
+        }
+    }
+}
+
+enum OneofType<'a> {
+    Enum {
+        type_name: String,
+        fields: Vec<Field<'a>>,
+    },
+    Custom(String),
+    Delegate(String),
 }
 
 struct Oneof<'a> {
     name: &'a str,
-    type_name: String,
+    otype: OneofType<'a>,
     boxed: bool,
     field_attrs: Option<String>,
     type_attrs: Option<String>,
     derive_dbg: Option<&'static str>,
-    is_custom: bool,
-    fields: Vec<Field<'a>>,
     idx: usize,
+}
+
+impl<'a> Oneof<'a> {
+    fn delegate(&self) -> Option<&str> {
+        if let OneofType::Delegate(d) = &self.otype {
+            Some(d)
+        } else {
+            None
+        }
+    }
+
+    fn custom_field(&self) -> Option<&str> {
+        if let OneofType::Custom(c) = &self.otype {
+            Some(c)
+        } else {
+            None
+        }
+    }
 }
 
 struct CurrentConfig<'a> {
@@ -273,9 +315,13 @@ impl Generator {
                     self.create_map_field(f, map_msg, field_conf)
                 } else {
                     if let Some(idx) = f.oneof_index {
-                        if let Some(oneof) = oneofs.iter_mut().find(|o| o.idx == idx as usize) {
+                        if let Some(OneofType::Enum { fields, .. }) = oneofs
+                            .iter_mut()
+                            .find(|o| o.idx == idx as usize)
+                            .map(|o| &mut o.otype)
+                        {
                             if let Some(field) = self.create_field(f, field_conf) {
-                                oneof.fields.push(field);
+                                fields.push(field);
                             }
                         }
                         return None;
@@ -285,24 +331,33 @@ impl Generator {
             })
             .collect();
 
+        let odelegates = oneofs.iter().filter_map(|o| o.delegate());
+        let fdelegates = fields.iter().filter_map(|f| f.delegate());
+        for delegate in odelegates.chain(fdelegates) {
+            let ocustoms = oneofs.iter().filter_map(|o| o.custom_field());
+            let fcustoms = fields.iter().filter_map(|f| f.custom_field());
+            if ocustoms.chain(fcustoms).any(|custom| delegate == custom) {
+                // TODO error about how delegate != custom
+            }
+        }
+
         self.type_path.borrow_mut().push(name.to_owned());
         let oneof_decls = oneofs.iter().map(|oneof| {
-            if oneof.fields.is_empty() || oneof.is_custom {
-                return quote! {};
-            }
+            if let OneofType::Enum { type_name, fields } = &oneof.otype {
+                let fields = fields.iter().map(|f| self.oneof_field_decl(f));
+                let derive_dbg = oneof.derive_dbg;
+                let attrs = &oneof.type_attrs;
 
-            let type_name = &oneof.type_name;
-            let fields = oneof.fields.iter().map(|f| self.oneof_field_decl(f));
-            let derive_dbg = oneof.derive_dbg;
-            let attrs = &oneof.type_attrs;
-
-            quote! {
-                #derive_dbg
-                #DERIVE_MSG
-                #attrs
-                pub enum #type_name {
-                    #(#fields)*
+                quote! {
+                    #derive_dbg
+                    #DERIVE_MSG
+                    #attrs
+                    pub enum #type_name {
+                        #(#fields)*
+                    }
                 }
+            } else {
+                quote! {}
             }
         });
 
@@ -333,10 +388,10 @@ impl Generator {
         let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub has: #n, });
         let oneof_fields = oneofs.iter().map(|oneof| {
             let name = oneof.name;
-            let type_name = if oneof.is_custom {
-                oneof.type_name.to_owned()
-            } else {
-                format!("{msg_mod_name}::{}", oneof.type_name)
+            let type_name = match &oneof.otype {
+                OneofType::Enum { type_name, .. } => format!("{msg_mod_name}::{}", type_name),
+                OneofType::Custom(type_name) => type_name.to_owned(),
+                OneofType::Delegate(_) => return quote! {},
             };
             let attrs = &oneof.field_attrs;
             let typ = if oneof.boxed {
@@ -444,21 +499,22 @@ impl Generator {
         }
 
         let name = proto.name();
-        let (custom, type_name) = if let Some(custom_type) = &oneof_conf.config.custom_type {
-            (true, custom_type.to_owned())
-        } else {
-            (false, name.to_case(Case::Pascal))
+        let otype = match &oneof_conf.config.custom_field {
+            Some(CustomField::Type(type_name)) => OneofType::Custom(type_name.to_owned()),
+            Some(CustomField::Delegate(delegate)) => OneofType::Delegate(delegate.to_owned()),
+            None => OneofType::Enum {
+                type_name: name.to_case(Case::Pascal),
+                fields: vec![],
+            },
         };
         Some(Oneof {
             name,
             idx,
-            type_name,
-            is_custom: custom,
+            otype,
             derive_dbg: oneof_conf.derive_dbg(),
             boxed: oneof_conf.config.boxed.unwrap_or(false),
             field_attrs: oneof_conf.config.field_attributes.clone(),
             type_attrs: oneof_conf.config.type_attributes.clone(),
-            fields: vec![],
         })
     }
 
@@ -494,37 +550,38 @@ impl Generator {
 
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
+        let oneof = proto.oneof_index.map(|i| i as usize);
 
-        let ftype = if let Some(custom_type) = field_conf.config.custom_type {
-            FieldType::Custom(custom_type)
-        } else {
-            match proto.label() {
-                Label::Repeated => FieldType::Repeated {
-                    typ: self.create_type_spec(proto, &field_conf.next_conf("elem")),
-                    type_name: field_conf.config.vec_type.clone().unwrap(),
-                    fixed_len: field_conf.config.fixed_len,
-                    packed: proto
-                        .options
-                        .as_ref()
-                        .and_then(|opt| opt.packed)
-                        .unwrap_or(false),
-                },
-                Label::Required | Label::Optional
-                    if self.syntax == Syntax::Proto2
-                        || proto.proto3_optional()
-                        || proto.r#type() == Type::Message =>
-                {
-                    FieldType::Optional(self.create_type_spec(proto, &field_conf))
-                }
-                _ => FieldType::Single(self.create_type_spec(proto, &field_conf)),
+        let ftype = match (&field_conf.config.custom_field, proto.label()) {
+            (Some(CustomField::Type(type_name)), _) => FieldType::Custom(type_name.to_owned()),
+            (Some(CustomField::Delegate(delegate)), _) if oneof.is_none() => {
+                FieldType::Delegate(delegate.to_owned())
             }
+            (_, Label::Repeated) => FieldType::Repeated {
+                typ: self.create_type_spec(proto, &field_conf.next_conf("elem")),
+                type_name: field_conf.config.vec_type.clone().unwrap(),
+                fixed_len: field_conf.config.fixed_len,
+                packed: proto
+                    .options
+                    .as_ref()
+                    .and_then(|opt| opt.packed)
+                    .unwrap_or(false),
+            },
+            (_, Label::Required) | (None, Label::Optional)
+                if self.syntax == Syntax::Proto2
+                    || proto.proto3_optional()
+                    || proto.r#type() == Type::Message =>
+            {
+                FieldType::Optional(self.create_type_spec(proto, &field_conf))
+            }
+            (_, _) => FieldType::Single(self.create_type_spec(proto, &field_conf)),
         };
 
         Some(Field {
             num,
             ftype,
             name,
-            oneof: proto.oneof_index.map(|i| i as usize),
+            oneof,
             default: proto.default_value.as_deref(),
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs: field_conf.config.field_attributes.clone(),
@@ -544,21 +601,23 @@ impl Generator {
         let name = proto.name.as_ref().unwrap();
         let num = proto.number.unwrap() as u32;
 
-        let ftype = if let Some(custom_type) = field_conf.config.custom_type {
-            FieldType::Custom(custom_type)
-        } else {
-            let key = self.create_type_spec(&map_msg.field[0], &field_conf.next_conf("key"));
-            let val = self.create_type_spec(&map_msg.field[1], &field_conf.next_conf("value"));
-            FieldType::Map {
-                key,
-                val,
-                type_name: field_conf.config.vec_type.clone().unwrap(),
-                fixed_len: field_conf.config.fixed_len,
-                packed: proto
-                    .options
-                    .as_ref()
-                    .and_then(|opt| opt.packed)
-                    .unwrap_or(false),
+        let ftype = match field_conf.config.custom_field {
+            Some(CustomField::Type(type_name)) => FieldType::Custom(type_name),
+            Some(CustomField::Delegate(delegate)) => FieldType::Delegate(delegate),
+            None => {
+                let key = self.create_type_spec(&map_msg.field[0], &field_conf.next_conf("key"));
+                let val = self.create_type_spec(&map_msg.field[1], &field_conf.next_conf("value"));
+                FieldType::Map {
+                    key,
+                    val,
+                    type_name: field_conf.config.vec_type.clone().unwrap(),
+                    fixed_len: field_conf.config.fixed_len,
+                    packed: proto
+                        .options
+                        .as_ref()
+                        .and_then(|opt| opt.packed)
+                        .unwrap_or(false),
+                }
             }
         };
 
@@ -643,6 +702,7 @@ impl Generator {
             }
 
             FieldType::Custom(t) => quote! {#t},
+            FieldType::Delegate(_) => unreachable!("delegate field cannot have a type"),
         };
 
         if field.boxed {
@@ -657,6 +717,9 @@ impl Generator {
     }
 
     fn field_decl(&self, field: &Field) -> TokenStream {
+        if let FieldType::Delegate(_) = field.ftype {
+            return quote! {};
+        }
         let typ = self.rust_type(field);
         let name = field.name;
         let attrs = &field.attrs;
