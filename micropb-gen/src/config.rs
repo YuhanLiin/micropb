@@ -96,7 +96,6 @@ config_decl! {
 
     // General configs
     skip: Option<bool>,
-    disable_docs: Option<bool>,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
