@@ -10,7 +10,6 @@ pub mod container;
 pub mod decode;
 #[cfg(feature = "encode")]
 pub mod encode;
-pub mod extension;
 pub mod field;
 pub mod message;
 mod misc;
