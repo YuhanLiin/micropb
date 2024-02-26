@@ -1,4 +1,10 @@
-use std::{borrow::Cow, cell::RefCell, collections::HashMap, iter, ops::Deref};
+use std::{
+    borrow::{Borrow, Cow},
+    cell::RefCell,
+    collections::HashMap,
+    iter,
+    ops::Deref,
+};
 
 use convert_case::{Case, Casing};
 use protox::prost_reflect::prost_types::{
@@ -143,17 +149,17 @@ impl<'a> Oneof<'a> {
 }
 
 struct CurrentConfig<'a> {
-    node: Option<&'a Node<Config>>,
-    config: Config,
+    node: Option<&'a Node<Box<Config>>>,
+    config: Cow<'a, Box<Config>>,
 }
 
 impl<'a> CurrentConfig<'a> {
-    fn next_conf(&self, segment: &str) -> Self {
-        let mut config = self.config.clone();
+    fn next_conf(&'a self, segment: &str) -> Self {
+        let mut config: Cow<Box<Config>> = Cow::Borrowed(self.config.borrow());
         if let Some(node) = self.node {
             let next = node.next(segment);
             if let Some(conf) = next.and_then(|n| n.value()) {
-                config.merge(conf);
+                (*config.to_mut()).merge(conf);
             }
             Self { node: next, config }
         } else {
@@ -211,7 +217,7 @@ impl Generator {
         );
         let cur_config = CurrentConfig {
             node: Some(root_node),
-            config: root_conf,
+            config: Cow::Owned(root_conf),
         };
 
         for m in &fdproto.message_type {
@@ -597,9 +603,9 @@ impl Generator {
             .unwrap_or(Cow::Borrowed(name));
         let num = proto.number.unwrap() as u32;
 
-        let ftype = match field_conf.config.custom_field {
-            Some(CustomField::Type(type_name)) => FieldType::Custom(type_name),
-            Some(CustomField::Delegate(delegate)) => FieldType::Delegate(delegate),
+        let ftype = match &field_conf.config.custom_field {
+            Some(CustomField::Type(type_name)) => FieldType::Custom(type_name.to_owned()),
+            Some(CustomField::Delegate(delegate)) => FieldType::Delegate(delegate.to_owned()),
             None => {
                 let key = self.create_type_spec(&map_msg.field[0], &field_conf.next_conf("key"));
                 let val = self.create_type_spec(&map_msg.field[1], &field_conf.next_conf("value"));

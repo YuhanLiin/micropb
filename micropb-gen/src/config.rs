@@ -127,5 +127,5 @@ pub struct GenConfig {
     pub(crate) format: bool,
     pub(crate) use_std: bool,
 
-    pub(crate) field_configs: PathTree<Config>,
+    pub(crate) field_configs: PathTree<Box<Config>>,
 }
