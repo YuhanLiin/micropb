@@ -31,7 +31,7 @@ enum Syntax {
 enum TypeOpts {
     Name(String),
     Int(Option<IntType>),
-    Container { typ: String, fixed_len: Option<u32> },
+    Container { typ: String, max_bytes: Option<u32> },
 }
 
 struct TypeSpec {
@@ -46,7 +46,7 @@ enum FieldType {
         val: TypeSpec,
         packed: bool,
         type_name: String,
-        fixed_len: Option<u32>,
+        max_len: Option<u32>,
     },
     // Implicit presence
     Single(TypeSpec),
@@ -56,7 +56,7 @@ enum FieldType {
         typ: TypeSpec,
         packed: bool,
         type_name: String,
-        fixed_len: Option<u32>,
+        max_len: Option<u32>,
     },
     Custom(String),
     Delegate(String),
@@ -505,11 +505,11 @@ impl Generator {
         let opts = match typ {
             Type::String => TypeOpts::Container {
                 typ: conf.string_type.clone().unwrap(),
-                fixed_len: conf.fixed_len,
+                max_bytes: conf.max_bytes,
             },
             Type::Bytes => TypeOpts::Container {
                 typ: conf.vec_type.clone().unwrap(),
-                fixed_len: conf.fixed_len,
+                max_bytes: conf.max_bytes,
             },
             Type::Enum | Type::Message => TypeOpts::Name(proto.type_name().to_owned()),
             _ => TypeOpts::Int(conf.int_type),
@@ -544,7 +544,7 @@ impl Generator {
             (_, Label::Repeated) => FieldType::Repeated {
                 typ: self.create_type_spec(proto, &field_conf.next_conf("elem")),
                 type_name: field_conf.config.vec_type.clone().unwrap(),
-                fixed_len: field_conf.config.fixed_len,
+                max_len: field_conf.config.max_len,
                 packed: proto
                     .options
                     .as_ref()
@@ -607,7 +607,7 @@ impl Generator {
                     key,
                     val,
                     type_name: field_conf.config.vec_type.clone().unwrap(),
-                    fixed_len: field_conf.config.fixed_len,
+                    max_len: field_conf.config.max_len,
                     packed: proto
                         .options
                         .as_ref()
@@ -651,21 +651,21 @@ impl Generator {
             Type::Double => "f64".into(),
             Type::Bool => "bool".into(),
             Type::String => {
-                let TypeOpts::Container { typ, fixed_len } = &tspec.opts else {
+                let TypeOpts::Container { typ, max_bytes } = &tspec.opts else {
                     unreachable!()
                 };
-                if let Some(max_bytes) = fixed_len {
+                if let Some(max_bytes) = max_bytes {
                     format!("{typ}<{max_bytes}>").into()
                 } else {
                     typ.into()
                 }
             }
             Type::Bytes => {
-                let TypeOpts::Container { typ, fixed_len } = &tspec.opts else {
+                let TypeOpts::Container { typ, max_bytes } = &tspec.opts else {
                     unreachable!()
                 };
-                if let Some(max_len) = fixed_len {
-                    format!("{typ}<u8, {max_len}>").into()
+                if let Some(max_bytes) = max_bytes {
+                    format!("{typ}<u8, {max_bytes}>").into()
                 } else {
                     format!("{typ}<u8>").into()
                 }
@@ -686,12 +686,12 @@ impl Generator {
                 key,
                 val,
                 type_name,
-                fixed_len,
+                max_len,
                 ..
             } => {
                 let k = self.tspec_rust_type(key);
                 let v = self.tspec_rust_type(val);
-                if let Some(max_len) = fixed_len {
+                if let Some(max_len) = max_len {
                     format!("{type_name}<{k}, {v}, {max_len}>").into()
                 } else {
                     format!("{type_name}<{k}, {v}>").into()
@@ -703,11 +703,11 @@ impl Generator {
             FieldType::Repeated {
                 typ,
                 type_name,
-                fixed_len,
+                max_len,
                 ..
             } => {
                 let t = self.tspec_rust_type(typ);
-                if let Some(max_len) = fixed_len {
+                if let Some(max_len) = max_len {
                     format!("{type_name}<{t}, {max_len}>").into()
                 } else {
                     format!("{type_name}<{t}>").into()

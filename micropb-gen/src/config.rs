@@ -88,7 +88,8 @@ macro_rules! config_decl {
 
 config_decl! {
     // Field configs
-    fixed_len: Option<u32>,
+    max_len: Option<u32>,
+    max_bytes: Option<u32>,
     int_type: Option<IntType>,
     field_attributes: Option<String>,
     boxed: Option<bool>,
