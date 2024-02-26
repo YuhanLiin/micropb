@@ -1,13 +1,11 @@
 use std::{borrow::Cow, cell::RefCell, collections::HashMap, iter, ops::Deref};
 
 use convert_case::{Case, Casing};
-use proc_macro2::TokenStream;
 use protox::prost_reflect::prost_types::{
     field_descriptor_proto::{Label, Type},
     DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorProto,
     FileDescriptorSet, OneofDescriptorProto,
 };
-use quote::quote;
 
 use crate::{
     config::{Config, CustomField, GenConfig, IntType},
@@ -20,6 +18,9 @@ static DERIVE_DEFAULT: &str = "#[derive(Default)]";
 static DERIVE_DEBUG: &str = "#[derive(Debug)]";
 static REPR_ENUM: &str = "#[repr(transparent)]";
 
+static HAZZER_TYPE: &str = "_Has";
+static HAZZER_NAME: &str = "_has";
+
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 enum Syntax {
     #[default]
@@ -27,20 +28,15 @@ enum Syntax {
     Proto3,
 }
 
-enum TypeOpt {
+enum TypeOpts {
     Name(String),
-    Int(IntType),
-    Container {
-        type_name: String,
-        fixed_len: Option<u32>,
-    },
+    Int(Option<IntType>),
+    Container { typ: String, fixed_len: Option<u32> },
 }
 
 struct TypeSpec {
     typ: Type,
-    int_type: Option<IntType>,
-    name: Option<String>,
-    fixed_len: Option<u32>,
+    opts: TypeOpts,
 }
 
 enum FieldType {
@@ -75,7 +71,7 @@ struct Field<'a> {
     oneof: Option<usize>,
     boxed: bool,
     no_hazzer: bool,
-    attrs: Option<String>,
+    attrs: String,
 }
 
 impl<'a> Field<'a> {
@@ -122,9 +118,9 @@ struct Oneof<'a> {
     rust_name: Cow<'a, str>,
     otype: OneofType<'a>,
     boxed: bool,
-    field_attrs: Option<String>,
-    type_attrs: Option<String>,
-    derive_dbg: Option<&'static str>,
+    field_attrs: String,
+    type_attrs: String,
+    derive_dbg: &'static str,
     idx: usize,
 }
 
@@ -165,8 +161,12 @@ impl<'a> CurrentConfig<'a> {
         }
     }
 
-    fn derive_dbg(&self) -> Option<&'static str> {
-        (!self.config.no_debug_derive.unwrap_or(false)).then_some(DERIVE_DEBUG)
+    fn derive_dbg(&self) -> &'static str {
+        if self.config.no_debug_derive.unwrap_or(false) {
+            ""
+        } else {
+            DERIVE_DEBUG
+        }
     }
 }
 
@@ -201,6 +201,8 @@ impl Generator {
             .map(|s| s.split('.').map(ToOwned::to_owned).collect())
             .unwrap_or_default();
 
+        let mut buf = String::with_capacity(100);
+
         let root_node = &self.config.field_configs.root;
         let mut root_conf = root_node.value().expect("root config should exist").clone();
         root_node.get(
@@ -212,79 +214,73 @@ impl Generator {
             config: root_conf,
         };
 
-        let msgs = fdproto
-            .message_type
-            .iter()
-            .map(|m| self.generate_msg_type(m, cur_config.next_conf(m.name())));
-        let enums = fdproto
-            .enum_type
-            .iter()
-            .map(|e| self.generate_enum_type(e, cur_config.next_conf(e.name())));
-
-        let code = quote! {
-            #(#msgs)*
-            #(#enums)*
-        };
+        for m in &fdproto.message_type {
+            self.generate_msg_type(&mut buf, m, cur_config.next_conf(m.name()));
+        }
+        for e in &fdproto.enum_type {
+            self.generate_enum_type(&mut buf, e, cur_config.next_conf(e.name()));
+        }
     }
 
     fn generate_enum_type(
         &self,
+        buf: &mut String,
         enum_type: &EnumDescriptorProto,
         enum_conf: CurrentConfig,
-    ) -> TokenStream {
+    ) {
         if enum_conf.config.skip.unwrap_or(false) {
-            return quote! {};
+            return;
         }
 
         let name = enum_type.name.as_ref().unwrap();
-        let nums = enum_type.value.iter().map(|v| v.number.unwrap());
-        let var_names = enum_type.value.iter().map(|v| {
-            self.strip_enum_prefix(&v.name.as_ref().unwrap().to_case(Case::Pascal), name)
-                .to_owned()
-        });
-        let default_num = enum_type.value[0].number.unwrap();
         let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
         let itype = enum_int_type.type_name();
-        let attrs = &enum_conf.config.type_attributes;
-        let derive_dbg = enum_conf.derive_dbg();
 
-        quote! {
-            #derive_dbg
-            #DERIVE_ENUM
-            #REPR_ENUM
-            #attrs
-            pub struct #name(pub #itype);
+        *buf += DERIVE_ENUM;
+        *buf += enum_conf.derive_dbg();
+        *buf += REPR_ENUM;
+        *buf += enum_conf.config.type_attributes.as_deref().unwrap_or("");
+        *buf += "\n";
+        *buf += &format!("pub struct {name}(pub {itype});\n");
 
-            impl #name {
-                #(pub const #var_names: Self = #name(#nums);)*
-            }
-
-            impl core::default::Default for #name {
-                fn default() -> Self {
-                    #name(#default_num)
-                }
-            }
-
-            impl core::convert::From<#itype> for $name {
-                fn from(val: #itype) -> Self {
-                    #name(val)
-                }
-            }
+        *buf += &format!("impl {name} {{\n");
+        for v in &enum_type.value {
+            let vname = v.name.as_ref().unwrap().to_case(Case::Pascal);
+            let vname = self.strip_enum_prefix(&vname, name);
+            *buf += &format!("pub const {vname}: Self = {name}({})\n", v.number.unwrap());
         }
+        *buf += "}\n";
+
+        let default_num = enum_type.value[0].number.unwrap();
+        *buf += &format!(
+            r#"impl core::default::Default for {name} {{
+                fn default() -> Self {{ {name}({default_num}) }}
+            }}
+            "#
+        );
+
+        *buf += &format!(
+            r#"impl core::convert::From<{itype}> for {name} {{
+                fn from(val: {itype}) -> Self {{ {name}(val) }}
+            }}
+            "#
+        );
     }
 
     fn generate_msg_type(
         &self,
+        buf: &mut String,
         msg_type: &DescriptorProto,
         msg_conf: CurrentConfig,
-    ) -> TokenStream {
+    ) {
         if msg_conf.config.skip.unwrap_or(false) {
-            return quote! {};
+            return;
         }
 
         let name = msg_type.name.as_ref().unwrap();
         let fq_name = self.fq_name(name);
         let msg_mod_name = format!("mod_{name}");
+
         let mut oneofs: Vec<_> = msg_type
             .oneof_decl
             .iter()
@@ -348,139 +344,109 @@ impl Generator {
         }
 
         self.type_path.borrow_mut().push(name.to_owned());
-        let oneof_decls = oneofs.iter().map(|oneof| self.generate_oneof_decl(oneof));
-        let nested_msgs = inner_msgs
-            .iter()
-            .map(|m| self.generate_msg_type(m, msg_conf.next_conf(m.name())));
-        let nested_enums = msg_type
-            .enum_type
-            .iter()
-            .map(|e| self.generate_enum_type(e, msg_conf.next_conf(e.name())));
-        let msg_mod = quote! {
-            pub mod #msg_mod_name {
-                #(#nested_msgs)*
-                #(#nested_enums)*
-                #(#oneof_decls)*
-            }
-        };
+        *buf += &format!("pub mod {msg_mod_name} {{\n");
+
+        for m in inner_msgs {
+            self.generate_msg_type(buf, m, msg_conf.next_conf(m.name()));
+        }
+        for e in &msg_type.enum_type {
+            self.generate_enum_type(buf, e, msg_conf.next_conf(e.name()));
+        }
+        for oneof in &oneofs {
+            self.generate_oneof_decl(buf, oneof);
+        }
+
+        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
+        let hazzer_exists = !opt_fields.is_empty();
+        if hazzer_exists {
+            self.generate_hazzer_decl(buf, &opt_fields, &msg_conf);
+        }
+
+        *buf += "}\n";
         self.type_path.borrow_mut().pop();
 
-        let msg_fields = fields.iter().map(|f| self.field_decl(f));
-        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
-        let (hazzer_name, hazzer_decl) = if !opt_fields.is_empty() {
-            let (n, t) = self.generate_hazzer_decl(name, &opt_fields, &msg_conf);
-            (Some(n), Some(t))
-        } else {
-            (None, None)
-        };
-        let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub _has: #n, });
-        let oneof_fields = oneofs
-            .iter()
-            .map(|oneof| self.oneof_field_decl(&msg_mod_name, oneof));
+        let derive_default = fields.iter().any(|f| f.default.is_some());
+        *buf += msg_conf.derive_dbg();
+        *buf += derive_default.then_some(DERIVE_DEFAULT).unwrap_or("");
+        *buf += DERIVE_MSG;
+        *buf += &msg_conf.config.type_attributes.as_deref().unwrap_or("");
 
-        let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
-            let defaults = fields.iter().map(|f| self.field_default(f));
-            let hazzer_default = hazzer_name
-                .as_ref()
-                .map(|_| quote! { _has: core::default::Default::default(), });
-            let decl = quote! {
-                impl core::default::Default for #name {
-                    fn default() -> Self {
-                        Self {
-                            #(#defaults)*
-                            #hazzer_default
-                        }
-                    }
-                }
-            };
-            (None, Some(decl))
-        } else {
-            (Some(DERIVE_DEFAULT), None)
-        };
+        *buf += &format!("\npub struct {name} {{\n");
+        for field in &fields {
+            self.generate_field_decl(buf, field);
+        }
+        for oneof in &oneofs {
+            self.generate_oneof_field_decl(buf, &msg_mod_name, oneof);
+        }
+        if hazzer_exists {
+            *buf += &format!("pub {HAZZER_NAME}: {HAZZER_TYPE},\n");
+        }
+        *buf += "}\n";
 
-        let attrs = &msg_conf.config.type_attributes;
-        let derive_dbg = msg_conf.derive_dbg();
-
-        quote! {
-            #msg_mod
-
-            #hazzer_decl
-
-            #derive_dbg
-            #derive_default
-            #DERIVE_MSG
-            #attrs
-            pub struct #name {
-                #(pub #msg_fields)*
-                #(pub #oneof_fields)*
-                #hazzer_field
+        if !derive_default {
+            *buf += &format!("impl core::default::Default for {name} {{\n");
+            *buf += "fn default() -> Self {\nSelf {\n";
+            for field in &fields {
+                self.generate_field_default(buf, field);
             }
-
-            #decl_default
+            if hazzer_exists {
+                *buf += &format!("{HAZZER_NAME}: core::default::Default::default(),\n");
+            }
+            *buf += "}\n}\n}\n";
         }
     }
 
-    fn generate_oneof_decl(&self, oneof: &Oneof) -> TokenStream {
+    fn generate_oneof_decl(&self, buf: &mut String, oneof: &Oneof) {
         if let OneofType::Enum { type_name, fields } = &oneof.otype {
-            let fields = fields.iter().map(|f| self.oneof_subfield_decl(f));
-            let derive_dbg = oneof.derive_dbg;
-            let attrs = &oneof.type_attrs;
+            *buf += oneof.derive_dbg;
+            *buf += DERIVE_MSG;
+            *buf += &oneof.type_attrs;
 
-            quote! {
-                #derive_dbg
-                #DERIVE_MSG
-                #attrs
-                pub enum #type_name {
-                    #(#fields)*
-                }
+            *buf += &format!("\npub enum {type_name} {{\n");
+            for field in fields {
+                *buf += &field.attrs;
+                buf.push(' ');
+                *buf += &field.rust_variant_name();
+                buf.push('(');
+                *buf += &self.rust_type(field);
+                *buf += "),\n";
             }
-        } else {
-            quote! {}
+            *buf += "}\n";
         }
     }
 
-    fn generate_hazzer_decl(
-        &self,
-        name: &str,
-        fields: &[&Field],
-        msg_conf: &CurrentConfig,
-    ) -> (String, TokenStream) {
-        let micropb_path = &self.config.micropb_path;
-        let hazzer_name = format!("{name}Hazzer");
-        let attrs = &msg_conf.config.hazzer_attributes;
-        let derive_dbg = msg_conf.derive_dbg();
+    fn generate_hazzer_decl(&self, buf: &mut String, fields: &[&Field], msg_conf: &CurrentConfig) {
+        *buf += msg_conf.derive_dbg();
+        *buf += DERIVE_MSG;
+        *buf += DERIVE_DEFAULT;
+        *buf += msg_conf.config.hazzer_attributes.as_deref().unwrap_or("");
 
+        let micropb_path = &self.config.micropb_path;
         let hazzers = fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
-        let methods = hazzers.enumerate().map(|(i, f)| {
+        *buf += &format!(
+            "\npub struct {HAZZER_TYPE}({micropb_path}::bitvec::BitArr![for {count}, in u8]);\n"
+        );
+
+        *buf += &format!("impl {HAZZER_NAME} {{\n");
+        for (i, f) in hazzers.enumerate() {
             let fname = f.name;
-            let setter = format!("set_{fname}");
-
-            quote! {
+            *buf += &format!(
+                r#"
                 #[inline]
-                pub fn #fname(&self) -> bool {
-                    self.0[#i]
-                }
+                pub fn {fname}(&self) -> bool {{
+
+                   self.0[{i}]
+                }}
 
                 #[inline]
-                pub fn #setter(&mut self, val: bool) {
-                    self.0.set(#i, val);
-                }
-            }
-        });
-
-        let decl = quote! {
-            #derive_dbg
-            #DERIVE_MSG
-            #DERIVE_DEFAULT
-            #attrs
-            pub struct #hazzer_name(#micropb_path::bitvec::BitArr!(for #count, in u8));
-
-            impl #hazzer_name {
-                #(#methods)*
-            }
-        };
-        (hazzer_name, decl)
+                pub fn set_{fname}(&mut self, val: bool) -> bool {{
+                   self.0.set({i}, val);
+                }}
+                "#
+            );
+        }
+        *buf += "}\n"
     }
 
     fn create_oneof<'a>(
@@ -516,8 +482,16 @@ impl Generator {
             otype,
             derive_dbg: oneof_conf.derive_dbg(),
             boxed: oneof_conf.config.boxed.unwrap_or(false),
-            field_attrs: oneof_conf.config.field_attributes.clone(),
-            type_attrs: oneof_conf.config.type_attributes.clone(),
+            field_attrs: oneof_conf
+                .config
+                .field_attributes
+                .clone()
+                .unwrap_or_default(),
+            type_attrs: oneof_conf
+                .config
+                .type_attributes
+                .clone()
+                .unwrap_or_default(),
         })
     }
 
@@ -528,18 +502,19 @@ impl Generator {
     ) -> TypeSpec {
         let conf = &type_conf.config;
         let typ = proto.r#type();
-        let name = match typ {
-            Type::String => conf.string_type.clone(),
-            Type::Bytes => conf.vec_type.clone(),
-            Type::Enum | Type::Message => Some(self.resolve_type_name(proto.type_name())),
-            _ => None,
+        let opts = match typ {
+            Type::String => TypeOpts::Container {
+                typ: conf.string_type.clone().unwrap(),
+                fixed_len: conf.fixed_len,
+            },
+            Type::Bytes => TypeOpts::Container {
+                typ: conf.vec_type.clone().unwrap(),
+                fixed_len: conf.fixed_len,
+            },
+            Type::Enum | Type::Message => TypeOpts::Name(proto.type_name().to_owned()),
+            _ => TypeOpts::Int(conf.int_type),
         };
-        TypeSpec {
-            typ,
-            name,
-            int_type: conf.int_type,
-            fixed_len: conf.fixed_len,
-        }
+        TypeSpec { typ, opts }
     }
 
     fn create_field<'a>(
@@ -595,7 +570,11 @@ impl Generator {
             default: proto.default_value.as_deref(),
             boxed: field_conf.config.boxed.unwrap_or(false),
             no_hazzer: field_conf.config.no_hazzer.unwrap_or(false),
-            attrs: field_conf.config.field_attributes.clone(),
+            attrs: field_conf
+                .config
+                .field_attributes
+                .clone()
+                .unwrap_or_default(),
         })
     }
 
@@ -647,49 +626,61 @@ impl Generator {
             default: None,
             boxed: field_conf.config.boxed.unwrap_or(false),
             no_hazzer: field_conf.config.no_hazzer.unwrap_or(false),
-            attrs: field_conf.config.field_attributes.clone(),
+            attrs: field_conf
+                .config
+                .field_attributes
+                .clone()
+                .unwrap_or_default(),
         })
     }
 
-    fn tspec_rust_type(&self, tspec: &TypeSpec) -> TokenStream {
-        fn int_type(itype: Option<IntType>, default: &str) -> TokenStream {
-            let typ = itype.map(IntType::type_name).unwrap_or(default);
-            quote! { #typ }
+    fn tspec_rust_type<'a>(&self, tspec: &'a TypeSpec) -> Cow<'a, str> {
+        fn int_type<'a>(tspec: &TypeSpec, default: &'a str) -> &'a str {
+            let TypeOpts::Int(itype) = tspec.opts else {
+                unreachable!()
+            };
+            itype.map(IntType::type_name).unwrap_or(default)
         }
 
         match tspec.typ {
-            Type::Int32 | Type::Sint32 | Type::Sfixed32 => int_type(tspec.int_type, "i32"),
-            Type::Int64 | Type::Sint64 | Type::Sfixed64 => int_type(tspec.int_type, "i64"),
-            Type::Uint32 | Type::Fixed32 => int_type(tspec.int_type, "u32"),
-            Type::Uint64 | Type::Fixed64 => int_type(tspec.int_type, "u64"),
-            Type::Float => quote! {f32},
-            Type::Double => quote! {f64},
-            Type::Bool => quote! {bool},
+            Type::Int32 | Type::Sint32 | Type::Sfixed32 => int_type(tspec, "i32").into(),
+            Type::Int64 | Type::Sint64 | Type::Sfixed64 => int_type(tspec, "i64").into(),
+            Type::Uint32 | Type::Fixed32 => int_type(tspec, "u32").into(),
+            Type::Uint64 | Type::Fixed64 => int_type(tspec, "u64").into(),
+            Type::Float => "f32".into(),
+            Type::Double => "f64".into(),
+            Type::Bool => "bool".into(),
             Type::String => {
-                let str_type = tspec.name.as_ref().unwrap();
-                if let Some(max_bytes) = tspec.fixed_len {
-                    quote! { #str_type <#max_bytes> }
+                let TypeOpts::Container { typ, fixed_len } = &tspec.opts else {
+                    unreachable!()
+                };
+                if let Some(max_bytes) = fixed_len {
+                    format!("{typ}<{max_bytes}>").into()
                 } else {
-                    quote! { #str_type }
+                    typ.into()
                 }
             }
             Type::Bytes => {
-                let vec_type = tspec.name.as_ref().unwrap();
-                if let Some(max_len) = tspec.fixed_len {
-                    quote! { #vec_type <u8, #max_len> }
+                let TypeOpts::Container { typ, fixed_len } = &tspec.opts else {
+                    unreachable!()
+                };
+                if let Some(max_len) = fixed_len {
+                    format!("{typ}<u8, {max_len}>").into()
                 } else {
-                    quote! { #vec_type <u8> }
+                    format!("{typ}<u8>").into()
                 }
             }
             Type::Message | Type::Enum => {
-                let tname = tspec.name.as_ref().unwrap();
-                quote! { #tname }
+                let TypeOpts::Name(tname) = &tspec.opts else {
+                    unreachable!()
+                };
+                self.resolve_type_name(tname).into()
             }
             Type::Group => panic!("Group records are deprecated and unsupported"),
         }
     }
 
-    fn rust_type(&self, field: &Field) -> TokenStream {
+    fn rust_type<'a>(&self, field: &'a Field) -> Cow<'a, str> {
         let typ = match &field.ftype {
             FieldType::Map {
                 key,
@@ -701,9 +692,9 @@ impl Generator {
                 let k = self.tspec_rust_type(key);
                 let v = self.tspec_rust_type(val);
                 if let Some(max_len) = fixed_len {
-                    quote! { #type_name <#k, #v, #max_len> }
+                    format!("{type_name}<{k}, {v}, {max_len}>").into()
                 } else {
-                    quote! { #type_name <#k, #v> }
+                    format!("{type_name}<{k}, {v}>").into()
                 }
             }
 
@@ -717,68 +708,67 @@ impl Generator {
             } => {
                 let t = self.tspec_rust_type(typ);
                 if let Some(max_len) = fixed_len {
-                    quote! { #type_name <#t, #max_len> }
+                    format!("{type_name}<{t}, {max_len}>").into()
                 } else {
-                    quote! { #type_name <#t> }
+                    format!("{type_name}<{t}>").into()
                 }
             }
 
-            FieldType::Custom(t) => quote! {#t},
+            FieldType::Custom(t) => t.into(),
             FieldType::Delegate(_) => unreachable!("delegate field cannot have a type"),
         };
 
         if field.boxed {
             let box_type = self.box_type();
             if field.explicit_presence() {
-                quote! { core::option::Option<#box_type<#typ>> }
+                format!("core::option::Option<{box_type}<{typ}>>").into()
             } else {
-                quote! { #box_type<#typ> }
+                format!("{box_type}<{typ}>").into()
             }
         } else {
             typ
         }
     }
 
-    fn field_decl(&self, field: &Field) -> TokenStream {
+    fn generate_field_decl(&self, buf: &mut String, field: &Field) {
         if let FieldType::Delegate(_) = field.ftype {
-            return quote! {};
+            return;
         }
-        let typ = self.rust_type(field);
-        let name = &field.rust_name;
-        let attrs = &field.attrs;
-        quote! { #attrs #name : #typ, }
+        *buf += &field.attrs;
+        buf.push(' ');
+        *buf += &field.rust_name;
+        buf.push(':');
+        *buf += &self.rust_type(field);
+        *buf += ",\n";
     }
 
-    fn oneof_field_decl(&self, msg_mod_name: &str, oneof: &Oneof) -> TokenStream {
-        let name = &oneof.rust_name;
-        let type_name = match &oneof.otype {
-            OneofType::Enum { type_name, .. } => format!("{msg_mod_name}::{}", type_name),
-            OneofType::Custom(type_name) => type_name.to_owned(),
-            OneofType::Delegate(_) => return quote! {},
+    fn generate_oneof_field_decl(&self, buf: &mut String, msg_mod_name: &str, oneof: &Oneof) {
+        let type_name: Cow<str> = match &oneof.otype {
+            OneofType::Enum { type_name, .. } => format!("{msg_mod_name}::{}", type_name).into(),
+            OneofType::Custom(type_name) => type_name.into(),
+            OneofType::Delegate(_) => return,
         };
-        let attrs = &oneof.field_attrs;
-        let typ = if oneof.boxed {
+        *buf += &oneof.field_attrs;
+        buf.push(' ');
+        *buf += &oneof.rust_name;
+        *buf += ": core::option::Option";
+        *buf += &if oneof.boxed {
             let box_type = self.box_type();
-            quote! { core::option::Option<#box_type<#type_name>> }
+            format!("<{box_type}<{type_name}>>")
         } else {
-            quote! { core::option::Option<#type_name> }
+            format!("<{type_name}>")
         };
-        quote! { #attrs #name: #typ, }
+        *buf += ",\n";
     }
 
-    fn oneof_subfield_decl(&self, field: &Field) -> TokenStream {
-        let typ = self.rust_type(field);
-        let name = field.rust_variant_name();
-        let attrs = &field.attrs;
-        quote! { #attrs #name(#typ), }
-    }
-
-    fn tspec_default(&self, t: &TypeSpec, default: &str) -> TokenStream {
+    fn tspec_default(&self, t: &TypeSpec, default: &str) -> String {
         let micropb_path = &self.config.micropb_path;
         match t.typ {
             Type::String => {
                 let string = format!("\"{}\"", default.escape_default());
-                quote! { #micropb_path::PbString::from_str(#string).expect("default string went over capacity") }
+                format!(
+                    r#"{micropb_path}::PbString::from_str({string}).expect("default string went over capacity")"#
+                )
             }
             Type::Bytes => {
                 let bytes: String = unescape_c_escape_string(default)
@@ -786,28 +776,29 @@ impl Generator {
                     .flat_map(|b| core::ascii::escape_default(b).map(|c| c as char))
                     .collect();
                 let bstr = format!("b\"{bytes}\"");
-                quote! { #micropb_path::PbVec::from_slice(#bstr).expect("default bytes went over capacity") }
+                format!(
+                    r#"{micropb_path}::PbVec::from_slice({bstr}).expect("default bytes went over capacity")"#
+                )
             }
             Type::Message => {
                 unreachable!("message fields shouldn't have custom defaults")
             }
             Type::Enum => {
-                let type_name = t.name.as_ref().unwrap();
+                let TypeOpts::Name(tname) = &t.opts else {
+                    unreachable!()
+                };
                 let default = default.to_case(Case::Pascal);
                 let variant = self.strip_enum_prefix(
                     &default,
-                    type_name
-                        .rsplit_once('.')
-                        .map(|(_, s)| s)
-                        .unwrap_or(type_name),
+                    tname.rsplit_once('.').map(|(_, s)| s).unwrap_or(tname),
                 );
-                quote! { #type_name::#variant }
+                format!("{tname}::{variant}")
             }
-            _ => quote! { #default as _ },
+            _ => format!("{default} as _"),
         }
     }
 
-    fn field_default(&self, field: &Field) -> TokenStream {
+    fn generate_field_default(&self, buf: &mut String, field: &Field) {
         let name = field.name;
         if let Some(default) = field.default {
             match field.ftype {
@@ -816,20 +807,22 @@ impl Generator {
                     return if field.boxed {
                         let box_type = self.box_type();
                         if field.explicit_presence() {
-                            quote! { #name: core::option::Option::Some(#box_type::new(#value)), }
+                            *buf += &format!(
+                                "{name}: core::option::Option::Some({box_type}::new({value})),\n"
+                            );
                         } else {
-                            quote! { #name: #box_type::new(#value), }
+                            *buf += &format!("{name}: {box_type}::new({value}),\n");
                         }
                     } else {
-                        quote! { #name: #value, }
+                        *buf += &format!("{name}: {value},\n");
                     };
                 }
-                FieldType::Delegate(_) => return quote! {},
+                FieldType::Delegate(_) => return,
                 FieldType::Custom(_) => {}
                 _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
             }
         }
-        quote! { #name: core::default::Default::default(), }
+        *buf += &format!("{name}: core::default::Default::default(),\n");
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> String {

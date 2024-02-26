@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 protox = "0.5.1"
 miette = { version = "5.8", features = ["fancy"] }
+convert_case = "0.6"
+
+[dev-dependencies]
 quote = "1"
 proc-macro2 = "1"
-convert_case = "0.6"
