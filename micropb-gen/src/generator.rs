@@ -39,17 +39,34 @@ enum Syntax {
     Proto3,
 }
 
-enum TypeOpt {
-    Name(String),
-    Int(Option<IntType>),
-    Container { typ: String, max_bytes: Option<u32> },
+enum PbInt {
+    Int32,
+    Int64,
+    Uint32,
+    Uint64,
+    Sint32,
+    Sfixed32,
+    Sint64,
+    Sfixed64,
+    Fixed32,
+    Fixed64,
 }
 
-struct TypeSpec {
-    typ: Type,
-    int_type: Option<IntType>,
-    name: Option<Ident>,
-    fixed_len: Option<u32>,
+enum TypeSpec {
+    Message(String),
+    Enum(String),
+    Float,
+    Double,
+    Bool,
+    Int(PbInt, IntType),
+    String {
+        type_path: TokenStream,
+        max_bytes: Option<u32>,
+    },
+    Bytes {
+        type_path: TokenStream,
+        max_bytes: Option<u32>,
+    },
 }
 
 enum FieldType {
@@ -58,7 +75,7 @@ enum FieldType {
         key: TypeSpec,
         val: TypeSpec,
         packed: bool,
-        type_name: TokenStream,
+        type_path: TokenStream,
         max_len: Option<u32>,
     },
     // Implicit presence
@@ -68,7 +85,7 @@ enum FieldType {
     Repeated {
         typ: TypeSpec,
         packed: bool,
-        type_name: TokenStream,
+        type_path: TokenStream,
         max_len: Option<u32>,
     },
     Custom(TokenStream),
@@ -548,18 +565,33 @@ impl Generator {
         type_conf: &CurrentConfig,
     ) -> TypeSpec {
         let conf = &type_conf.config;
-        let typ = proto.r#type();
-        let name = match typ {
-            Type::String => conf.string_type.clone(),
-            Type::Bytes => conf.vec_type.clone(),
-            Type::Enum | Type::Message => Some(self.resolve_type_name(proto.type_name())),
-            _ => None,
-        };
-        TypeSpec {
-            typ,
-            name,
-            int_type: conf.int_type,
-            fixed_len: conf.fixed_len,
+        match proto.r#type() {
+            Type::Group => panic!("Groups are unsupported"),
+            Type::Double => TypeSpec::Double,
+            Type::Float => TypeSpec::Float,
+            Type::Bool => TypeSpec::Bool,
+            Type::String => TypeSpec::String {
+                // TODO handle parser error
+                type_path: syn::parse_str(conf.string_type.as_deref().unwrap_or("")).unwrap(),
+                max_bytes: conf.max_bytes,
+            },
+            Type::Bytes => TypeSpec::Bytes {
+                // TODO handle parser error
+                type_path: syn::parse_str(conf.vec_type.as_deref().unwrap_or("")).unwrap(),
+                max_bytes: conf.max_bytes,
+            },
+            Type::Message => TypeSpec::Message(proto.type_name().to_owned()),
+            Type::Enum => TypeSpec::Enum(proto.type_name().to_owned()),
+            Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Uint64 => TypeSpec::Int(PbInt::Uint64, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Int32 => TypeSpec::Int(PbInt::Int32, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Fixed64 => TypeSpec::Int(PbInt::Fixed64, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Fixed32 => TypeSpec::Int(PbInt::Fixed32, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Sfixed32 => TypeSpec::Int(PbInt::Sfixed32, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Sfixed64 => TypeSpec::Int(PbInt::Sfixed64, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Sint32 => TypeSpec::Int(PbInt::Sint32, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Sint64 => TypeSpec::Int(PbInt::Sint64, conf.int_type.unwrap_or(IntType::I32)),
         }
     }
 
@@ -591,7 +623,7 @@ impl Generator {
             (_, Label::Repeated) => FieldType::Repeated {
                 typ: self.create_type_spec(proto, &field_conf.next_conf("elem")),
                 // TODO handle parse error
-                type_name: syn::parse_str(field_conf.config.vec_type.as_deref().unwrap_or(""))
+                type_path: syn::parse_str(field_conf.config.vec_type.as_deref().unwrap_or(""))
                     .unwrap(),
                 max_len: field_conf.config.max_len,
                 packed: proto
@@ -660,7 +692,7 @@ impl Generator {
                 FieldType::Map {
                     key,
                     val,
-                    type_name,
+                    type_path: type_name,
                     max_len: field_conf.config.max_len,
                     packed: proto
                         .options
@@ -688,42 +720,38 @@ impl Generator {
     }
 
     fn tspec_rust_type(&self, tspec: &TypeSpec) -> TokenStream {
-        fn int_type(itype: Option<IntType>, default: &str) -> TokenStream {
-            let typ = itype
-                .map(IntType::type_name)
-                .unwrap_or_else(|| Ident::new(default, Span::call_site()));
-            quote! { #typ }
-        }
-
-        match tspec.typ {
-            Type::Int32 | Type::Sint32 | Type::Sfixed32 => int_type(tspec.int_type, "i32"),
-            Type::Int64 | Type::Sint64 | Type::Sfixed64 => int_type(tspec.int_type, "i64"),
-            Type::Uint32 | Type::Fixed32 => int_type(tspec.int_type, "u32"),
-            Type::Uint64 | Type::Fixed64 => int_type(tspec.int_type, "u64"),
-            Type::Float => quote! {f32},
-            Type::Double => quote! {f64},
-            Type::Bool => quote! {bool},
-            Type::String => {
-                let str_type = tspec.name.as_ref().unwrap();
-                if let Some(max_bytes) = tspec.fixed_len {
-                    quote! { #str_type <#max_bytes> }
+        match tspec {
+            TypeSpec::Int(_, itype) => {
+                let typ = itype.type_name();
+                quote! { #typ }
+            }
+            TypeSpec::Float => quote! {f32},
+            TypeSpec::Double => quote! {f64},
+            TypeSpec::Bool => quote! {bool},
+            TypeSpec::String {
+                type_path,
+                max_bytes,
+            } => {
+                if let Some(max_bytes) = max_bytes {
+                    quote! { #type_path <#max_bytes> }
                 } else {
-                    quote! { #str_type }
+                    quote! { #type_path }
                 }
             }
-            Type::Bytes => {
-                let vec_type = tspec.name.as_ref().unwrap();
-                if let Some(max_len) = tspec.fixed_len {
-                    quote! { #vec_type <u8, #max_len> }
+            TypeSpec::Bytes {
+                type_path,
+                max_bytes,
+            } => {
+                if let Some(max_bytes) = max_bytes {
+                    quote! { #type_path <u8, #max_bytes> }
                 } else {
-                    quote! { #vec_type <u8> }
+                    quote! { #type_path <u8> }
                 }
             }
-            Type::Message | Type::Enum => {
-                let tname = tspec.name.as_ref().unwrap();
-                quote! { #tname }
+            TypeSpec::Message(tname) | TypeSpec::Enum(tname) => {
+                let rust_type = self.resolve_type_name(tname);
+                quote! { #rust_type }
             }
-            Type::Group => panic!("Group records are deprecated and unsupported"),
         }
     }
 
@@ -732,7 +760,7 @@ impl Generator {
             FieldType::Map {
                 key,
                 val,
-                type_name,
+                type_path: type_name,
                 max_len,
                 ..
             } => {
@@ -749,7 +777,7 @@ impl Generator {
 
             FieldType::Repeated {
                 typ,
-                type_name,
+                type_path: type_name,
                 max_len,
                 ..
             } => {
@@ -790,8 +818,8 @@ impl Generator {
     fn oneof_field_decl(&self, msg_mod_name: &Ident, oneof: &Oneof) -> TokenStream {
         let name = &oneof.rust_name;
         let type_name = match &oneof.otype {
-            OneofType::Enum { type_name, .. } => &quote! { #msg_mod_name::#type_name },
-            OneofType::Custom(type_path) => type_path,
+            OneofType::Enum { type_name, .. } => quote! { #msg_mod_name::#type_name },
+            OneofType::Custom(type_path) => type_path.clone(),
             OneofType::Delegate(_) => return quote! {},
         };
         let attrs = &oneof.field_attrs;
@@ -811,27 +839,35 @@ impl Generator {
         quote! { #attrs #name(#typ), }
     }
 
-    fn tspec_default(&self, t: &TypeSpec, default: &str) -> TokenStream {
+    fn tspec_default(&self, tspec: &TypeSpec, default: &str) -> TokenStream {
         let micropb_path = &self.config.micropb_path;
-        match t.typ {
-            Type::String => {
+        match tspec {
+            TypeSpec::String { .. } => {
                 let string = default.escape_default().to_string();
                 quote! { #micropb_path::PbString::from_str(#string).expect("default string went over capacity") }
             }
-            Type::Bytes => {
+            TypeSpec::Bytes { .. } => {
                 let bytes = Literal::byte_string(&unescape_c_escape_string(default));
                 quote! { #micropb_path::PbVec::from_slice(#bytes).expect("default bytes went over capacity") }
             }
-            Type::Message => {
+            TypeSpec::Message(_) => {
                 unreachable!("message fields shouldn't have custom defaults")
             }
-            Type::Enum => {
-                let type_name = t.name.as_ref().unwrap();
-                let default = default.to_case(Case::Pascal);
-                let variant = self.enum_variant_name(&default, &type_name);
-                quote! { #type_name::#variant }
+            TypeSpec::Enum(tname) => {
+                let enum_name = Ident::new(&suffix(tname).to_case(Case::Pascal), Span::call_site());
+                let variant = self.enum_variant_name(&default, &enum_name);
+                quote! { #enum_name::#variant }
             }
-            _ => quote! { #default as _ },
+            TypeSpec::Bool => {
+                // true and false are identifiers, not literals
+                let default = Ident::new(default, Span::call_site());
+                quote! { #default }
+            }
+            _ => {
+                let lit: Literal =
+                    syn::parse_str(&default).expect("numeric default should be valid Rust literal");
+                quote! { #lit as _ }
+            }
         }
     }
 
@@ -1023,4 +1059,10 @@ fn unescape_c_escape_string(s: &str) -> Vec<u8> {
         }
     }
     dst
+}
+
+fn suffix(path: &str) -> &str {
+    path.rsplit_once('.')
+        .map(|(_, suffix)| suffix)
+        .unwrap_or(path)
 }

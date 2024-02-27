@@ -11,6 +11,8 @@ pub enum IntType {
     U16,
     I32,
     U32,
+    I64,
+    U64,
     Isize,
     Usize,
 }
@@ -24,6 +26,8 @@ impl IntType {
             IntType::U16 => "u16",
             IntType::I32 => "i32",
             IntType::U32 => "u32",
+            IntType::I64 => "i64",
+            IntType::U64 => "u64",
             IntType::Isize => "isize",
             IntType::Usize => "usize",
         };
