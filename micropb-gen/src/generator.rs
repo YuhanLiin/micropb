@@ -374,6 +374,7 @@ impl Generator {
         }
 
         self.type_path.borrow_mut().push(name.to_owned());
+
         let oneof_decls = oneofs.iter().map(|oneof| self.generate_oneof_decl(oneof));
         let nested_msgs = inner_msgs
             .iter()
@@ -382,34 +383,33 @@ impl Generator {
             .enum_type
             .iter()
             .map(|e| self.generate_enum_type(e, msg_conf.next_conf(e.name())));
+
+        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
+        let hazzer_exists = !opt_fields.is_empty();
+        let hazzer_decl = hazzer_exists.then(|| self.generate_hazzer_decl(&opt_fields, &msg_conf));
+
         let msg_mod = quote! {
             pub mod #msg_mod_name {
                 #(#nested_msgs)*
                 #(#nested_enums)*
                 #(#oneof_decls)*
+                #hazzer_decl
             }
         };
+
         self.type_path.borrow_mut().pop();
 
         let rust_name = Ident::new(name, Span::call_site());
         let msg_fields = fields.iter().map(|f| self.field_decl(f));
-        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
-        let (hazzer_name, hazzer_decl) = if !opt_fields.is_empty() {
-            let (n, t) = self.generate_hazzer_decl(name, &opt_fields, &msg_conf);
-            (Some(n), Some(t))
-        } else {
-            (None, None)
-        };
-        let hazzer_field = hazzer_name.as_ref().map(|n| quote! { pub _has: #n, });
+        let hazzer_field = hazzer_exists.then(|| quote! { pub _has: #msg_mod_name::_Hazzer, });
         let oneof_fields = oneofs
             .iter()
             .map(|oneof| self.oneof_field_decl(&msg_mod_name, oneof));
 
         let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
             let defaults = fields.iter().map(|f| self.field_default(f));
-            let hazzer_default = hazzer_name
-                .as_ref()
-                .map(|_| quote! { _has: core::default::Default::default(), });
+            let hazzer_default =
+                hazzer_exists.then(|| quote! { _has: core::default::Default::default(), });
             let decl = quote! {
                 impl core::default::Default for #rust_name {
                     fn default() -> Self {
@@ -429,12 +429,10 @@ impl Generator {
             !msg_conf.config.no_debug_derive.unwrap_or(false),
             derive_default,
         );
-        let attrs = &msg_conf.config.type_attributes;
+        let attrs = &msg_conf.config.type_attr_parsed();
 
         quote! {
             #msg_mod
-
-            #hazzer_decl
 
             #derive_msg
             #attrs
@@ -466,22 +464,16 @@ impl Generator {
         }
     }
 
-    fn generate_hazzer_decl(
-        &self,
-        name: &str,
-        fields: &[&Field],
-        msg_conf: &CurrentConfig,
-    ) -> (String, TokenStream) {
-        let micropb_path = &self.config.micropb_path;
-        let hazzer_name = format!("{name}Hazzer");
-        let attrs = &msg_conf.config.hazzer_attributes;
+    fn generate_hazzer_decl(&self, fields: &[&Field], msg_conf: &CurrentConfig) -> TokenStream {
+        let hazzer_name = Ident::new("_Hazzer", Span::call_site());
+        let attrs = &msg_conf.config.hazzer_attr_parsed();
         let derive_msg = derive_msg_attr(!msg_conf.config.no_debug_derive.unwrap_or(false), true);
 
         let hazzers = fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
         let methods = hazzers.enumerate().map(|(i, f)| {
-            let fname = f.name;
-            let setter = format!("set_{fname}");
+            let fname = format_ident!("{}", f.name);
+            let setter = format_ident!("set_{fname}");
 
             quote! {
                 #[inline]
@@ -499,13 +491,13 @@ impl Generator {
         let decl = quote! {
             #derive_msg
             #attrs
-            pub struct #hazzer_name(#micropb_path::bitvec::BitArr!(for #count, in u8));
+            pub struct #hazzer_name(micropb::bitvec::BitArr!(for #count, in u8));
 
             impl #hazzer_name {
                 #(#methods)*
             }
         };
-        (hazzer_name, decl)
+        decl
     }
 
     fn create_oneof<'a>(
@@ -808,15 +800,14 @@ impl Generator {
     }
 
     fn tspec_default(&self, tspec: &TypeSpec, default: &str) -> TokenStream {
-        let micropb_path = &self.config.micropb_path;
         match tspec {
             TypeSpec::String { .. } => {
                 let string = default.escape_default().to_string();
-                quote! { #micropb_path::PbString::from_str(#string).expect("default string went over capacity") }
+                quote! { micropb::PbString::from_str(#string).expect("default string went over capacity") }
             }
             TypeSpec::Bytes { .. } => {
                 let bytes = Literal::byte_string(&unescape_c_escape_string(default));
-                quote! { #micropb_path::PbVec::from_slice(#bytes).expect("default bytes went over capacity") }
+                quote! { micropb::PbVec::from_slice(#bytes).expect("default bytes went over capacity") }
             }
             TypeSpec::Message(_) => {
                 unreachable!("message fields shouldn't have custom defaults")

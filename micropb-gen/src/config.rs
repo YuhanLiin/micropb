@@ -182,7 +182,6 @@ pub struct GenConfig {
     pub(crate) encode_decode: EncodeDecode,
     pub(crate) size_cache: bool,
     pub(crate) default_pkg_filename: String,
-    pub(crate) micropb_path: String,
     pub(crate) strip_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) use_std: bool,
