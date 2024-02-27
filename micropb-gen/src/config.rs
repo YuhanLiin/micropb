@@ -1,3 +1,6 @@
+use proc_macro2::Span;
+use syn::Ident;
+
 use crate::pathtree::PathTree;
 
 #[derive(Debug, Clone, Copy)]
@@ -13,8 +16,8 @@ pub enum IntType {
 }
 
 impl IntType {
-    pub(crate) fn type_name(self) -> &'static str {
-        match self {
+    pub(crate) fn type_name(self) -> Ident {
+        let t = match self {
             IntType::I8 => "i8",
             IntType::U8 => "u8",
             IntType::I16 => "i16",
@@ -23,7 +26,8 @@ impl IntType {
             IntType::U32 => "u32",
             IntType::Isize => "isize",
             IntType::Usize => "usize",
-        }
+        };
+        Ident::new(t, Span::call_site())
     }
 
     pub(crate) fn is_signed(self) -> bool {
