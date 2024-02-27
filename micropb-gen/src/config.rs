@@ -1,4 +1,4 @@
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream};
 use syn::Ident;
 
 use crate::pathtree::PathTree;
@@ -116,6 +116,58 @@ config_decl! {
 
     // General configs
     skip: Option<bool>,
+}
+
+impl Config {
+    pub(crate) fn field_attr_parsed(&self) -> TokenStream {
+        // TODO handle parse error
+        syn::parse_str(self.field_attributes.as_deref().unwrap_or("")).unwrap()
+    }
+
+    pub(crate) fn type_attr_parsed(&self) -> TokenStream {
+        // TODO handle parse error
+        syn::parse_str(self.type_attributes.as_deref().unwrap_or("")).unwrap()
+    }
+
+    pub(crate) fn hazzer_attr_parsed(&self) -> TokenStream {
+        // TODO handle parse error
+        syn::parse_str(self.hazzer_attributes.as_deref().unwrap_or("")).unwrap()
+    }
+
+    pub(crate) fn rust_field_name(&self, name: &str) -> Ident {
+        // TODO handle parse error
+        syn::parse_str(self.rename_field.as_deref().unwrap_or(name)).unwrap()
+    }
+
+    pub(crate) fn vec_type_parsed(&self) -> Option<syn::Path> {
+        // TODO handle parse error
+        self.vec_type.as_ref().map(|t| syn::parse_str(t).unwrap())
+    }
+
+    pub(crate) fn string_type_parsed(&self) -> Option<syn::Path> {
+        // TODO handle parse error
+        self.string_type
+            .as_ref()
+            .map(|t| syn::parse_str(t).unwrap())
+    }
+
+    pub(crate) fn map_type_parsed(&self) -> Option<syn::Path> {
+        // TODO handle parse error
+        self.map_type.as_ref().map(|t| syn::parse_str(t).unwrap())
+    }
+
+    pub(crate) fn custom_field_parsed(&self) -> Option<crate::generator::CustomField> {
+        // TODO handle parse error
+        match &self.custom_field {
+            Some(CustomField::Type(s)) => Some(crate::generator::CustomField::Type(
+                syn::parse_str(s).unwrap(),
+            )),
+            Some(CustomField::Delegate(s)) => Some(crate::generator::CustomField::Delegate(
+                syn::parse_str(s).unwrap(),
+            )),
+            None => todo!(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default)]

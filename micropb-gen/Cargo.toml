@@ -10,5 +10,5 @@ protox = "0.5.1"
 miette = { version = "5.8", features = ["fancy"] }
 quote = "1"
 proc-macro2 = "1"
-syn = { version = "2", default-features = false, features = ["parsing"] }
+syn = { version = "2", default-features = false, features = ["parsing", "derive", "printing"] }
 convert_case = "0.6"

@@ -17,7 +17,7 @@ use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
-    config::{Config, CustomField, GenConfig, IntType},
+    config::{Config, GenConfig, IntType},
     pathtree::Node,
 };
 
@@ -60,13 +60,18 @@ enum TypeSpec {
     Bool,
     Int(PbInt, IntType),
     String {
-        type_path: TokenStream,
+        type_path: syn::Path,
         max_bytes: Option<u32>,
     },
     Bytes {
-        type_path: TokenStream,
+        type_path: syn::Path,
         max_bytes: Option<u32>,
     },
+}
+
+pub(crate) enum CustomField {
+    Type(syn::Type),
+    Delegate(Ident),
 }
 
 enum FieldType {
@@ -75,7 +80,7 @@ enum FieldType {
         key: TypeSpec,
         val: TypeSpec,
         packed: bool,
-        type_path: TokenStream,
+        type_path: syn::Path,
         max_len: Option<u32>,
     },
     // Implicit presence
@@ -85,11 +90,10 @@ enum FieldType {
     Repeated {
         typ: TypeSpec,
         packed: bool,
-        type_path: TokenStream,
+        type_path: syn::Path,
         max_len: Option<u32>,
     },
-    Custom(TokenStream),
-    Delegate(Ident),
+    Custom(CustomField),
 }
 
 struct Field<'a> {
@@ -113,23 +117,16 @@ impl<'a> Field<'a> {
         self.explicit_presence() && !self.boxed && !self.no_hazzer && self.oneof.is_none()
     }
 
-    fn oneof_variant_name(&self) -> Ident {
-        Ident::new(
-            &self.rust_name.to_string().to_case(Case::Pascal),
-            Span::call_site(),
-        )
-    }
-
     fn delegate(&self) -> Option<&Ident> {
-        if let FieldType::Delegate(d) = &self.ftype {
+        if let FieldType::Custom(CustomField::Delegate(d)) = &self.ftype {
             Some(d)
         } else {
             None
         }
     }
 
-    fn custom_field(&self) -> Option<&Ident> {
-        if let FieldType::Custom(_) = &self.ftype {
+    fn custom_type_field(&self) -> Option<&Ident> {
+        if let FieldType::Custom(CustomField::Type(_)) = &self.ftype {
             Some(&self.rust_name)
         } else {
             None
@@ -142,8 +139,7 @@ enum OneofType<'a> {
         type_name: Ident,
         fields: Vec<Field<'a>>,
     },
-    Custom(TokenStream),
-    Delegate(Ident),
+    Custom(CustomField),
 }
 
 struct Oneof<'a> {
@@ -159,15 +155,15 @@ struct Oneof<'a> {
 
 impl<'a> Oneof<'a> {
     fn delegate(&self) -> Option<&Ident> {
-        if let OneofType::Delegate(d) = &self.otype {
+        if let OneofType::Custom(CustomField::Delegate(d)) = &self.otype {
             Some(d)
         } else {
             None
         }
     }
 
-    fn custom_field(&self) -> Option<&Ident> {
-        if let OneofType::Custom(_) = &self.otype {
+    fn custom_type_field(&self) -> Option<&Ident> {
+        if let OneofType::Custom(CustomField::Type(_)) = &self.otype {
             Some(&self.rust_name)
         } else {
             None
@@ -370,8 +366,8 @@ impl Generator {
         let odelegates = oneofs.iter().filter_map(|o| o.delegate());
         let fdelegates = fields.iter().filter_map(|f| f.delegate());
         for delegate in odelegates.chain(fdelegates) {
-            let ocustoms = oneofs.iter().filter_map(|o| o.custom_field());
-            let fcustoms = fields.iter().filter_map(|f| f.custom_field());
+            let ocustoms = oneofs.iter().filter_map(|o| o.custom_type_field());
+            let fcustoms = fields.iter().filter_map(|f| f.custom_type_field());
             if ocustoms.chain(fcustoms).any(|custom| delegate == custom) {
                 // TODO error about how delegate != custom
             }
@@ -523,29 +519,16 @@ impl Generator {
         }
 
         let name = proto.name();
-        // TODO handle parse error
-        let rust_name =
-            syn::parse_str(oneof_conf.config.rename_field.as_deref().unwrap_or(name)).unwrap();
-        let otype = match &oneof_conf.config.custom_field {
-            // TODO handle parse error
-            Some(CustomField::Type(type_path)) => {
-                OneofType::Custom(syn::parse_str(type_path).unwrap())
-            }
-            // TODO handle parse error
-            Some(CustomField::Delegate(delegate)) => {
-                OneofType::Delegate(syn::parse_str(delegate).unwrap())
-            }
+        let rust_name = oneof_conf.config.rust_field_name(name);
+        let otype = match oneof_conf.config.custom_field_parsed() {
+            Some(custom) => OneofType::Custom(custom),
             None => OneofType::Enum {
                 type_name: Ident::new(&name.to_case(Case::Pascal), Span::call_site()),
                 fields: vec![],
             },
         };
-        // TODO handle parse error
-        let field_attrs =
-            syn::parse_str(oneof_conf.config.field_attributes.as_deref().unwrap_or("")).unwrap();
-        // TODO handle parse error
-        let type_attrs =
-            syn::parse_str(oneof_conf.config.type_attributes.as_deref().unwrap_or("")).unwrap();
+        let field_attrs = oneof_conf.config.field_attr_parsed();
+        let type_attrs = oneof_conf.config.type_attr_parsed();
 
         Some(Oneof {
             name,
@@ -571,13 +554,11 @@ impl Generator {
             Type::Float => TypeSpec::Float,
             Type::Bool => TypeSpec::Bool,
             Type::String => TypeSpec::String {
-                // TODO handle parser error
-                type_path: syn::parse_str(conf.string_type.as_deref().unwrap_or("")).unwrap(),
+                type_path: conf.string_type_parsed().unwrap(),
                 max_bytes: conf.max_bytes,
             },
             Type::Bytes => TypeSpec::Bytes {
-                // TODO handle parser error
-                type_path: syn::parse_str(conf.vec_type.as_deref().unwrap_or("")).unwrap(),
+                type_path: conf.vec_type_parsed().unwrap(),
                 max_bytes: conf.max_bytes,
             },
             Type::Message => TypeSpec::Message(proto.type_name().to_owned()),
@@ -604,27 +585,25 @@ impl Generator {
             return None;
         }
 
-        let name = proto.name();
-        // TODO handle parse error
-        let rust_name =
-            syn::parse_str(field_conf.config.rename_field.as_deref().unwrap_or(name)).unwrap();
-        let num = proto.number.unwrap() as u32;
         let oneof = proto.oneof_index.map(|i| i as usize);
+        let num = proto.number.unwrap() as u32;
+        let name = proto.name();
+        // Oneof names are uppercased, since they are used as enum variant names
+        let cased_name: Cow<str> = if oneof.is_some() {
+            name.to_case(Case::Pascal).into()
+        } else {
+            name.into()
+        };
+        let rust_name = field_conf.config.rust_field_name(&cased_name);
 
-        let ftype = match (&field_conf.config.custom_field, proto.label()) {
-            // TODO handle parse error
-            (Some(CustomField::Type(type_path)), _) => {
-                FieldType::Custom(syn::parse_str(type_path).unwrap())
-            }
-            // TODO handle parse error
-            (Some(CustomField::Delegate(delegate)), _) if oneof.is_none() => {
-                FieldType::Delegate(syn::parse_str(delegate).unwrap())
-            }
+        let ftype = match (field_conf.config.custom_field_parsed(), proto.label()) {
+            (Some(t @ CustomField::Type(_)), _) => FieldType::Custom(t),
+            // Only allow delegate fields for non-oneof fields
+            (Some(t @ CustomField::Delegate(_)), _) if oneof.is_none() => FieldType::Custom(t),
+
             (_, Label::Repeated) => FieldType::Repeated {
                 typ: self.create_type_spec(proto, &field_conf.next_conf("elem")),
-                // TODO handle parse error
-                type_path: syn::parse_str(field_conf.config.vec_type.as_deref().unwrap_or(""))
-                    .unwrap(),
+                type_path: field_conf.config.vec_type_parsed().unwrap(),
                 max_len: field_conf.config.max_len,
                 packed: proto
                     .options
@@ -632,6 +611,7 @@ impl Generator {
                     .and_then(|opt| opt.packed)
                     .unwrap_or(false),
             },
+
             (_, Label::Required) | (None, Label::Optional)
                 if self.syntax == Syntax::Proto2
                     || proto.proto3_optional()
@@ -639,11 +619,10 @@ impl Generator {
             {
                 FieldType::Optional(self.create_type_spec(proto, &field_conf))
             }
+
             (_, _) => FieldType::Single(self.create_type_spec(proto, &field_conf)),
         };
-        // TODO handle parse error
-        let attrs =
-            syn::parse_str(field_conf.config.field_attributes.as_deref().unwrap_or("")).unwrap();
+        let attrs = field_conf.config.field_attr_parsed();
 
         Some(Field {
             num,
@@ -669,26 +648,15 @@ impl Generator {
         }
 
         let name = proto.name();
-        // TODO handle parse error
-        let rust_name =
-            syn::parse_str(field_conf.config.rename_field.as_deref().unwrap_or(name)).unwrap();
+        let rust_name = field_conf.config.rust_field_name(name);
         let num = proto.number.unwrap() as u32;
 
-        let ftype = match &field_conf.config.custom_field {
-            // TODO handle parse error
-            Some(CustomField::Type(type_path)) => {
-                FieldType::Custom(syn::parse_str(type_path).unwrap())
-            }
-            // TODO handle parse error
-            Some(CustomField::Delegate(delegate)) => {
-                FieldType::Delegate(syn::parse_str(delegate).unwrap())
-            }
+        let ftype = match field_conf.config.custom_field_parsed() {
+            Some(custom) => FieldType::Custom(custom),
             None => {
                 let key = self.create_type_spec(&map_msg.field[0], &field_conf.next_conf("key"));
                 let val = self.create_type_spec(&map_msg.field[1], &field_conf.next_conf("value"));
-                // TODO handle parse error
-                let type_name =
-                    syn::parse_str(field_conf.config.vec_type.as_deref().unwrap_or("")).unwrap();
+                let type_name = field_conf.config.vec_type_parsed().unwrap();
                 FieldType::Map {
                     key,
                     val,
@@ -702,9 +670,7 @@ impl Generator {
                 }
             }
         };
-        // TODO handle parse error
-        let attrs =
-            syn::parse_str(field_conf.config.field_attributes.as_deref().unwrap_or("")).unwrap();
+        let attrs = field_conf.config.field_attr_parsed();
 
         Some(Field {
             num,
@@ -789,8 +755,10 @@ impl Generator {
                 }
             }
 
-            FieldType::Custom(t) => quote! {#t},
-            FieldType::Delegate(_) => unreachable!("delegate field cannot have a type"),
+            FieldType::Custom(CustomField::Type(t)) => quote! {#t},
+            FieldType::Custom(CustomField::Delegate(_)) => {
+                unreachable!("delegate field cannot have a type")
+            }
         };
 
         if field.boxed {
@@ -806,7 +774,7 @@ impl Generator {
     }
 
     fn field_decl(&self, field: &Field) -> TokenStream {
-        if let FieldType::Delegate(_) = field.ftype {
+        if let FieldType::Custom(CustomField::Delegate(_)) = field.ftype {
             return quote! {};
         }
         let typ = self.rust_type(field);
@@ -819,8 +787,8 @@ impl Generator {
         let name = &oneof.rust_name;
         let type_name = match &oneof.otype {
             OneofType::Enum { type_name, .. } => quote! { #msg_mod_name::#type_name },
-            OneofType::Custom(type_path) => type_path.clone(),
-            OneofType::Delegate(_) => return quote! {},
+            OneofType::Custom(CustomField::Type(type_path)) => quote! { #type_path },
+            OneofType::Custom(CustomField::Delegate(_)) => return quote! {},
         };
         let attrs = &oneof.field_attrs;
         let typ = if oneof.boxed {
@@ -834,7 +802,7 @@ impl Generator {
 
     fn oneof_subfield_decl(&self, field: &Field) -> TokenStream {
         let typ = self.rust_type(field);
-        let name = field.oneof_variant_name();
+        let name = &field.rust_name;
         let attrs = &field.attrs;
         quote! { #attrs #name(#typ), }
     }
@@ -888,8 +856,8 @@ impl Generator {
                         quote! { #name: #value, }
                     };
                 }
-                FieldType::Delegate(_) => return quote! {},
-                FieldType::Custom(_) => {}
+                FieldType::Custom(CustomField::Delegate(_)) => return quote! {},
+                FieldType::Custom(CustomField::Type(_)) => {}
                 _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
             }
         }
