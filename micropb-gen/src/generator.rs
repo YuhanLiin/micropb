@@ -2,6 +2,7 @@ use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
     collections::HashMap,
+    fmt::Write,
     iter,
     ops::Deref,
 };
@@ -16,16 +17,19 @@ use protox::prost_reflect::prost_types::{
 use crate::{
     config::{Config, CustomField, GenConfig, IntType},
     pathtree::Node,
+    utils::unescape_c_escape_string,
 };
-
-static DERIVE_MSG: &str = "#[derive(Clone, PartialEq)]";
-static DERIVE_ENUM: &str = "#[derive(Clone, Copy, PartialEq, Eq, Hash)]";
-static DERIVE_DEFAULT: &str = "#[derive(Default)]";
-static DERIVE_DEBUG: &str = "#[derive(Debug)]";
-static REPR_ENUM: &str = "#[repr(transparent)]";
 
 static HAZZER_TYPE: &str = "_Has";
 static HAZZER_NAME: &str = "_has";
+
+macro_rules! writeln_str {
+    ($($tt:tt)*) => { writeln!($($tt)*).unwrap() };
+}
+
+macro_rules! write_str {
+    ($($tt:tt)*) => { write!($($tt)*).unwrap() };
+}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 enum Syntax {
@@ -126,7 +130,7 @@ struct Oneof<'a> {
     boxed: bool,
     field_attrs: String,
     type_attrs: String,
-    derive_dbg: &'static str,
+    derive_dbg: bool,
     idx: usize,
 }
 
@@ -167,12 +171,8 @@ impl<'a> CurrentConfig<'a> {
         }
     }
 
-    fn derive_dbg(&self) -> &'static str {
-        if self.config.no_debug_derive.unwrap_or(false) {
-            ""
-        } else {
-            DERIVE_DEBUG
-        }
+    fn derive_dbg(&self) -> bool {
+        !self.config.no_debug_derive.unwrap_or(false)
     }
 }
 
@@ -228,6 +228,21 @@ impl Generator {
         }
     }
 
+    fn generate_attrs_enum(&self, buf: &mut String, debug: bool) {
+        let debug = if debug { "Debug, " } else { "" };
+        writeln_str!(
+            buf,
+            "#[derive({}Clone, Copy, PartialEq, Eq, Hash)] #[repr(transparent)]",
+            debug
+        );
+    }
+
+    fn generate_attrs_msg(&self, buf: &mut String, debug: bool, default: bool) {
+        let debug = if debug { "Debug, " } else { "" };
+        let default = if default { "Default, " } else { "" };
+        writeln_str!(buf, "#[derive({}{}Clone, PartialEq)]", debug, default);
+    }
+
     fn generate_enum_type(
         &self,
         buf: &mut String,
@@ -242,31 +257,27 @@ impl Generator {
         let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
         let itype = enum_int_type.type_name();
 
-        *buf += DERIVE_ENUM;
-        *buf += enum_conf.derive_dbg();
-        *buf += REPR_ENUM;
         *buf += enum_conf.config.type_attributes.as_deref().unwrap_or("");
-        *buf += "\n";
-        *buf += &format!("pub struct {name}(pub {itype});\n");
+        self.generate_attrs_enum(buf, !enum_conf.config.no_debug_derive.unwrap_or(false));
+        writeln_str!(buf, "pub struct {name}(pub {itype});");
 
-        *buf += &format!("impl {name} {{\n");
+        writeln_str!(buf, "impl {name} {{");
         for v in &enum_type.value {
             let vname = v.name.as_ref().unwrap().to_case(Case::Pascal);
             let vname = self.strip_enum_prefix(&vname, name);
-            *buf += &format!("pub const {vname}: Self = {name}({})\n", v.number.unwrap());
+            let vnum = v.number.unwrap();
+            writeln_str!(buf, "pub const {vname}: Self = {name}({vnum})",);
         }
-        *buf += "}\n";
+        writeln_str!(buf, "}}");
 
         let default_num = enum_type.value[0].number.unwrap();
-        *buf += &format!(
+        write_str!(
+            buf,
             r#"impl core::default::Default for {name} {{
                 fn default() -> Self {{ {name}({default_num}) }}
             }}
-            "#
-        );
 
-        *buf += &format!(
-            r#"impl core::convert::From<{itype}> for {name} {{
+            impl core::convert::From<{itype}> for {name} {{
                 fn from(val: {itype}) -> Self {{ {name}(val) }}
             }}
             "#
@@ -350,7 +361,7 @@ impl Generator {
         }
 
         self.type_path.borrow_mut().push(name.to_owned());
-        *buf += &format!("pub mod {msg_mod_name} {{\n");
+        writeln_str!(buf, "pub mod {msg_mod_name} {{");
 
         for m in inner_msgs {
             self.generate_msg_type(buf, m, msg_conf.next_conf(m.name()));
@@ -368,16 +379,14 @@ impl Generator {
             self.generate_hazzer_decl(buf, &opt_fields, &msg_conf);
         }
 
-        *buf += "}\n";
+        writeln_str!(buf, "}}");
         self.type_path.borrow_mut().pop();
 
         let derive_default = fields.iter().any(|f| f.default.is_some());
-        *buf += msg_conf.derive_dbg();
-        *buf += derive_default.then_some(DERIVE_DEFAULT).unwrap_or("");
-        *buf += DERIVE_MSG;
         *buf += &msg_conf.config.type_attributes.as_deref().unwrap_or("");
+        self.generate_attrs_msg(buf, msg_conf.derive_dbg(), derive_default);
 
-        *buf += &format!("\npub struct {name} {{\n");
+        writeln_str!(buf, "pub struct {name} {{");
         for field in &fields {
             self.generate_field_decl(buf, field);
         }
@@ -385,59 +394,70 @@ impl Generator {
             self.generate_oneof_field_decl(buf, &msg_mod_name, oneof);
         }
         if hazzer_exists {
-            *buf += &format!("pub {HAZZER_NAME}: {HAZZER_TYPE},\n");
+            writeln_str!(buf, "pub {HAZZER_NAME}: {HAZZER_TYPE},");
         }
-        *buf += "}\n";
+        writeln_str!(buf, "}}");
 
         if !derive_default {
-            *buf += &format!("impl core::default::Default for {name} {{\n");
-            *buf += "fn default() -> Self {\nSelf {\n";
+            write_str!(
+                buf,
+                r#"impl core::default::Default for {name} {{
+                    fn default() -> Self {{
+                        Self {{
+                "#
+            );
             for field in &fields {
                 self.generate_field_default(buf, field);
             }
             if hazzer_exists {
-                *buf += &format!("{HAZZER_NAME}: core::default::Default::default(),\n");
+                writeln_str!(buf, "{HAZZER_NAME}: core::default::Default::default(),");
             }
-            *buf += "}\n}\n}\n";
+            write_str!(
+                buf,
+                r#"     }}
+                    }}
+                }}
+            "#
+            );
         }
     }
 
     fn generate_oneof_decl(&self, buf: &mut String, oneof: &Oneof) {
         if let OneofType::Enum { type_name, fields } = &oneof.otype {
-            *buf += oneof.derive_dbg;
-            *buf += DERIVE_MSG;
             *buf += &oneof.type_attrs;
+            self.generate_attrs_msg(buf, oneof.derive_dbg, false);
 
-            *buf += &format!("\npub enum {type_name} {{\n");
+            writeln_str!(buf, "pub enum {type_name} {{");
             for field in fields {
-                *buf += &field.attrs;
-                buf.push(' ');
-                *buf += &field.rust_variant_name();
-                buf.push('(');
-                *buf += &self.rust_type(field);
-                *buf += "),\n";
+                writeln_str!(
+                    buf,
+                    "{} {}({}),",
+                    field.attrs,
+                    field.rust_variant_name(),
+                    self.rust_type(field)
+                );
             }
-            *buf += "}\n";
+            writeln_str!(buf, "}}");
         }
     }
 
     fn generate_hazzer_decl(&self, buf: &mut String, fields: &[&Field], msg_conf: &CurrentConfig) {
-        *buf += msg_conf.derive_dbg();
-        *buf += DERIVE_MSG;
-        *buf += DERIVE_DEFAULT;
         *buf += msg_conf.config.hazzer_attributes.as_deref().unwrap_or("");
+        self.generate_attrs_msg(buf, msg_conf.derive_dbg(), true);
 
         let micropb_path = &self.config.micropb_path;
         let hazzers = fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
-        *buf += &format!(
-            "\npub struct {HAZZER_TYPE}({micropb_path}::bitvec::BitArr![for {count}, in u8]);\n"
+        writeln_str!(
+            buf,
+            "pub struct {HAZZER_TYPE}({micropb_path}::bitvec::BitArr![for {count}, in u8]);"
         );
 
-        *buf += &format!("impl {HAZZER_NAME} {{\n");
+        writeln_str!(buf, "impl {HAZZER_NAME} {{");
         for (i, f) in hazzers.enumerate() {
             let fname = f.name;
-            *buf += &format!(
+            write_str!(
+                buf,
                 r#"
                 #[inline]
                 pub fn {fname}(&self) -> bool {{
@@ -452,7 +472,7 @@ impl Generator {
                 "#
             );
         }
-        *buf += "}\n"
+        writeln_str!(buf, "}}");
     }
 
     fn create_oneof<'a>(
@@ -740,12 +760,13 @@ impl Generator {
         if let FieldType::Delegate(_) = field.ftype {
             return;
         }
-        *buf += &field.attrs;
-        buf.push(' ');
-        *buf += &field.rust_name;
-        buf.push(':');
-        *buf += &self.rust_type(field);
-        *buf += ",\n";
+        writeln_str!(
+            buf,
+            "{} {}: {},",
+            field.attrs,
+            field.rust_name,
+            self.rust_type(field)
+        );
     }
 
     fn generate_oneof_field_decl(&self, buf: &mut String, msg_mod_name: &str, oneof: &Oneof) {
@@ -754,17 +775,17 @@ impl Generator {
             OneofType::Custom(type_name) => type_name.into(),
             OneofType::Delegate(_) => return,
         };
-        *buf += &oneof.field_attrs;
-        buf.push(' ');
-        *buf += &oneof.rust_name;
-        *buf += ": core::option::Option";
-        *buf += &if oneof.boxed {
+        let attrs = &oneof.field_attrs;
+        let name = &oneof.rust_name;
+        if oneof.boxed {
             let box_type = self.box_type();
-            format!("<{box_type}<{type_name}>>")
+            writeln_str!(
+                buf,
+                "{attrs} {name}: core::option::Option<{box_type}<{type_name}>>,"
+            );
         } else {
-            format!("<{type_name}>")
+            writeln_str!(buf, "{attrs} {name}: core::option::Option<{type_name}>,");
         };
-        *buf += ",\n";
     }
 
     fn tspec_default(&self, t: &TypeSpec, default: &str) -> String {
@@ -889,106 +910,4 @@ impl Generator {
             .chain(iter::once(name))
             .fold(String::new(), |acc, s| acc + "." + s)
     }
-}
-
-fn unescape_c_escape_string(s: &str) -> Vec<u8> {
-    let src = s.as_bytes();
-    let len = src.len();
-    let mut dst = Vec::new();
-
-    let mut p = 0;
-
-    while p < len {
-        if src[p] != b'\\' {
-            dst.push(src[p]);
-            p += 1;
-        } else {
-            p += 1;
-            if p == len {
-                panic!(
-                    "invalid c-escaped default binary value ({}): ends with '\'",
-                    s
-                )
-            }
-            match src[p] {
-                b'a' => {
-                    dst.push(0x07);
-                    p += 1;
-                }
-                b'b' => {
-                    dst.push(0x08);
-                    p += 1;
-                }
-                b'f' => {
-                    dst.push(0x0C);
-                    p += 1;
-                }
-                b'n' => {
-                    dst.push(0x0A);
-                    p += 1;
-                }
-                b'r' => {
-                    dst.push(0x0D);
-                    p += 1;
-                }
-                b't' => {
-                    dst.push(0x09);
-                    p += 1;
-                }
-                b'v' => {
-                    dst.push(0x0B);
-                    p += 1;
-                }
-                b'\\' => {
-                    dst.push(0x5C);
-                    p += 1;
-                }
-                b'?' => {
-                    dst.push(0x3F);
-                    p += 1;
-                }
-                b'\'' => {
-                    dst.push(0x27);
-                    p += 1;
-                }
-                b'"' => {
-                    dst.push(0x22);
-                    p += 1;
-                }
-                b'0'..=b'7' => {
-                    let mut octal = 0;
-                    for _ in 0..3 {
-                        if p < len && src[p] >= b'0' && src[p] <= b'7' {
-                            octal = octal * 8 + (src[p] - b'0');
-                            p += 1;
-                        } else {
-                            break;
-                        }
-                    }
-                    dst.push(octal);
-                }
-                b'x' | b'X' => {
-                    if p + 3 > len {
-                        panic!(
-                            "invalid c-escaped default binary value ({}): incomplete hex value",
-                            s
-                        )
-                    }
-                    match u8::from_str_radix(&s[p + 1..p + 3], 16) {
-                        Ok(b) => dst.push(b),
-                        _ => panic!(
-                            "invalid c-escaped default binary value ({}): invalid hex value",
-                            &s[p..p + 2]
-                        ),
-                    }
-                    p += 3;
-                }
-                _ => panic!(
-                    "invalid c-escaped default binary value ({}): invalid escape",
-                    s
-                ),
-            }
-        }
-    }
-    dst
 }
