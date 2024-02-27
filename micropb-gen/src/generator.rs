@@ -214,7 +214,7 @@ impl Generator {
         let filename = fdproto
             .package
             .as_ref()
-            .unwrap_or_else(|| &self.config.default_pkg_filename)
+            .unwrap_or(&self.config.default_pkg_filename)
             .to_owned();
 
         self.syntax = match fdproto.syntax.as_deref() {
@@ -270,7 +270,7 @@ impl Generator {
         let var_names = enum_type
             .value
             .iter()
-            .map(|v| self.enum_variant_name(&v.name(), &name));
+            .map(|v| self.enum_variant_name(v.name(), &name));
         let default_num = Literal::i32_unsuffixed(enum_type.value[0].number.unwrap());
         let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
         let itype = enum_int_type.type_name();
@@ -725,27 +725,21 @@ impl Generator {
             } => {
                 let k = self.tspec_rust_type(key);
                 let v = self.tspec_rust_type(val);
-                if let Some(max_len) = max_len {
-                    quote! { #type_name <#k, #v, #max_len> }
-                } else {
-                    quote! { #type_name <#k, #v> }
-                }
+                let max_len = max_len.map(|len| quote! {, #len});
+                quote! { #type_name <#k, #v #max_len> }
             }
 
             FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t),
 
             FieldType::Repeated {
                 typ,
-                type_path: type_name,
+                type_path,
                 max_len,
                 ..
             } => {
                 let t = self.tspec_rust_type(typ);
-                if let Some(max_len) = max_len {
-                    quote! { #type_name <#t, #max_len> }
-                } else {
-                    quote! { #type_name <#t> }
-                }
+                let max_len = max_len.map(|len| quote! {, #len});
+                quote! { #type_path <#t #max_len> }
             }
 
             FieldType::Custom(CustomField::Type(t)) => quote! {#t},
@@ -756,10 +750,11 @@ impl Generator {
 
         if field.boxed {
             let box_type = self.box_type();
+            let boxed = quote! { #box_type<#typ> };
             if field.explicit_presence() {
-                quote! { core::option::Option<#box_type<#typ>> }
+                quote! { core::option::Option<#boxed> }
             } else {
-                quote! { #box_type<#typ> }
+                boxed
             }
         } else {
             typ
@@ -778,7 +773,7 @@ impl Generator {
 
     fn oneof_field_decl(&self, msg_mod_name: &Ident, oneof: &Oneof) -> TokenStream {
         let name = &oneof.rust_name;
-        let type_name = match &oneof.otype {
+        let oneof_type = match &oneof.otype {
             OneofType::Enum { type_name, .. } => quote! { #msg_mod_name::#type_name },
             OneofType::Custom(CustomField::Type(type_path)) => quote! { #type_path },
             OneofType::Custom(CustomField::Delegate(_)) => return quote! {},
@@ -786,11 +781,11 @@ impl Generator {
         let attrs = &oneof.field_attrs;
         let typ = if oneof.boxed {
             let box_type = self.box_type();
-            quote! { core::option::Option<#box_type<#type_name>> }
+            quote! { #box_type<#oneof_type> }
         } else {
-            quote! { core::option::Option<#type_name> }
+            oneof_type
         };
-        quote! { #attrs #name: #typ, }
+        quote! { #attrs #name: core::option::Option<#typ>, }
     }
 
     fn oneof_subfield_decl(&self, field: &Field) -> TokenStream {
@@ -815,7 +810,7 @@ impl Generator {
             }
             TypeSpec::Enum(tname) => {
                 let enum_name = Ident::new(&suffix(tname).to_case(Case::Pascal), Span::call_site());
-                let variant = self.enum_variant_name(&default, &enum_name);
+                let variant = self.enum_variant_name(default, &enum_name);
                 quote! { #enum_name::#variant }
             }
             TypeSpec::Bool => {
@@ -825,7 +820,7 @@ impl Generator {
             }
             _ => {
                 let lit: Literal =
-                    syn::parse_str(&default).expect("numeric default should be valid Rust literal");
+                    syn::parse_str(default).expect("numeric default should be valid Rust literal");
                 quote! { #lit as _ }
             }
         }
@@ -839,10 +834,11 @@ impl Generator {
                     let value = self.tspec_default(t, default);
                     return if field.boxed {
                         let box_type = self.box_type();
+                        let typ = quote! { #box_type::new(#value) };
                         if field.explicit_presence() {
-                            quote! { #name: core::option::Option::Some(#box_type::new(#value)), }
+                            quote! { #name: core::option::Option::Some(#typ), }
                         } else {
-                            quote! { #name: #box_type::new(#value), }
+                            quote! { #name: #typ, }
                         }
                     } else {
                         quote! { #name: #value, }
@@ -875,7 +871,7 @@ impl Generator {
         }
 
         let path = local_path
-            .map(|_| Ident::new("super", Span::call_site()))
+            .map(|_| format_ident!("super"))
             .chain(ident_path.map(|e| self.resolve_path_elem(e)));
         quote! { #(#path ::)* #ident_type }
     }
