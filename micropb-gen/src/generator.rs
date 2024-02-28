@@ -291,7 +291,7 @@ impl Generator {
         let nums = enum_type
             .value
             .iter()
-            .map(|v| Literal::i32_unsuffixed(v.number.unwrap()));
+            .map(|v| Literal::i32_unsuffixed(v.number()));
         let var_names = enum_type
             .value
             .iter()
@@ -716,21 +716,15 @@ impl Generator {
                 type_path,
                 max_bytes,
             } => {
-                if let Some(max_bytes) = max_bytes {
-                    quote! { #type_path <#max_bytes> }
-                } else {
-                    quote! { #type_path }
-                }
+                let max_bytes = max_bytes.map(Literal::u32_unsuffixed).into_iter();
+                quote! { #type_path #(<#max_bytes>)* }
             }
             TypeSpec::Bytes {
                 type_path,
                 max_bytes,
             } => {
-                if let Some(max_bytes) = max_bytes {
-                    quote! { #type_path <u8, #max_bytes> }
-                } else {
-                    quote! { #type_path <u8> }
-                }
+                let max_bytes = max_bytes.map(Literal::u32_unsuffixed).into_iter();
+                quote! { #type_path <u8 #(, #max_bytes)* > }
             }
             TypeSpec::Message(tname) | TypeSpec::Enum(tname) => {
                 let rust_type = self.resolve_type_name(tname);
@@ -750,8 +744,8 @@ impl Generator {
             } => {
                 let k = self.generate_tspec_rust_type(key);
                 let v = self.generate_tspec_rust_type(val);
-                let max_len = max_len.map(|len| quote! {, #len});
-                quote! { #type_name <#k, #v #max_len> }
+                let max_len = max_len.map(Literal::u32_unsuffixed).into_iter();
+                quote! { #type_name <#k, #v #(, #max_len)* > }
             }
 
             FieldType::Single(t) | FieldType::Optional(t) => self.generate_tspec_rust_type(t),
@@ -763,8 +757,8 @@ impl Generator {
                 ..
             } => {
                 let t = self.generate_tspec_rust_type(typ);
-                let max_len = max_len.map(|len| quote! {, #len});
-                quote! { #type_path <#t #max_len> }
+                let max_len = max_len.map(Literal::u32_unsuffixed).into_iter();
+                quote! { #type_path <#t #(, #max_len)* > }
             }
 
             FieldType::Custom(CustomField::Type(t)) => quote! {#t},
@@ -879,6 +873,7 @@ impl Generator {
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> TokenStream {
+        // type names provided by protoc will always be fully-qualified
         assert_eq!(".", &pb_fq_type_name[..1]);
 
         let mut ident_path = pb_fq_type_name[1..].split('.');
@@ -1004,6 +999,190 @@ mod tests {
         assert_eq!(
             gen.resolve_type_name(".abc.d").to_string(),
             quote! { super::super::abc::d }.to_string()
+        );
+    }
+
+    #[test]
+    fn tspec_rust_type() {
+        let gen = Generator::default();
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::Bool).to_string(),
+            "bool"
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::Float).to_string(),
+            "f32"
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::Double).to_string(),
+            "f64"
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::Int(PbInt::Int32, IntType::I32))
+                .to_string(),
+            "i32"
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::Int(PbInt::Fixed32, IntType::I32))
+                .to_string(),
+            "i32"
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::Int(PbInt::Fixed32, IntType::Usize))
+                .to_string(),
+            "usize"
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::String {
+                type_path: syn::parse_str("heapless::String").unwrap(),
+                max_bytes: Some(10)
+            })
+            .to_string(),
+            quote! { heapless::String<10> }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::String {
+                type_path: syn::parse_str("heapless::String").unwrap(),
+                max_bytes: None
+            })
+            .to_string(),
+            quote! { heapless::String }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::Enum(".package.Enum".to_owned()))
+                .to_string(),
+            quote! { package::Enum }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_rust_type(&TypeSpec::Message(".package.Msg".to_owned()))
+                .to_string(),
+            quote! { package::Msg }.to_string()
+        );
+    }
+
+    fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldType) -> Field {
+        Field {
+            num,
+            ftype,
+            name,
+            rust_name: Ident::new(name, Span::call_site()),
+            default: None,
+            oneof: None,
+            boxed,
+            no_hazzer: false,
+            attrs: quote! {},
+        }
+    }
+
+    #[test]
+    fn field_rust_type() {
+        let gen = Generator::default();
+        assert_eq!(
+            gen.generate_field_rust_type(&make_test_field(
+                0,
+                "field",
+                false,
+                FieldType::Optional(TypeSpec::Bool)
+            ))
+            .to_string(),
+            "bool"
+        );
+        assert_eq!(
+            gen.generate_field_rust_type(&make_test_field(
+                0,
+                "field",
+                false,
+                FieldType::Repeated {
+                    typ: TypeSpec::Message(".Message".to_owned()),
+                    type_path: syn::parse_str("Vec").unwrap(),
+                    max_len: None,
+                    packed: true
+                }
+            ))
+            .to_string(),
+            quote! { Vec<Message> }.to_string()
+        );
+        assert_eq!(
+            gen.generate_field_rust_type(&make_test_field(
+                0,
+                "field",
+                false,
+                FieldType::Repeated {
+                    typ: TypeSpec::String {
+                        type_path: syn::parse_str("String").unwrap(),
+                        max_bytes: Some(4)
+                    },
+                    type_path: syn::parse_str("Vec").unwrap(),
+                    max_len: Some(10),
+                    packed: true
+                }
+            ))
+            .to_string(),
+            quote! { Vec<String<4>, 10> }.to_string()
+        );
+        assert_eq!(
+            gen.generate_field_rust_type(&make_test_field(
+                0,
+                "field",
+                false,
+                FieldType::Map {
+                    key: TypeSpec::Float,
+                    val: TypeSpec::Int(PbInt::Uint64, IntType::U32),
+                    type_path: syn::parse_str("std::HashMap").unwrap(),
+                    max_len: None,
+                    packed: true
+                }
+            ))
+            .to_string(),
+            quote! { std::HashMap<f32, u32> }.to_string()
+        );
+        assert_eq!(
+            gen.generate_field_rust_type(&make_test_field(
+                0,
+                "field",
+                false,
+                FieldType::Map {
+                    key: TypeSpec::Int(PbInt::Uint64, IntType::U32),
+                    val: TypeSpec::Float,
+                    type_path: syn::parse_str("std::HashMap").unwrap(),
+                    max_len: Some(8),
+                    packed: true
+                }
+            ))
+            .to_string(),
+            quote! { std::HashMap<u32, f32, 8> }.to_string()
+        );
+        assert_eq!(
+            gen.generate_field_rust_type(&make_test_field(
+                0,
+                "field",
+                false,
+                FieldType::Custom(CustomField::Type(
+                    syn::parse_str("custom::Type<true>").unwrap()
+                ))
+            ))
+            .to_string(),
+            quote! { custom::Type<true> }.to_string()
+        );
+        assert_eq!(
+            gen.generate_field_rust_type(&make_test_field(
+                0,
+                "field",
+                true,
+                FieldType::Optional(TypeSpec::Message(".Config".to_owned()))
+            ))
+            .to_string(),
+            quote! { core::option::Option<alloc::boxed::Box<Config> > }.to_string()
+        );
+        assert_eq!(
+            gen.generate_field_rust_type(&make_test_field(
+                0,
+                "field",
+                true,
+                FieldType::Single(TypeSpec::Message(".Config".to_owned()))
+            ))
+            .to_string(),
+            quote! { alloc::boxed::Box<Config> }.to_string()
         );
     }
 
