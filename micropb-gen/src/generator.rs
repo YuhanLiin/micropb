@@ -19,7 +19,7 @@ use syn::Ident;
 use crate::{
     config::{Config, GenConfig, IntType},
     pathtree::Node,
-    utils::{suffix, unescape_c_escape_string},
+    utils::{path_suffix, unescape_c_escape_string},
 };
 
 fn derive_msg_attr(debug: bool, default: bool) -> TokenStream {
@@ -182,7 +182,7 @@ impl<'a> CurrentConfig<'a> {
         let mut config: Cow<Box<Config>> = Cow::Borrowed(self.config.borrow());
         if let Some(node) = self.node {
             let next = node.next(segment);
-            if let Some(conf) = next.and_then(|n| n.value()) {
+            if let Some(conf) = next.and_then(|n| n.value().as_ref()) {
                 (*config.to_mut()).merge(conf);
             }
             Self { node: next, config }
@@ -228,8 +228,12 @@ impl Generator {
             .unwrap_or_default();
 
         let root_node = &self.config.field_configs.root;
-        let mut root_conf = root_node.value().expect("root config should exist").clone();
-        root_node.get(
+        let mut root_conf = root_node
+            .value()
+            .as_ref()
+            .expect("root config should exist")
+            .clone();
+        root_node.visit_path(
             fdproto.package.as_deref().unwrap_or("").split('.'),
             |conf| root_conf.merge(conf),
         );
@@ -809,7 +813,8 @@ impl Generator {
                 unreachable!("message fields shouldn't have custom defaults")
             }
             TypeSpec::Enum(tname) => {
-                let enum_name = Ident::new(&suffix(tname).to_case(Case::Pascal), Span::call_site());
+                let enum_name =
+                    Ident::new(&path_suffix(tname).to_case(Case::Pascal), Span::call_site());
                 let variant = self.enum_variant_name(default, &enum_name);
                 quote! { #enum_name::#variant }
             }

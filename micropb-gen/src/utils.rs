@@ -100,8 +100,40 @@ pub(crate) fn unescape_c_escape_string(s: &str) -> Vec<u8> {
     dst
 }
 
-pub(crate) fn suffix(path: &str) -> &str {
+pub(crate) fn path_suffix(path: &str) -> &str {
     path.rsplit_once('.')
         .map(|(_, suffix)| suffix)
         .unwrap_or(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn suffix() {
+        assert_eq!(path_suffix("test"), "test");
+        assert_eq!(path_suffix("a.b.c"), "c");
+    }
+
+    #[test]
+    fn unescape_c_string() {
+        assert_eq!(
+            &b"hello world"[..],
+            &unescape_c_escape_string("hello world")[..]
+        );
+
+        assert_eq!(&b"\0"[..], &unescape_c_escape_string(r#"\0"#)[..]);
+
+        assert_eq!(
+            &[0o012, 0o156],
+            &unescape_c_escape_string(r#"\012\156"#)[..]
+        );
+        assert_eq!(&[0x01, 0x02], &unescape_c_escape_string(r#"\x01\x02"#)[..]);
+
+        assert_eq!(
+            &b"\0\x01\x07\x08\x0C\n\r\t\x0B\\\'\"\xFE"[..],
+            &unescape_c_escape_string(r#"\0\001\a\b\f\n\r\t\v\\\'\"\xfe"#)[..]
+        );
+    }
 }
