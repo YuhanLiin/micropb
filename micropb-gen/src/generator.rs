@@ -426,14 +426,14 @@ impl Generator {
         self.type_path.borrow_mut().pop();
 
         let rust_name = Ident::new(name, Span::call_site());
-        let msg_fields = fields.iter().map(|f| self.field_decl(f));
+        let msg_fields = fields.iter().map(|f| self.generate_field_decl(f));
         let hazzer_field = hazzer_exists.then(|| quote! { pub _has: #msg_mod_name::_Hazzer, });
         let oneof_fields = oneofs
             .iter()
-            .map(|oneof| self.oneof_field_decl(&msg_mod_name, oneof));
+            .map(|oneof| self.generate_oneof_field_decl(&msg_mod_name, oneof));
 
         let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
-            let defaults = fields.iter().map(|f| self.field_default(f));
+            let defaults = fields.iter().map(|f| self.generate_field_default(f));
             let hazzer_default =
                 hazzer_exists.then(|| quote! { _has: core::default::Default::default(), });
             let decl = quote! {
@@ -474,7 +474,7 @@ impl Generator {
 
     fn generate_oneof_decl(&self, oneof: &Oneof) -> TokenStream {
         if let OneofType::Enum { type_name, fields } = &oneof.otype {
-            let fields = fields.iter().map(|f| self.oneof_subfield_decl(f));
+            let fields = fields.iter().map(|f| self.generate_oneof_subfield_decl(f));
             let derive_msg = derive_msg_attr(oneof.derive_dbg, false);
             let attrs = &oneof.type_attrs;
 
@@ -703,7 +703,7 @@ impl Generator {
         })
     }
 
-    fn tspec_rust_type(&self, tspec: &TypeSpec) -> TokenStream {
+    fn generate_tspec_rust_type(&self, tspec: &TypeSpec) -> TokenStream {
         match tspec {
             TypeSpec::Int(_, itype) => {
                 let typ = itype.type_name();
@@ -739,7 +739,7 @@ impl Generator {
         }
     }
 
-    fn rust_type(&self, field: &Field) -> TokenStream {
+    fn generate_field_rust_type(&self, field: &Field) -> TokenStream {
         let typ = match &field.ftype {
             FieldType::Map {
                 key,
@@ -748,13 +748,13 @@ impl Generator {
                 max_len,
                 ..
             } => {
-                let k = self.tspec_rust_type(key);
-                let v = self.tspec_rust_type(val);
+                let k = self.generate_tspec_rust_type(key);
+                let v = self.generate_tspec_rust_type(val);
                 let max_len = max_len.map(|len| quote! {, #len});
                 quote! { #type_name <#k, #v #max_len> }
             }
 
-            FieldType::Single(t) | FieldType::Optional(t) => self.tspec_rust_type(t),
+            FieldType::Single(t) | FieldType::Optional(t) => self.generate_tspec_rust_type(t),
 
             FieldType::Repeated {
                 typ,
@@ -762,7 +762,7 @@ impl Generator {
                 max_len,
                 ..
             } => {
-                let t = self.tspec_rust_type(typ);
+                let t = self.generate_tspec_rust_type(typ);
                 let max_len = max_len.map(|len| quote! {, #len});
                 quote! { #type_path <#t #max_len> }
             }
@@ -786,17 +786,17 @@ impl Generator {
         }
     }
 
-    fn field_decl(&self, field: &Field) -> TokenStream {
+    fn generate_field_decl(&self, field: &Field) -> TokenStream {
         if let FieldType::Custom(CustomField::Delegate(_)) = field.ftype {
             return quote! {};
         }
-        let typ = self.rust_type(field);
+        let typ = self.generate_field_rust_type(field);
         let name = &field.rust_name;
         let attrs = &field.attrs;
         quote! { #attrs #name : #typ, }
     }
 
-    fn oneof_field_decl(&self, msg_mod_name: &Ident, oneof: &Oneof) -> TokenStream {
+    fn generate_oneof_field_decl(&self, msg_mod_name: &Ident, oneof: &Oneof) -> TokenStream {
         let name = &oneof.rust_name;
         let oneof_type = match &oneof.otype {
             OneofType::Enum { type_name, .. } => quote! { #msg_mod_name::#type_name },
@@ -813,14 +813,14 @@ impl Generator {
         quote! { #attrs #name: core::option::Option<#typ>, }
     }
 
-    fn oneof_subfield_decl(&self, field: &Field) -> TokenStream {
-        let typ = self.rust_type(field);
+    fn generate_oneof_subfield_decl(&self, field: &Field) -> TokenStream {
+        let typ = self.generate_field_rust_type(field);
         let name = &field.rust_name;
         let attrs = &field.attrs;
         quote! { #attrs #name(#typ), }
     }
 
-    fn tspec_default(&self, tspec: &TypeSpec, default: &str) -> TokenStream {
+    fn generate_tspec_default(&self, tspec: &TypeSpec, default: &str) -> TokenStream {
         match tspec {
             TypeSpec::String { .. } => {
                 let string = default.escape_default().to_string();
@@ -852,12 +852,12 @@ impl Generator {
         }
     }
 
-    fn field_default(&self, field: &Field) -> TokenStream {
+    fn generate_field_default(&self, field: &Field) -> TokenStream {
         let name = &field.rust_name;
         if let Some(default) = field.default {
             match field.ftype {
                 FieldType::Single(ref t) | FieldType::Optional(ref t) => {
-                    let value = self.tspec_default(t, default);
+                    let value = self.generate_tspec_default(t, default);
                     return if field.boxed {
                         let box_type = self.box_type();
                         let typ = quote! { #box_type::new(#value) };
@@ -879,10 +879,10 @@ impl Generator {
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> TokenStream {
-        assert_eq!(".", &pb_fq_type_name[1..]);
+        assert_eq!(".", &pb_fq_type_name[..1]);
 
         let mut ident_path = pb_fq_type_name[1..].split('.');
-        let ident_type = ident_path.next_back().unwrap();
+        let ident_type = Ident::new(ident_path.next_back().unwrap(), Span::call_site());
         let mut ident_path = ident_path.peekable();
 
         let type_path = self.type_path.borrow();
@@ -911,6 +911,7 @@ impl Generator {
         }
     }
 
+    /// Convert variant name to Pascal-case, then strip the enum name from it
     fn enum_variant_name(&self, variant_name: &str, enum_name: &Ident) -> Ident {
         let variant_name_cased = variant_name.to_case(Case::Pascal);
         let stripped = if !self.config.retain_enum_prefix {
@@ -946,6 +947,65 @@ mod tests {
     use protox::prost_reflect::prost_types::EnumValueDescriptorProto;
 
     use super::*;
+
+    #[test]
+    fn enum_variant_name() {
+        let mut gen = Generator::default();
+        let enum_name = Ident::new("Enum", Span::call_site());
+        assert_eq!(
+            gen.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
+            "Value"
+        );
+        assert_eq!(
+            gen.enum_variant_name("ALIEN", &enum_name).to_string(),
+            "Alien"
+        );
+
+        gen.config.retain_enum_prefix = true;
+        assert_eq!(
+            gen.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
+            "EnumValue"
+        );
+    }
+
+    #[test]
+    fn resolve_type_name() {
+        let mut gen = Generator::default();
+        // currently in root-level module
+        assert_eq!(gen.resolve_type_name(".Message").to_string(), "Message");
+        assert_eq!(
+            gen.resolve_type_name(".package.Message").to_string(),
+            quote! { package::Message }.to_string()
+        );
+        assert_eq!(
+            gen.resolve_type_name(".package.Message.Inner").to_string(),
+            quote! { package::mod_Message::Inner }.to_string()
+        );
+
+        gen.pkg_path.push("package".to_owned());
+        gen.type_path.borrow_mut().push("Message".to_owned());
+        // currently in package::mod_Message module
+        assert_eq!(
+            gen.resolve_type_name(".Message").to_string(),
+            quote! { super::super::Message }.to_string()
+        );
+        assert_eq!(
+            gen.resolve_type_name(".package.Message").to_string(),
+            quote! { super::Message }.to_string()
+        );
+        assert_eq!(
+            gen.resolve_type_name(".Message.Item").to_string(),
+            quote! { super::super::mod_Message::Item }.to_string()
+        );
+        assert_eq!(
+            gen.resolve_type_name(".package.Message.Inner").to_string(),
+            "Inner"
+        );
+        assert_eq!(
+            gen.resolve_type_name(".abc.d").to_string(),
+            quote! { super::super::abc::d }.to_string()
+        );
+    }
 
     #[test]
     fn basic_enum() {
