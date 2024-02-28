@@ -17,8 +17,8 @@ use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
-    config::{Config, GenConfig, IntType},
-    pathtree::Node,
+    config::{Config, IntType},
+    pathtree::{Node, PathTree},
     utils::{path_suffix, unescape_c_escape_string},
 };
 
@@ -30,7 +30,7 @@ fn derive_msg_attr(debug: bool, default: bool) -> TokenStream {
 
 fn derive_enum_attr(debug: bool) -> TokenStream {
     let debug = debug.then(|| quote! { Debug, });
-    quote! { #[derive(#debug Clone, PartialEq, Copy, Eq, Hash)] }
+    quote! { #[derive(#debug Clone, Copy, PartialEq, Eq, Hash)] }
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -196,6 +196,27 @@ impl<'a> CurrentConfig<'a> {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+enum EncodeDecode {
+    EncodeOnly,
+    DecodeOnly,
+    #[default]
+    Both,
+}
+
+#[derive(Debug, Default)]
+pub struct GenConfig {
+    pub(crate) encode_decode: EncodeDecode,
+    pub(crate) size_cache: bool,
+    pub(crate) default_pkg_filename: String,
+    pub(crate) retain_enum_prefix: bool,
+    pub(crate) format: bool,
+    pub(crate) use_std: bool,
+
+    pub(crate) field_configs: PathTree<Box<Config>>,
+}
+
+#[derive(Debug, Default)]
 struct Generator {
     config: GenConfig,
     syntax: Syntax,
@@ -278,7 +299,7 @@ impl Generator {
         let default_num = Literal::i32_unsuffixed(enum_type.value[0].number.unwrap());
         let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
         let itype = enum_int_type.type_name();
-        let attrs = &enum_conf.config.type_attributes;
+        let attrs = &enum_conf.config.type_attr_parsed();
         let derive_enum = derive_enum_attr(!enum_conf.config.no_debug_derive.unwrap_or(false));
 
         quote! {
@@ -288,18 +309,18 @@ impl Generator {
             pub struct #name(pub #itype);
 
             impl #name {
-                #(pub const #var_names: Self = #name(#nums);)*
+                #(pub const #var_names: Self = Self(#nums);)*
             }
 
             impl core::default::Default for #name {
                 fn default() -> Self {
-                    #name(#default_num)
+                    Self(#default_num)
                 }
             }
 
-            impl core::convert::From<#itype> for $name {
+            impl core::convert::From<#itype> for #name {
                 fn from(val: #itype) -> Self {
-                    #name(val)
+                    Self(val)
                 }
             }
         }
@@ -892,7 +913,7 @@ impl Generator {
 
     fn enum_variant_name(&self, variant_name: &str, enum_name: &Ident) -> Ident {
         let variant_name_cased = variant_name.to_case(Case::Pascal);
-        let stripped = if self.config.strip_enum_prefix {
+        let stripped = if !self.config.retain_enum_prefix {
             variant_name_cased
                 .strip_prefix(&enum_name.to_string())
                 .unwrap_or(&variant_name_cased)
@@ -917,5 +938,122 @@ impl Generator {
             .chain(self.type_path.borrow().iter().map(Deref::deref))
             .chain(iter::once(name))
             .fold(String::new(), |acc, s| acc + "." + s)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use protox::prost_reflect::prost_types::EnumValueDescriptorProto;
+
+    use super::*;
+
+    #[test]
+    fn basic_enum() {
+        let config = CurrentConfig {
+            node: None,
+            config: Cow::Owned(Box::new(Config::new())),
+        };
+        let enum_proto = EnumDescriptorProto {
+            name: Some("Test".to_owned()),
+            value: vec![
+                EnumValueDescriptorProto {
+                    name: Some("TEST_ONE".to_owned()),
+                    number: Some(1),
+                    options: None,
+                },
+                EnumValueDescriptorProto {
+                    name: Some("OTHER_VALUE".to_owned()),
+                    number: Some(2),
+                    options: None,
+                },
+            ],
+            options: None,
+            reserved_range: vec![],
+            reserved_name: vec![],
+        };
+        let gen = Generator::default();
+
+        let out = gen.generate_enum_type(&enum_proto, config);
+        let expected = quote! {
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[repr(transparent)]
+            pub struct Test(pub i32);
+
+            impl Test {
+                pub const One: Self = Self(1);
+                pub const OtherValue: Self = Self(2);
+            }
+
+            impl core::default::Default for Test {
+                fn default() -> Self {
+                    Self(1)
+                }
+            }
+
+            impl core::convert::From<i32> for Test {
+                fn from(val: i32) -> Self {
+                    Self(val)
+                }
+            }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
+
+        // skipped enums should generate nothing
+        let config = CurrentConfig {
+            node: None,
+            config: Cow::Owned(Box::new(Config::new().skip(true))),
+        };
+        assert!(gen.generate_enum_type(&enum_proto, config).is_empty())
+    }
+
+    #[test]
+    fn enum_with_config() {
+        let config = CurrentConfig {
+            node: None,
+            config: Cow::Owned(Box::new(
+                Config::new()
+                    .enum_int_type(IntType::U8)
+                    .type_attributes("#[derive(Serialize)]")
+                    .no_debug_derive(true),
+            )),
+        };
+        let enum_proto = EnumDescriptorProto {
+            name: Some("Enum".to_owned()),
+            value: vec![EnumValueDescriptorProto {
+                name: Some("ENUM_ONE".to_owned()),
+                number: Some(1),
+                options: None,
+            }],
+            options: None,
+            reserved_range: vec![],
+            reserved_name: vec![],
+        };
+        let mut gen = Generator::default();
+        gen.config.retain_enum_prefix = true;
+
+        let out = gen.generate_enum_type(&enum_proto, config);
+        let expected = quote! {
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+            #[repr(transparent)]
+            #[derive(Serialize)]
+            pub struct Enum(pub u8);
+
+            impl Enum {
+                pub const EnumOne: Self = Self(1);
+            }
+
+            impl core::default::Default for Enum {
+                fn default() -> Self {
+                    Self(1)
+                }
+            }
+
+            impl core::convert::From<u8> for Enum {
+                fn from(val: u8) -> Self {
+                    Self(val)
+                }
+            }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
     }
 }

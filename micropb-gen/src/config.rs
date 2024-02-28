@@ -1,8 +1,6 @@
 use proc_macro2::{Span, TokenStream};
 use syn::Ident;
 
-use crate::pathtree::PathTree;
-
 #[derive(Debug, Clone, Copy)]
 pub enum IntType {
     I8,
@@ -168,25 +166,6 @@ impl Config {
             None => todo!(),
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-enum EncodeDecode {
-    EncodeOnly,
-    DecodeOnly,
-    #[default]
-    Both,
-}
-
-pub struct GenConfig {
-    pub(crate) encode_decode: EncodeDecode,
-    pub(crate) size_cache: bool,
-    pub(crate) default_pkg_filename: String,
-    pub(crate) strip_enum_prefix: bool,
-    pub(crate) format: bool,
-    pub(crate) use_std: bool,
-
-    pub(crate) field_configs: PathTree<Box<Config>>,
 }
 
 #[cfg(test)]

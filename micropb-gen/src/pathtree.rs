@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Node<T> {
     value: Option<T>,
     children: Vec<(String, Node<T>)>,
@@ -59,6 +60,7 @@ impl<T> Node<T> {
     }
 }
 
+#[derive(Debug, Default)]
 pub struct PathTree<T> {
     pub root: Node<T>,
 }
