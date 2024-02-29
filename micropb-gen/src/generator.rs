@@ -432,29 +432,7 @@ impl Generator {
             .iter()
             .map(|oneof| self.generate_oneof_field_decl(&msg_mod_name, oneof));
 
-        let (derive_default, decl_default) = if fields.iter().any(|f| f.default.is_some()) {
-            let defaults = fields.iter().map(|f| self.generate_field_default(f));
-            let hazzer_default =
-                hazzer_exists.then(|| quote! { _has: core::default::Default::default(), });
-            let decl = quote! {
-                impl core::default::Default for #rust_name {
-                    fn default() -> Self {
-                        Self {
-                            #(#defaults)*
-                            #hazzer_default
-                        }
-                    }
-                }
-            };
-            (false, Some(decl))
-        } else {
-            (true, None)
-        };
-
-        let derive_msg = derive_msg_attr(
-            !msg_conf.config.no_debug_derive.unwrap_or(false),
-            derive_default,
-        );
+        let derive_msg = derive_msg_attr(!msg_conf.config.no_debug_derive.unwrap_or(false), true);
         let attrs = &msg_conf.config.type_attr_parsed();
 
         quote! {
@@ -467,8 +445,6 @@ impl Generator {
                 #(pub #oneof_fields)*
                 #hazzer_field
             }
-
-            #decl_default
         }
     }
 
@@ -817,12 +793,11 @@ impl Generator {
     fn generate_tspec_default(&self, tspec: &TypeSpec, default: &str) -> TokenStream {
         match tspec {
             TypeSpec::String { .. } => {
-                let string = default.escape_default().to_string();
-                quote! { micropb::PbString::from_str(#string).expect("default string went over capacity") }
+                quote! { #default }
             }
             TypeSpec::Bytes { .. } => {
                 let bytes = Literal::byte_string(&unescape_c_escape_string(default));
-                quote! { micropb::PbVec::from_slice(#bytes).expect("default bytes went over capacity") }
+                quote! { #bytes }
             }
             TypeSpec::Message(_) => {
                 unreachable!("message fields shouldn't have custom defaults")
@@ -833,21 +808,15 @@ impl Generator {
                 let variant = self.enum_variant_name(default, &enum_name);
                 quote! { #enum_name::#variant }
             }
-            TypeSpec::Bool => {
-                // true and false are identifiers, not literals
-                let default = Ident::new(default, Span::call_site());
-                quote! { #default }
-            }
             _ => {
-                let lit: Literal =
-                    syn::parse_str(default).expect("numeric default should be valid Rust literal");
-                quote! { #lit as _ }
+                let default: TokenStream =
+                    syn::parse_str(default).expect("default value tokenization error");
+                quote! { #default as _ }
             }
         }
     }
 
     fn generate_field_default(&self, field: &Field) -> TokenStream {
-        let name = &field.rust_name;
         if let Some(default) = field.default {
             match field.ftype {
                 FieldType::Single(ref t) | FieldType::Optional(ref t) => {
@@ -856,12 +825,12 @@ impl Generator {
                         let box_type = self.box_type();
                         let typ = quote! { #box_type::new(#value) };
                         if field.explicit_presence() {
-                            quote! { #name: core::option::Option::Some(#typ), }
+                            quote! { core::option::Option::Some(#typ) }
                         } else {
-                            quote! { #name: #typ, }
+                            typ
                         }
                     } else {
-                        quote! { #name: #value, }
+                        value
                     };
                 }
                 FieldType::Custom(CustomField::Delegate(_)) => return quote! {},
@@ -869,7 +838,7 @@ impl Generator {
                 _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
             }
         }
-        quote! { #name: core::default::Default::default(), }
+        quote! { core::default::Default::default() }
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> TokenStream {
@@ -1184,6 +1153,116 @@ mod tests {
             .to_string(),
             quote! { alloc::boxed::Box<Config> }.to_string()
         );
+    }
+
+    #[test]
+    fn tspec_default() {
+        let gen = Generator::default();
+        assert_eq!(
+            gen.generate_tspec_default(&TypeSpec::Bool, "true")
+                .to_string(),
+            quote! { true as _ }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_default(&TypeSpec::Bool, "false")
+                .to_string(),
+            quote! { false as _ }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_default(&TypeSpec::Float, "0.1")
+                .to_string(),
+            quote! { 0.1 as _ }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_default(&TypeSpec::Double, "-4.1")
+                .to_string(),
+            quote! { -4.1 as _ }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_default(&TypeSpec::Int(PbInt::Int32, IntType::I8), "-99")
+                .to_string(),
+            quote! { -99 as _ }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_default(
+                &TypeSpec::String {
+                    type_path: syn::parse_str("Vec").unwrap(),
+                    max_bytes: None
+                },
+                "abc\n\tddd"
+            )
+            .to_string(),
+            quote! { "abc\n\tddd" }.to_string()
+        );
+        assert_eq!(
+            gen.generate_tspec_default(
+                &TypeSpec::Bytes {
+                    type_path: syn::parse_str("Vec").unwrap(),
+                    max_bytes: None
+                },
+                "abc\\n\\t\\a\\xA0ddd"
+            )
+            .to_string(),
+            quote! { b"abc\n\t\x07\xA0ddd" }.to_string()
+        );
+    }
+
+    #[test]
+    fn field_default() {
+        let gen = Generator::default();
+        // no special default
+        assert_eq!(
+            gen.generate_field_default(&make_test_field(
+                0,
+                "field",
+                false,
+                FieldType::Optional(TypeSpec::Bool)
+            ))
+            .to_string(),
+            quote! { core::default::Default::default() }.to_string()
+        );
+
+        let mut field = make_test_field(0, "field", false, FieldType::Optional(TypeSpec::Bool));
+        field.default = Some("false");
+        assert_eq!(
+            gen.generate_field_default(&field).to_string(),
+            quote! { false as _ }.to_string()
+        );
+
+        let mut field = make_test_field(0, "field", true, FieldType::Single(TypeSpec::Bool));
+        field.default = Some("false");
+        assert_eq!(
+            gen.generate_field_default(&field).to_string(),
+            quote! { alloc::boxed::Box::new(false as _) }.to_string()
+        );
+
+        let mut field = make_test_field(0, "field", true, FieldType::Optional(TypeSpec::Bool));
+        field.default = Some("false");
+        assert_eq!(
+            gen.generate_field_default(&field).to_string(),
+            quote! { core::option::Option::Some(alloc::boxed::Box::new(false as _)) }.to_string()
+        );
+
+        let mut field = make_test_field(
+            0,
+            "field",
+            true,
+            FieldType::Custom(CustomField::Type(syn::parse_str("Map").unwrap())),
+        );
+        field.default = Some("false");
+        assert_eq!(
+            gen.generate_field_default(&field).to_string(),
+            quote! { core::default::Default::default() }.to_string()
+        );
+
+        let mut field = make_test_field(
+            0,
+            "field",
+            true,
+            FieldType::Custom(CustomField::Delegate(syn::parse_str("del").unwrap())),
+        );
+        field.default = Some("false");
+        assert_eq!(gen.generate_field_default(&field).to_string(), "");
     }
 
     #[test]
