@@ -111,7 +111,7 @@ struct Field<'a> {
 
 impl<'a> Field<'a> {
     fn explicit_presence(&self) -> bool {
-        matches!(self.ftype, FieldType::Optional(_))
+        matches!(self.ftype, FieldType::Optional(_)) && self.oneof.is_none()
     }
 
     fn is_hazzer(&self) -> bool {
@@ -389,6 +389,12 @@ impl Generator {
             })
             .collect();
 
+        // Remove all oneofs that are empty enums
+        let oneofs: Vec<_> = oneofs
+            .into_iter()
+            .filter(|o| !matches!(&o.otype, OneofType::Enum { fields, .. } if fields.is_empty()))
+            .collect();
+
         let odelegates = oneofs.iter().filter_map(|o| o.delegate());
         let fdelegates = fields.iter().filter_map(|f| f.delegate());
         for delegate in odelegates.chain(fdelegates) {
@@ -450,6 +456,7 @@ impl Generator {
 
     fn generate_oneof_decl(&self, oneof: &Oneof) -> TokenStream {
         if let OneofType::Enum { type_name, fields } = &oneof.otype {
+            assert!(!fields.is_empty(), "empty enums should have been filtered");
             let fields = fields.iter().map(|f| self.generate_oneof_subfield_decl(f));
             let derive_msg = derive_msg_attr(oneof.derive_dbg, false);
             let attrs = &oneof.type_attrs;
@@ -517,7 +524,10 @@ impl Generator {
         let otype = match oneof_conf.config.custom_field_parsed() {
             Some(custom) => OneofType::Custom(custom),
             None => OneofType::Enum {
-                type_name: Ident::new(&name.to_case(Case::Pascal), Span::call_site()),
+                type_name: Ident::new(
+                    &rust_name.to_string().to_case(Case::Pascal),
+                    Span::call_site(),
+                ),
                 fields: vec![],
             },
         };
@@ -737,7 +747,7 @@ impl Generator {
                 quote! { #type_path <#t #(, #max_len)* > }
             }
 
-            FieldType::Custom(CustomField::Type(t)) => quote! {#t},
+            FieldType::Custom(CustomField::Type(t)) => return quote! {#t},
             FieldType::Custom(CustomField::Delegate(_)) => {
                 unreachable!("delegate field cannot have a type")
             }
@@ -769,18 +779,20 @@ impl Generator {
     fn generate_oneof_field_decl(&self, msg_mod_name: &Ident, oneof: &Oneof) -> TokenStream {
         let name = &oneof.rust_name;
         let oneof_type = match &oneof.otype {
-            OneofType::Enum { type_name, .. } => quote! { #msg_mod_name::#type_name },
+            OneofType::Enum { type_name, .. } => {
+                let typ = if oneof.boxed {
+                    let box_type = self.box_type();
+                    quote! { #box_type<#msg_mod_name::#type_name> }
+                } else {
+                    quote! { #msg_mod_name::#type_name }
+                };
+                quote! { core::option::Option<#typ> }
+            }
             OneofType::Custom(CustomField::Type(type_path)) => quote! { #type_path },
             OneofType::Custom(CustomField::Delegate(_)) => return quote! {},
         };
         let attrs = &oneof.field_attrs;
-        let typ = if oneof.boxed {
-            let box_type = self.box_type();
-            quote! { #box_type<#oneof_type> }
-        } else {
-            oneof_type
-        };
-        quote! { #attrs #name: core::option::Option<#typ>, }
+        quote! { #attrs #name: #oneof_type, }
     }
 
     fn generate_oneof_subfield_decl(&self, field: &Field) -> TokenStream {
@@ -1125,7 +1137,7 @@ mod tests {
             gen.generate_field_rust_type(&make_test_field(
                 0,
                 "field",
-                false,
+                true,
                 FieldType::Custom(CustomField::Type(
                     syn::parse_str("custom::Type<true>").unwrap()
                 ))
@@ -1266,7 +1278,7 @@ mod tests {
     }
 
     #[test]
-    fn basic_enum() {
+    fn enum_basic() {
         let config = CurrentConfig {
             node: None,
             config: Cow::Owned(Box::new(Config::new())),
@@ -1373,5 +1385,82 @@ mod tests {
             }
         };
         assert_eq!(out.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn oneof_enum() {
+        let gen = Generator::default();
+        let mut fields = vec![
+            make_test_field(0, "A", true, FieldType::Optional(TypeSpec::Float)),
+            make_test_field(1, "B", false, FieldType::Single(TypeSpec::Bool)),
+        ];
+        fields[0].oneof = Some(0);
+        fields[1].oneof = Some(0);
+        let oneof = Oneof {
+            name: "oneof",
+            rust_name: Ident::new("oneof", Span::call_site()),
+            otype: OneofType::Enum {
+                type_name: Ident::new("Oneof", Span::call_site()),
+                fields,
+            },
+            boxed: false,
+            field_attrs: quote! { #[default] },
+            type_attrs: quote! { #[derive(Eq)] },
+            derive_dbg: true,
+            idx: 0,
+        };
+
+        let out = gen.generate_oneof_decl(&oneof);
+        let expected = quote! {
+            #[derive(Debug, Clone, PartialEq)]
+            #[derive(Eq)]
+            pub enum Oneof {
+                A(alloc::boxed::Box<f32>),
+                B(bool),
+            }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
+
+        assert_eq!(
+            gen.generate_oneof_field_decl(&Ident::new("Msg", Span::call_site()), &oneof)
+                .to_string(),
+            quote! { #[default] oneof: core::option::Option<Msg::Oneof>, }.to_string()
+        );
+    }
+
+    #[test]
+    fn oneof_custom() {
+        let gen = Generator::default();
+        let oneof = Oneof {
+            name: "oneof",
+            rust_name: Ident::new("oneof", Span::call_site()),
+            otype: OneofType::Custom(CustomField::Type(syn::parse_str("Custom<f32>").unwrap())),
+            boxed: true,
+            field_attrs: quote! {},
+            type_attrs: quote! {},
+            derive_dbg: true,
+            idx: 0,
+        };
+        assert!(gen.generate_oneof_decl(&oneof).is_empty());
+        assert_eq!(
+            gen.generate_oneof_field_decl(&Ident::new("Msg", Span::call_site()), &oneof)
+                .to_string(),
+            quote! { oneof: Custom<f32>, }.to_string()
+        );
+
+        let oneof = Oneof {
+            name: "oneof",
+            rust_name: Ident::new("oneof", Span::call_site()),
+            otype: OneofType::Custom(CustomField::Delegate(syn::parse_str("delegate").unwrap())),
+            boxed: false,
+            field_attrs: quote! {},
+            type_attrs: quote! {},
+            derive_dbg: true,
+            idx: 0,
+        };
+        assert!(gen.generate_oneof_decl(&oneof).is_empty());
+        assert!(gen
+            .generate_oneof_field_decl(&Ident::new("Msg", Span::call_site()), &oneof)
+            .is_empty());
     }
 }
