@@ -109,7 +109,6 @@ config_decl! {
     // Type configs
     enum_int_type: Option<IntType>,
     type_attributes: [deref] Option<String>,
-    hazzer_attributes: [deref] Option<String>,
     no_debug_derive: Option<bool>,
 
     // General configs
@@ -125,11 +124,6 @@ impl Config {
     pub(crate) fn type_attr_parsed(&self) -> TokenStream {
         // TODO handle parse error
         syn::parse_str(self.type_attributes.as_deref().unwrap_or("")).unwrap()
-    }
-
-    pub(crate) fn hazzer_attr_parsed(&self) -> TokenStream {
-        // TODO handle parse error
-        syn::parse_str(self.hazzer_attributes.as_deref().unwrap_or("")).unwrap()
     }
 
     pub(crate) fn rust_field_name(&self, name: &str) -> Ident {
@@ -199,7 +193,6 @@ mod tests {
             .vec_type("heapless::Vec")
             .string_type("heapless::String")
             .map_type("Map")
-            .hazzer_attributes("#[derive(Eq)]")
             .type_attributes("#[derive(Hash)]");
 
         assert_eq!(
@@ -225,10 +218,6 @@ mod tests {
                 .to_token_stream()
                 .to_string(),
             "Map"
-        );
-        assert_eq!(
-            config.hazzer_attr_parsed().to_string(),
-            quote! { #[derive(Eq)] }.to_string()
         );
         assert_eq!(
             config.type_attr_parsed().to_string(),

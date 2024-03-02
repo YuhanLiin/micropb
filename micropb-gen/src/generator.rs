@@ -416,9 +416,11 @@ impl Generator {
             .iter()
             .map(|e| self.generate_enum_type(e, msg_conf.next_conf(e.name())));
 
-        let opt_fields: Vec<_> = fields.iter().filter(|f| f.explicit_presence()).collect();
-        let hazzer_exists = !opt_fields.is_empty();
-        let hazzer_decl = hazzer_exists.then(|| self.generate_hazzer_decl(&opt_fields, &msg_conf));
+        let (hazzer_decl, hazzer_field_attr) =
+            match self.generate_hazzer_decl(&fields, msg_conf.next_conf("_has")) {
+                Some((d, a)) => (Some(d), Some(a)),
+                None => (None, None),
+            };
 
         let msg_mod = quote! {
             pub mod #msg_mod_name {
@@ -433,7 +435,8 @@ impl Generator {
 
         let rust_name = Ident::new(name, Span::call_site());
         let msg_fields = fields.iter().map(|f| self.generate_field_decl(f));
-        let hazzer_field = hazzer_exists.then(|| quote! { pub _has: #msg_mod_name::_Hazzer, });
+        let hazzer_field =
+            hazzer_field_attr.map(|attr| quote! { #attr pub _has: #msg_mod_name::_Hazzer, });
         let oneof_fields = oneofs
             .iter()
             .map(|oneof| self.generate_oneof_field_decl(&msg_mod_name, oneof));
@@ -473,16 +476,25 @@ impl Generator {
         }
     }
 
-    fn generate_hazzer_decl(&self, fields: &[&Field], msg_conf: &CurrentConfig) -> TokenStream {
+    fn generate_hazzer_decl(
+        &self,
+        fields: &[Field],
+        msg_conf: CurrentConfig,
+    ) -> Option<(TokenStream, TokenStream)> {
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
-        let attrs = &msg_conf.config.hazzer_attr_parsed();
+        let attrs = &msg_conf.config.type_attr_parsed();
         let derive_msg = derive_msg_attr(!msg_conf.config.no_debug_derive.unwrap_or(false), true);
 
         let hazzers = fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
+        if count == 0 {
+            return None;
+        }
+
         let methods = hazzers.enumerate().map(|(i, f)| {
-            let fname = format_ident!("{}", f.name);
-            let setter = format_ident!("set_{fname}");
+            let fname = &f.rust_name;
+            let setter = format_ident!("set_{}", f.rust_name);
+            let i = Literal::usize_unsuffixed(i);
 
             quote! {
                 #[inline]
@@ -497,6 +509,7 @@ impl Generator {
             }
         });
 
+        let count = Literal::usize_unsuffixed(count);
         let decl = quote! {
             #derive_msg
             #attrs
@@ -506,7 +519,7 @@ impl Generator {
                 #(#methods)*
             }
         };
-        decl
+        Some((decl, msg_conf.config.field_attr_parsed()))
     }
 
     fn create_oneof<'a>(
@@ -1275,6 +1288,79 @@ mod tests {
         );
         field.default = Some("false");
         assert_eq!(gen.generate_field_default(&field).to_string(), "");
+    }
+
+    #[test]
+    fn hazzer() {
+        let config = CurrentConfig {
+            node: None,
+            config: Cow::Owned(Box::new(
+                Config::new()
+                    .type_attributes("#[derive(Eq)]")
+                    .field_attributes("#[default]")
+                    .no_debug_derive(true),
+            )),
+        };
+        let gen = Generator::default();
+        let (decl, field_attrs) = gen
+            .generate_hazzer_decl(
+                &[
+                    make_test_field(1, "field1", false, FieldType::Optional(TypeSpec::Bool)),
+                    make_test_field(2, "field2", false, FieldType::Single(TypeSpec::Bool)),
+                    make_test_field(3, "field3", false, FieldType::Optional(TypeSpec::Bool)),
+                    make_test_field(4, "field4", true, FieldType::Optional(TypeSpec::Bool)),
+                ],
+                config,
+            )
+            .unwrap();
+
+        let expected = quote! {
+            #[derive(Default, Clone, PartialEq)]
+            #[derive(Eq)]
+            pub struct _Hazzer(micropb::bitvec::BitArr!(for 2, in u8));
+
+            impl _Hazzer {
+                #[inline]
+                pub fn field1(&self) -> bool {
+                    self.0[0]
+                }
+
+                #[inline]
+                pub fn set_field1(&mut self, val: bool) {
+                    self.0.set(0, val);
+                }
+
+                #[inline]
+                pub fn field3(&self) -> bool {
+                    self.0[1]
+                }
+
+                #[inline]
+                pub fn set_field3(&mut self, val: bool) {
+                    self.0.set(1, val);
+                }
+            }
+        };
+        assert_eq!(decl.to_string(), expected.to_string());
+        assert_eq!(field_attrs.to_string(), quote! { #[default] }.to_string());
+    }
+
+    #[test]
+    fn hazzer_empty() {
+        let config = CurrentConfig {
+            node: None,
+            config: Cow::Owned(Box::new(Config::new())),
+        };
+        let gen = Generator::default();
+        assert!(gen
+            .generate_hazzer_decl(
+                &[
+                    make_test_field(2, "field2", false, FieldType::Single(TypeSpec::Bool)),
+                    make_test_field(4, "field4", true, FieldType::Optional(TypeSpec::Bool)),
+                ],
+                config,
+            )
+            .is_none());
     }
 
     #[test]
