@@ -103,7 +103,6 @@ struct Field<'a> {
     name: &'a str,
     rust_name: Ident,
     default: Option<&'a str>,
-    oneof: Option<usize>,
     boxed: bool,
     no_hazzer: bool,
     attrs: TokenStream,
@@ -111,11 +110,11 @@ struct Field<'a> {
 
 impl<'a> Field<'a> {
     fn explicit_presence(&self) -> bool {
-        matches!(self.ftype, FieldType::Optional(_)) && self.oneof.is_none()
+        matches!(self.ftype, FieldType::Optional(_))
     }
 
     fn is_hazzer(&self) -> bool {
-        self.explicit_presence() && !self.boxed && !self.no_hazzer && self.oneof.is_none()
+        self.explicit_presence() && !self.boxed && !self.no_hazzer
     }
 
     fn delegate(&self) -> Option<&Ident> {
@@ -135,10 +134,19 @@ impl<'a> Field<'a> {
     }
 }
 
+struct OneofField<'a> {
+    num: u32,
+    tspec: TypeSpec,
+    name: &'a str,
+    rust_name: Ident,
+    boxed: bool,
+    attrs: TokenStream,
+}
+
 enum OneofType<'a> {
     Enum {
         type_name: Ident,
-        fields: Vec<Field<'a>>,
+        fields: Vec<OneofField<'a>>,
     },
     Custom(CustomField),
 }
@@ -378,7 +386,7 @@ impl Generator {
                             .find(|o| o.idx == idx as usize)
                             .map(|o| &mut o.otype)
                         {
-                            if let Some(field) = self.create_field(f, field_conf) {
+                            if let Some(field) = self.create_oneof_field(f, field_conf) {
                                 fields.push(field);
                             }
                         }
@@ -601,24 +609,15 @@ impl Generator {
         if field_conf.config.skip.unwrap_or(false) {
             return None;
         }
+        assert!(proto.oneof_index.is_none());
 
-        let oneof = proto.oneof_index.map(|i| i as usize);
         let num = proto.number.unwrap() as u32;
         let name = proto.name();
-        // Oneof names are uppercased, since they are used as enum variant names
-        let cased_name: Cow<str> = if oneof.is_some() {
-            name.to_case(Case::Pascal).into()
-        } else {
-            name.into()
-        };
-        let rust_name = field_conf.config.rust_field_name(&cased_name);
-
+        let rust_name = field_conf.config.rust_field_name(name);
         let ftype = match (field_conf.config.custom_field_parsed(), proto.label()) {
-            (Some(t @ CustomField::Type(_)), _) => FieldType::Custom(t),
-            // Only allow delegate fields for non-oneof fields
-            (Some(t @ CustomField::Delegate(_)), _) if oneof.is_none() => FieldType::Custom(t),
+            (Some(t), _) => FieldType::Custom(t),
 
-            (_, Label::Repeated) => FieldType::Repeated {
+            (None, Label::Repeated) => FieldType::Repeated {
                 typ: self.create_type_spec(proto, &field_conf.next_conf("elem")),
                 type_path: field_conf.config.vec_type_parsed().unwrap(),
                 max_len: field_conf.config.max_len,
@@ -629,7 +628,7 @@ impl Generator {
                     .unwrap_or(false),
             },
 
-            (_, Label::Required) | (None, Label::Optional)
+            (None, Label::Required) | (None, Label::Optional)
                 if self.syntax == Syntax::Proto2
                     || proto.proto3_optional()
                     || proto.r#type() == Type::Message =>
@@ -637,7 +636,7 @@ impl Generator {
                 FieldType::Optional(self.create_type_spec(proto, &field_conf))
             }
 
-            (_, _) => FieldType::Single(self.create_type_spec(proto, &field_conf)),
+            (None, _) => FieldType::Single(self.create_type_spec(proto, &field_conf)),
         };
         let attrs = field_conf.config.field_attr_parsed();
 
@@ -646,10 +645,37 @@ impl Generator {
             ftype,
             name,
             rust_name,
-            oneof,
             default: proto.default_value.as_deref(),
             boxed: field_conf.config.boxed.unwrap_or(false),
             no_hazzer: field_conf.config.no_hazzer.unwrap_or(false),
+            attrs,
+        })
+    }
+
+    fn create_oneof_field<'a>(
+        &self,
+        proto: &'a FieldDescriptorProto,
+        field_conf: CurrentConfig,
+    ) -> Option<OneofField<'a>> {
+        if field_conf.config.skip.unwrap_or(false) {
+            return None;
+        }
+
+        let name = proto.name();
+        // Oneof fields have camelcased variant names
+        let rust_name = field_conf
+            .config
+            .rust_field_name(&name.to_case(Case::Pascal));
+        let num = proto.number.unwrap() as u32;
+        let tspec = self.create_type_spec(proto, &field_conf);
+        let attrs = field_conf.config.field_attr_parsed();
+
+        Some(OneofField {
+            num,
+            tspec,
+            name,
+            rust_name,
+            boxed: field_conf.config.boxed.unwrap_or(false),
             attrs,
         })
     }
@@ -694,7 +720,6 @@ impl Generator {
             ftype,
             name,
             rust_name,
-            oneof: None,
             default: None,
             boxed: field_conf.config.boxed.unwrap_or(false),
             no_hazzer: field_conf.config.no_hazzer.unwrap_or(false),
@@ -765,18 +790,7 @@ impl Generator {
                 unreachable!("delegate field cannot have a type")
             }
         };
-
-        if field.boxed {
-            let box_type = self.box_type();
-            let boxed = quote! { #box_type<#typ> };
-            if field.explicit_presence() {
-                quote! { core::option::Option<#boxed> }
-            } else {
-                boxed
-            }
-        } else {
-            typ
-        }
+        self.wrapped_type(typ, field.boxed, field.explicit_presence())
     }
 
     fn generate_field_decl(&self, field: &Field) -> TokenStream {
@@ -793,13 +807,7 @@ impl Generator {
         let name = &oneof.rust_name;
         let oneof_type = match &oneof.otype {
             OneofType::Enum { type_name, .. } => {
-                let typ = if oneof.boxed {
-                    let box_type = self.box_type();
-                    quote! { #box_type<#msg_mod_name::#type_name> }
-                } else {
-                    quote! { #msg_mod_name::#type_name }
-                };
-                quote! { core::option::Option<#typ> }
+                self.wrapped_type(quote! { #msg_mod_name::#type_name }, oneof.boxed, true)
             }
             OneofType::Custom(CustomField::Type(type_path)) => quote! { #type_path },
             OneofType::Custom(CustomField::Delegate(_)) => return quote! {},
@@ -808,8 +816,12 @@ impl Generator {
         quote! { #attrs #name: #oneof_type, }
     }
 
-    fn generate_oneof_subfield_decl(&self, field: &Field) -> TokenStream {
-        let typ = self.generate_field_rust_type(field);
+    fn generate_oneof_subfield_decl(&self, field: &OneofField) -> TokenStream {
+        let typ = self.wrapped_type(
+            self.generate_tspec_rust_type(&field.tspec),
+            field.boxed,
+            false,
+        );
         let name = &field.rust_name;
         let attrs = &field.attrs;
         quote! { #attrs #name(#typ), }
@@ -846,24 +858,14 @@ impl Generator {
             match field.ftype {
                 FieldType::Single(ref t) | FieldType::Optional(ref t) => {
                     let value = self.generate_tspec_default(t, default);
-                    return if field.boxed {
-                        let box_type = self.box_type();
-                        let typ = quote! { #box_type::new(#value) };
-                        if field.explicit_presence() {
-                            quote! { core::option::Option::Some(#typ) }
-                        } else {
-                            typ
-                        }
-                    } else {
-                        value
-                    };
+                    return self.wrapped_value(value, field.boxed, todo!());
                 }
                 FieldType::Custom(CustomField::Delegate(_)) => return quote! {},
                 FieldType::Custom(CustomField::Type(_)) => {}
                 _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
             }
         }
-        quote! { core::default::Default::default() }
+        quote! { ::core::default::Default::default() }
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> TokenStream {
@@ -913,11 +915,37 @@ impl Generator {
         Ident::new(stripped, Span::call_site())
     }
 
-    fn box_type(&self) -> TokenStream {
-        if self.config.use_std {
-            quote! { std::boxed::Box }
+    fn wrapped_type(&self, typ: TokenStream, boxed: bool, optional: bool) -> TokenStream {
+        let boxed_type = if boxed {
+            if self.config.use_std {
+                quote! { ::std::boxed::Box<#typ> }
+            } else {
+                quote! { ::alloc::boxed::Box<#typ> }
+            }
         } else {
-            quote! { alloc::boxed::Box }
+            typ
+        };
+        if optional {
+            quote! { ::core::option::Option<#boxed_type> }
+        } else {
+            boxed_type
+        }
+    }
+
+    fn wrapped_value(&self, val: TokenStream, boxed: bool, optional: bool) -> TokenStream {
+        let boxed_type = if boxed {
+            if self.config.use_std {
+                quote! { ::std::boxed::Box::new(#val) }
+            } else {
+                quote! { ::alloc::boxed::Box::new(#val) }
+            }
+        } else {
+            val
+        };
+        if optional {
+            quote! { ::core::option::Option::Some(#boxed_type) }
+        } else {
+            boxed_type
         }
     }
 
@@ -1061,9 +1089,19 @@ mod tests {
             name,
             rust_name: Ident::new(name, Span::call_site()),
             default: None,
-            oneof: None,
             boxed,
             no_hazzer: false,
+            attrs: quote! {},
+        }
+    }
+
+    fn make_test_oneof_field(num: u32, name: &str, boxed: bool, tspec: TypeSpec) -> OneofField {
+        OneofField {
+            num,
+            name,
+            tspec,
+            rust_name: Ident::new(name, Span::call_site()),
+            boxed,
             attrs: quote! {},
         }
     }
@@ -1166,7 +1204,7 @@ mod tests {
                 FieldType::Optional(TypeSpec::Message(".Config".to_owned()))
             ))
             .to_string(),
-            quote! { core::option::Option<alloc::boxed::Box<Config> > }.to_string()
+            quote! { ::core::option::Option<::alloc::boxed::Box<Config> > }.to_string()
         );
         assert_eq!(
             gen.generate_field_rust_type(&make_test_field(
@@ -1176,7 +1214,7 @@ mod tests {
                 FieldType::Single(TypeSpec::Message(".Config".to_owned()))
             ))
             .to_string(),
-            quote! { alloc::boxed::Box<Config> }.to_string()
+            quote! { ::alloc::boxed::Box<Config> }.to_string()
         );
     }
 
@@ -1244,7 +1282,7 @@ mod tests {
                 FieldType::Optional(TypeSpec::Bool)
             ))
             .to_string(),
-            quote! { core::default::Default::default() }.to_string()
+            quote! { ::core::default::Default::default() }.to_string()
         );
 
         let mut field = make_test_field(0, "field", false, FieldType::Optional(TypeSpec::Bool));
@@ -1258,14 +1296,15 @@ mod tests {
         field.default = Some("false");
         assert_eq!(
             gen.generate_field_default(&field).to_string(),
-            quote! { alloc::boxed::Box::new(false as _) }.to_string()
+            quote! { ::alloc::boxed::Box::new(false as _) }.to_string()
         );
 
         let mut field = make_test_field(0, "field", true, FieldType::Optional(TypeSpec::Bool));
         field.default = Some("false");
         assert_eq!(
             gen.generate_field_default(&field).to_string(),
-            quote! { core::option::Option::Some(alloc::boxed::Box::new(false as _)) }.to_string()
+            quote! { ::core::option::Option::Some(::alloc::boxed::Box::new(false as _)) }
+                .to_string()
         );
 
         let mut field = make_test_field(
@@ -1277,7 +1316,7 @@ mod tests {
         field.default = Some("false");
         assert_eq!(
             gen.generate_field_default(&field).to_string(),
-            quote! { core::default::Default::default() }.to_string()
+            quote! { ::core::default::Default::default() }.to_string()
         );
 
         let mut field = make_test_field(
@@ -1476,18 +1515,15 @@ mod tests {
     #[test]
     fn oneof_enum() {
         let gen = Generator::default();
-        let mut fields = vec![
-            make_test_field(0, "A", true, FieldType::Optional(TypeSpec::Float)),
-            make_test_field(1, "B", false, FieldType::Single(TypeSpec::Bool)),
-        ];
-        fields[0].oneof = Some(0);
-        fields[1].oneof = Some(0);
         let oneof = Oneof {
             name: "oneof",
             rust_name: Ident::new("oneof", Span::call_site()),
             otype: OneofType::Enum {
                 type_name: Ident::new("Oneof", Span::call_site()),
-                fields,
+                fields: vec![
+                    make_test_oneof_field(0, "A", true, TypeSpec::Float),
+                    make_test_oneof_field(1, "B", false, TypeSpec::Bool),
+                ],
             },
             boxed: false,
             field_attrs: quote! { #[default] },
@@ -1501,7 +1537,7 @@ mod tests {
             #[derive(Debug, Clone, PartialEq)]
             #[derive(Eq)]
             pub enum Oneof {
-                A(alloc::boxed::Box<f32>),
+                A(::alloc::boxed::Box<f32>),
                 B(bool),
             }
         };
