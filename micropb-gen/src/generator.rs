@@ -17,7 +17,7 @@ use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
-    config::{Config, IntType},
+    config::{Config, IntType, OptionalRepr},
     pathtree::{Node, PathTree},
     utils::{path_suffix, unescape_c_escape_string},
 };
@@ -87,7 +87,7 @@ enum FieldType {
     // Implicit presence
     Single(TypeSpec),
     // Explicit presence
-    Optional(TypeSpec),
+    Optional(TypeSpec, OptionalRepr),
     Repeated {
         typ: TypeSpec,
         packed: bool,
@@ -104,17 +104,20 @@ struct Field<'a> {
     rust_name: Ident,
     default: Option<&'a str>,
     boxed: bool,
-    no_hazzer: bool,
     attrs: TokenStream,
 }
 
 impl<'a> Field<'a> {
     fn explicit_presence(&self) -> bool {
-        matches!(self.ftype, FieldType::Optional(_))
+        matches!(self.ftype, FieldType::Optional(..))
+    }
+
+    fn is_option(&self) -> bool {
+        matches!(self.ftype, FieldType::Optional(_, OptionalRepr::Option))
     }
 
     fn is_hazzer(&self) -> bool {
-        self.explicit_presence() && !self.boxed && !self.no_hazzer
+        matches!(self.ftype, FieldType::Optional(_, OptionalRepr::Hazzer))
     }
 
     fn delegate(&self) -> Option<&Ident> {
@@ -614,6 +617,7 @@ impl Generator {
         let num = proto.number.unwrap() as u32;
         let name = proto.name();
         let rust_name = field_conf.config.rust_field_name(name);
+        let boxed = field_conf.config.boxed.unwrap_or(false);
         let ftype = match (field_conf.config.custom_field_parsed(), proto.label()) {
             (Some(t), _) => FieldType::Custom(t),
 
@@ -633,7 +637,12 @@ impl Generator {
                     || proto.proto3_optional()
                     || proto.r#type() == Type::Message =>
             {
-                FieldType::Optional(self.create_type_spec(proto, &field_conf))
+                let repr = field_conf.config.optional_repr.unwrap_or(if boxed {
+                    OptionalRepr::Option
+                } else {
+                    OptionalRepr::Hazzer
+                });
+                FieldType::Optional(self.create_type_spec(proto, &field_conf), repr)
             }
 
             (None, _) => FieldType::Single(self.create_type_spec(proto, &field_conf)),
@@ -646,8 +655,7 @@ impl Generator {
             name,
             rust_name,
             default: proto.default_value.as_deref(),
-            boxed: field_conf.config.boxed.unwrap_or(false),
-            no_hazzer: field_conf.config.no_hazzer.unwrap_or(false),
+            boxed,
             attrs,
         })
     }
@@ -722,7 +730,6 @@ impl Generator {
             rust_name,
             default: None,
             boxed: field_conf.config.boxed.unwrap_or(false),
-            no_hazzer: field_conf.config.no_hazzer.unwrap_or(false),
             attrs,
         })
     }
@@ -772,7 +779,7 @@ impl Generator {
                 quote! { #type_name <#k, #v #(, #max_len)* > }
             }
 
-            FieldType::Single(t) | FieldType::Optional(t) => self.generate_tspec_rust_type(t),
+            FieldType::Single(t) | FieldType::Optional(t, _) => self.generate_tspec_rust_type(t),
 
             FieldType::Repeated {
                 typ,
@@ -790,7 +797,7 @@ impl Generator {
                 unreachable!("delegate field cannot have a type")
             }
         };
-        self.wrapped_type(typ, field.boxed, field.explicit_presence())
+        self.wrapped_type(typ, field.boxed, field.is_option())
     }
 
     fn generate_field_decl(&self, field: &Field) -> TokenStream {
@@ -856,10 +863,12 @@ impl Generator {
     fn generate_field_default(&self, field: &Field) -> TokenStream {
         if let Some(default) = field.default {
             match field.ftype {
-                FieldType::Single(ref t) | FieldType::Optional(ref t) => {
+                FieldType::Single(ref t) | FieldType::Optional(ref t, OptionalRepr::Hazzer) => {
                     let value = self.generate_tspec_default(t, default);
-                    return self.wrapped_value(value, field.boxed, todo!());
+                    return self.wrapped_value(value, field.boxed, false);
                 }
+                // Options don't use custom defaults, they should just default to None
+                FieldType::Optional(_, OptionalRepr::Option) => {}
                 FieldType::Custom(CustomField::Delegate(_)) => return quote! {},
                 FieldType::Custom(CustomField::Type(_)) => {}
                 _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
@@ -1090,7 +1099,6 @@ mod tests {
             rust_name: Ident::new(name, Span::call_site()),
             default: None,
             boxed,
-            no_hazzer: false,
             attrs: quote! {},
         }
     }
@@ -1114,7 +1122,7 @@ mod tests {
                 0,
                 "field",
                 false,
-                FieldType::Optional(TypeSpec::Bool)
+                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
             ))
             .to_string(),
             "bool"
@@ -1201,7 +1209,10 @@ mod tests {
                 0,
                 "field",
                 true,
-                FieldType::Optional(TypeSpec::Message(".Config".to_owned()))
+                FieldType::Optional(
+                    TypeSpec::Message(".Config".to_owned()),
+                    OptionalRepr::Option
+                )
             ))
             .to_string(),
             quote! { ::core::option::Option<::alloc::boxed::Box<Config> > }.to_string()
@@ -1279,32 +1290,46 @@ mod tests {
                 0,
                 "field",
                 false,
-                FieldType::Optional(TypeSpec::Bool)
+                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
             ))
             .to_string(),
             quote! { ::core::default::Default::default() }.to_string()
         );
 
-        let mut field = make_test_field(0, "field", false, FieldType::Optional(TypeSpec::Bool));
+        let mut field = make_test_field(
+            0,
+            "field",
+            false,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
+        );
         field.default = Some("false");
         assert_eq!(
             gen.generate_field_default(&field).to_string(),
             quote! { false as _ }.to_string()
         );
 
-        let mut field = make_test_field(0, "field", true, FieldType::Single(TypeSpec::Bool));
+        let mut field = make_test_field(
+            0,
+            "field",
+            true,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
+        );
         field.default = Some("false");
         assert_eq!(
             gen.generate_field_default(&field).to_string(),
             quote! { ::alloc::boxed::Box::new(false as _) }.to_string()
         );
 
-        let mut field = make_test_field(0, "field", true, FieldType::Optional(TypeSpec::Bool));
+        let mut field = make_test_field(
+            0,
+            "field",
+            true,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
+        );
         field.default = Some("false");
         assert_eq!(
             gen.generate_field_default(&field).to_string(),
-            quote! { ::core::option::Option::Some(::alloc::boxed::Box::new(false as _)) }
-                .to_string()
+            quote! { ::core::default::Default::default() }.to_string()
         );
 
         let mut field = make_test_field(
@@ -1344,10 +1369,19 @@ mod tests {
         let (decl, field_attrs) = gen
             .generate_hazzer_decl(
                 &[
-                    make_test_field(1, "field1", false, FieldType::Optional(TypeSpec::Bool)),
+                    make_test_field(
+                        1,
+                        "field1",
+                        false,
+                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
+                    ),
                     make_test_field(2, "field2", false, FieldType::Single(TypeSpec::Bool)),
-                    make_test_field(3, "field3", false, FieldType::Optional(TypeSpec::Bool)),
-                    make_test_field(4, "field4", true, FieldType::Optional(TypeSpec::Bool)),
+                    make_test_field(
+                        3,
+                        "field3",
+                        false,
+                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
+                    ),
                 ],
                 config,
             )
@@ -1395,7 +1429,12 @@ mod tests {
             .generate_hazzer_decl(
                 &[
                     make_test_field(2, "field2", false, FieldType::Single(TypeSpec::Bool)),
-                    make_test_field(4, "field4", true, FieldType::Optional(TypeSpec::Bool)),
+                    make_test_field(
+                        4,
+                        "field4",
+                        true,
+                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
+                    ),
                 ],
                 config,
             )
@@ -1546,7 +1585,7 @@ mod tests {
         assert_eq!(
             gen.generate_oneof_field_decl(&Ident::new("Msg", Span::call_site()), &oneof)
                 .to_string(),
-            quote! { #[default] oneof: core::option::Option<Msg::Oneof>, }.to_string()
+            quote! { #[default] oneof: ::core::option::Option<Msg::Oneof>, }.to_string()
         );
     }
 

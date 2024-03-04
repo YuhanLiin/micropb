@@ -46,6 +46,12 @@ pub enum CustomField {
     Delegate(String),
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum OptionalRepr {
+    Hazzer,
+    Option,
+}
+
 macro_rules! config_decl {
     ($($(#[$attr:meta])* $([$placeholder:ident])? $field:ident : $([$placeholder2:ident])? Option<$type:ty>,)+) => {
         #[non_exhaustive]
@@ -102,7 +108,7 @@ config_decl! {
     vec_type: [deref] Option<String>,
     string_type: [deref] Option<String>,
     map_type: [deref] Option<String>,
-    no_hazzer: Option<bool>,
+    optional_repr: Option<OptionalRepr>,
     [no_inherit] custom_field: Option<CustomField>,
     [no_inherit] rename_field: [deref] Option<String>,
 
