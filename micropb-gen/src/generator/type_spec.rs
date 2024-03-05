@@ -135,7 +135,7 @@ mod tests {
 
     #[test]
     fn tspec_rust_type() {
-        let gen = Generator::default();
+        let mut gen = Generator::default();
         assert_eq!(TypeSpec::Bool.generate_rust_type(&gen).to_string(), "bool");
         assert_eq!(TypeSpec::Float.generate_rust_type(&gen).to_string(), "f32");
         assert_eq!(TypeSpec::Double.generate_rust_type(&gen).to_string(), "f64");
@@ -186,6 +186,20 @@ mod tests {
                 .generate_rust_type(&gen)
                 .to_string(),
             quote! { package::Msg }.to_string()
+        );
+
+        gen.pkg_path.push("package".to_owned());
+        assert_eq!(
+            TypeSpec::Enum(".package.Enum".to_owned())
+                .generate_rust_type(&gen)
+                .to_string(),
+            quote! { Enum }.to_string()
+        );
+        assert_eq!(
+            TypeSpec::Message(".package.Msg".to_owned())
+                .generate_rust_type(&gen)
+                .to_string(),
+            quote! { Msg }.to_string()
         );
     }
 
