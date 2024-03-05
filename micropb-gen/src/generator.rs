@@ -8,19 +8,24 @@ use std::{
 
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
+use prost_types::Syntax;
 use protox::prost_reflect::prost_types::{
-    field_descriptor_proto::{Label, Type},
-    DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorProto,
-    FileDescriptorSet, OneofDescriptorProto,
+    DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet,
 };
 use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
-    config::{Config, IntType, OptionalRepr},
+    config::{Config, IntType},
     pathtree::{Node, PathTree},
-    utils::{path_suffix, unescape_c_escape_string},
 };
+
+use self::message::Message;
+
+pub(crate) mod field;
+pub(crate) mod message;
+pub(crate) mod oneof;
+pub(crate) mod type_spec;
 
 fn derive_msg_attr(debug: bool, default: bool) -> TokenStream {
     let debug = debug.then(|| quote! { Debug, });
@@ -31,156 +36,6 @@ fn derive_msg_attr(debug: bool, default: bool) -> TokenStream {
 fn derive_enum_attr(debug: bool) -> TokenStream {
     let debug = debug.then(|| quote! { Debug, });
     quote! { #[derive(#debug Clone, Copy, PartialEq, Eq, Hash)] }
-}
-
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-enum Syntax {
-    #[default]
-    Proto2,
-    Proto3,
-}
-
-enum PbInt {
-    Int32,
-    Int64,
-    Uint32,
-    Uint64,
-    Sint32,
-    Sfixed32,
-    Sint64,
-    Sfixed64,
-    Fixed32,
-    Fixed64,
-}
-
-enum TypeSpec {
-    Message(String),
-    Enum(String),
-    Float,
-    Double,
-    Bool,
-    Int(PbInt, IntType),
-    String {
-        type_path: syn::Path,
-        max_bytes: Option<u32>,
-    },
-    Bytes {
-        type_path: syn::Path,
-        max_bytes: Option<u32>,
-    },
-}
-
-pub(crate) enum CustomField {
-    Type(syn::Type),
-    Delegate(Ident),
-}
-
-enum FieldType {
-    // Can't be put in oneof, key type can't be message or enum
-    Map {
-        key: TypeSpec,
-        val: TypeSpec,
-        packed: bool,
-        type_path: syn::Path,
-        max_len: Option<u32>,
-    },
-    // Implicit presence
-    Single(TypeSpec),
-    // Explicit presence
-    Optional(TypeSpec, OptionalRepr),
-    Repeated {
-        typ: TypeSpec,
-        packed: bool,
-        type_path: syn::Path,
-        max_len: Option<u32>,
-    },
-    Custom(CustomField),
-}
-
-struct Field<'a> {
-    num: u32,
-    ftype: FieldType,
-    name: &'a str,
-    rust_name: Ident,
-    default: Option<&'a str>,
-    boxed: bool,
-    attrs: TokenStream,
-}
-
-impl<'a> Field<'a> {
-    fn explicit_presence(&self) -> bool {
-        matches!(self.ftype, FieldType::Optional(..))
-    }
-
-    fn is_option(&self) -> bool {
-        matches!(self.ftype, FieldType::Optional(_, OptionalRepr::Option))
-    }
-
-    fn is_hazzer(&self) -> bool {
-        matches!(self.ftype, FieldType::Optional(_, OptionalRepr::Hazzer))
-    }
-
-    fn delegate(&self) -> Option<&Ident> {
-        if let FieldType::Custom(CustomField::Delegate(d)) = &self.ftype {
-            Some(d)
-        } else {
-            None
-        }
-    }
-
-    fn custom_type_field(&self) -> Option<&Ident> {
-        if let FieldType::Custom(CustomField::Type(_)) = &self.ftype {
-            Some(&self.rust_name)
-        } else {
-            None
-        }
-    }
-}
-
-struct OneofField<'a> {
-    num: u32,
-    tspec: TypeSpec,
-    name: &'a str,
-    rust_name: Ident,
-    boxed: bool,
-    attrs: TokenStream,
-}
-
-enum OneofType<'a> {
-    Enum {
-        type_name: Ident,
-        fields: Vec<OneofField<'a>>,
-    },
-    Custom(CustomField),
-}
-
-struct Oneof<'a> {
-    name: &'a str,
-    rust_name: Ident,
-    otype: OneofType<'a>,
-    boxed: bool,
-    field_attrs: TokenStream,
-    type_attrs: TokenStream,
-    derive_dbg: bool,
-    idx: usize,
-}
-
-impl<'a> Oneof<'a> {
-    fn delegate(&self) -> Option<&Ident> {
-        if let OneofType::Custom(CustomField::Delegate(d)) = &self.otype {
-            Some(d)
-        } else {
-            None
-        }
-    }
-
-    fn custom_type_field(&self) -> Option<&Ident> {
-        if let OneofType::Custom(CustomField::Type(_)) = &self.otype {
-            Some(&self.rust_name)
-        } else {
-            None
-        }
-    }
 }
 
 struct CurrentConfig<'a> {
@@ -277,11 +132,11 @@ impl Generator {
         let msgs = fdproto
             .message_type
             .iter()
-            .map(|m| self.generate_msg_type(m, cur_config.next_conf(m.name())));
+            .map(|m| self.generate_msg(m, cur_config.next_conf(m.name())));
         let enums = fdproto
             .enum_type
             .iter()
-            .map(|e| self.generate_enum_type(e, cur_config.next_conf(e.name())));
+            .map(|e| self.generate_enum(e, cur_config.next_conf(e.name())));
 
         let code = quote! {
             #(#msgs)*
@@ -289,7 +144,7 @@ impl Generator {
         };
     }
 
-    fn generate_enum_type(
+    fn generate_enum(
         &self,
         enum_type: &EnumDescriptorProto,
         enum_conf: CurrentConfig,
@@ -337,98 +192,28 @@ impl Generator {
         }
     }
 
-    fn generate_msg_type(
+    fn generate_msg_mod(
         &self,
-        msg_type: &DescriptorProto,
-        msg_conf: CurrentConfig,
-    ) -> TokenStream {
-        if msg_conf.config.skip.unwrap_or(false) {
-            return quote! {};
-        }
+        msg: &Message,
+        proto: &DescriptorProto,
+        msg_conf: &CurrentConfig,
+    ) -> (TokenStream, Option<TokenStream>) {
+        let msg_mod_name = self.resolve_path_elem(msg.name);
+        self.type_path.borrow_mut().push(msg.name.to_owned());
 
-        let name = msg_type.name.as_ref().unwrap();
-        let msg_mod_name = format_ident!("mod_{name}");
-        let mut oneofs: Vec<_> = msg_type
-            .oneof_decl
-            .iter()
-            .enumerate()
-            .filter_map(|(idx, oneof)| {
-                self.create_oneof(idx, oneof, msg_conf.next_conf(oneof.name()))
-            })
-            .collect();
-        let mut map_types = HashMap::new();
-        let inner_msgs: Vec<_> = msg_type
+        let oneof_decls = msg.oneofs.iter().map(|oneof| oneof.generate_decl(self));
+        let nested_msgs = proto
             .nested_type
             .iter()
-            .filter(|m| {
-                if m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false) {
-                    map_types.insert(m.name(), *m);
-                    false
-                } else {
-                    true
-                }
-            })
-            .collect();
-
-        let fields: Vec<_> = msg_type
-            .field
-            .iter()
-            .filter_map(|f| {
-                let field_conf = msg_conf.next_conf(f.name());
-                let raw_msg_name = f
-                    .type_name()
-                    .rsplit_once('.')
-                    .map(|(_, r)| r)
-                    .unwrap_or(f.type_name());
-                if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                    self.create_map_field(f, map_msg, field_conf)
-                } else {
-                    if let Some(idx) = f.oneof_index {
-                        if let Some(OneofType::Enum { fields, .. }) = oneofs
-                            .iter_mut()
-                            .find(|o| o.idx == idx as usize)
-                            .map(|o| &mut o.otype)
-                        {
-                            if let Some(field) = self.create_oneof_field(f, field_conf) {
-                                fields.push(field);
-                            }
-                        }
-                        return None;
-                    }
-                    self.create_field(f, field_conf)
-                }
-            })
-            .collect();
-
-        // Remove all oneofs that are empty enums
-        let oneofs: Vec<_> = oneofs
-            .into_iter()
-            .filter(|o| !matches!(&o.otype, OneofType::Enum { fields, .. } if fields.is_empty()))
-            .collect();
-
-        let odelegates = oneofs.iter().filter_map(|o| o.delegate());
-        let fdelegates = fields.iter().filter_map(|f| f.delegate());
-        for delegate in odelegates.chain(fdelegates) {
-            let ocustoms = oneofs.iter().filter_map(|o| o.custom_type_field());
-            let fcustoms = fields.iter().filter_map(|f| f.custom_type_field());
-            if ocustoms.chain(fcustoms).any(|custom| delegate == custom) {
-                // TODO error about how delegate != custom
-            }
-        }
-
-        self.type_path.borrow_mut().push(name.to_owned());
-
-        let oneof_decls = oneofs.iter().map(|oneof| self.generate_oneof_decl(oneof));
-        let nested_msgs = inner_msgs
-            .iter()
-            .map(|m| self.generate_msg_type(m, msg_conf.next_conf(m.name())));
-        let nested_enums = msg_type
+            .filter(|m| !m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false))
+            .map(|m| self.generate_msg(m, msg_conf.next_conf(m.name())));
+        let nested_enums = proto
             .enum_type
             .iter()
-            .map(|e| self.generate_enum_type(e, msg_conf.next_conf(e.name())));
+            .map(|e| self.generate_enum(e, msg_conf.next_conf(e.name())));
 
         let (hazzer_decl, hazzer_field_attr) =
-            match self.generate_hazzer_decl(&fields, msg_conf.next_conf("_has")) {
+            match msg.generate_hazzer_decl(msg_conf.next_conf("_has")) {
                 Some((d, a)) => (Some(d), Some(a)),
                 None => (None, None),
             };
@@ -443,438 +228,21 @@ impl Generator {
         };
 
         self.type_path.borrow_mut().pop();
+        (msg_mod, hazzer_field_attr)
+    }
 
-        let rust_name = Ident::new(name, Span::call_site());
-        let msg_fields = fields.iter().map(|f| self.generate_field_decl(f));
-        let hazzer_field =
-            hazzer_field_attr.map(|attr| quote! { #attr pub _has: #msg_mod_name::_Hazzer, });
-        let oneof_fields = oneofs
-            .iter()
-            .map(|oneof| self.generate_oneof_field_decl(&msg_mod_name, oneof));
-
-        let derive_msg = derive_msg_attr(!msg_conf.config.no_debug_derive.unwrap_or(false), true);
-        let attrs = &msg_conf.config.type_attr_parsed();
+    fn generate_msg(&self, proto: &DescriptorProto, msg_conf: CurrentConfig) -> TokenStream {
+        let Some(msg) = Message::from_proto(proto, self.syntax, &msg_conf) else {
+            return quote! {};
+        };
+        msg.check_delegates();
+        let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf);
+        let decl = msg.generate_decl(self, hazzer_field_attr);
 
         quote! {
             #msg_mod
-
-            #derive_msg
-            #attrs
-            pub struct #rust_name {
-                #(pub #msg_fields)*
-                #(pub #oneof_fields)*
-                #hazzer_field
-            }
+            #decl
         }
-    }
-
-    fn generate_oneof_decl(&self, oneof: &Oneof) -> TokenStream {
-        if let OneofType::Enum { type_name, fields } = &oneof.otype {
-            assert!(!fields.is_empty(), "empty enums should have been filtered");
-            let fields = fields.iter().map(|f| self.generate_oneof_subfield_decl(f));
-            let derive_msg = derive_msg_attr(oneof.derive_dbg, false);
-            let attrs = &oneof.type_attrs;
-
-            quote! {
-                #derive_msg
-                #attrs
-                pub enum #type_name {
-                    #(#fields)*
-                }
-            }
-        } else {
-            quote! {}
-        }
-    }
-
-    fn generate_hazzer_decl(
-        &self,
-        fields: &[Field],
-        msg_conf: CurrentConfig,
-    ) -> Option<(TokenStream, TokenStream)> {
-        let hazzer_name = Ident::new("_Hazzer", Span::call_site());
-        let attrs = &msg_conf.config.type_attr_parsed();
-        let derive_msg = derive_msg_attr(!msg_conf.config.no_debug_derive.unwrap_or(false), true);
-
-        let hazzers = fields.iter().filter(|f| f.is_hazzer());
-        let count = hazzers.clone().count();
-        if count == 0 {
-            return None;
-        }
-
-        let methods = hazzers.enumerate().map(|(i, f)| {
-            let fname = &f.rust_name;
-            let setter = format_ident!("set_{}", f.rust_name);
-            let i = Literal::usize_unsuffixed(i);
-
-            quote! {
-                #[inline]
-                pub fn #fname(&self) -> bool {
-                    self.0[#i]
-                }
-
-                #[inline]
-                pub fn #setter(&mut self, val: bool) {
-                    self.0.set(#i, val);
-                }
-            }
-        });
-
-        let count = Literal::usize_unsuffixed(count);
-        let decl = quote! {
-            #derive_msg
-            #attrs
-            pub struct #hazzer_name(micropb::bitvec::BitArr!(for #count, in u8));
-
-            impl #hazzer_name {
-                #(#methods)*
-            }
-        };
-        Some((decl, msg_conf.config.field_attr_parsed()))
-    }
-
-    fn create_oneof<'a>(
-        &self,
-        idx: usize,
-        proto: &'a OneofDescriptorProto,
-        oneof_conf: CurrentConfig,
-    ) -> Option<Oneof<'a>> {
-        if oneof_conf.config.skip.unwrap_or(false) {
-            return None;
-        }
-
-        let name = proto.name();
-        let rust_name = oneof_conf.config.rust_field_name(name);
-        let otype = match oneof_conf.config.custom_field_parsed() {
-            Some(custom) => OneofType::Custom(custom),
-            None => OneofType::Enum {
-                type_name: Ident::new(
-                    &rust_name.to_string().to_case(Case::Pascal),
-                    Span::call_site(),
-                ),
-                fields: vec![],
-            },
-        };
-        let field_attrs = oneof_conf.config.field_attr_parsed();
-        let type_attrs = oneof_conf.config.type_attr_parsed();
-
-        Some(Oneof {
-            name,
-            rust_name,
-            idx,
-            otype,
-            derive_dbg: oneof_conf.derive_dbg(),
-            boxed: oneof_conf.config.boxed.unwrap_or(false),
-            field_attrs,
-            type_attrs,
-        })
-    }
-
-    fn create_type_spec(
-        &self,
-        proto: &FieldDescriptorProto,
-        type_conf: &CurrentConfig,
-    ) -> TypeSpec {
-        let conf = &type_conf.config;
-        match proto.r#type() {
-            Type::Group => panic!("Groups are unsupported"),
-            Type::Double => TypeSpec::Double,
-            Type::Float => TypeSpec::Float,
-            Type::Bool => TypeSpec::Bool,
-            Type::String => TypeSpec::String {
-                type_path: conf.string_type_parsed().unwrap(),
-                max_bytes: conf.max_bytes,
-            },
-            Type::Bytes => TypeSpec::Bytes {
-                type_path: conf.vec_type_parsed().unwrap(),
-                max_bytes: conf.max_bytes,
-            },
-            Type::Message => TypeSpec::Message(proto.type_name().to_owned()),
-            Type::Enum => TypeSpec::Enum(proto.type_name().to_owned()),
-            Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Uint64 => TypeSpec::Int(PbInt::Uint64, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Int32 => TypeSpec::Int(PbInt::Int32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Fixed64 => TypeSpec::Int(PbInt::Fixed64, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Fixed32 => TypeSpec::Int(PbInt::Fixed32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Sfixed32 => TypeSpec::Int(PbInt::Sfixed32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Sfixed64 => TypeSpec::Int(PbInt::Sfixed64, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Sint32 => TypeSpec::Int(PbInt::Sint32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Sint64 => TypeSpec::Int(PbInt::Sint64, conf.int_type.unwrap_or(IntType::I32)),
-        }
-    }
-
-    fn create_field<'a>(
-        &self,
-        proto: &'a FieldDescriptorProto,
-        field_conf: CurrentConfig,
-    ) -> Option<Field<'a>> {
-        if field_conf.config.skip.unwrap_or(false) {
-            return None;
-        }
-        assert!(proto.oneof_index.is_none());
-
-        let num = proto.number.unwrap() as u32;
-        let name = proto.name();
-        let rust_name = field_conf.config.rust_field_name(name);
-        let boxed = field_conf.config.boxed.unwrap_or(false);
-        let ftype = match (field_conf.config.custom_field_parsed(), proto.label()) {
-            (Some(t), _) => FieldType::Custom(t),
-
-            (None, Label::Repeated) => FieldType::Repeated {
-                typ: self.create_type_spec(proto, &field_conf.next_conf("elem")),
-                type_path: field_conf.config.vec_type_parsed().unwrap(),
-                max_len: field_conf.config.max_len,
-                packed: proto
-                    .options
-                    .as_ref()
-                    .and_then(|opt| opt.packed)
-                    .unwrap_or(false),
-            },
-
-            (None, Label::Required) | (None, Label::Optional)
-                if self.syntax == Syntax::Proto2
-                    || proto.proto3_optional()
-                    || proto.r#type() == Type::Message =>
-            {
-                let repr = field_conf.config.optional_repr.unwrap_or(if boxed {
-                    OptionalRepr::Option
-                } else {
-                    OptionalRepr::Hazzer
-                });
-                FieldType::Optional(self.create_type_spec(proto, &field_conf), repr)
-            }
-
-            (None, _) => FieldType::Single(self.create_type_spec(proto, &field_conf)),
-        };
-        let attrs = field_conf.config.field_attr_parsed();
-
-        Some(Field {
-            num,
-            ftype,
-            name,
-            rust_name,
-            default: proto.default_value.as_deref(),
-            boxed,
-            attrs,
-        })
-    }
-
-    fn create_oneof_field<'a>(
-        &self,
-        proto: &'a FieldDescriptorProto,
-        field_conf: CurrentConfig,
-    ) -> Option<OneofField<'a>> {
-        if field_conf.config.skip.unwrap_or(false) {
-            return None;
-        }
-
-        let name = proto.name();
-        // Oneof fields have camelcased variant names
-        let rust_name = field_conf
-            .config
-            .rust_field_name(&name.to_case(Case::Pascal));
-        let num = proto.number.unwrap() as u32;
-        let tspec = self.create_type_spec(proto, &field_conf);
-        let attrs = field_conf.config.field_attr_parsed();
-
-        Some(OneofField {
-            num,
-            tspec,
-            name,
-            rust_name,
-            boxed: field_conf.config.boxed.unwrap_or(false),
-            attrs,
-        })
-    }
-
-    fn create_map_field<'a>(
-        &self,
-        proto: &'a FieldDescriptorProto,
-        map_msg: &DescriptorProto,
-        field_conf: CurrentConfig,
-    ) -> Option<Field<'a>> {
-        if field_conf.config.skip.unwrap_or(false) {
-            return None;
-        }
-
-        let name = proto.name();
-        let rust_name = field_conf.config.rust_field_name(name);
-        let num = proto.number.unwrap() as u32;
-
-        let ftype = match field_conf.config.custom_field_parsed() {
-            Some(custom) => FieldType::Custom(custom),
-            None => {
-                let key = self.create_type_spec(&map_msg.field[0], &field_conf.next_conf("key"));
-                let val = self.create_type_spec(&map_msg.field[1], &field_conf.next_conf("value"));
-                let type_name = field_conf.config.vec_type_parsed().unwrap();
-                FieldType::Map {
-                    key,
-                    val,
-                    type_path: type_name,
-                    max_len: field_conf.config.max_len,
-                    packed: proto
-                        .options
-                        .as_ref()
-                        .and_then(|opt| opt.packed)
-                        .unwrap_or(false),
-                }
-            }
-        };
-        let attrs = field_conf.config.field_attr_parsed();
-
-        Some(Field {
-            num,
-            ftype,
-            name,
-            rust_name,
-            default: None,
-            boxed: field_conf.config.boxed.unwrap_or(false),
-            attrs,
-        })
-    }
-
-    fn generate_tspec_rust_type(&self, tspec: &TypeSpec) -> TokenStream {
-        match tspec {
-            TypeSpec::Int(_, itype) => {
-                let typ = itype.type_name();
-                quote! { #typ }
-            }
-            TypeSpec::Float => quote! {f32},
-            TypeSpec::Double => quote! {f64},
-            TypeSpec::Bool => quote! {bool},
-            TypeSpec::String {
-                type_path,
-                max_bytes,
-            } => {
-                let max_bytes = max_bytes.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_path #(<#max_bytes>)* }
-            }
-            TypeSpec::Bytes {
-                type_path,
-                max_bytes,
-            } => {
-                let max_bytes = max_bytes.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_path <u8 #(, #max_bytes)* > }
-            }
-            TypeSpec::Message(tname) | TypeSpec::Enum(tname) => {
-                let rust_type = self.resolve_type_name(tname);
-                quote! { #rust_type }
-            }
-        }
-    }
-
-    fn generate_field_rust_type(&self, field: &Field) -> TokenStream {
-        let typ = match &field.ftype {
-            FieldType::Map {
-                key,
-                val,
-                type_path: type_name,
-                max_len,
-                ..
-            } => {
-                let k = self.generate_tspec_rust_type(key);
-                let v = self.generate_tspec_rust_type(val);
-                let max_len = max_len.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_name <#k, #v #(, #max_len)* > }
-            }
-
-            FieldType::Single(t) | FieldType::Optional(t, _) => self.generate_tspec_rust_type(t),
-
-            FieldType::Repeated {
-                typ,
-                type_path,
-                max_len,
-                ..
-            } => {
-                let t = self.generate_tspec_rust_type(typ);
-                let max_len = max_len.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_path <#t #(, #max_len)* > }
-            }
-
-            FieldType::Custom(CustomField::Type(t)) => return quote! {#t},
-            FieldType::Custom(CustomField::Delegate(_)) => {
-                unreachable!("delegate field cannot have a type")
-            }
-        };
-        self.wrapped_type(typ, field.boxed, field.is_option())
-    }
-
-    fn generate_field_decl(&self, field: &Field) -> TokenStream {
-        if let FieldType::Custom(CustomField::Delegate(_)) = field.ftype {
-            return quote! {};
-        }
-        let typ = self.generate_field_rust_type(field);
-        let name = &field.rust_name;
-        let attrs = &field.attrs;
-        quote! { #attrs #name : #typ, }
-    }
-
-    fn generate_oneof_field_decl(&self, msg_mod_name: &Ident, oneof: &Oneof) -> TokenStream {
-        let name = &oneof.rust_name;
-        let oneof_type = match &oneof.otype {
-            OneofType::Enum { type_name, .. } => {
-                self.wrapped_type(quote! { #msg_mod_name::#type_name }, oneof.boxed, true)
-            }
-            OneofType::Custom(CustomField::Type(type_path)) => quote! { #type_path },
-            OneofType::Custom(CustomField::Delegate(_)) => return quote! {},
-        };
-        let attrs = &oneof.field_attrs;
-        quote! { #attrs #name: #oneof_type, }
-    }
-
-    fn generate_oneof_subfield_decl(&self, field: &OneofField) -> TokenStream {
-        let typ = self.wrapped_type(
-            self.generate_tspec_rust_type(&field.tspec),
-            field.boxed,
-            false,
-        );
-        let name = &field.rust_name;
-        let attrs = &field.attrs;
-        quote! { #attrs #name(#typ), }
-    }
-
-    fn generate_tspec_default(&self, tspec: &TypeSpec, default: &str) -> TokenStream {
-        match tspec {
-            TypeSpec::String { .. } => {
-                quote! { #default }
-            }
-            TypeSpec::Bytes { .. } => {
-                let bytes = Literal::byte_string(&unescape_c_escape_string(default));
-                quote! { #bytes }
-            }
-            TypeSpec::Message(_) => {
-                unreachable!("message fields shouldn't have custom defaults")
-            }
-            TypeSpec::Enum(tname) => {
-                let enum_name =
-                    Ident::new(&path_suffix(tname).to_case(Case::Pascal), Span::call_site());
-                let variant = self.enum_variant_name(default, &enum_name);
-                quote! { #enum_name::#variant }
-            }
-            _ => {
-                let default: TokenStream =
-                    syn::parse_str(default).expect("default value tokenization error");
-                quote! { #default as _ }
-            }
-        }
-    }
-
-    fn generate_field_default(&self, field: &Field) -> TokenStream {
-        if let Some(default) = field.default {
-            match field.ftype {
-                FieldType::Single(ref t) | FieldType::Optional(ref t, OptionalRepr::Hazzer) => {
-                    let value = self.generate_tspec_default(t, default);
-                    return self.wrapped_value(value, field.boxed, false);
-                }
-                // Options don't use custom defaults, they should just default to None
-                FieldType::Optional(_, OptionalRepr::Option) => {}
-                FieldType::Custom(CustomField::Delegate(_)) => return quote! {},
-                FieldType::Custom(CustomField::Type(_)) => {}
-                _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
-            }
-        }
-        quote! { ::core::default::Default::default() }
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> TokenStream {
@@ -1034,414 +402,6 @@ mod tests {
     }
 
     #[test]
-    fn tspec_rust_type() {
-        let gen = Generator::default();
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::Bool).to_string(),
-            "bool"
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::Float).to_string(),
-            "f32"
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::Double).to_string(),
-            "f64"
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::Int(PbInt::Int32, IntType::I32))
-                .to_string(),
-            "i32"
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::Int(PbInt::Fixed32, IntType::I32))
-                .to_string(),
-            "i32"
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::Int(PbInt::Fixed32, IntType::Usize))
-                .to_string(),
-            "usize"
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::String {
-                type_path: syn::parse_str("heapless::String").unwrap(),
-                max_bytes: Some(10)
-            })
-            .to_string(),
-            quote! { heapless::String<10> }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::String {
-                type_path: syn::parse_str("heapless::String").unwrap(),
-                max_bytes: None
-            })
-            .to_string(),
-            quote! { heapless::String }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::Enum(".package.Enum".to_owned()))
-                .to_string(),
-            quote! { package::Enum }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_rust_type(&TypeSpec::Message(".package.Msg".to_owned()))
-                .to_string(),
-            quote! { package::Msg }.to_string()
-        );
-    }
-
-    fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldType) -> Field {
-        Field {
-            num,
-            ftype,
-            name,
-            rust_name: Ident::new(name, Span::call_site()),
-            default: None,
-            boxed,
-            attrs: quote! {},
-        }
-    }
-
-    fn make_test_oneof_field(num: u32, name: &str, boxed: bool, tspec: TypeSpec) -> OneofField {
-        OneofField {
-            num,
-            name,
-            tspec,
-            rust_name: Ident::new(name, Span::call_site()),
-            boxed,
-            attrs: quote! {},
-        }
-    }
-
-    #[test]
-    fn field_rust_type() {
-        let gen = Generator::default();
-        assert_eq!(
-            gen.generate_field_rust_type(&make_test_field(
-                0,
-                "field",
-                false,
-                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
-            ))
-            .to_string(),
-            "bool"
-        );
-        assert_eq!(
-            gen.generate_field_rust_type(&make_test_field(
-                0,
-                "field",
-                false,
-                FieldType::Repeated {
-                    typ: TypeSpec::Message(".Message".to_owned()),
-                    type_path: syn::parse_str("Vec").unwrap(),
-                    max_len: None,
-                    packed: true
-                }
-            ))
-            .to_string(),
-            quote! { Vec<Message> }.to_string()
-        );
-        assert_eq!(
-            gen.generate_field_rust_type(&make_test_field(
-                0,
-                "field",
-                false,
-                FieldType::Repeated {
-                    typ: TypeSpec::String {
-                        type_path: syn::parse_str("String").unwrap(),
-                        max_bytes: Some(4)
-                    },
-                    type_path: syn::parse_str("Vec").unwrap(),
-                    max_len: Some(10),
-                    packed: true
-                }
-            ))
-            .to_string(),
-            quote! { Vec<String<4>, 10> }.to_string()
-        );
-        assert_eq!(
-            gen.generate_field_rust_type(&make_test_field(
-                0,
-                "field",
-                false,
-                FieldType::Map {
-                    key: TypeSpec::Float,
-                    val: TypeSpec::Int(PbInt::Uint64, IntType::U32),
-                    type_path: syn::parse_str("std::HashMap").unwrap(),
-                    max_len: None,
-                    packed: true
-                }
-            ))
-            .to_string(),
-            quote! { std::HashMap<f32, u32> }.to_string()
-        );
-        assert_eq!(
-            gen.generate_field_rust_type(&make_test_field(
-                0,
-                "field",
-                false,
-                FieldType::Map {
-                    key: TypeSpec::Int(PbInt::Uint64, IntType::U32),
-                    val: TypeSpec::Float,
-                    type_path: syn::parse_str("std::HashMap").unwrap(),
-                    max_len: Some(8),
-                    packed: true
-                }
-            ))
-            .to_string(),
-            quote! { std::HashMap<u32, f32, 8> }.to_string()
-        );
-        assert_eq!(
-            gen.generate_field_rust_type(&make_test_field(
-                0,
-                "field",
-                true,
-                FieldType::Custom(CustomField::Type(
-                    syn::parse_str("custom::Type<true>").unwrap()
-                ))
-            ))
-            .to_string(),
-            quote! { custom::Type<true> }.to_string()
-        );
-        assert_eq!(
-            gen.generate_field_rust_type(&make_test_field(
-                0,
-                "field",
-                true,
-                FieldType::Optional(
-                    TypeSpec::Message(".Config".to_owned()),
-                    OptionalRepr::Option
-                )
-            ))
-            .to_string(),
-            quote! { ::core::option::Option<::alloc::boxed::Box<Config> > }.to_string()
-        );
-        assert_eq!(
-            gen.generate_field_rust_type(&make_test_field(
-                0,
-                "field",
-                true,
-                FieldType::Single(TypeSpec::Message(".Config".to_owned()))
-            ))
-            .to_string(),
-            quote! { ::alloc::boxed::Box<Config> }.to_string()
-        );
-    }
-
-    #[test]
-    fn tspec_default() {
-        let gen = Generator::default();
-        assert_eq!(
-            gen.generate_tspec_default(&TypeSpec::Bool, "true")
-                .to_string(),
-            quote! { true as _ }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_default(&TypeSpec::Bool, "false")
-                .to_string(),
-            quote! { false as _ }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_default(&TypeSpec::Float, "0.1")
-                .to_string(),
-            quote! { 0.1 as _ }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_default(&TypeSpec::Double, "-4.1")
-                .to_string(),
-            quote! { -4.1 as _ }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_default(&TypeSpec::Int(PbInt::Int32, IntType::I8), "-99")
-                .to_string(),
-            quote! { -99 as _ }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_default(
-                &TypeSpec::String {
-                    type_path: syn::parse_str("Vec").unwrap(),
-                    max_bytes: None
-                },
-                "abc\n\tddd"
-            )
-            .to_string(),
-            quote! { "abc\n\tddd" }.to_string()
-        );
-        assert_eq!(
-            gen.generate_tspec_default(
-                &TypeSpec::Bytes {
-                    type_path: syn::parse_str("Vec").unwrap(),
-                    max_bytes: None
-                },
-                "abc\\n\\t\\a\\xA0ddd"
-            )
-            .to_string(),
-            quote! { b"abc\n\t\x07\xA0ddd" }.to_string()
-        );
-    }
-
-    #[test]
-    fn field_default() {
-        let gen = Generator::default();
-        // no special default
-        assert_eq!(
-            gen.generate_field_default(&make_test_field(
-                0,
-                "field",
-                false,
-                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
-            ))
-            .to_string(),
-            quote! { ::core::default::Default::default() }.to_string()
-        );
-
-        let mut field = make_test_field(
-            0,
-            "field",
-            false,
-            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
-        );
-        field.default = Some("false");
-        assert_eq!(
-            gen.generate_field_default(&field).to_string(),
-            quote! { false as _ }.to_string()
-        );
-
-        let mut field = make_test_field(
-            0,
-            "field",
-            true,
-            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
-        );
-        field.default = Some("false");
-        assert_eq!(
-            gen.generate_field_default(&field).to_string(),
-            quote! { ::alloc::boxed::Box::new(false as _) }.to_string()
-        );
-
-        let mut field = make_test_field(
-            0,
-            "field",
-            true,
-            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
-        );
-        field.default = Some("false");
-        assert_eq!(
-            gen.generate_field_default(&field).to_string(),
-            quote! { ::core::default::Default::default() }.to_string()
-        );
-
-        let mut field = make_test_field(
-            0,
-            "field",
-            true,
-            FieldType::Custom(CustomField::Type(syn::parse_str("Map").unwrap())),
-        );
-        field.default = Some("false");
-        assert_eq!(
-            gen.generate_field_default(&field).to_string(),
-            quote! { ::core::default::Default::default() }.to_string()
-        );
-
-        let mut field = make_test_field(
-            0,
-            "field",
-            true,
-            FieldType::Custom(CustomField::Delegate(syn::parse_str("del").unwrap())),
-        );
-        field.default = Some("false");
-        assert_eq!(gen.generate_field_default(&field).to_string(), "");
-    }
-
-    #[test]
-    fn hazzer() {
-        let config = CurrentConfig {
-            node: None,
-            config: Cow::Owned(Box::new(
-                Config::new()
-                    .type_attributes("#[derive(Eq)]")
-                    .field_attributes("#[default]")
-                    .no_debug_derive(true),
-            )),
-        };
-        let gen = Generator::default();
-        let (decl, field_attrs) = gen
-            .generate_hazzer_decl(
-                &[
-                    make_test_field(
-                        1,
-                        "field1",
-                        false,
-                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
-                    ),
-                    make_test_field(2, "field2", false, FieldType::Single(TypeSpec::Bool)),
-                    make_test_field(
-                        3,
-                        "field3",
-                        false,
-                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
-                    ),
-                ],
-                config,
-            )
-            .unwrap();
-
-        let expected = quote! {
-            #[derive(Default, Clone, PartialEq)]
-            #[derive(Eq)]
-            pub struct _Hazzer(micropb::bitvec::BitArr!(for 2, in u8));
-
-            impl _Hazzer {
-                #[inline]
-                pub fn field1(&self) -> bool {
-                    self.0[0]
-                }
-
-                #[inline]
-                pub fn set_field1(&mut self, val: bool) {
-                    self.0.set(0, val);
-                }
-
-                #[inline]
-                pub fn field3(&self) -> bool {
-                    self.0[1]
-                }
-
-                #[inline]
-                pub fn set_field3(&mut self, val: bool) {
-                    self.0.set(1, val);
-                }
-            }
-        };
-        assert_eq!(decl.to_string(), expected.to_string());
-        assert_eq!(field_attrs.to_string(), quote! { #[default] }.to_string());
-    }
-
-    #[test]
-    fn hazzer_empty() {
-        let config = CurrentConfig {
-            node: None,
-            config: Cow::Owned(Box::new(Config::new())),
-        };
-        let gen = Generator::default();
-        assert!(gen
-            .generate_hazzer_decl(
-                &[
-                    make_test_field(2, "field2", false, FieldType::Single(TypeSpec::Bool)),
-                    make_test_field(
-                        4,
-                        "field4",
-                        true,
-                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
-                    ),
-                ],
-                config,
-            )
-            .is_none());
-    }
-
-    #[test]
     fn enum_basic() {
         let config = CurrentConfig {
             node: None,
@@ -1467,7 +427,7 @@ mod tests {
         };
         let gen = Generator::default();
 
-        let out = gen.generate_enum_type(&enum_proto, config);
+        let out = gen.generate_enum(&enum_proto, config);
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
@@ -1497,7 +457,7 @@ mod tests {
             node: None,
             config: Cow::Owned(Box::new(Config::new().skip(true))),
         };
-        assert!(gen.generate_enum_type(&enum_proto, config).is_empty())
+        assert!(gen.generate_enum(&enum_proto, config).is_empty())
     }
 
     #[test]
@@ -1525,7 +485,7 @@ mod tests {
         let mut gen = Generator::default();
         gen.config.retain_enum_prefix = true;
 
-        let out = gen.generate_enum_type(&enum_proto, config);
+        let out = gen.generate_enum(&enum_proto, config);
         let expected = quote! {
             #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
@@ -1549,79 +509,5 @@ mod tests {
             }
         };
         assert_eq!(out.to_string(), expected.to_string());
-    }
-
-    #[test]
-    fn oneof_enum() {
-        let gen = Generator::default();
-        let oneof = Oneof {
-            name: "oneof",
-            rust_name: Ident::new("oneof", Span::call_site()),
-            otype: OneofType::Enum {
-                type_name: Ident::new("Oneof", Span::call_site()),
-                fields: vec![
-                    make_test_oneof_field(0, "A", true, TypeSpec::Float),
-                    make_test_oneof_field(1, "B", false, TypeSpec::Bool),
-                ],
-            },
-            boxed: false,
-            field_attrs: quote! { #[default] },
-            type_attrs: quote! { #[derive(Eq)] },
-            derive_dbg: true,
-            idx: 0,
-        };
-
-        let out = gen.generate_oneof_decl(&oneof);
-        let expected = quote! {
-            #[derive(Debug, Clone, PartialEq)]
-            #[derive(Eq)]
-            pub enum Oneof {
-                A(::alloc::boxed::Box<f32>),
-                B(bool),
-            }
-        };
-        assert_eq!(out.to_string(), expected.to_string());
-
-        assert_eq!(
-            gen.generate_oneof_field_decl(&Ident::new("Msg", Span::call_site()), &oneof)
-                .to_string(),
-            quote! { #[default] oneof: ::core::option::Option<Msg::Oneof>, }.to_string()
-        );
-    }
-
-    #[test]
-    fn oneof_custom() {
-        let gen = Generator::default();
-        let oneof = Oneof {
-            name: "oneof",
-            rust_name: Ident::new("oneof", Span::call_site()),
-            otype: OneofType::Custom(CustomField::Type(syn::parse_str("Custom<f32>").unwrap())),
-            boxed: true,
-            field_attrs: quote! {},
-            type_attrs: quote! {},
-            derive_dbg: true,
-            idx: 0,
-        };
-        assert!(gen.generate_oneof_decl(&oneof).is_empty());
-        assert_eq!(
-            gen.generate_oneof_field_decl(&Ident::new("Msg", Span::call_site()), &oneof)
-                .to_string(),
-            quote! { oneof: Custom<f32>, }.to_string()
-        );
-
-        let oneof = Oneof {
-            name: "oneof",
-            rust_name: Ident::new("oneof", Span::call_site()),
-            otype: OneofType::Custom(CustomField::Delegate(syn::parse_str("delegate").unwrap())),
-            boxed: false,
-            field_attrs: quote! {},
-            type_attrs: quote! {},
-            derive_dbg: true,
-            idx: 0,
-        };
-        assert!(gen.generate_oneof_decl(&oneof).is_empty());
-        assert!(gen
-            .generate_oneof_field_decl(&Ident::new("Msg", Span::call_site()), &oneof)
-            .is_empty());
     }
 }

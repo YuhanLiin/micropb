@@ -154,13 +154,13 @@ impl Config {
         self.map_type.as_ref().map(|t| syn::parse_str(t).unwrap())
     }
 
-    pub(crate) fn custom_field_parsed(&self) -> Option<crate::generator::CustomField> {
+    pub(crate) fn custom_field_parsed(&self) -> Option<crate::generator::field::CustomField> {
         // TODO handle parse error
         match &self.custom_field {
-            Some(CustomField::Type(s)) => Some(crate::generator::CustomField::Type(
+            Some(CustomField::Type(s)) => Some(crate::generator::field::CustomField::Type(
                 syn::parse_str(s).unwrap(),
             )),
-            Some(CustomField::Delegate(s)) => Some(crate::generator::CustomField::Delegate(
+            Some(CustomField::Delegate(s)) => Some(crate::generator::field::CustomField::Delegate(
                 syn::parse_str(s).unwrap(),
             )),
             None => todo!(),
@@ -242,7 +242,8 @@ mod tests {
         assert_eq!(config.rust_field_name("name"), format_ident!("rename"));
 
         config.custom_field = Some(CustomField::Type("Vec<u16, 4>".to_owned()));
-        let crate::generator::CustomField::Type(typ) = config.custom_field_parsed().unwrap() else {
+        let crate::generator::field::CustomField::Type(typ) = config.custom_field_parsed().unwrap()
+        else {
             unreachable!()
         };
         assert_eq!(
@@ -251,7 +252,8 @@ mod tests {
         );
 
         config.custom_field = Some(CustomField::Delegate("name".to_owned()));
-        let crate::generator::CustomField::Delegate(del) = config.custom_field_parsed().unwrap()
+        let crate::generator::field::CustomField::Delegate(del) =
+            config.custom_field_parsed().unwrap()
         else {
             unreachable!()
         };
