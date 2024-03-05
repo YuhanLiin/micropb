@@ -198,7 +198,7 @@ impl<'a> Field<'a> {
         let typ = self.generate_rust_type(gen);
         let name = &self.rust_name;
         let attrs = &self.attrs;
-        quote! { #(#attrs)* #name : #typ, }
+        quote! { #(#attrs)* pub #name : #typ, }
     }
 
     pub(crate) fn generate_default(&self, gen: &Generator) -> TokenStream {

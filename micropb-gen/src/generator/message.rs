@@ -169,15 +169,15 @@ impl<'a> Message<'a> {
             .iter()
             .map(|oneof| oneof.generate_field(gen, &msg_mod_name));
 
-        let derive_msg = derive_msg_attr(self.derive_dbg, true);
+        let derive_msg = derive_msg_attr(self.derive_dbg, false);
         let attrs = &self.attrs;
 
         quote! {
             #derive_msg
             #(#attrs)*
             pub struct #rust_name {
-                #(pub #msg_fields)*
-                #(pub #oneof_fields)*
+                #(#msg_fields)*
+                #(#oneof_fields)*
                 #hazzer_field
             }
         }
@@ -224,7 +224,7 @@ mod tests {
     use std::borrow::Cow;
 
     use crate::{
-        config::{Config, OptionalRepr},
+        config::{parse_attributes, Config, OptionalRepr},
         generator::{
             field::{make_test_field, CustomField, FieldType},
             oneof::{make_test_oneof, make_test_oneof_field},
@@ -404,6 +404,109 @@ mod tests {
                         _has: ::core::default::Default::default(),
                     }
                 }
+            }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn msg_decl() {
+        let mut fields = vec![
+            make_test_field(1, "single", false, FieldType::Single(TypeSpec::Bool)),
+            make_test_field(
+                2,
+                "opt",
+                false,
+                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
+            ),
+            make_test_field(
+                3,
+                "optbox",
+                true,
+                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
+            ),
+            make_test_field(
+                4,
+                "boxed",
+                true,
+                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
+            ),
+            make_test_field(
+                5,
+                "string",
+                true,
+                FieldType::Optional(
+                    TypeSpec::String {
+                        type_path: syn::parse_str("String").unwrap(),
+                        max_bytes: Some(2),
+                    },
+                    OptionalRepr::Option,
+                ),
+            ),
+            make_test_field(
+                6,
+                "custom",
+                true,
+                FieldType::Custom(CustomField::Type(syn::parse_str("Custom").unwrap())),
+            ),
+            make_test_field(
+                7,
+                "delegate",
+                true,
+                FieldType::Custom(CustomField::Delegate(syn::parse_str("custom").unwrap())),
+            ),
+        ];
+        fields[0].attrs = parse_attributes("#[default]").unwrap();
+        fields[1].attrs = parse_attributes("#[attr]").unwrap();
+
+        let mut oneofs = vec![
+            make_test_oneof(
+                "oneof",
+                false,
+                OneofType::Enum {
+                    type_name: Ident::new("Oneof", Span::call_site()),
+                    fields: vec![],
+                },
+            ),
+            make_test_oneof(
+                "oneof_custom",
+                false,
+                OneofType::Custom(CustomField::Type(syn::parse_str("Custom").unwrap())),
+            ),
+            make_test_oneof(
+                "oneof_delegate",
+                false,
+                OneofType::Custom(CustomField::Delegate(syn::parse_str("custom").unwrap())),
+            ),
+        ];
+        oneofs[1].field_attrs = parse_attributes("#[attr]").unwrap();
+
+        let msg = Message {
+            name: "Msg",
+            rust_name: Ident::new("Msg", Span::call_site()),
+            oneofs,
+            fields,
+            derive_dbg: true,
+            attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+        };
+        let gen = Generator::default();
+        let out = msg.generate_decl(&gen, None);
+
+        let expected = quote! {
+            #[derive(Debug, Clone, PartialEq)]
+            #[derive(Eq)]
+            pub struct Msg {
+                #[default]
+                pub single: bool,
+                #[attr]
+                pub opt: ::core::option::Option<bool>,
+                pub optbox: ::core::option::Option< ::alloc::boxed::Box<bool> >,
+                pub boxed: ::alloc::boxed::Box<bool>,
+                pub string: ::core::option::Option< ::alloc::boxed::Box< String<2> > >,
+                pub custom: Custom,
+                pub oneof: ::core::option::Option<mod_Msg::Oneof>,
+                #[attr]
+                pub oneof_custom: Custom,
             }
         };
         assert_eq!(out.to_string(), expected.to_string());

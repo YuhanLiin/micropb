@@ -152,7 +152,7 @@ impl<'a> Oneof<'a> {
             OneofType::Custom(CustomField::Delegate(_)) => return quote! {},
         };
         let attrs = &self.field_attrs;
-        quote! { #(#attrs)* #name: #oneof_type, }
+        quote! { #(#attrs)* pub #name: #oneof_type, }
     }
 }
 
@@ -196,7 +196,7 @@ mod tests {
     #[test]
     fn oneof_enum() {
         let gen = Generator::default();
-        let oneof = Oneof {
+        let mut oneof = Oneof {
             name: "oneof",
             rust_name: Ident::new("oneof", Span::call_site()),
             otype: OneofType::Enum {
@@ -228,7 +228,15 @@ mod tests {
             oneof
                 .generate_field(&gen, &Ident::new("Msg", Span::call_site()))
                 .to_string(),
-            quote! { #[default] oneof: ::core::option::Option<Msg::Oneof>, }.to_string()
+            quote! { #[default] pub oneof: ::core::option::Option<Msg::Oneof>, }.to_string()
+        );
+
+        oneof.boxed = true;
+        assert_eq!(
+            oneof
+                .generate_field(&gen, &Ident::new("Msg", Span::call_site()))
+                .to_string(),
+            quote! { #[default] pub oneof: ::core::option::Option<::alloc::boxed::Box<Msg::Oneof> >, }.to_string()
         );
     }
 
@@ -250,7 +258,7 @@ mod tests {
             oneof
                 .generate_field(&gen, &Ident::new("Msg", Span::call_site()))
                 .to_string(),
-            quote! { oneof: Custom<f32>, }.to_string()
+            quote! { pub oneof: Custom<f32>, }.to_string()
         );
 
         let oneof = Oneof {
