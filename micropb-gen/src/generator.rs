@@ -1,7 +1,6 @@
 use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
-    collections::HashMap,
     iter,
     ops::Deref,
 };
@@ -171,7 +170,7 @@ impl Generator {
         quote! {
             #derive_enum
             #[repr(transparent)]
-            #attrs
+            #(#attrs)*
             pub struct #name(pub #itype);
 
             impl #name {
@@ -197,7 +196,7 @@ impl Generator {
         msg: &Message,
         proto: &DescriptorProto,
         msg_conf: &CurrentConfig,
-    ) -> (TokenStream, Option<TokenStream>) {
+    ) -> (TokenStream, Option<Vec<syn::Attribute>>) {
         let msg_mod_name = self.resolve_path_elem(msg.name);
         self.type_path.borrow_mut().push(msg.name.to_owned());
 

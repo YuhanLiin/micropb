@@ -44,7 +44,7 @@ pub(crate) struct Field<'a> {
     pub(crate) rust_name: Ident,
     pub(crate) default: Option<&'a str>,
     pub(crate) boxed: bool,
-    pub(crate) attrs: TokenStream,
+    pub(crate) attrs: Vec<syn::Attribute>,
 }
 
 impl<'a> Field<'a> {
@@ -198,7 +198,7 @@ impl<'a> Field<'a> {
         let typ = self.generate_rust_type(gen);
         let name = &self.rust_name;
         let attrs = &self.attrs;
-        quote! { #attrs #name : #typ, }
+        quote! { #(#attrs)* #name : #typ, }
     }
 
     pub(crate) fn generate_default(&self, gen: &Generator) -> TokenStream {
@@ -231,7 +231,7 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         rust_name: Ident::new(name, proc_macro2::Span::call_site()),
         default: None,
         boxed,
-        attrs: quote! {},
+        attrs: vec![],
     }
 }
 

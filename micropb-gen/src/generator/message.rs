@@ -20,7 +20,7 @@ pub(crate) struct Message<'a> {
     pub(crate) oneofs: Vec<Oneof<'a>>,
     pub(crate) fields: Vec<Field<'a>>,
     pub(crate) derive_dbg: bool,
-    pub(crate) attrs: TokenStream,
+    pub(crate) attrs: Vec<syn::Attribute>,
 }
 
 impl<'a> Message<'a> {
@@ -112,7 +112,7 @@ impl<'a> Message<'a> {
     pub(crate) fn generate_hazzer_decl(
         &self,
         conf: CurrentConfig,
-    ) -> Option<(TokenStream, TokenStream)> {
+    ) -> Option<(TokenStream, Vec<syn::Attribute>)> {
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
         let attrs = &conf.config.type_attr_parsed();
         let derive_msg = derive_msg_attr(!conf.config.no_debug_derive.unwrap_or(false), true);
@@ -144,7 +144,7 @@ impl<'a> Message<'a> {
         let count = Literal::usize_unsuffixed(count);
         let decl = quote! {
             #derive_msg
-            #attrs
+            #(#attrs)*
             pub struct #hazzer_name(::micropb::bitvec::BitArr!(for #count, in u8));
 
             impl #hazzer_name {
@@ -157,13 +157,13 @@ impl<'a> Message<'a> {
     pub(crate) fn generate_decl(
         &self,
         gen: &Generator,
-        hazzer_field_attr: Option<TokenStream>,
+        hazzer_field_attr: Option<Vec<syn::Attribute>>,
     ) -> TokenStream {
         let msg_mod_name = gen.resolve_path_elem(self.name);
         let rust_name = &self.rust_name;
         let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
         let hazzer_field =
-            hazzer_field_attr.map(|attr| quote! { #attr pub _has: #msg_mod_name::_Hazzer, });
+            hazzer_field_attr.map(|attr| quote! { #(#attr)* pub _has: #msg_mod_name::_Hazzer, });
         let oneof_fields = self
             .oneofs
             .iter()
@@ -174,7 +174,7 @@ impl<'a> Message<'a> {
 
         quote! {
             #derive_msg
-            #attrs
+            #(#attrs)*
             pub struct #rust_name {
                 #(pub #msg_fields)*
                 #(pub #oneof_fields)*
@@ -265,7 +265,7 @@ mod tests {
                 ),
             ],
             derive_dbg: true,
-            attrs: quote! {},
+            attrs: vec![],
         };
 
         let (decl, field_attrs) = msg.generate_hazzer_decl(config).unwrap();
@@ -297,7 +297,10 @@ mod tests {
             }
         };
         assert_eq!(decl.to_string(), expected.to_string());
-        assert_eq!(field_attrs.to_string(), quote! { #[default] }.to_string());
+        assert_eq!(
+            quote! { #(#field_attrs)* }.to_string(),
+            quote! { #[default] }.to_string()
+        );
     }
 
     #[test]
@@ -320,7 +323,7 @@ mod tests {
                 ),
             ],
             derive_dbg: true,
-            attrs: quote! {},
+            attrs: vec![],
         };
         assert!(msg.generate_hazzer_decl(config).is_none());
     }
@@ -383,7 +386,7 @@ mod tests {
             ],
             fields,
             derive_dbg: true,
-            attrs: quote! {},
+            attrs: vec![],
         };
 
         let gen = Generator::default();

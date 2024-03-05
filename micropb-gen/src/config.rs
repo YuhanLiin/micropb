@@ -121,15 +121,28 @@ config_decl! {
     skip: Option<bool>,
 }
 
+struct Attributes(Vec<syn::Attribute>);
+
+impl syn::parse::Parse for Attributes {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self(input.call(syn::Attribute::parse_outer)?))
+    }
+}
+
+pub(crate) fn parse_attributes(s: &str) -> syn::Result<Vec<syn::Attribute>> {
+    let attrs: Attributes = syn::parse_str(s)?;
+    Ok(attrs.0)
+}
+
 impl Config {
-    pub(crate) fn field_attr_parsed(&self) -> TokenStream {
+    pub(crate) fn field_attr_parsed(&self) -> Vec<syn::Attribute> {
         // TODO handle parse error
-        syn::parse_str(self.field_attributes.as_deref().unwrap_or("")).unwrap()
+        parse_attributes(self.field_attributes.as_deref().unwrap_or("")).unwrap()
     }
 
-    pub(crate) fn type_attr_parsed(&self) -> TokenStream {
+    pub(crate) fn type_attr_parsed(&self) -> Vec<syn::Attribute> {
         // TODO handle parse error
-        syn::parse_str(self.type_attributes.as_deref().unwrap_or("")).unwrap()
+        parse_attributes(self.type_attributes.as_deref().unwrap_or("")).unwrap()
     }
 
     pub(crate) fn rust_field_name(&self, name: &str) -> Ident {
@@ -225,16 +238,19 @@ mod tests {
                 .to_string(),
             "Map"
         );
+        let attrs = config.type_attr_parsed();
         assert_eq!(
-            config.type_attr_parsed().to_string(),
+            quote! { #(#attrs)* }.to_string(),
             quote! { #[derive(Hash)] }.to_string()
         );
 
-        assert_eq!(config.field_attr_parsed().to_string(), "");
-        config.field_attributes = Some("#[default]".to_owned());
+        let attrs = config.field_attr_parsed();
+        assert_eq!(quote! { #(#attrs)* }.to_string(), "");
+        config.field_attributes = Some("#[default] #[delete]".to_owned());
+        let attrs = config.field_attr_parsed();
         assert_eq!(
-            config.field_attr_parsed().to_string(),
-            quote! { #[default] }.to_string()
+            quote! { #(#attrs)* }.to_string(),
+            quote! { #[default] #[delete] }.to_string()
         );
 
         assert_eq!(config.rust_field_name("name"), format_ident!("name"));

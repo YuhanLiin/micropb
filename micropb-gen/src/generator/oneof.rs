@@ -12,7 +12,7 @@ pub(crate) struct OneofField<'a> {
     pub(crate) name: &'a str,
     pub(crate) rust_name: Ident,
     pub(crate) boxed: bool,
-    pub(crate) attrs: TokenStream,
+    pub(crate) attrs: Vec<syn::Attribute>,
 }
 
 impl<'a> OneofField<'a> {
@@ -47,7 +47,7 @@ impl<'a> OneofField<'a> {
         let typ = gen.wrapped_type(self.tspec.generate_rust_type(gen), self.boxed, false);
         let name = &self.rust_name;
         let attrs = &self.attrs;
-        quote! { #attrs #name(#typ), }
+        quote! { #(#attrs)* #name(#typ), }
     }
 }
 
@@ -64,8 +64,8 @@ pub(crate) struct Oneof<'a> {
     pub(crate) rust_name: Ident,
     pub(crate) otype: OneofType<'a>,
     pub(crate) boxed: bool,
-    pub(crate) field_attrs: TokenStream,
-    pub(crate) type_attrs: TokenStream,
+    pub(crate) field_attrs: Vec<syn::Attribute>,
+    pub(crate) type_attrs: Vec<syn::Attribute>,
     pub(crate) derive_dbg: bool,
     pub(crate) idx: usize,
 }
@@ -132,7 +132,7 @@ impl<'a> Oneof<'a> {
 
             quote! {
                 #derive_msg
-                #attrs
+                #(#attrs)*
                 pub enum #type_name {
                     #(#fields)*
                 }
@@ -152,7 +152,7 @@ impl<'a> Oneof<'a> {
             OneofType::Custom(CustomField::Delegate(_)) => return quote! {},
         };
         let attrs = &self.field_attrs;
-        quote! { #attrs #name: #oneof_type, }
+        quote! { #(#attrs)* #name: #oneof_type, }
     }
 }
 
@@ -169,7 +169,7 @@ pub(crate) fn make_test_oneof_field(
         tspec,
         rust_name: Ident::new(name, Span::call_site()),
         boxed,
-        attrs: quote! {},
+        attrs: vec![],
     }
 }
 
@@ -180,8 +180,8 @@ pub(crate) fn make_test_oneof<'a>(name: &'a str, boxed: bool, otype: OneofType<'
         rust_name: Ident::new(name, Span::call_site()),
         otype,
         boxed,
-        field_attrs: quote! {},
-        type_attrs: quote! {},
+        field_attrs: vec![],
+        type_attrs: vec![],
         derive_dbg: true,
         idx: 0,
     }
@@ -189,6 +189,8 @@ pub(crate) fn make_test_oneof<'a>(name: &'a str, boxed: bool, otype: OneofType<'
 
 #[cfg(test)]
 mod tests {
+    use crate::config::parse_attributes;
+
     use super::*;
 
     #[test]
@@ -205,8 +207,8 @@ mod tests {
                 ],
             },
             boxed: false,
-            field_attrs: quote! { #[default] },
-            type_attrs: quote! { #[derive(Eq)] },
+            field_attrs: parse_attributes("#[default]").unwrap(),
+            type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
             derive_dbg: true,
             idx: 0,
         };
@@ -238,8 +240,8 @@ mod tests {
             rust_name: Ident::new("oneof", Span::call_site()),
             otype: OneofType::Custom(CustomField::Type(syn::parse_str("Custom<f32>").unwrap())),
             boxed: true,
-            field_attrs: quote! {},
-            type_attrs: quote! {},
+            field_attrs: vec![],
+            type_attrs: vec![],
             derive_dbg: true,
             idx: 0,
         };
@@ -256,8 +258,8 @@ mod tests {
             rust_name: Ident::new("oneof", Span::call_site()),
             otype: OneofType::Custom(CustomField::Delegate(syn::parse_str("delegate").unwrap())),
             boxed: false,
-            field_attrs: quote! {},
-            type_attrs: quote! {},
+            field_attrs: vec![],
+            type_attrs: vec![],
             derive_dbg: true,
             idx: 0,
         };
