@@ -157,19 +157,39 @@ impl<'a> Oneof<'a> {
 }
 
 #[cfg(test)]
+pub(crate) fn make_test_oneof_field(
+    num: u32,
+    name: &str,
+    boxed: bool,
+    tspec: TypeSpec,
+) -> OneofField {
+    OneofField {
+        num,
+        name,
+        tspec,
+        rust_name: Ident::new(name, Span::call_site()),
+        boxed,
+        attrs: quote! {},
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn make_test_oneof<'a>(name: &'a str, boxed: bool, otype: OneofType<'a>) -> Oneof<'a> {
+    Oneof {
+        name,
+        rust_name: Ident::new(name, Span::call_site()),
+        otype,
+        boxed,
+        field_attrs: quote! {},
+        type_attrs: quote! {},
+        derive_dbg: true,
+        idx: 0,
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
-
-    fn make_test_oneof_field(num: u32, name: &str, boxed: bool, tspec: TypeSpec) -> OneofField {
-        OneofField {
-            num,
-            name,
-            tspec,
-            rust_name: Ident::new(name, Span::call_site()),
-            boxed,
-            attrs: quote! {},
-        }
-    }
 
     #[test]
     fn oneof_enum() {

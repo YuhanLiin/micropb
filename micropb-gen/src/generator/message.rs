@@ -5,6 +5,8 @@ use prost_types::{DescriptorProto, Syntax};
 use quote::{format_ident, quote};
 use syn::Ident;
 
+use crate::generator::field::{CustomField, FieldType};
+
 use super::{
     derive_msg_attr,
     field::Field,
@@ -143,7 +145,7 @@ impl<'a> Message<'a> {
         let decl = quote! {
             #derive_msg
             #attrs
-            pub struct #hazzer_name(micropb::bitvec::BitArr!(for #count, in u8));
+            pub struct #hazzer_name(::micropb::bitvec::BitArr!(for #count, in u8));
 
             impl #hazzer_name {
                 #(#methods)*
@@ -180,6 +182,41 @@ impl<'a> Message<'a> {
             }
         }
     }
+
+    pub(crate) fn generate_default_impl(&self, gen: &Generator, use_hazzer: bool) -> TokenStream {
+        // Skip delegate fields when generating defaults
+        let field_defaults = self.fields.iter().map(|f| {
+            if let FieldType::Custom(CustomField::Delegate(_)) = f.ftype {
+                None
+            } else {
+                let name = &f.rust_name;
+                let default = f.generate_default(gen);
+                Some(quote! { #name: #default, })
+            }
+        });
+        let oneof_names = self.oneofs.iter().filter_map(|o| {
+            if let OneofType::Custom(CustomField::Delegate(_)) = o.otype {
+                None
+            } else {
+                Some(&o.rust_name)
+            }
+        });
+        let hazzer_default =
+            use_hazzer.then(|| quote! { _has: ::core::default::Default::default(), });
+        let rust_name = &self.rust_name;
+
+        quote! {
+            impl ::core::default::Default for #rust_name {
+                fn default() -> Self {
+                    Self {
+                        #(#field_defaults)*
+                        #(#oneof_names: ::core::option::Option::None,)*
+                        #hazzer_default
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -189,7 +226,8 @@ mod tests {
     use crate::{
         config::{Config, OptionalRepr},
         generator::{
-            field::{make_test_field, FieldType},
+            field::{make_test_field, CustomField, FieldType},
+            oneof::{make_test_oneof, make_test_oneof_field},
             type_spec::TypeSpec,
         },
     };
@@ -234,7 +272,7 @@ mod tests {
         let expected = quote! {
             #[derive(Default, Clone, PartialEq)]
             #[derive(Eq)]
-            pub struct _Hazzer(micropb::bitvec::BitArr!(for 2, in u8));
+            pub struct _Hazzer(::micropb::bitvec::BitArr!(for 2, in u8));
 
             impl _Hazzer {
                 #[inline]
@@ -285,5 +323,86 @@ mod tests {
             attrs: quote! {},
         };
         assert!(msg.generate_hazzer_decl(config).is_none());
+    }
+
+    #[test]
+    fn default_impl() {
+        let mut fields = vec![
+            make_test_field(1, "a", false, FieldType::Single(TypeSpec::Bool)),
+            make_test_field(
+                2,
+                "b",
+                true,
+                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
+            ),
+            make_test_field(
+                3,
+                "c",
+                true,
+                FieldType::Optional(TypeSpec::Double, OptionalRepr::Hazzer),
+            ),
+            make_test_field(
+                4,
+                "d",
+                true,
+                FieldType::Custom(CustomField::Type(syn::parse_str("Custom").unwrap())),
+            ),
+            make_test_field(
+                5,
+                "e",
+                true,
+                FieldType::Custom(CustomField::Delegate(syn::parse_str("d").unwrap())),
+            ),
+        ];
+        fields[0].default = Some("true");
+        fields[1].default = Some("true");
+        fields[2].default = Some("-3.45");
+
+        let msg = Message {
+            name: "Msg",
+            rust_name: Ident::new("Msg", Span::call_site()),
+            oneofs: vec![
+                make_test_oneof(
+                    "oneof",
+                    false,
+                    OneofType::Enum {
+                        type_name: Ident::new("Oneof", Span::call_site()),
+                        fields: vec![make_test_oneof_field(7, "x", true, TypeSpec::Float)],
+                    },
+                ),
+                make_test_oneof(
+                    "oneof_custom",
+                    false,
+                    OneofType::Custom(CustomField::Type(syn::parse_str("Custom").unwrap())),
+                ),
+                make_test_oneof(
+                    "oneof_delegate",
+                    false,
+                    OneofType::Custom(CustomField::Delegate(syn::parse_str("d").unwrap())),
+                ),
+            ],
+            fields,
+            derive_dbg: true,
+            attrs: quote! {},
+        };
+
+        let gen = Generator::default();
+        let out = msg.generate_default_impl(&gen, true);
+        let expected = quote! {
+            impl ::core::default::Default for Msg {
+                fn default() -> Self {
+                    Self {
+                        a: true as _,
+                        b: ::core::option::Option::None,
+                        c: ::alloc::boxed::Box::new(-3.45 as _),
+                        d: ::core::default::Default::default(),
+                        oneof: ::core::option::Option::None,
+                        oneof_custom: ::core::option::Option::None,
+                        _has: ::core::default::Default::default(),
+                    }
+                }
+            }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
     }
 }

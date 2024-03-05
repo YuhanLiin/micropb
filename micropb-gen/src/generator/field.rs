@@ -202,18 +202,21 @@ impl<'a> Field<'a> {
     }
 
     pub(crate) fn generate_default(&self, gen: &Generator) -> TokenStream {
-        if let Some(default) = self.default {
-            match self.ftype {
-                FieldType::Single(ref t) | FieldType::Optional(ref t, OptionalRepr::Hazzer) => {
+        match self.ftype {
+            FieldType::Single(ref t) | FieldType::Optional(ref t, OptionalRepr::Hazzer) => {
+                if let Some(default) = self.default {
                     let value = t.generate_default(default, gen);
                     return gen.wrapped_value(value, self.boxed, false);
                 }
-                // Options don't use custom defaults, they should just default to None
-                FieldType::Optional(_, OptionalRepr::Option) => {}
-                FieldType::Custom(CustomField::Delegate(_)) => return quote! {},
-                FieldType::Custom(CustomField::Type(_)) => {}
-                _ => unreachable!("repeated and map fields shouldn't have custom defaults"),
             }
+            // Options don't use custom defaults, they should just default to None
+            FieldType::Optional(_, OptionalRepr::Option) => {
+                return quote! { ::core::option::Option::None }
+            }
+            FieldType::Custom(CustomField::Delegate(_)) => {
+                unreachable!("delegate field cannot have default")
+            }
+            _ => {}
         }
         quote! { ::core::default::Default::default() }
     }
@@ -410,7 +413,7 @@ mod tests {
         field.default = Some("false");
         assert_eq!(
             field.generate_default(&gen).to_string(),
-            quote! { ::core::default::Default::default() }.to_string()
+            quote! { ::core::option::Option::None }.to_string()
         );
 
         let mut field = make_test_field(
@@ -425,13 +428,20 @@ mod tests {
             quote! { ::core::default::Default::default() }.to_string()
         );
 
-        let mut field = make_test_field(
+        let field = make_test_field(
             0,
             "field",
             true,
-            FieldType::Custom(CustomField::Delegate(syn::parse_str("del").unwrap())),
+            FieldType::Repeated {
+                typ: TypeSpec::Double,
+                packed: false,
+                type_path: syn::parse_str("Vec").unwrap(),
+                max_len: None,
+            },
         );
-        field.default = Some("false");
-        assert_eq!(field.generate_default(&gen).to_string(), "");
+        assert_eq!(
+            field.generate_default(&gen).to_string(),
+            quote! { ::core::default::Default::default() }.to_string()
+        );
     }
 }
