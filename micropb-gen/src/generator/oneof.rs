@@ -6,6 +6,8 @@ use syn::Ident;
 
 use super::{derive_msg_attr, field::CustomField, type_spec::TypeSpec, CurrentConfig, Generator};
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
     pub(crate) num: u32,
     pub(crate) tspec: TypeSpec,
@@ -18,7 +20,7 @@ pub(crate) struct OneofField<'a> {
 impl<'a> OneofField<'a> {
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
-        field_conf: CurrentConfig,
+        field_conf: &CurrentConfig,
     ) -> Option<Self> {
         if field_conf.config.skip.unwrap_or(false) {
             return None;
@@ -26,11 +28,16 @@ impl<'a> OneofField<'a> {
 
         let name = proto.name();
         // Oneof fields have camelcased variant names
-        let rust_name = field_conf
-            .config
-            .rust_field_name(&name.to_case(Case::Pascal));
+        let rust_name = Ident::new(
+            &field_conf
+                .config
+                .rust_field_name(&name)
+                .to_string()
+                .to_case(Case::Pascal),
+            Span::call_site(),
+        );
         let num = proto.number.unwrap() as u32;
-        let tspec = TypeSpec::from_proto(proto, &field_conf);
+        let tspec = TypeSpec::from_proto(proto, field_conf);
         let attrs = field_conf.config.field_attr_parsed();
 
         Some(OneofField {
@@ -51,6 +58,8 @@ impl<'a> OneofField<'a> {
     }
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) enum OneofType<'a> {
     Enum {
         type_name: Ident,
@@ -59,6 +68,8 @@ pub(crate) enum OneofType<'a> {
     Custom(CustomField),
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) struct Oneof<'a> {
     pub(crate) name: &'a str,
     pub(crate) rust_name: Ident,
@@ -189,9 +200,117 @@ pub(crate) fn make_test_oneof<'a>(name: &'a str, boxed: bool, otype: OneofType<'
 
 #[cfg(test)]
 mod tests {
-    use crate::config::parse_attributes;
+    use std::borrow::Cow;
+
+    use prost_types::field_descriptor_proto::Type;
+
+    use crate::config::{parse_attributes, Config};
 
     use super::*;
+
+    fn field_proto(num: u32, name: &str) -> FieldDescriptorProto {
+        FieldDescriptorProto {
+            name: Some(name.to_owned()),
+            number: Some(num as i32),
+            r#type: Some(Type::Bool.into()),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn from_proto_field() {
+        let mut config = Box::new(Config::new());
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let field = field_proto(1, "field");
+        assert_eq!(
+            OneofField::from_proto(&field, &field_conf).unwrap(),
+            OneofField {
+                num: 1,
+                tspec: TypeSpec::Bool,
+                name: "field",
+                rust_name: Ident::new("Field", Span::call_site()),
+                boxed: false,
+                attrs: vec![]
+            }
+        );
+
+        config.boxed = Some(true);
+        config.field_attributes = Some("#[attr]".to_owned());
+        config.rename_field = Some("renamed".to_owned());
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            OneofField::from_proto(&field, &field_conf).unwrap(),
+            OneofField {
+                num: 1,
+                tspec: TypeSpec::Bool,
+                name: "field",
+                rust_name: Ident::new("Renamed", Span::call_site()),
+                boxed: true,
+                attrs: parse_attributes("#[attr]").unwrap()
+            }
+        );
+    }
+
+    #[test]
+    fn from_proto() {
+        let mut config = Box::new(Config::new());
+        let oneof_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let oneof = OneofDescriptorProto {
+            name: Some("oneof".to_owned()),
+            options: None,
+        };
+        assert_eq!(
+            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap(),
+            Oneof {
+                name: "oneof",
+                rust_name: Ident::new("oneof", Span::call_site()),
+                otype: OneofType::Enum {
+                    type_name: Ident::new("Oneof", Span::call_site()),
+                    fields: vec![]
+                },
+                boxed: false,
+                field_attrs: vec![],
+                type_attrs: vec![],
+                derive_dbg: true,
+                idx: 0
+            }
+        );
+
+        config.boxed = Some(true);
+        config.field_attributes = Some("#[attr]".to_owned());
+        config.type_attributes = Some("#[derive(Eq)]".to_owned());
+        config.no_debug_derive = Some(true);
+        config.rename_field = Some("renamed_oneof".to_owned());
+        let oneof_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap(),
+            Oneof {
+                name: "oneof",
+                rust_name: Ident::new("renamed_oneof", Span::call_site()),
+                otype: OneofType::Enum {
+                    type_name: Ident::new("RenamedOneof", Span::call_site()),
+                    fields: vec![]
+                },
+                boxed: true,
+                field_attrs: parse_attributes("#[attr]").unwrap(),
+                type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+                derive_dbg: false,
+                idx: 0
+            }
+        );
+    }
 
     #[test]
     fn oneof_enum() {

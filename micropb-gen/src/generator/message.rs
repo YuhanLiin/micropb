@@ -70,7 +70,7 @@ impl<'a> Message<'a> {
                             .find(|o| o.idx == idx as usize)
                             .map(|o| &mut o.otype)
                         {
-                            if let Some(field) = OneofField::from_proto(f, field_conf) {
+                            if let Some(field) = OneofField::from_proto(f, &field_conf) {
                                 fields.push(field);
                             }
                         }
