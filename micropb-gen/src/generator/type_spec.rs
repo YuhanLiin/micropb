@@ -11,6 +11,8 @@ use crate::{
 
 use super::{CurrentConfig, Generator};
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) enum PbInt {
     Int32,
     Int64,
@@ -24,6 +26,8 @@ pub(crate) enum PbInt {
     Fixed64,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) enum TypeSpec {
     Message(String),
     Enum(String),
@@ -59,16 +63,16 @@ impl TypeSpec {
             },
             Type::Message => TypeSpec::Message(proto.type_name().to_owned()),
             Type::Enum => TypeSpec::Enum(proto.type_name().to_owned()),
-            Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Uint64 => TypeSpec::Int(PbInt::Uint64, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_type.unwrap_or(IntType::U32)),
+            Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_type.unwrap_or(IntType::I64)),
+            Type::Uint64 => TypeSpec::Int(PbInt::Uint64, conf.int_type.unwrap_or(IntType::U64)),
             Type::Int32 => TypeSpec::Int(PbInt::Int32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Fixed64 => TypeSpec::Int(PbInt::Fixed64, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Fixed32 => TypeSpec::Int(PbInt::Fixed32, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Fixed64 => TypeSpec::Int(PbInt::Fixed64, conf.int_type.unwrap_or(IntType::U64)),
+            Type::Fixed32 => TypeSpec::Int(PbInt::Fixed32, conf.int_type.unwrap_or(IntType::U32)),
             Type::Sfixed32 => TypeSpec::Int(PbInt::Sfixed32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Sfixed64 => TypeSpec::Int(PbInt::Sfixed64, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Sfixed64 => TypeSpec::Int(PbInt::Sfixed64, conf.int_type.unwrap_or(IntType::I64)),
             Type::Sint32 => TypeSpec::Int(PbInt::Sint32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Sint64 => TypeSpec::Int(PbInt::Sint64, conf.int_type.unwrap_or(IntType::I32)),
+            Type::Sint64 => TypeSpec::Int(PbInt::Sint64, conf.int_type.unwrap_or(IntType::I64)),
         }
     }
 
@@ -131,7 +135,129 @@ impl TypeSpec {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
+    use crate::config::Config;
+
     use super::*;
+
+    fn field_proto(typ: Type, type_name: &str) -> FieldDescriptorProto {
+        FieldDescriptorProto {
+            name: Some("name".to_owned()),
+            number: Some(0),
+            r#type: Some(typ.into()),
+            type_name: Some(type_name.to_owned()),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn from_proto() {
+        let mut config = Box::new(
+            Config::new()
+                .string_type("string::String")
+                .vec_type("vec::Vec")
+                .max_bytes(10),
+        );
+
+        let type_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Float, ""), &type_conf),
+            TypeSpec::Float
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Double, ""), &type_conf),
+            TypeSpec::Double
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Bool, ""), &type_conf),
+            TypeSpec::Bool
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::String, ""), &type_conf),
+            TypeSpec::String {
+                type_path: syn::parse_str("string::String").unwrap(),
+                max_bytes: Some(10)
+            }
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf),
+            TypeSpec::Bytes {
+                type_path: syn::parse_str("vec::Vec").unwrap(),
+                max_bytes: Some(10)
+            }
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Message, ".msg.Message"), &type_conf),
+            TypeSpec::Message(".msg.Message".to_owned())
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Enum, ".Enum"), &type_conf),
+            TypeSpec::Enum(".Enum".to_owned())
+        );
+
+        config.max_bytes = None;
+        let type_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::String, ""), &type_conf),
+            TypeSpec::String {
+                type_path: syn::parse_str("string::String").unwrap(),
+                max_bytes: None
+            }
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf),
+            TypeSpec::Bytes {
+                type_path: syn::parse_str("vec::Vec").unwrap(),
+                max_bytes: None
+            }
+        );
+    }
+
+    #[test]
+    fn from_proto_num() {
+        let mut config = Box::new(Config::new());
+        let type_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Sint32, ""), &type_conf),
+            TypeSpec::Int(PbInt::Sint32, IntType::I32)
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Int64, ""), &type_conf),
+            TypeSpec::Int(PbInt::Int64, IntType::I64)
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Fixed32, ""), &type_conf),
+            TypeSpec::Int(PbInt::Fixed32, IntType::U32)
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Uint64, ""), &type_conf),
+            TypeSpec::Int(PbInt::Uint64, IntType::U64)
+        );
+
+        config.int_type = Some(IntType::I8);
+        let type_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Sint32, ""), &type_conf),
+            TypeSpec::Int(PbInt::Sint32, IntType::I8)
+        );
+        assert_eq!(
+            TypeSpec::from_proto(&field_proto(Type::Uint64, ""), &type_conf),
+            TypeSpec::Int(PbInt::Uint64, IntType::I8)
+        );
+    }
 
     #[test]
     fn tspec_rust_type() {

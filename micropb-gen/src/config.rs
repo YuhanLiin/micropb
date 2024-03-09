@@ -2,6 +2,7 @@ use proc_macro2::{Span, TokenStream};
 use syn::Ident;
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub enum IntType {
     I8,
     U8,
@@ -47,6 +48,7 @@ pub enum CustomField {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub enum OptionalRepr {
     Hazzer,
     Option,
@@ -176,7 +178,7 @@ impl Config {
             Some(CustomField::Delegate(s)) => Some(crate::generator::field::CustomField::Delegate(
                 syn::parse_str(s).unwrap(),
             )),
-            None => todo!(),
+            None => None,
         }
     }
 }

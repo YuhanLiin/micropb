@@ -10,11 +10,15 @@ use crate::config::OptionalRepr;
 
 use super::{type_spec::TypeSpec, CurrentConfig, Generator};
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) enum CustomField {
     Type(syn::Type),
     Delegate(Ident),
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) enum FieldType {
     // Can't be put in oneof, key type can't be message or enum
     Map {
@@ -37,6 +41,8 @@ pub(crate) enum FieldType {
     Custom(CustomField),
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) struct Field<'a> {
     pub(crate) num: u32,
     pub(crate) ftype: FieldType,
@@ -78,7 +84,7 @@ impl<'a> Field<'a> {
 
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
-        field_conf: CurrentConfig,
+        field_conf: &CurrentConfig,
         syntax: Syntax,
         map_msg: Option<&DescriptorProto>,
     ) -> Option<Self> {
@@ -102,7 +108,7 @@ impl<'a> Field<'a> {
             (None, Some(map_msg), _) => {
                 let key = TypeSpec::from_proto(&map_msg.field[0], &field_conf.next_conf("key"));
                 let val = TypeSpec::from_proto(&map_msg.field[1], &field_conf.next_conf("value"));
-                let type_name = field_conf.config.vec_type_parsed().unwrap();
+                let type_name = field_conf.config.map_type_parsed().unwrap();
                 FieldType::Map {
                     key,
                     val,
@@ -237,9 +243,277 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::IntType, generator::type_spec::PbInt};
+    use std::borrow::Cow;
+
+    use proc_macro2::Span;
+
+    use crate::{
+        config::{parse_attributes, Config, IntType},
+        generator::type_spec::PbInt,
+        pathtree::Node,
+    };
 
     use super::*;
+
+    fn field_proto(
+        num: u32,
+        name: &str,
+        label: Option<Label>,
+        proto3_opt: bool,
+    ) -> FieldDescriptorProto {
+        FieldDescriptorProto {
+            name: Some(name.to_owned()),
+            number: Some(num as i32),
+            label: label.map(|l| l.into()),
+            r#type: Some(Type::Bool.into()),
+            proto3_optional: Some(proto3_opt),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn from_proto_field() {
+        let config = Box::new(Config::new());
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let field = field_proto(2, "field", None, false);
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None).unwrap(),
+            Field {
+                num: 2,
+                ftype: FieldType::Single(TypeSpec::Bool),
+                name: "field",
+                rust_name: Ident::new("field", Span::call_site()),
+                default: None,
+                boxed: false,
+                attrs: vec![],
+            }
+        );
+
+        // With some field configs
+        let config = Box::new(
+            Config::new()
+                .boxed(true)
+                .rename_field("renamed")
+                .field_attributes("#[attr]"),
+        );
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let mut field = field_proto(2, "field", None, false);
+        field.default_value = Some("true".to_owned());
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None).unwrap(),
+            Field {
+                num: 2,
+                ftype: FieldType::Single(TypeSpec::Bool),
+                name: "field",
+                rust_name: Ident::new("renamed", Span::call_site()),
+                default: Some("true"),
+                boxed: true,
+                attrs: parse_attributes("#[attr]").unwrap(),
+            }
+        );
+    }
+
+    #[test]
+    fn from_proto_field_type() {
+        let config = Box::new(Config::new());
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let field = field_proto(0, "field", None, false);
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+                .unwrap()
+                .ftype,
+            FieldType::Single(TypeSpec::Bool)
+        );
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+                .unwrap()
+                .ftype,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
+        );
+
+        // Required fields are treated like optionals
+        let field = field_proto(0, "field", Some(Label::Required), false);
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+                .unwrap()
+                .ftype,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
+        );
+
+        // In proto3, if proto3_optional is set then field is optional
+        let field = field_proto(0, "field", Some(Label::Optional), true);
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+                .unwrap()
+                .ftype,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
+        );
+
+        // Boxed optionals should default to using Option instead of hazzers
+        let config = Box::new(Config::new().boxed(true));
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+                .unwrap()
+                .ftype,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
+        );
+
+        // Explicitly set the optional_repr to Option, overriding the default
+        let config = Box::new(Config::new().optional_repr(OptionalRepr::Option));
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+                .unwrap()
+                .ftype,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
+        );
+    }
+
+    #[test]
+    fn from_proto_custom() {
+        // Even if the field is boxed or optional, as long as we specify a custom field, those
+        // other options are all ignored
+        let config = Box::new(
+            Config::new()
+                .boxed(true)
+                .custom_field(crate::config::CustomField::Type("Custom<false>".to_owned())),
+        );
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let field = field_proto(1, "field", Some(Label::Optional), true);
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+                .unwrap()
+                .ftype,
+            FieldType::Custom(CustomField::Type(syn::parse_str("Custom<false>").unwrap()))
+        );
+
+        let config = Box::new(
+            Config::new()
+                .boxed(true)
+                .custom_field(crate::config::CustomField::Delegate("field".to_owned())),
+        );
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let field = field_proto(1, "field", Some(Label::Optional), true);
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+                .unwrap()
+                .ftype,
+            FieldType::Custom(CustomField::Delegate(syn::parse_str("field").unwrap()))
+        );
+    }
+
+    #[test]
+    fn from_proto_repeated() {
+        // Repeated fields with custom element int type
+        let config = Box::new(Config::new().max_len(21).vec_type("Vec"));
+        let mut node = Node::default();
+        *node.add_path(std::iter::once("elem")).value_mut() =
+            Some(Box::new(Config::new().int_type(IntType::U8)));
+        let field_conf = CurrentConfig {
+            node: Some(&node),
+            config: Cow::Borrowed(&config),
+        };
+
+        let mut field = field_proto(0, "field", Some(Label::Repeated), false);
+        field.r#type = Some(Type::Int32.into());
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+                .unwrap()
+                .ftype,
+            FieldType::Repeated {
+                typ: TypeSpec::Int(PbInt::Int32, IntType::U8),
+                packed: false,
+                type_path: syn::parse_str("Vec").unwrap(),
+                max_len: Some(21)
+            }
+        );
+        field.options = Some(Default::default());
+        field.options.as_mut().unwrap().packed = Some(true);
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+                .unwrap()
+                .ftype,
+            FieldType::Repeated {
+                typ: TypeSpec::Int(PbInt::Int32, IntType::U8),
+                packed: true,
+                type_path: syn::parse_str("Vec").unwrap(),
+                max_len: Some(21)
+            }
+        );
+    }
+
+    #[test]
+    fn from_proto_map() {
+        let config = Box::new(Config::new().map_type("std::Map"));
+        let mut node = Node::default();
+        *node.add_path(std::iter::once("key")).value_mut() =
+            Some(Box::new(Config::new().int_type(IntType::U8)));
+        *node.add_path(std::iter::once("value")).value_mut() =
+            Some(Box::new(Config::new().string_type("std::String")));
+        let field_conf = CurrentConfig {
+            node: Some(&node),
+            config: Cow::Borrowed(&config),
+        };
+
+        let mut key = field_proto(1, "key", Some(Label::Optional), false);
+        key.r#type = Some(Type::Int32.into());
+        let mut value = field_proto(1, "value", Some(Label::Optional), false);
+        value.r#type = Some(Type::String.into());
+        let mut map_elem = DescriptorProto {
+            name: Some("MapElem".to_owned()),
+            field: vec![key, value],
+            extension: vec![],
+            nested_type: vec![],
+            enum_type: vec![],
+            extension_range: vec![],
+            oneof_decl: vec![],
+            options: Some(Default::default()),
+            reserved_range: vec![],
+            reserved_name: vec![],
+        };
+        map_elem.options.as_mut().unwrap().map_entry = Some(true);
+        let mut field = field_proto(0, "field", Some(Label::Repeated), false);
+        field.r#type = Some(Type::Message.into());
+        field.type_name = Some("MapElem".to_owned());
+
+        assert_eq!(
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, Some(&map_elem))
+                .unwrap()
+                .ftype,
+            FieldType::Map {
+                key: TypeSpec::Int(PbInt::Int32, IntType::U8),
+                val: TypeSpec::String {
+                    type_path: syn::parse_str("std::String").unwrap(),
+                    max_bytes: None
+                },
+                packed: false,
+                type_path: syn::parse_str("std::Map").unwrap(),
+                max_len: None
+            }
+        );
+    }
 
     #[test]
     fn field_rust_type() {

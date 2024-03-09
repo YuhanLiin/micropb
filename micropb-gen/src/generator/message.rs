@@ -62,7 +62,7 @@ impl<'a> Message<'a> {
                     .map(|(_, r)| r)
                     .unwrap_or(f.type_name());
                 if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                    Field::from_proto(f, field_conf, syntax, Some(map_msg))
+                    Field::from_proto(f, &field_conf, syntax, Some(map_msg))
                 } else {
                     if let Some(idx) = f.oneof_index {
                         if let Some(OneofType::Enum { fields, .. }) = oneofs
@@ -76,7 +76,7 @@ impl<'a> Message<'a> {
                         }
                         return None;
                     }
-                    Field::from_proto(f, field_conf, syntax, None)
+                    Field::from_proto(f, &field_conf, syntax, None)
                 }
             })
             .collect();

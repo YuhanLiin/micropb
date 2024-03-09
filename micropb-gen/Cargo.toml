@@ -13,3 +13,6 @@ quote = "1"
 proc-macro2 = "1"
 syn = { version = "2", default-features = false, features = ["parsing", "derive", "printing"] }
 convert_case = "0.6"
+
+[dev-dependencies]
+syn = { version = "2", default-features = false, features = ["extra-traits"] }
