@@ -218,6 +218,19 @@ mod tests {
     }
 
     #[test]
+    fn from_proto_skipped() {
+        let config = Box::new(Config::new().skip(true));
+        let oneof_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let field = field_proto(1, "field");
+        assert!(OneofField::from_proto(&field, &oneof_conf).is_none());
+        let oneof = OneofDescriptorProto::default();
+        assert!(Oneof::from_proto(&oneof, oneof_conf, 0).is_none());
+    }
+
+    #[test]
     fn from_proto_field() {
         let mut config = Box::new(Config::new());
         let field_conf = CurrentConfig {

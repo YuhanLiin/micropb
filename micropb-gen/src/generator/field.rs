@@ -272,6 +272,17 @@ mod tests {
     }
 
     #[test]
+    fn from_proto_skipped() {
+        let config = Box::new(Config::new().skip(true));
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let field = field_proto(2, "field", None, false);
+        assert!(Field::from_proto(&field, &field_conf, Syntax::Proto2, None).is_none());
+    }
+
+    #[test]
     fn from_proto_field() {
         let config = Box::new(Config::new());
         let field_conf = CurrentConfig {
