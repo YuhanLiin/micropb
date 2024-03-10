@@ -15,8 +15,12 @@ pub trait FieldDecode {
 
 #[cfg(feature = "encode")]
 pub trait FieldEncode {
-    fn encode_field<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
+    fn encode_field<W: PbWrite>(
+        &self,
+        field_num: u32,
+        encoder: &mut PbEncoder<W>,
+    ) -> Result<(), W::Error>;
 
     #[cfg(feature = "encode")]
-    fn compute_field_size(&self) -> usize;
+    fn compute_field_size(&self, field_num: u32) -> usize;
 }
