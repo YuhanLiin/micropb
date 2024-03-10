@@ -23,6 +23,7 @@ pub(crate) struct Message<'a> {
     pub(crate) fields: Vec<Field<'a>>,
     pub(crate) derive_dbg: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
+    //pub(crate) unknown_handler: Option<syn::Type>,
 }
 
 impl<'a> Message<'a> {
@@ -96,6 +97,7 @@ impl<'a> Message<'a> {
             fields,
             derive_dbg: !msg_conf.config.no_debug_derive.unwrap_or(false),
             attrs: msg_conf.config.type_attr_parsed(),
+            //unknown_handler: msg_conf.config.unknown_handler_parsed(),
         })
     }
 
@@ -164,8 +166,7 @@ impl<'a> Message<'a> {
         let msg_mod_name = gen.resolve_path_elem(self.name);
         let rust_name = &self.rust_name;
         let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
-        let hazzer_field =
-            hazzer_field_attr.map(|attr| quote! { #(#attr)* pub _has: #msg_mod_name::_Hazzer, });
+        let hazzer_field_attr = hazzer_field_attr.iter();
         let oneof_fields = self
             .oneofs
             .iter()
@@ -180,7 +181,7 @@ impl<'a> Message<'a> {
             pub struct #rust_name {
                 #(#msg_fields)*
                 #(#oneof_fields)*
-                #hazzer_field
+                #( #(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer, )*
             }
         }
     }
@@ -707,7 +708,7 @@ mod tests {
             attrs: parse_attributes("#[derive(Eq)]").unwrap(),
         };
         let gen = Generator::default();
-        let out = msg.generate_decl(&gen, None);
+        let out = msg.generate_decl(&gen, Some(parse_attributes("#[attr1] #[attr2]").unwrap()));
 
         let expected = quote! {
             #[derive(Debug, Clone, PartialEq)]
@@ -724,6 +725,9 @@ mod tests {
                 pub oneof: ::core::option::Option<mod_Msg::Oneof>,
                 #[attr]
                 pub oneof_custom: Custom,
+                #[attr1]
+                #[attr2]
+                pub _has: mod_Msg::_Hazzer,
             }
         };
         assert_eq!(out.to_string(), expected.to_string());
