@@ -1,9 +1,6 @@
 #![allow(clippy::result_unit_err)]
 
-use core::{
-    mem::MaybeUninit,
-    ops::{Deref, DerefMut},
-};
+use core::{mem::MaybeUninit, ops::Deref};
 
 pub trait PbContainer: Default {
     /// Sets length of string
@@ -50,6 +47,8 @@ pub trait PbMap<K, V>: Default {
 
 #[cfg(feature = "container-arrayvec")]
 mod impl_arrayvec {
+    use core::ops::DerefMut;
+
     use super::*;
 
     use arrayvec::{ArrayString, ArrayVec};
