@@ -178,7 +178,7 @@ pub(crate) fn make_test_oneof_field(
         num,
         name,
         tspec,
-        rust_name: Ident::new(name, Span::call_site()),
+        rust_name: Ident::new(&name.to_case(Case::Pascal), Span::call_site()),
         boxed,
         attrs: vec![],
     }
@@ -334,8 +334,8 @@ mod tests {
             otype: OneofType::Enum {
                 type_name: Ident::new("Oneof", Span::call_site()),
                 fields: vec![
-                    make_test_oneof_field(0, "A", true, TypeSpec::Float),
-                    make_test_oneof_field(1, "B", false, TypeSpec::Bool),
+                    make_test_oneof_field(0, "a", true, TypeSpec::Float),
+                    make_test_oneof_field(1, "b", false, TypeSpec::Bool),
                 ],
             },
             boxed: false,

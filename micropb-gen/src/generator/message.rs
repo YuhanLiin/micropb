@@ -14,6 +14,8 @@ use super::{
     CurrentConfig, Generator,
 };
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) struct Message<'a> {
     pub(crate) name: &'a str,
     pub(crate) rust_name: Ident,
@@ -223,16 +225,231 @@ impl<'a> Message<'a> {
 mod tests {
     use std::borrow::Cow;
 
+    use prost_types::{
+        field_descriptor_proto::{Label, Type},
+        FieldDescriptorProto, FieldOptions, MessageOptions, OneofDescriptorProto,
+    };
+
     use crate::{
-        config::{parse_attributes, Config, OptionalRepr},
+        config::{parse_attributes, Config, IntType, OptionalRepr},
         generator::{
             field::{make_test_field, CustomField, FieldType},
             oneof::{make_test_oneof, make_test_oneof_field},
-            type_spec::TypeSpec,
+            type_spec::{PbInt, TypeSpec},
         },
+        pathtree::Node,
     };
 
     use super::*;
+
+    fn test_msg_proto() -> DescriptorProto {
+        let map_msg = DescriptorProto {
+            name: Some("MapElem".to_owned()),
+            field: vec![
+                FieldDescriptorProto {
+                    number: Some(1),
+                    name: Some("key".to_owned()),
+                    r#type: Some(Type::Int64.into()),
+                    ..Default::default()
+                },
+                FieldDescriptorProto {
+                    number: Some(2),
+                    name: Some("value".to_owned()),
+                    r#type: Some(Type::Uint64.into()),
+                    ..Default::default()
+                },
+            ],
+            options: Some(MessageOptions {
+                map_entry: Some(true),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        DescriptorProto {
+            name: Some("Message".to_owned()),
+            field: vec![
+                FieldDescriptorProto {
+                    number: Some(1),
+                    name: Some("bool_field".to_owned()),
+                    r#type: Some(Type::Bool.into()),
+                    ..Default::default()
+                },
+                FieldDescriptorProto {
+                    number: Some(2),
+                    name: Some("oneof_field".to_owned()),
+                    r#type: Some(Type::Sint32.into()),
+                    oneof_index: Some(0),
+                    ..Default::default()
+                },
+                FieldDescriptorProto {
+                    number: Some(3),
+                    name: Some("map_field".to_owned()),
+                    r#type: Some(Type::Message.into()),
+                    label: Some(Label::Repeated.into()),
+                    type_name: Some(".Message.MapElem".to_owned()),
+                    options: Some(FieldOptions {
+                        packed: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                FieldDescriptorProto {
+                    number: Some(4),
+                    name: Some("oneof_field2".to_owned()),
+                    r#type: Some(Type::Float.into()),
+                    oneof_index: Some(0),
+                    ..Default::default()
+                },
+            ],
+            oneof_decl: vec![OneofDescriptorProto {
+                name: Some("oneof".to_owned()),
+                options: None,
+            }],
+            nested_type: vec![map_msg],
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn from_proto_skipped() {
+        let proto = test_msg_proto();
+        let config = Box::new(Config::new().skip(true));
+        let msg_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        assert!(Message::from_proto(&proto, Syntax::Proto2, &msg_conf).is_none());
+    }
+
+    #[test]
+    fn from_proto_skip_fields() {
+        let proto = test_msg_proto();
+        let empty_msg = Message {
+            name: "Message",
+            rust_name: Ident::new("Message", Span::call_site()),
+            oneofs: vec![],
+            fields: vec![],
+            derive_dbg: true,
+            attrs: vec![],
+        };
+        let config = Box::new(Config::new());
+        let mut node = Node::default();
+
+        // Skip all fields and oneofs, but not oneof fields
+        *node.add_path(std::iter::once("bool_field")).value_mut() =
+            Some(Box::new(Config::new().skip(true)));
+        *node.add_path(std::iter::once("map_field")).value_mut() =
+            Some(Box::new(Config::new().skip(true)));
+        *node.add_path(std::iter::once("oneof")).value_mut() =
+            Some(Box::new(Config::new().skip(true)));
+        let msg_conf = CurrentConfig {
+            node: Some(&node),
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            Message::from_proto(&proto, Syntax::Proto2, &msg_conf).unwrap(),
+            empty_msg
+        );
+
+        // Don't skip oneof, but skip oneof fields (oneof should still be skipped)
+        *node.add_path(std::iter::once("oneof")).value_mut() =
+            Some(Box::new(Config::new().skip(false)));
+        *node.add_path(std::iter::once("oneof_field")).value_mut() =
+            Some(Box::new(Config::new().skip(true)));
+        *node.add_path(std::iter::once("oneof_field2")).value_mut() =
+            Some(Box::new(Config::new().skip(true)));
+        let msg_conf = CurrentConfig {
+            node: Some(&node),
+            config: Cow::Borrowed(&config),
+        };
+        assert_eq!(
+            Message::from_proto(&proto, Syntax::Proto2, &msg_conf).unwrap(),
+            empty_msg
+        );
+    }
+
+    #[test]
+    fn from_proto() {
+        let proto = test_msg_proto();
+        let config = Box::new(
+            Config::new()
+                .map_type("Map")
+                .type_attributes("#[derive(Self)]")
+                .no_debug_derive(true),
+        );
+        let mut node = Node::default();
+        *node.add_path(["bool_field"].into_iter()).value_mut() =
+            Some(Box::new(Config::new().boxed(true)));
+        *node.add_path(["oneof_field"].into_iter()).value_mut() =
+            Some(Box::new(Config::new().int_type(IntType::U8)));
+        *node.add_path(["oneof_field2"].into_iter()).value_mut() =
+            Some(Box::new(Config::new().boxed(true)));
+        *node.add_path(["oneof"].into_iter()).value_mut() =
+            Some(Box::new(Config::new().type_attributes("#[derive(Eq)]")));
+        *node.add_path(["map_field", "key"].into_iter()).value_mut() =
+            Some(Box::new(Config::new().int_type(IntType::I16)));
+        *node
+            .add_path(["map_field", "value"].into_iter())
+            .value_mut() = Some(Box::new(Config::new().int_type(IntType::U16)));
+        let msg_conf = CurrentConfig {
+            node: Some(&node),
+            config: Cow::Borrowed(&config),
+        };
+
+        assert_eq!(
+            Message::from_proto(&proto, Syntax::Proto2, &msg_conf).unwrap(),
+            Message {
+                name: "Message",
+                rust_name: Ident::new("Message", Span::call_site()),
+                oneofs: vec![Oneof {
+                    name: "oneof",
+                    rust_name: Ident::new("oneof", Span::call_site()),
+                    otype: OneofType::Enum {
+                        type_name: Ident::new("Oneof", Span::call_site()),
+                        fields: vec![
+                            make_test_oneof_field(
+                                2,
+                                "oneof_field",
+                                false,
+                                TypeSpec::Int(PbInt::Sint32, IntType::U8)
+                            ),
+                            make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
+                        ]
+                    },
+                    boxed: false,
+                    field_attrs: vec![],
+                    // Overrides the type attrs of the message
+                    type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+                    // Inherits the no_debug_derive setting of the message
+                    derive_dbg: false,
+                    idx: 0
+                }],
+                fields: vec![
+                    make_test_field(
+                        1,
+                        "bool_field",
+                        true,
+                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
+                    ),
+                    make_test_field(
+                        3,
+                        "map_field",
+                        false,
+                        FieldType::Map {
+                            key: TypeSpec::Int(PbInt::Int64, IntType::I16),
+                            val: TypeSpec::Int(PbInt::Uint64, IntType::U16),
+                            packed: true,
+                            type_path: syn::parse_str("Map").unwrap(),
+                            max_len: None
+                        }
+                    ),
+                ],
+                derive_dbg: false,
+                attrs: parse_attributes("#[derive(Self)]").unwrap()
+            }
+        )
+    }
 
     #[test]
     fn hazzer() {
