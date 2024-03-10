@@ -1,11 +1,14 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{DescriptorProto, Syntax};
 use quote::{format_ident, quote};
 use syn::Ident;
 
-use crate::generator::field::{CustomField, FieldType};
+use crate::{
+    config::Config,
+    generator::field::{CustomField, FieldType},
+};
 
 use super::{
     derive_msg_attr,
@@ -23,7 +26,7 @@ pub(crate) struct Message<'a> {
     pub(crate) fields: Vec<Field<'a>>,
     pub(crate) derive_dbg: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
-    //pub(crate) unknown_handler: Option<syn::Type>,
+    pub(crate) unknown_handler: Option<syn::Type>,
 }
 
 impl<'a> Message<'a> {
@@ -97,7 +100,7 @@ impl<'a> Message<'a> {
             fields,
             derive_dbg: !msg_conf.config.no_debug_derive.unwrap_or(false),
             attrs: msg_conf.config.type_attr_parsed(),
-            //unknown_handler: msg_conf.config.unknown_handler_parsed(),
+            unknown_handler: msg_conf.config.unknown_handler_parsed(),
         })
     }
 
@@ -162,6 +165,7 @@ impl<'a> Message<'a> {
         &self,
         gen: &Generator,
         hazzer_field_attr: Option<Vec<syn::Attribute>>,
+        unknown_field_attr: Vec<syn::Attribute>,
     ) -> TokenStream {
         let msg_mod_name = gen.resolve_path_elem(self.name);
         let rust_name = &self.rust_name;
@@ -172,6 +176,13 @@ impl<'a> Message<'a> {
             .iter()
             .map(|oneof| oneof.generate_field(gen, &msg_mod_name));
 
+        let unknown_field_attr = self
+            .unknown_handler
+            .as_ref()
+            .map(|_| unknown_field_attr)
+            .into_iter();
+        let unknown_field_type = self.unknown_handler.iter();
+
         let derive_msg = derive_msg_attr(self.derive_dbg, false);
         let attrs = &self.attrs;
 
@@ -181,7 +192,8 @@ impl<'a> Message<'a> {
             pub struct #rust_name {
                 #(#msg_fields)*
                 #(#oneof_fields)*
-                #( #(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer, )*
+                #(#(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
+                #(#(#unknown_field_attr)* pub _unknown: #unknown_field_type,)*
             }
         }
     }
@@ -206,6 +218,10 @@ impl<'a> Message<'a> {
         });
         let hazzer_default =
             use_hazzer.then(|| quote! { _has: ::core::default::Default::default(), });
+        let unknown_default = self
+            .unknown_handler
+            .as_ref()
+            .map(|_| quote! { _unknown: ::core::default::Default::default(), });
         let rust_name = &self.rust_name;
 
         quote! {
@@ -215,6 +231,7 @@ impl<'a> Message<'a> {
                         #(#field_defaults)*
                         #(#oneof_names: ::core::option::Option::None,)*
                         #hazzer_default
+                        #unknown_default
                     }
                 }
             }
@@ -333,6 +350,7 @@ mod tests {
             fields: vec![],
             derive_dbg: true,
             attrs: vec![],
+            unknown_handler: None,
         };
         let config = Box::new(Config::new());
         let mut node = Node::default();
@@ -377,7 +395,8 @@ mod tests {
             Config::new()
                 .map_type("Map")
                 .type_attributes("#[derive(Self)]")
-                .no_debug_derive(true),
+                .no_debug_derive(true)
+                .unknown_handler("UnknownType"),
         );
         let mut node = Node::default();
         *node.add_path(["bool_field"].into_iter()).value_mut() =
@@ -447,7 +466,8 @@ mod tests {
                     ),
                 ],
                 derive_dbg: false,
-                attrs: parse_attributes("#[derive(Self)]").unwrap()
+                attrs: parse_attributes("#[derive(Self)]").unwrap(),
+                unknown_handler: Some(syn::parse_str("UnknownType").unwrap())
             }
         )
     }
@@ -484,6 +504,7 @@ mod tests {
             ],
             derive_dbg: true,
             attrs: vec![],
+            unknown_handler: None,
         };
 
         let (decl, field_attrs) = msg.generate_hazzer_decl(config).unwrap();
@@ -542,6 +563,7 @@ mod tests {
             ],
             derive_dbg: true,
             attrs: vec![],
+            unknown_handler: None,
         };
         assert!(msg.generate_hazzer_decl(config).is_none());
     }
@@ -605,6 +627,7 @@ mod tests {
             fields,
             derive_dbg: true,
             attrs: vec![],
+            unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
         };
 
         let gen = Generator::default();
@@ -620,6 +643,7 @@ mod tests {
                         oneof: ::core::option::Option::None,
                         oneof_custom: ::core::option::Option::None,
                         _has: ::core::default::Default::default(),
+                        _unknown: ::core::default::Default::default(),
                     }
                 }
             }
@@ -706,9 +730,14 @@ mod tests {
             fields,
             derive_dbg: true,
             attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+            unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
         };
         let gen = Generator::default();
-        let out = msg.generate_decl(&gen, Some(parse_attributes("#[attr1] #[attr2]").unwrap()));
+        let out = msg.generate_decl(
+            &gen,
+            Some(parse_attributes("#[attr1] #[attr2]").unwrap()),
+            parse_attributes("#[attr3] #[attr4]").unwrap(),
+        );
 
         let expected = quote! {
             #[derive(Debug, Clone, PartialEq)]
@@ -728,6 +757,9 @@ mod tests {
                 #[attr1]
                 #[attr2]
                 pub _has: mod_Msg::_Hazzer,
+                #[attr3]
+                #[attr4]
+                pub _unknown: UnknownType,
             }
         };
         assert_eq!(out.to_string(), expected.to_string());

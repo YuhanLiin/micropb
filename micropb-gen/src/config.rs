@@ -111,6 +111,7 @@ config_decl! {
     string_type: [deref] Option<String>,
     map_type: [deref] Option<String>,
     optional_repr: Option<OptionalRepr>,
+    unknown_handler: [deref] Option<String>,
     [no_inherit] custom_field: Option<CustomField>,
     [no_inherit] rename_field: [deref] Option<String>,
 
@@ -167,6 +168,13 @@ impl Config {
     pub(crate) fn map_type_parsed(&self) -> Option<syn::Path> {
         // TODO handle parse error
         self.map_type.as_ref().map(|t| syn::parse_str(t).unwrap())
+    }
+
+    pub(crate) fn unknown_handler_parsed(&self) -> Option<syn::Type> {
+        // TODO handle parse error
+        self.unknown_handler
+            .as_ref()
+            .map(|t| syn::parse_str(t).unwrap())
     }
 
     pub(crate) fn custom_field_parsed(&self) -> Option<crate::generator::field::CustomField> {
