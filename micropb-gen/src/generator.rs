@@ -7,9 +7,8 @@ use std::{
 
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::Syntax;
-use protox::prost_reflect::prost_types::{
-    DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet,
+use prost_types::{
+    DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet, Syntax,
 };
 use quote::{format_ident, quote};
 use syn::Ident;
@@ -339,7 +338,7 @@ impl Generator {
 
 #[cfg(test)]
 mod tests {
-    use protox::prost_reflect::prost_types::EnumValueDescriptorProto;
+    use prost_types::EnumValueDescriptorProto;
 
     use super::*;
 
