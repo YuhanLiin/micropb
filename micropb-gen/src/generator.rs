@@ -1,6 +1,8 @@
 use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
+    fs,
+    io::{self, Write},
     iter,
     ops::Deref,
 };
@@ -69,38 +71,28 @@ enum EncodeDecode {
 }
 
 #[derive(Debug, Default)]
-pub struct GenConfig {
+pub struct Generator {
+    syntax: Syntax,
+    pkg_path: Vec<String>,
+    type_path: RefCell<Vec<String>>,
+
     pub(crate) encode_decode: EncodeDecode,
     pub(crate) size_cache: bool,
     pub(crate) default_pkg_filename: String,
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) use_std: bool,
-
-    pub(crate) field_configs: PathTree<Box<Config>>,
-}
-
-#[derive(Debug, Default)]
-struct Generator {
-    config: GenConfig,
-    syntax: Syntax,
-    pkg_path: Vec<String>,
-    type_path: RefCell<Vec<String>>,
+    pub(crate) config_tree: PathTree<Box<Config>>,
 }
 
 impl Generator {
-    fn generate_fdset(&mut self, fdset: &FileDescriptorSet) {
-        for file in &fdset.file {
-            self.generate_fdproto(file);
-        }
-    }
-
-    fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) {
+    pub(crate) fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> io::Result<()> {
         let filename = fdproto
             .package
             .as_ref()
-            .unwrap_or(&self.config.default_pkg_filename)
-            .to_owned();
+            .unwrap_or(&self.default_pkg_filename)
+            .to_owned()
+            + ".rs";
 
         self.syntax = match fdproto.syntax.as_deref() {
             Some("proto3") => Syntax::Proto3,
@@ -112,7 +104,7 @@ impl Generator {
             .map(|s| s.split('.').map(ToOwned::to_owned).collect())
             .unwrap_or_default();
 
-        let root_node = &self.config.field_configs.root;
+        let root_node = &self.config_tree.root;
         let mut root_conf = root_node
             .value()
             .as_ref()
@@ -140,6 +132,13 @@ impl Generator {
             #(#msgs)*
             #(#enums)*
         };
+
+        if !code.is_empty() {
+            let file_path = self.outdir_path().unwrap().join(filename);
+            let mut file = fs::File::create(file_path)?;
+            file.write_all(code.to_string().as_bytes())?
+        }
+        Ok(())
     }
 
     fn generate_enum(
@@ -282,7 +281,7 @@ impl Generator {
     /// Convert variant name to Pascal-case, then strip the enum name from it
     fn enum_variant_name(&self, variant_name: &str, enum_name: &Ident) -> Ident {
         let variant_name_cased = variant_name.to_case(Case::Pascal);
-        let stripped = if !self.config.retain_enum_prefix {
+        let stripped = if !self.retain_enum_prefix {
             variant_name_cased
                 .strip_prefix(&enum_name.to_string())
                 .unwrap_or(&variant_name_cased)
@@ -294,7 +293,7 @@ impl Generator {
 
     fn wrapped_type(&self, typ: TokenStream, boxed: bool, optional: bool) -> TokenStream {
         let boxed_type = if boxed {
-            if self.config.use_std {
+            if self.use_std {
                 quote! { ::std::boxed::Box<#typ> }
             } else {
                 quote! { ::alloc::boxed::Box<#typ> }
@@ -311,7 +310,7 @@ impl Generator {
 
     fn wrapped_value(&self, val: TokenStream, boxed: bool, optional: bool) -> TokenStream {
         let boxed_type = if boxed {
-            if self.config.use_std {
+            if self.use_std {
                 quote! { ::std::boxed::Box::new(#val) }
             } else {
                 quote! { ::alloc::boxed::Box::new(#val) }
@@ -355,7 +354,7 @@ mod tests {
             "Alien"
         );
 
-        gen.config.retain_enum_prefix = true;
+        gen.retain_enum_prefix = true;
         assert_eq!(
             gen.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
             "EnumValue"
@@ -483,7 +482,7 @@ mod tests {
             reserved_name: vec![],
         };
         let mut gen = Generator::default();
-        gen.config.retain_enum_prefix = true;
+        gen.retain_enum_prefix = true;
 
         let out = gen.generate_enum(&enum_proto, config);
         let expected = quote! {
