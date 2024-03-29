@@ -4,7 +4,8 @@ mod pathtree;
 mod utils;
 
 use std::{
-    env, fs, io,
+    env, fs,
+    io::{self, Write},
     path::{Path, PathBuf},
     process::Command,
 };
@@ -12,7 +13,7 @@ use std::{
 pub use config::Config;
 pub use generator::Generator;
 use prost::Message;
-use prost_types::FileDescriptorSet;
+use prost_types::{FileDescriptorProto, FileDescriptorSet};
 
 impl Generator {
     pub fn new() -> Self {
@@ -73,8 +74,52 @@ impl Generator {
 
     pub fn compile_fdset(&mut self, fdset: &FileDescriptorSet) -> io::Result<()> {
         for file in &fdset.file {
-            self.generate_fdproto(file)?;
+            self.compile_fdproto(file)?;
         }
         Ok(())
+    }
+
+    fn compile_fdproto(&mut self, fdproto: &FileDescriptorProto) -> io::Result<()> {
+        let filename = fdproto
+            .package
+            .as_ref()
+            .unwrap_or(&self.default_pkg_filename)
+            .to_owned()
+            + ".rs";
+        let code = self.generate_fdproto(fdproto);
+
+        if !code.is_empty() {
+            let file_path = self.outdir_path().unwrap().join(filename);
+            let mut file = fs::File::create(file_path)?;
+
+            #[cfg(feature = "format")]
+            let output = if self.format {
+                prettyplease::unparse(
+                    &syn::parse2(code).expect("output code should be parseable as a file"),
+                )
+            } else {
+                code.to_string()
+            };
+            #[cfg(not(feature = "format"))]
+            let output = code.to_string();
+            file.write_all(output.as_bytes())?
+        }
+        Ok(())
+    }
+
+    pub fn retain_enum_prefix(&mut self, retain_enum_prefix: bool) {
+        self.retain_enum_prefix = retain_enum_prefix;
+    }
+
+    pub fn format(&mut self, format: bool) {
+        self.format = format;
+    }
+
+    pub fn use_std(&mut self, use_std: bool) {
+        self.use_std = use_std;
+    }
+
+    pub fn default_pkg_filename(&mut self, default_pkg_filename: &str) {
+        self.default_pkg_filename = default_pkg_filename.to_owned();
     }
 }

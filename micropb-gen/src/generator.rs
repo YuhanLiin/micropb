@@ -1,17 +1,13 @@
 use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
-    fs,
-    io::{self, Write},
     iter,
     ops::Deref,
 };
 
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{
-    DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet, Syntax,
-};
+use prost_types::{DescriptorProto, EnumDescriptorProto, FileDescriptorProto, Syntax};
 use quote::{format_ident, quote};
 use syn::Ident;
 
@@ -70,7 +66,7 @@ enum EncodeDecode {
     Both,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Generator {
     syntax: Syntax,
     pkg_path: Vec<String>,
@@ -85,15 +81,26 @@ pub struct Generator {
     pub(crate) config_tree: PathTree<Box<Config>>,
 }
 
-impl Generator {
-    pub(crate) fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> io::Result<()> {
-        let filename = fdproto
-            .package
-            .as_ref()
-            .unwrap_or(&self.default_pkg_filename)
-            .to_owned()
-            + ".rs";
+impl Default for Generator {
+    fn default() -> Self {
+        Self {
+            syntax: Default::default(),
+            pkg_path: Default::default(),
+            type_path: Default::default(),
 
+            encode_decode: Default::default(),
+            size_cache: Default::default(),
+            default_pkg_filename: "_".to_owned(),
+            retain_enum_prefix: Default::default(),
+            format: true,
+            use_std: Default::default(),
+            config_tree: Default::default(),
+        }
+    }
+}
+
+impl Generator {
+    pub(crate) fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> TokenStream {
         self.syntax = match fdproto.syntax.as_deref() {
             Some("proto3") => Syntax::Proto3,
             _ => Syntax::Proto2,
@@ -128,17 +135,10 @@ impl Generator {
             .iter()
             .map(|e| self.generate_enum(e, cur_config.next_conf(e.name())));
 
-        let code = quote! {
+        quote! {
             #(#msgs)*
             #(#enums)*
-        };
-
-        if !code.is_empty() {
-            let file_path = self.outdir_path().unwrap().join(filename);
-            let mut file = fs::File::create(file_path)?;
-            file.write_all(code.to_string().as_bytes())?
         }
-        Ok(())
     }
 
     fn generate_enum(
