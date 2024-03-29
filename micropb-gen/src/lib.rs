@@ -12,12 +12,8 @@ use std::{
 
 pub use config::Config;
 pub use generator::Generator;
-use pathtree::{Node, PathTree};
-use proc_macro2::TokenStream;
 use prost::Message;
-use prost_types::{FileDescriptorProto, FileDescriptorSet};
-use quote::TokenStreamExt;
-use syn::Ident;
+use prost_types::FileDescriptorSet;
 
 impl Generator {
     pub fn new() -> Self {
@@ -37,23 +33,13 @@ impl Generator {
             .merge(&config);
     }
 
-    fn outdir_path(&self) -> io::Result<PathBuf> {
-        env::var_os("OUT_DIR")
-            .ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::Other,
-                    "OUT_DIR environment variable is not set",
-                )
-            })
-            .map(Into::into)
-    }
-
     pub fn compile_protos(
         &mut self,
         protos: &[impl AsRef<Path>],
         out_filename: impl AsRef<Path>,
     ) -> io::Result<()> {
-        let fdset_file = self.outdir_path()?.join("micropb-fdset");
+        let tmp = tempfile::tempdir()?;
+        let fdset_file = tmp.path().join("micropb-fdset");
 
         // Get protoc command from PROTOC env-var, otherwise just use "protoc"
         let mut cmd = Command::new(env::var("PROTOC").as_deref().unwrap_or("protoc"));
@@ -83,8 +69,7 @@ impl Generator {
         let fdset = FileDescriptorSet::decode(&*bytes)?;
         let code = self.generate_fdset(&fdset);
 
-        let file_path = self.outdir_path().unwrap().join(out_filename);
-        let mut file = fs::File::create(file_path)?;
+        let mut file = fs::File::create(out_filename)?;
 
         #[cfg(feature = "format")]
         let output = if self.format {
@@ -110,9 +95,5 @@ impl Generator {
 
     pub fn use_std(&mut self, use_std: bool) {
         self.use_std = use_std;
-    }
-
-    pub fn default_pkg_filename(&mut self, default_pkg_filename: &str) {
-        self.default_pkg_filename = default_pkg_filename.to_owned();
     }
 }

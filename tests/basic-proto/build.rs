@@ -5,6 +5,9 @@ fn main() {
 
     let mut generator = Generator::new();
     generator
-        .compile_protos(&["proto/basic.proto"], "proto.rs")
+        .compile_protos(
+            &["proto/basic.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/proto.rs",
+        )
         .unwrap();
 }

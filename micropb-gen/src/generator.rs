@@ -90,7 +90,6 @@ pub struct Generator {
 
     pub(crate) encode_decode: EncodeDecode,
     pub(crate) size_cache: bool,
-    pub(crate) default_pkg_filename: String,
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) use_std: bool,
@@ -109,7 +108,6 @@ impl Default for Generator {
 
             encode_decode: Default::default(),
             size_cache: Default::default(),
-            default_pkg_filename: "_".to_owned(),
             retain_enum_prefix: Default::default(),
             format: true,
             use_std: Default::default(),

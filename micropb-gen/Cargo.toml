@@ -10,6 +10,7 @@ default = ["format"]
 format = ["dep:prettyplease"]
 
 [dependencies]
+tempfile = "3.10"
 prost-types = "0.12"
 prost = { version = "0.12", default-features = false, features = ["std"] }
 quote = "1"
