@@ -9,7 +9,7 @@ enum Enum {
 }
 
 message BasicTypes {
-    optional int32 int32_num = 1;
+    optional int32 int32_num = 1 [default = -5];
     optional int64 int64_num = 2;
     optional uint32 uint32_num = 3;
     optional uint64 uint64_num = 4;
@@ -20,7 +20,7 @@ message BasicTypes {
     optional sfixed32 sfixed32_num = 9;
     optional sfixed64 sfixed64_num = 10;
     optional bool boolean = 11;
-    optional float flt = 12;
+    optional float flt = 12 [default = 1.0];
     optional double dbl = 13;
-    required Enum enumeration = 14;
+    required Enum enumeration = 14 [default = ENUM_ONE];
 }

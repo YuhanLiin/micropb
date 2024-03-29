@@ -24,15 +24,15 @@ mod tests {
         assert!(!basic._has.dbl());
         assert_eq!(basic.dbl, 0.0);
         assert!(!basic._has.flt());
-        assert_eq!(basic.flt, 0.0);
+        assert_eq!(basic.flt, 1.0); // custom default
         assert!(!basic._has.boolean());
         assert!(!basic.boolean);
         assert!(!basic._has.int32_num());
-        assert_eq!(basic.int32_num, 0);
+        assert_eq!(basic.int32_num, -5); // custom default
         assert!(!basic._has.int64_num());
         assert_eq!(basic.int64_num, 0);
         assert!(!basic._has.enumeration());
-        assert_eq!(basic.enumeration, proto::basic::Enum::Two);
+        assert_eq!(basic.enumeration, proto::basic::Enum::One); // custom default
 
         basic.enumeration = proto::basic::Enum::One;
         basic._has.set_enumeration(true);
