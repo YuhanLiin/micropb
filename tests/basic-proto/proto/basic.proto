@@ -2,7 +2,13 @@ syntax = "proto2";
 
 package basic;
 
-message Numbers {
+enum Enum {
+    ENUM_TWO = 2;
+    ENUM_ONE = 1;
+    ENUM_ZERO = 0;
+}
+
+message BasicTypes {
     optional int32 int32_num = 1;
     optional int64 int64_num = 2;
     optional uint32 uint32_num = 3;
@@ -13,4 +19,8 @@ message Numbers {
     optional fixed64 fixed64_num = 8;
     optional sfixed32 sfixed32_num = 9;
     optional sfixed64 sfixed64_num = 10;
+    optional bool boolean = 11;
+    optional float flt = 12;
+    optional double dbl = 13;
+    required Enum enumeration = 14;
 }
