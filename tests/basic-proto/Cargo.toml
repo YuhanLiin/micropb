@@ -1,0 +1,12 @@
+[package]
+name = "basic-proto"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+micropb = { path = "../../micropb/" }
+
+[build-dependencies]
+micropb-gen = { path = "../../micropb-gen/" }
