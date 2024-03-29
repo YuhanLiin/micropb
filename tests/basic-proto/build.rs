@@ -20,7 +20,7 @@ fn boxed_and_option() {
     generator.configure(
         ".BasicTypes.uint32_num",
         Config::new()
-            .boxed(false)
+            .boxed(true)
             .optional_repr(OptionalRepr::Hazzer),
     );
     generator
