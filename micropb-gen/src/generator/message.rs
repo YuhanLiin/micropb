@@ -1,11 +1,14 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{DescriptorProto, Syntax};
 use quote::{format_ident, quote};
 use syn::Ident;
 
-use crate::generator::field::{CustomField, FieldType};
+use crate::{
+    config::OptionalRepr,
+    generator::field::{CustomField, FieldType},
+};
 
 use super::{
     derive_msg_attr,
@@ -230,6 +233,67 @@ impl<'a> Message<'a> {
                         #unknown_default
                     }
                 }
+            }
+        }
+    }
+
+    pub(crate) fn generate_impl(&self, gen: &Generator) -> TokenStream {
+        let accessors = self.fields.iter().map(|f| {
+            if let FieldType::Optional(type_spec, opt) = &f.ftype {
+                let type_name = type_spec.generate_rust_type(gen);
+                let setter_name = format_ident!("set_{}", f.rust_name);
+                let muter_name = format_ident!("mut_{}", f.rust_name);
+                let clearer_name = format_ident!("clear_{}", f.rust_name);
+                let fname = &f.rust_name;
+
+                // use value.into() to handle conversion into boxed and non-boxed fields
+                if let OptionalRepr::Hazzer = opt {
+                    quote! {
+                        pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                            self._has.#fname().then_some(&self.#fname)
+                        }
+
+                        pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                            self._has.#fname().then_some(&mut self.#fname)
+                        }
+
+                        pub fn #setter_name(&mut self, value: #type_name) {
+                            self._has.#setter_name(true);
+                            self.#fname = value.into();
+                        }
+
+                        pub fn #clearer_name(&mut self) {
+                            self._has.#setter_name(false);
+                        }
+                    }
+                } else {
+                    quote! {
+                        pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                            self.#fname.as_deref()
+                        }
+
+                        pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                            self.#fname.as_deref_mut()
+                        }
+
+                        pub fn #setter_name(&mut self, value: #type_name) {
+                            self.#fname = ::core::option::Option::Some(value.into());
+                        }
+
+                        pub fn #clearer_name(&mut self) {
+                            self.#fname = ::core::option::Option::None;
+                        }
+                    }
+                }
+            } else {
+                quote! {}
+            }
+        });
+
+        let name = &self.rust_name;
+        quote! {
+            impl #name {
+                #(#accessors)*
             }
         }
     }
@@ -756,6 +820,72 @@ mod tests {
                 #[attr3]
                 #[attr4]
                 pub _unknown: UnknownType,
+            }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn msg_impl() {
+        let msg = Message {
+            name: "Msg",
+            rust_name: Ident::new("Msg", Span::call_site()),
+            fields: vec![
+                make_test_field(
+                    1,
+                    "haz",
+                    false,
+                    FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
+                ),
+                make_test_field(
+                    1,
+                    "opt",
+                    false,
+                    FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
+                ),
+            ],
+            derive_dbg: true,
+            oneofs: vec![],
+            attrs: vec![],
+            unknown_handler: None,
+        };
+        let gen = Generator::default();
+        let out = msg.generate_impl(&gen);
+
+        let expected = quote! {
+            impl Msg {
+                pub fn haz(&self) -> ::core::option::Option<&bool> {
+                    self._has.haz().then_some(&self.haz)
+                }
+
+                pub fn mut_haz(&mut self) -> ::core::option::Option<&mut bool> {
+                    self._has.haz().then_some(&mut self.haz)
+                }
+
+                pub fn set_haz(&mut self, value: bool) {
+                    self._has.set_haz(true);
+                    self.haz = value.into();
+                }
+
+                pub fn clear_haz(&mut self) {
+                    self._has.set_haz(false);
+                }
+
+                pub fn opt(&self) -> ::core::option::Option<&bool> {
+                    self.opt.as_deref()
+                }
+
+                pub fn mut_opt(&mut self) -> ::core::option::Option<&mut bool> {
+                    self.opt.as_deref_mut()
+                }
+
+                pub fn set_opt(&mut self, value: bool) {
+                    self.opt = ::core::option::Option::Some(value.into());
+                }
+
+                pub fn clear_opt(&mut self) {
+                    self.opt = ::core::option::Option::None;
+                }
             }
         };
         assert_eq!(out.to_string(), expected.to_string());

@@ -23,21 +23,48 @@ mod tests {
         let mut basic = proto::basic::BasicTypes::default();
         assert!(!basic._has.dbl());
         assert_eq!(basic.dbl, 0.0);
+        assert_eq!(basic.dbl(), None);
+        assert_eq!(basic.mut_dbl(), None);
+
         assert!(!basic._has.flt());
         assert_eq!(basic.flt, 1.0); // custom default
+        assert_eq!(basic.flt(), None);
+        assert_eq!(basic.mut_flt(), None);
+
         assert!(!basic._has.boolean());
         assert!(!basic.boolean);
+        assert_eq!(basic.boolean(), None);
+        assert_eq!(basic.mut_boolean(), None);
+
         assert!(!basic._has.int32_num());
         assert_eq!(basic.int32_num, -5); // custom default
+        assert_eq!(basic.int32_num(), None);
+        assert_eq!(basic.mut_int32_num(), None);
+
         assert!(!basic._has.int64_num());
         assert_eq!(basic.int64_num, 0);
+        assert_eq!(basic.int64_num(), None);
+        assert_eq!(basic.mut_int64_num(), None);
+
         assert!(!basic._has.enumeration());
         assert_eq!(basic.enumeration, proto::basic::Enum::One); // custom default
+        assert_eq!(basic.enumeration(), None);
+        assert_eq!(basic.mut_enumeration(), None);
 
         basic.enumeration = proto::basic::Enum::One;
         basic._has.set_enumeration(true);
         assert!(basic._has.enumeration());
         assert_eq!(basic.enumeration, proto::basic::Enum::One);
+        assert_eq!(basic.enumeration(), Some(&proto::basic::Enum::One));
+        *basic.mut_enumeration().unwrap() = proto::basic::Enum::Zero;
+        assert_eq!(basic.enumeration(), Some(&proto::basic::Enum::Zero));
+
+        basic.set_int32_num(100);
+        assert!(basic._has.int32_num());
+        assert_eq!(basic.int32_num(), Some(&100));
+        basic.clear_int32_num();
+        assert!(!basic._has.int32_num());
+        assert_eq!(basic.int32_num(), None);
     }
 
     #[test]
