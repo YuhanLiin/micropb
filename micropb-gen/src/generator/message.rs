@@ -267,13 +267,18 @@ impl<'a> Message<'a> {
                         }
                     }
                 } else {
+                    let (deref, deref_mut) = if f.boxed {
+                        (format_ident!("as_deref"), format_ident!("as_deref_mut"))
+                    } else {
+                        (format_ident!("as_ref"), format_ident!("as_mut"))
+                    };
                     quote! {
                         pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
-                            self.#fname.as_deref()
+                            self.#fname.#deref()
                         }
 
                         pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
-                            self.#fname.as_deref_mut()
+                            self.#fname.#deref_mut()
                         }
 
                         pub fn #setter_name(&mut self, value: #type_name) {
@@ -872,11 +877,11 @@ mod tests {
                 }
 
                 pub fn opt(&self) -> ::core::option::Option<&bool> {
-                    self.opt.as_deref()
+                    self.opt.as_ref()
                 }
 
                 pub fn mut_opt(&mut self) -> ::core::option::Option<&mut bool> {
-                    self.opt.as_deref_mut()
+                    self.opt.as_mut()
                 }
 
                 pub fn set_opt(&mut self, value: bool) {
