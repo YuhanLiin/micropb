@@ -6,8 +6,7 @@ use syn::Ident;
 
 use super::{derive_msg_attr, field::CustomField, type_spec::TypeSpec, CurrentConfig, Generator};
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
     pub(crate) num: u32,
     pub(crate) tspec: TypeSpec,
@@ -58,8 +57,7 @@ impl<'a> OneofField<'a> {
     }
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum OneofType<'a> {
     Enum {
         type_name: Ident,
@@ -68,8 +66,7 @@ pub(crate) enum OneofType<'a> {
     Custom(CustomField),
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Oneof<'a> {
     pub(crate) name: &'a str,
     pub(crate) rust_name: Ident,

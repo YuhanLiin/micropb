@@ -10,15 +10,13 @@ use crate::config::OptionalRepr;
 
 use super::{type_spec::TypeSpec, CurrentConfig, Generator};
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum CustomField {
     Type(syn::Type),
     Delegate(Ident),
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum FieldType {
     // Can't be put in oneof, key type can't be message or enum
     Map {
@@ -41,8 +39,7 @@ pub(crate) enum FieldType {
     Custom(CustomField),
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Field<'a> {
     pub(crate) num: u32,
     pub(crate) ftype: FieldType,

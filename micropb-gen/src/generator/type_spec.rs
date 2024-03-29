@@ -26,8 +26,7 @@ pub(crate) enum PbInt {
     Fixed64,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum TypeSpec {
     Message(String),
     Enum(String),

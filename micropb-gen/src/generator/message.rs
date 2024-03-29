@@ -5,10 +5,7 @@ use prost_types::{DescriptorProto, Syntax};
 use quote::{format_ident, quote};
 use syn::Ident;
 
-use crate::{
-    config::Config,
-    generator::field::{CustomField, FieldType},
-};
+use crate::generator::field::{CustomField, FieldType};
 
 use super::{
     derive_msg_attr,
@@ -17,8 +14,7 @@ use super::{
     CurrentConfig, Generator,
 };
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Message<'a> {
     pub(crate) name: &'a str,
     pub(crate) rust_name: Ident,
