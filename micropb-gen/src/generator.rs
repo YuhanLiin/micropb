@@ -270,11 +270,13 @@ impl Generator {
         let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf);
         let unknown_field_attr = msg_conf.next_conf("_unknown").config.field_attr_parsed();
 
+        let default = msg.generate_default_impl(self, hazzer_field_attr.is_some());
         let decl = msg.generate_decl(self, hazzer_field_attr, unknown_field_attr);
 
         quote! {
             #msg_mod
             #decl
+            #default
         }
     }
 
