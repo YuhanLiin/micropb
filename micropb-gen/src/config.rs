@@ -1,4 +1,4 @@
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::Span;
 use syn::Ident;
 
 #[derive(Debug, Clone, Copy)]

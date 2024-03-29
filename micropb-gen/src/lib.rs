@@ -12,8 +12,12 @@ use std::{
 
 pub use config::Config;
 pub use generator::Generator;
+use pathtree::{Node, PathTree};
+use proc_macro2::TokenStream;
 use prost::Message;
 use prost_types::{FileDescriptorProto, FileDescriptorSet};
+use quote::TokenStreamExt;
+use syn::Ident;
 
 impl Generator {
     pub fn new() -> Self {
@@ -44,7 +48,11 @@ impl Generator {
             .map(Into::into)
     }
 
-    pub fn compile_protos(&mut self, protos: &[impl AsRef<Path>]) -> io::Result<()> {
+    pub fn compile_protos(
+        &mut self,
+        protos: &[impl AsRef<Path>],
+        out_filename: impl AsRef<Path>,
+    ) -> io::Result<()> {
         let fdset_file = self.outdir_path()?.join("micropb-fdset");
 
         // Get protoc command from PROTOC env-var, otherwise just use "protoc"
@@ -63,47 +71,32 @@ impl Generator {
             ));
         }
 
-        self.compile_fdset_file(fdset_file)
+        self.compile_fdset_file(fdset_file, out_filename)
     }
 
-    pub fn compile_fdset_file(&mut self, fdset_file: impl AsRef<Path>) -> io::Result<()> {
+    pub fn compile_fdset_file(
+        &mut self,
+        fdset_file: impl AsRef<Path>,
+        out_filename: impl AsRef<Path>,
+    ) -> io::Result<()> {
         let bytes = fs::read(fdset_file)?;
         let fdset = FileDescriptorSet::decode(&*bytes)?;
-        self.compile_fdset(&fdset)
-    }
+        let code = self.generate_fdset(&fdset);
 
-    pub fn compile_fdset(&mut self, fdset: &FileDescriptorSet) -> io::Result<()> {
-        for file in &fdset.file {
-            self.compile_fdproto(file)?;
-        }
-        Ok(())
-    }
+        let file_path = self.outdir_path().unwrap().join(out_filename);
+        let mut file = fs::File::create(file_path)?;
 
-    fn compile_fdproto(&mut self, fdproto: &FileDescriptorProto) -> io::Result<()> {
-        let filename = fdproto
-            .package
-            .as_ref()
-            .unwrap_or(&self.default_pkg_filename)
-            .to_owned()
-            + ".rs";
-        let code = self.generate_fdproto(fdproto);
-
-        if !code.is_empty() {
-            let file_path = self.outdir_path().unwrap().join(filename);
-            let mut file = fs::File::create(file_path)?;
-
-            #[cfg(feature = "format")]
-            let output = if self.format {
-                prettyplease::unparse(
-                    &syn::parse2(code).expect("output code should be parseable as a file"),
-                )
-            } else {
-                code.to_string()
-            };
-            #[cfg(not(feature = "format"))]
-            let output = code.to_string();
-            file.write_all(output.as_bytes())?
-        }
+        #[cfg(feature = "format")]
+        let output = if self.format {
+            prettyplease::unparse(
+                &syn::parse2(code).expect("output code should be parseable as a file"),
+            )
+        } else {
+            code.to_string()
+        };
+        #[cfg(not(feature = "format"))]
+        let output = code.to_string();
+        file.write_all(output.as_bytes())?;
         Ok(())
     }
 

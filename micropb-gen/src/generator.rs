@@ -7,7 +7,9 @@ use std::{
 
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{DescriptorProto, EnumDescriptorProto, FileDescriptorProto, Syntax};
+use prost_types::{
+    DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet, Syntax,
+};
 use quote::{format_ident, quote};
 use syn::Ident;
 
@@ -66,6 +68,20 @@ enum EncodeDecode {
     Both,
 }
 
+fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
+    let code = mod_node.value_mut().take().unwrap_or_default();
+    let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
+        let submod_name = Ident::new(submod_name, Span::call_site());
+        let inner = generate_mod_tree(inner_node);
+        quote! { pub mod #submod_name { #inner } }
+    });
+
+    quote! {
+        #code
+        #(#submods)*
+    }
+}
+
 #[derive(Debug)]
 pub struct Generator {
     syntax: Syntax,
@@ -78,11 +94,14 @@ pub struct Generator {
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) use_std: bool,
+
     pub(crate) config_tree: PathTree<Box<Config>>,
 }
 
 impl Default for Generator {
     fn default() -> Self {
+        let config_tree = PathTree::new(Box::new(Config::new()));
+
         Self {
             syntax: Default::default(),
             pkg_path: Default::default(),
@@ -94,12 +113,27 @@ impl Default for Generator {
             retain_enum_prefix: Default::default(),
             format: true,
             use_std: Default::default(),
-            config_tree: Default::default(),
+            config_tree,
         }
     }
 }
 
 impl Generator {
+    pub(crate) fn generate_fdset(&mut self, fdset: &FileDescriptorSet) -> TokenStream {
+        let mut mod_tree = PathTree::new(TokenStream::new());
+
+        for file in &fdset.file {
+            let code = self.generate_fdproto(file);
+            if let Some(pkg_name) = &file.package {
+                *mod_tree.root.add_path(pkg_name.split('.')).value_mut() = Some(code);
+            } else {
+                mod_tree.root.value_mut().as_mut().unwrap().extend([code]);
+            }
+        }
+
+        generate_mod_tree(&mut mod_tree.root)
+    }
+
     pub(crate) fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> TokenStream {
         self.syntax = match fdproto.syntax.as_deref() {
             Some("proto3") => Syntax::Proto3,
@@ -506,6 +540,33 @@ mod tests {
                     Self(val)
                 }
             }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn gen_mod_tree() {
+        let mut mod_tree = PathTree::new(quote! { Root });
+        *mod_tree
+            .root
+            .add_path(["foo", "bar"].into_iter())
+            .value_mut() = Some(quote! { Bar });
+        *mod_tree
+            .root
+            .add_path(["foo", "baz"].into_iter())
+            .value_mut() = Some(quote! { Baz });
+        *mod_tree.root.add_path(["bow"].into_iter()).value_mut() = Some(quote! { Bow });
+
+        let out = generate_mod_tree(&mut mod_tree.root);
+        let expected = quote! {
+            Root
+
+            pub mod foo {
+                pub mod bar { Bar }
+                pub mod baz { Baz }
+            }
+
+            pub mod bow { Bow }
         };
         assert_eq!(out.to_string(), expected.to_string());
     }

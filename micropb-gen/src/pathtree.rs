@@ -58,9 +58,13 @@ impl<T> Node<T> {
         }
         Some(node)
     }
+
+    pub fn children_mut(&mut self) -> impl Iterator<Item = &mut (String, Node<T>)> {
+        self.children.iter_mut()
+    }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PathTree<T> {
     pub root: Node<T>,
 }

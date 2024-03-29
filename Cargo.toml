@@ -2,5 +2,7 @@
 resolver = "2"
 
 members = [
-    "micropb"
-, "micropb-gen"]
+    "micropb",
+    "micropb-gen",
+    "tests/basic-proto"
+]
