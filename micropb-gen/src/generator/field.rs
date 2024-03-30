@@ -88,7 +88,6 @@ impl<'a> Field<'a> {
         if field_conf.config.skip.unwrap_or(false) {
             return None;
         }
-        assert!(proto.oneof_index.is_none());
 
         let num = proto.number.unwrap() as u32;
         let name = proto.name();
@@ -140,10 +139,10 @@ impl<'a> Field<'a> {
                 } else {
                     OptionalRepr::Hazzer
                 });
-                FieldType::Optional(TypeSpec::from_proto(proto, &field_conf), repr)
+                FieldType::Optional(TypeSpec::from_proto(proto, field_conf), repr)
             }
 
-            (None, None, _) => FieldType::Single(TypeSpec::from_proto(proto, &field_conf)),
+            (None, None, _) => FieldType::Single(TypeSpec::from_proto(proto, field_conf)),
         };
         let attrs = field_conf.config.field_attr_parsed();
 

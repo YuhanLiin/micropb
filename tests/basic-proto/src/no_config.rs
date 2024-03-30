@@ -110,3 +110,24 @@ fn nested_msg() {
         }
     }
 }
+
+#[test]
+fn proto3() {
+    let non_opt = proto::basic3::NonOptional::default();
+    let _: i32 = non_opt.non_opt;
+    // no hazzer, so message size should equal field size
+    assert_eq!(
+        std::mem::size_of::<proto::basic3::NonOptional>(),
+        std::mem::size_of::<i32>()
+    );
+
+    let opt = proto::basic3::Optional::default();
+    let _: i32 = opt.opt;
+    let _: proto::basic3::ZST = opt.zst_opt;
+    let _: proto::basic3::ZST = opt.zst;
+    // regardless of whether the ZST is marked as optional, it should be treated as optional
+    assert!(opt.zst().is_none());
+    assert!(opt.zst_opt().is_none());
+    // hazzer exists, so message size should exceed field size
+    assert!(std::mem::size_of::<proto::basic3::Optional>() > std::mem::size_of::<i32>());
+}

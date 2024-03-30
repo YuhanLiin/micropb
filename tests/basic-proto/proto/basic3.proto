@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package basic3;
+
+message ZST {}
+
+message NonOptional {
+    int32 non_opt = 1;
+}
+
+message Optional {
+    optional int32 opt = 1;
+    optional ZST zst_opt = 2;
+    ZST zst = 3;
+}

@@ -7,7 +7,11 @@ fn no_config() {
     let mut generator = Generator::new();
     generator
         .compile_protos(
-            &["proto/basic.proto", "proto/nested.proto"],
+            &[
+                "proto/basic.proto",
+                "proto/basic3.proto",
+                "proto/nested.proto",
+            ],
             std::env::var("OUT_DIR").unwrap() + "/no_config.rs",
         )
         .unwrap();

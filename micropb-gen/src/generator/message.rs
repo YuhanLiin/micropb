@@ -56,6 +56,8 @@ impl<'a> Message<'a> {
             }
         }
 
+        let mut synthetic_oneof_idx = vec![];
+
         let fields: Vec<_> = proto
             .field
             .iter()
@@ -67,29 +69,37 @@ impl<'a> Message<'a> {
                     .map(|(_, r)| r)
                     .unwrap_or(f.type_name());
                 if let Some(map_msg) = map_types.remove(raw_msg_name) {
+                    // Map field
                     Field::from_proto(f, &field_conf, syntax, Some(map_msg))
                 } else {
                     if let Some(idx) = f.oneof_index {
-                        if let Some(OneofType::Enum { fields, .. }) = oneofs
-                            .iter_mut()
-                            .find(|o| o.idx == idx as usize)
-                            .map(|o| &mut o.otype)
-                        {
-                            if let Some(field) = OneofField::from_proto(f, &field_conf) {
-                                fields.push(field);
+                        if f.proto3_optional() {
+                            synthetic_oneof_idx.push(idx as usize);
+                        } else {
+                            if let Some(OneofType::Enum { fields, .. }) = oneofs
+                                .iter_mut()
+                                .find(|o| o.idx == idx as usize)
+                                .map(|o| &mut o.otype)
+                            {
+                                // Oneof field
+                                if let Some(field) = OneofField::from_proto(f, &field_conf) {
+                                    fields.push(field);
+                                }
                             }
+                            return None;
                         }
-                        return None;
                     }
+                    // Normal field
                     Field::from_proto(f, &field_conf, syntax, None)
                 }
             })
             .collect();
 
-        // Remove all oneofs that are empty enums
+        // Remove all oneofs that are empty enums or synthetic oneofs
         let oneofs: Vec<_> = oneofs
             .into_iter()
             .filter(|o| !matches!(&o.otype, OneofType::Enum { fields, .. } if fields.is_empty()))
+            .filter(|o| !synthetic_oneof_idx.contains(&o.idx))
             .collect();
 
         Some(Self {
@@ -533,6 +543,48 @@ mod tests {
                 derive_dbg: false,
                 attrs: parse_attributes("#[derive(Self)]").unwrap(),
                 unknown_handler: Some(syn::parse_str("UnknownType").unwrap())
+            }
+        )
+    }
+
+    #[test]
+    fn synthetic_oneof() {
+        let proto = DescriptorProto {
+            name: Some("Msg".to_owned()),
+            field: vec![FieldDescriptorProto {
+                number: Some(1),
+                name: Some("opt".to_owned()),
+                r#type: Some(Type::Bool.into()),
+                proto3_optional: Some(true),
+                oneof_index: Some(0),
+                ..Default::default()
+            }],
+            oneof_decl: vec![OneofDescriptorProto {
+                name: Some("_opt".to_owned()),
+                options: None,
+            }],
+            ..Default::default()
+        };
+        let msg_conf = CurrentConfig {
+            node: None,
+            config: Cow::Owned(Box::new(Config::new())),
+        };
+
+        assert_eq!(
+            Message::from_proto(&proto, Syntax::Proto3, &msg_conf).unwrap(),
+            Message {
+                name: "Msg",
+                rust_name: Ident::new("Msg", Span::call_site()),
+                oneofs: vec![],
+                fields: vec![make_test_field(
+                    1,
+                    "opt",
+                    false,
+                    FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
+                )],
+                derive_dbg: true,
+                attrs: vec![],
+                unknown_handler: None
             }
         )
     }

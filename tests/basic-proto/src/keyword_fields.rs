@@ -1,5 +1,3 @@
-use std::mem::size_of;
-
 mod proto {
     include!(concat!(env!("OUT_DIR"), "/keyword_fields.rs"));
 }
