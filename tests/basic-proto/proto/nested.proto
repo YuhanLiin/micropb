@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+import "proto/basic.proto";
+
+package nested;
+
+message Nested {
+    message InnerMsg {
+        optional sint32 val = 1;
+    }
+    enum InnerEnum {
+        INNER_ENUM_VAL = 0;
+    }
+
+    optional .basic.BasicTypes basic = 1;
+    oneof inner {
+        .basic.Enum enumeration = 2;
+        InnerMsg inner_msg = 3;
+        InnerEnum inner_enum = 4;
+        bool scalar = 5;
+    }
+}

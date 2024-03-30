@@ -81,3 +81,32 @@ fn basic_type_check() {
     let _: f32 = basic.flt;
     let _: f64 = basic.dbl;
 }
+
+#[test]
+fn nested_msg() {
+    let mut nested = proto::nested::Nested::default();
+    nested._has.set_basic(true);
+    assert_eq!(nested.basic(), Some(&proto::basic::BasicTypes::default()));
+    assert!(nested.inner.is_none());
+    nested.inner = Some(proto::nested::mod_Nested::Inner::InnerMsg(
+        proto::nested::mod_Nested::InnerMsg::default(),
+    ));
+
+    let _: proto::basic::BasicTypes = nested.basic;
+    let _: Option<proto::nested::mod_Nested::Inner> = nested.inner;
+    match nested.inner.unwrap() {
+        proto::nested::mod_Nested::Inner::Scalar(v) => {
+            let _: bool = v;
+        }
+        proto::nested::mod_Nested::Inner::InnerMsg(m) => {
+            let _: proto::nested::mod_Nested::InnerMsg = m;
+            assert_eq!(m.val, 0);
+        }
+        proto::nested::mod_Nested::Inner::Enumeration(e) => {
+            let _: proto::basic::Enum = e;
+        }
+        proto::nested::mod_Nested::Inner::InnerEnum(e) => {
+            let _: proto::nested::mod_Nested::InnerEnum = e;
+        }
+    }
+}

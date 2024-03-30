@@ -144,18 +144,18 @@ impl Generator {
             .unwrap_or_default();
 
         let root_node = &self.config_tree.root;
-        let mut root_conf = root_node
+        let mut conf = root_node
             .value()
             .as_ref()
             .expect("root config should exist")
             .clone();
-        root_node.visit_path(
+        let node = root_node.visit_path(
             fdproto.package.as_deref().unwrap_or("").split('.'),
-            |conf| root_conf.merge(conf),
+            |next_conf| conf.merge(next_conf),
         );
         let cur_config = CurrentConfig {
-            node: Some(root_node),
-            config: Cow::Owned(root_conf),
+            node,
+            config: Cow::Owned(conf),
         };
 
         let msgs = fdproto
