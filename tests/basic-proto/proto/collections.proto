@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+message Data {
+    optional string s = 1 [default = "a\n\0"];
+    optional bytes b = 2 [default = "\0\xFF"];
+}
+
+message List {
+    repeated Data list = 1;
+}
+
+message NumList {
+    repeated fixed32 list = 1;
+}

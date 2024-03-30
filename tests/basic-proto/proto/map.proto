@@ -1,0 +1,5 @@
+syntax = "proto2";
+
+message Map {
+    map<string, bytes> mapping = 1;
+}

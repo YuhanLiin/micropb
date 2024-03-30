@@ -115,10 +115,64 @@ fn keyword_fields() {
         .unwrap();
 }
 
+fn container_heapless() {
+    let mut generator = Generator::new();
+    generator.use_container_heapless();
+    generator.configure(".Data.s", Config::new().max_bytes(3));
+    generator.configure(".Data.b", Config::new().max_bytes(5));
+    generator.configure(".List.list", Config::new().max_len(2));
+    generator.configure(".NumList.list", Config::new().max_len(2));
+    generator.configure(".NumList.list.elem", Config::new().int_type(IntType::U8));
+
+    generator.configure(".Map.mapping", Config::new().max_len(8));
+    generator.configure(".Map.mapping.key", Config::new().max_bytes(4));
+    generator.configure(".Map.mapping.value", Config::new().max_bytes(3));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto", "proto/map.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/container_heapless.rs",
+        )
+        .unwrap();
+}
+
+fn container_arrayvec() {
+    let mut generator = Generator::new();
+    generator.use_container_arrayvec();
+    generator.configure(".Data.s", Config::new().max_bytes(3));
+    generator.configure(".Data.b", Config::new().max_bytes(5));
+    generator.configure(".List.list", Config::new().max_len(2));
+    generator.configure(".NumList.list", Config::new().max_len(2));
+    generator.configure(".NumList.list.elem", Config::new().int_type(IntType::U8));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/container_arrayvec.rs",
+        )
+        .unwrap();
+}
+
+fn container_alloc() {
+    let mut generator = Generator::new();
+    generator.use_container_alloc();
+    generator.configure(".NumList.list.elem", Config::new().int_type(IntType::U8));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto", "proto/map.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/container_alloc.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
     int_type();
     skip();
     keyword_fields();
+    container_heapless();
+    container_arrayvec();
+    container_alloc();
 }
