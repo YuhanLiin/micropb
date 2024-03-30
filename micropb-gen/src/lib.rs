@@ -25,12 +25,44 @@ impl Generator {
             proto_path = &proto_path[1..];
         }
 
-        self.config_tree
+        let config_slot = self
+            .config_tree
             .root
             .add_path(split_pkg_name(proto_path))
-            .value_mut()
-            .get_or_insert_with(Default::default)
-            .merge(&config);
+            .value_mut();
+        match config_slot {
+            Some(existing) => existing.merge(&config),
+            None => *config_slot = Some(Box::new(config)),
+        }
+    }
+
+    pub fn use_container_heapless(&mut self) {
+        self.configure(
+            ".",
+            Config::new()
+                .vec_type("::micropb::heapless::Vec")
+                .string_type("::micropb::heapless::String")
+                .map_type("::micropb::heapless::FnvIndexMap"),
+        );
+    }
+
+    pub fn use_container_arrayvec(&mut self) {
+        self.configure(
+            ".",
+            Config::new()
+                .vec_type("::micropb::arrayvec::ArrayVec")
+                .string_type("::micropb::arrayvec::ArrayString"),
+        );
+    }
+
+    pub fn use_container_alloc(&mut self) {
+        self.configure(
+            ".",
+            Config::new()
+                .vec_type("::alloc::vec::Vec")
+                .string_type("::alloc::string::String")
+                .map_type("::alloc::collections::BTreeMap"),
+        );
     }
 
     pub fn compile_protos(
