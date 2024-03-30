@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+message Msg {
+    optional bool super = 1;
+    optional bool i32 = 2;
+    optional bool type = 3;
+}

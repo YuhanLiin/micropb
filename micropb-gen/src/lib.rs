@@ -6,7 +6,7 @@ mod utils;
 use std::{
     env, fs,
     io::{self, Write},
-    path::{Path, PathBuf},
+    path::Path,
     process::Command,
 };
 

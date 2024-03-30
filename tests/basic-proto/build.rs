@@ -51,8 +51,42 @@ fn int_type() {
         .unwrap();
 }
 
+fn skip() {
+    let mut generator = Generator::new();
+    generator.configure(".basic.Enum", Config::new().skip(true));
+    generator.configure(".basic.BasicTypes", Config::new().skip(true));
+    generator.configure(".nested.Nested.basic", Config::new().skip(true));
+    generator.configure(".nested.Nested.inner_msg", Config::new().skip(true));
+    generator.configure(".nested.Nested.inner_enum", Config::new().skip(true));
+    generator.configure(".nested.Nested.enumeration", Config::new().skip(true));
+    // only .nested.Nested.scalar is not skipped
+
+    generator
+        .compile_protos(
+            &["proto/basic.proto", "proto/nested.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/skip.rs",
+        )
+        .unwrap();
+}
+
+fn keyword_fields() {
+    let mut generator = Generator::new();
+    generator.configure(".Msg.super", Config::new().rename_field("super_"));
+    generator.configure(".Msg.i32", Config::new().rename_field("i32_"));
+    generator.configure(".Msg.type", Config::new().rename_field("typ"));
+
+    generator
+        .compile_protos(
+            &["proto/keyword_fields.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/keyword_fields.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
     int_type();
+    skip();
+    keyword_fields();
 }
