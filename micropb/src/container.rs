@@ -222,6 +222,7 @@ mod impl_alloc {
     use super::*;
 
     use alloc::{
+        borrow::ToOwned,
         collections::{btree_map, BTreeMap},
         string::String,
         vec::Vec,

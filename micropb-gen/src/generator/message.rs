@@ -308,6 +308,10 @@ impl<'a> Message<'a> {
         let name = &self.rust_name;
         quote! {
             impl #name {
+                pub fn new() -> Self {
+                    ::core::default::Default::default()
+                }
+
                 #(#accessors)*
             }
         }
