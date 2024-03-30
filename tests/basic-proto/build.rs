@@ -40,7 +40,35 @@ fn int_type() {
     generator.configure(".basic.Enum", Config::new().enum_int_type(IntType::I8));
     generator.configure(
         ".basic.BasicTypes.int32_num",
+        Config::new().int_type(IntType::I8),
+    );
+    generator.configure(
+        ".basic.BasicTypes.int64_num",
         Config::new().int_type(IntType::I16),
+    );
+    generator.configure(
+        ".basic.BasicTypes.uint32_num",
+        Config::new().int_type(IntType::U8),
+    );
+    generator.configure(
+        ".basic.BasicTypes.uint64_num",
+        Config::new().int_type(IntType::U16),
+    );
+    generator.configure(
+        ".basic.BasicTypes.sfixed32_num",
+        Config::new().int_type(IntType::I64),
+    );
+    generator.configure(
+        ".basic.BasicTypes.sfixed64_num",
+        Config::new().int_type(IntType::Isize),
+    );
+    generator.configure(
+        ".basic.BasicTypes.fixed32_num",
+        Config::new().int_type(IntType::U64),
+    );
+    generator.configure(
+        ".basic.BasicTypes.fixed64_num",
+        Config::new().int_type(IntType::Usize),
     );
 
     generator
