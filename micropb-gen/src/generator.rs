@@ -16,6 +16,7 @@ use syn::Ident;
 use crate::{
     config::{Config, IntType},
     pathtree::{Node, PathTree},
+    split_pkg_name,
 };
 
 use self::message::Message;
@@ -123,7 +124,7 @@ impl Generator {
         for file in &fdset.file {
             let code = self.generate_fdproto(file);
             if let Some(pkg_name) = &file.package {
-                *mod_tree.root.add_path(pkg_name.split('.')).value_mut() = Some(code);
+                *mod_tree.root.add_path(split_pkg_name(pkg_name)).value_mut() = Some(code);
             } else {
                 mod_tree.root.value_mut().as_mut().unwrap().extend([code]);
             }
@@ -140,7 +141,7 @@ impl Generator {
         self.pkg_path = fdproto
             .package
             .as_ref()
-            .map(|s| s.split('.').map(ToOwned::to_owned).collect())
+            .map(|s| split_pkg_name(s).map(ToOwned::to_owned).collect())
             .unwrap_or_default();
 
         let root_node = &self.config_tree.root;
@@ -150,7 +151,7 @@ impl Generator {
             .expect("root config should exist")
             .clone();
         let node = root_node.visit_path(
-            fdproto.package.as_deref().unwrap_or("").split('.'),
+            split_pkg_name(fdproto.package.as_deref().unwrap_or("")),
             |next_conf| conf.merge(next_conf),
         );
         let cur_config = CurrentConfig {

@@ -27,7 +27,7 @@ impl Generator {
 
         self.config_tree
             .root
-            .add_path(proto_path.split('.'))
+            .add_path(split_pkg_name(proto_path))
             .value_mut()
             .get_or_insert_with(Default::default)
             .merge(&config);
@@ -96,4 +96,9 @@ impl Generator {
     pub fn use_std(&mut self, use_std: bool) {
         self.use_std = use_std;
     }
+}
+
+fn split_pkg_name(name: &str) -> impl Iterator<Item = &str> {
+    // ignore empty segments, so empty pkg name points to root node
+    name.split('.').filter(|seg| !seg.is_empty())
 }
