@@ -230,23 +230,23 @@ impl<'a> Field<'a> {
         decoder: &Ident,
     ) -> TokenStream {
         let fnum = self.num;
-        let fname = &self.name;
+        let fname = &self.rust_name;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
 
         let decode_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
-                let key_decode_expr = key.generate_decode_mut(gen, decoder, &mut_ref);
-                let val_decode_expr = val.generate_decode_mut(gen, decoder, &mut_ref);
+                let key_decode_expr = key.generate_decode_mut(gen, tag, decoder, &mut_ref);
+                let val_decode_expr = val.generate_decode_mut(gen, tag, decoder, &mut_ref);
                 quote! {
                     #decoder.decode_map_elem(
-                        |#mut_ref, #decoder| { #key_decode_expr },
-                        |#mut_ref, #decoder| { #val_decode_expr },
+                        |#mut_ref, #decoder| { #key_decode_expr; Ok(()) },
+                        |#mut_ref, #decoder| { #val_decode_expr; Ok(()) },
                     )?;
                 }
             }
 
             FieldType::Single(tspec) | FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
-                let decode_expr = tspec.generate_decode_mut(gen, decoder, &mut_ref);
+                let decode_expr = tspec.generate_decode_mut(gen, tag, decoder, &mut_ref);
                 let set_has = self.is_hazzer().then(|| {
                     let setter = format_ident!("set_{fname}");
                     quote! { self._has.#setter(true); }
@@ -259,7 +259,7 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::Option) => {
-                let decode_expr = tspec.generate_decode_mut(gen, decoder, &mut_ref);
+                let decode_expr = tspec.generate_decode_mut(gen, tag, decoder, &mut_ref);
                 quote! {
                     let #mut_ref = &mut *self.#fname.get_or_insert_default();
                     #decode_expr;
@@ -278,7 +278,7 @@ impl<'a> Field<'a> {
                         }
                     }
                 } else {
-                    let decode_expr = typ.generate_decode_mut(gen, decoder, &mut_ref);
+                    let decode_expr = typ.generate_decode_mut(gen, tag, decoder, &mut_ref);
                     quote! {
                         self.#fname.pb_push(::core::default::Default::default()).map_err(|_| ::micropb::DecodeError::Capacity)?;
                         let #mut_ref = self.#fname.last_mut().unwrap();

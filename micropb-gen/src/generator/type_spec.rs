@@ -161,6 +161,7 @@ impl TypeSpec {
     pub(crate) fn generate_decode_mut(
         &self,
         gen: &Generator,
+        tag: &Ident,
         decoder: &Ident,
         mut_ref: &Ident,
     ) -> TokenStream {
@@ -173,7 +174,7 @@ impl TypeSpec {
 
         match self {
             TypeSpec::Message(_) => quote! { #mut_ref.decode_len_delimited(#decoder)? },
-            TypeSpec::Enum(_) => todo!(),
+            TypeSpec::Enum(_) => quote! { #mut_ref.decode_field(#tag, #decoder)? },
             TypeSpec::Float | TypeSpec::Double | TypeSpec::Bool | TypeSpec::Int(..) => {
                 let val = self.generate_decode_val(decoder).unwrap();
                 quote! { *#mut_ref = (#val as _) }
