@@ -21,6 +21,7 @@ pub enum DecodeError<E> {
     UnexpectedEof,
     Deprecation,
     BadWireType(u8),
+    ZeroField,
     Utf8(Utf8Error),
     Capacity,
     WrongLen { expected: usize, actual: usize },
@@ -393,19 +394,6 @@ impl<R: PbRead> PbDecoder<R> {
         } else {
             Ok(None)
         }
-    }
-
-    pub fn decode_repeated_elem<
-        T,
-        S: PbVec<T>,
-        F: Fn(&mut Self) -> Result<T, DecodeError<R::Error>>,
-    >(
-        &mut self,
-        repeated: &mut S,
-        decoder: F,
-    ) -> Result<(), DecodeError<R::Error>> {
-        let val = decoder(self)?;
-        repeated.pb_push(val).map_err(|_| DecodeError::Capacity)
     }
 
     fn skip_varint(&mut self) -> Result<(), DecodeError<R::Error>> {

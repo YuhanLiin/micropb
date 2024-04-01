@@ -1,6 +1,6 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{field_descriptor_proto::Type, FieldDescriptorProto};
+use prost_types::{field_descriptor_proto::Type, FieldDescriptorProto, Syntax};
 use quote::quote;
 use syn::Ident;
 
@@ -24,6 +24,23 @@ pub(crate) enum PbInt {
     Sfixed64,
     Fixed32,
     Fixed64,
+}
+
+impl PbInt {
+    pub(crate) fn generate_decode_val(&self, decoder: &Ident) -> TokenStream {
+        match self {
+            PbInt::Int32 => quote! { #decoder.decode_int32()? },
+            PbInt::Int64 => quote! { #decoder.decode_int64()? },
+            PbInt::Uint32 => quote! { #decoder.decode_varint32()? },
+            PbInt::Uint64 => quote! { #decoder.decode_varint64()? },
+            PbInt::Sint32 => quote! { #decoder.decode_sint32()? },
+            PbInt::Sfixed32 => quote! { #decoder.decode_sfixed32()? },
+            PbInt::Sint64 => quote! { #decoder.decode_sint64()? },
+            PbInt::Sfixed64 => quote! { #decoder.decode_sfixed64()? },
+            PbInt::Fixed32 => quote! { #decoder.decode_fixed32()? },
+            PbInt::Fixed64 => quote! { #decoder.decode_fixed64()? },
+        }
+    }
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -127,6 +144,45 @@ impl TypeSpec {
                 let default: TokenStream =
                     syn::parse_str(default).expect("default value tokenization error");
                 quote! { #default as _ }
+            }
+        }
+    }
+
+    pub(crate) fn generate_decode_val(&self, decoder: &Ident) -> Option<TokenStream> {
+        match self {
+            TypeSpec::Float => Some(quote! { #decoder.decode_float()? }),
+            TypeSpec::Double => Some(quote! { #decoder.decode_double()? }),
+            TypeSpec::Bool => Some(quote! { decoder.decode_bool()? }),
+            TypeSpec::Int(pbint, _) => Some(pbint.generate_decode_val(decoder)),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn generate_decode_mut(
+        &self,
+        gen: &Generator,
+        decoder: &Ident,
+        mut_ref: &Ident,
+    ) -> TokenStream {
+        let presence = if gen.syntax == Syntax::Proto2 {
+            "Explicit"
+        } else {
+            "Implicit"
+        };
+        let presence_ident = Ident::new(presence, Span::call_site());
+
+        match self {
+            TypeSpec::Message(_) => quote! { #mut_ref.decode_len_delimited(#decoder)? },
+            TypeSpec::Enum(_) => todo!(),
+            TypeSpec::Float | TypeSpec::Double | TypeSpec::Bool | TypeSpec::Int(..) => {
+                let val = self.generate_decode_val(decoder).unwrap();
+                quote! { *#mut_ref = (#val as _) }
+            }
+            TypeSpec::String { .. } => {
+                quote! { #decoder.decode_string(#mut_ref, ::micropb::Presence::#presence_ident)? }
+            }
+            TypeSpec::Bytes { .. } => {
+                quote! { #decoder.decode_bytes(#mut_ref, ::micropb::Presence::#presence_ident)? }
             }
         }
     }

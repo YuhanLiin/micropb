@@ -316,6 +316,56 @@ impl<'a> Message<'a> {
             }
         }
     }
+
+    pub(crate) fn generate_decode(&self, gen: &Generator) -> TokenStream {
+        let name = &self.rust_name;
+        let tag = Ident::new("tag", Span::call_site());
+        let decoder = Ident::new("decoder", Span::call_site());
+
+        let branches = self
+            .fields
+            .iter()
+            .map(|f| f.generate_decode_branch(gen, &tag, &decoder));
+
+        let unknown_branch = if self.unknown_handler.is_some() {
+            quote! { self._unknown.decode_field(#tag, #decoder)?; }
+        } else {
+            quote! { self.skip_wire_value(#tag.wire_type())?; }
+        };
+
+        quote! {
+            impl ::micropb::MessageDecode for #name {
+                fn decode<R: ::micropb::PbRead>(
+                    &mut self,
+                    #decoder: &mut ::micropb::PbDecoder<R>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<R::Error>>
+                {
+                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+
+                    let before = self.bytes_read();
+                    while self.bytes_read() - before < len {
+                        let #tag = decoder.decode_tag();
+                        match #tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            #(#branches)*
+                            _ => { #unknown_branch }
+                        }
+                    }
+
+                    let actual_len = self.bytes_read() - before;
+                    if actual_len != len {
+                        Err(DecodeError::WrongLen {
+                            expected: len,
+                            actual: actual_len,
+                        })
+                    } else {
+                        Ok(())
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]

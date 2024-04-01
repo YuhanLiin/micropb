@@ -1,9 +1,9 @@
-use proc_macro2::{Literal, TokenStream};
+use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{
     field_descriptor_proto::{Label, Type},
     DescriptorProto, FieldDescriptorProto, Syntax,
 };
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::config::OptionalRepr;
@@ -221,6 +221,84 @@ impl<'a> Field<'a> {
             _ => {}
         }
         quote! { ::core::default::Default::default() }
+    }
+
+    pub(crate) fn generate_decode_branch(
+        &self,
+        gen: &Generator,
+        tag: &Ident,
+        decoder: &Ident,
+    ) -> TokenStream {
+        let fnum = self.num;
+        let fname = &self.name;
+        let mut_ref = Ident::new("mut_ref", Span::call_site());
+
+        let decode_code = match &self.ftype {
+            FieldType::Map { key, val, .. } => {
+                let key_decode_expr = key.generate_decode_mut(gen, decoder, &mut_ref);
+                let val_decode_expr = val.generate_decode_mut(gen, decoder, &mut_ref);
+                quote! {
+                    #decoder.decode_map_elem(
+                        |#mut_ref, #decoder| { #key_decode_expr },
+                        |#mut_ref, #decoder| { #val_decode_expr },
+                    )?;
+                }
+            }
+
+            FieldType::Single(tspec) | FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
+                let decode_expr = tspec.generate_decode_mut(gen, decoder, &mut_ref);
+                let set_has = self.is_hazzer().then(|| {
+                    let setter = format_ident!("set_{fname}");
+                    quote! { self._has.#setter(true); }
+                });
+                quote! {
+                    let #mut_ref = &mut self.#fname;
+                    #decode_expr;
+                    #set_has
+                }
+            }
+
+            FieldType::Optional(tspec, OptionalRepr::Option) => {
+                let decode_expr = tspec.generate_decode_mut(gen, decoder, &mut_ref);
+                quote! {
+                    let #mut_ref = &mut *self.#fname.get_or_insert_default();
+                    #decode_expr;
+                }
+            }
+
+            FieldType::Repeated { typ, .. } => {
+                if let Some(val) = typ.generate_decode_val(decoder) {
+                    // Type can be packed and is Copy, so we check the wire type to see if we can
+                    // do packed decoding
+                    quote! {
+                        if #tag.wire_type() == WIRE_TYPE_LEN {
+                            #decoder.decode_packed(&mut self.#fname, |#decoder| #val)?;
+                        } else {
+                            self.#fname.pb_push(#val).map_err(|_| ::micropb::DecodeError::Capacity)?;
+                        }
+                    }
+                } else {
+                    let decode_expr = typ.generate_decode_mut(gen, decoder, &mut_ref);
+                    quote! {
+                        self.#fname.pb_push(::core::default::Default::default()).map_err(|_| ::micropb::DecodeError::Capacity)?;
+                        let #mut_ref = self.#fname.last_mut().unwrap();
+                        #decode_expr;
+                    }
+                }
+            }
+
+            FieldType::Custom(CustomField::Type(_)) => {
+                quote! { self.#fname.decode_field(#tag, #decoder)?; }
+            }
+
+            FieldType::Custom(CustomField::Delegate(field)) => {
+                quote! { self.#field.decode_field(#tag, #decoder)?; }
+            }
+        };
+
+        quote! {
+            #fnum => { #decode_code }
+        }
     }
 }
 
