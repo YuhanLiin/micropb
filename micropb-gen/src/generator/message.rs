@@ -965,6 +965,10 @@ mod tests {
 
         let expected = quote! {
             impl Msg {
+                pub fn new() -> Self {
+                    ::core::default::Default::default()
+                }
+
                 pub fn haz(&self) -> ::core::option::Option<&bool> {
                     self._has.haz().then_some(&self.haz)
                 }
