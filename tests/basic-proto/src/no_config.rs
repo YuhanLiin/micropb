@@ -1,4 +1,6 @@
 mod proto {
+    #![allow(clippy::all)]
+    #![allow(warnings)]
     include!(concat!(env!("OUT_DIR"), "/no_config.rs"));
 }
 

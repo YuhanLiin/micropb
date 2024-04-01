@@ -4,6 +4,8 @@ use std::{
 };
 
 mod proto {
+    #![allow(clippy::all)]
+    #![allow(warnings)]
     include!(concat!(env!("OUT_DIR"), "/container_alloc.rs"));
 }
 
