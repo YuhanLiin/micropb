@@ -29,16 +29,16 @@ pub(crate) enum PbInt {
 impl PbInt {
     pub(crate) fn generate_decode_val(&self, decoder: &Ident) -> TokenStream {
         match self {
-            PbInt::Int32 => quote! { #decoder.decode_int32()? },
-            PbInt::Int64 => quote! { #decoder.decode_int64()? },
-            PbInt::Uint32 => quote! { #decoder.decode_varint32()? },
-            PbInt::Uint64 => quote! { #decoder.decode_varint64()? },
-            PbInt::Sint32 => quote! { #decoder.decode_sint32()? },
-            PbInt::Sfixed32 => quote! { #decoder.decode_sfixed32()? },
-            PbInt::Sint64 => quote! { #decoder.decode_sint64()? },
-            PbInt::Sfixed64 => quote! { #decoder.decode_sfixed64()? },
-            PbInt::Fixed32 => quote! { #decoder.decode_fixed32()? },
-            PbInt::Fixed64 => quote! { #decoder.decode_fixed64()? },
+            PbInt::Int32 => quote! { #decoder.decode_int32() },
+            PbInt::Int64 => quote! { #decoder.decode_int64() },
+            PbInt::Uint32 => quote! { #decoder.decode_varint32() },
+            PbInt::Uint64 => quote! { #decoder.decode_varint64() },
+            PbInt::Sint32 => quote! { #decoder.decode_sint32() },
+            PbInt::Sfixed32 => quote! { #decoder.decode_sfixed32() },
+            PbInt::Sint64 => quote! { #decoder.decode_sint64() },
+            PbInt::Sfixed64 => quote! { #decoder.decode_sfixed64() },
+            PbInt::Fixed32 => quote! { #decoder.decode_fixed32() },
+            PbInt::Fixed64 => quote! { #decoder.decode_fixed64() },
         }
     }
 }
@@ -161,9 +161,9 @@ impl TypeSpec {
 
     pub(crate) fn generate_decode_val(&self, decoder: &Ident) -> Option<TokenStream> {
         match self {
-            TypeSpec::Float => Some(quote! { #decoder.decode_float()? }),
-            TypeSpec::Double => Some(quote! { #decoder.decode_double()? }),
-            TypeSpec::Bool => Some(quote! { decoder.decode_bool()? }),
+            TypeSpec::Float => Some(quote! { #decoder.decode_float() }),
+            TypeSpec::Double => Some(quote! { #decoder.decode_double() }),
+            TypeSpec::Bool => Some(quote! { decoder.decode_bool() }),
             TypeSpec::Int(pbint, _) => Some(pbint.generate_decode_val(decoder)),
             _ => None,
         }
@@ -188,7 +188,7 @@ impl TypeSpec {
             TypeSpec::Enum(_) => quote! { #mut_ref.decode_field(#tag, #decoder)? },
             TypeSpec::Float | TypeSpec::Double | TypeSpec::Bool | TypeSpec::Int(..) => {
                 let val = self.generate_decode_val(decoder).unwrap();
-                quote! { *#mut_ref = (#val as _) }
+                quote! { *#mut_ref = (#val? as _) }
             }
             TypeSpec::String { .. } => {
                 quote! { #decoder.decode_string(#mut_ref, ::micropb::Presence::#presence_ident)? }

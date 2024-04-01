@@ -330,7 +330,7 @@ impl<'a> Message<'a> {
         let unknown_branch = if self.unknown_handler.is_some() {
             quote! { self._unknown.decode_field(#tag, #decoder)?; }
         } else {
-            quote! { self.skip_wire_value(#tag.wire_type())?; }
+            quote! { #decoder.skip_wire_value(#tag.wire_type())?; }
         };
 
         quote! {
@@ -343,9 +343,9 @@ impl<'a> Message<'a> {
                 {
                     use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
 
-                    let before = self.bytes_read();
-                    while self.bytes_read() - before < len {
-                        let #tag = decoder.decode_tag();
+                    let before = #decoder.bytes_read();
+                    while #decoder.bytes_read() - before < len {
+                        let #tag = #decoder.decode_tag()?;
                         match #tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             #(#branches)*
@@ -353,9 +353,9 @@ impl<'a> Message<'a> {
                         }
                     }
 
-                    let actual_len = self.bytes_read() - before;
+                    let actual_len = #decoder.bytes_read() - before;
                     if actual_len != len {
-                        Err(DecodeError::WrongLen {
+                        Err(::micropb::DecodeError::WrongLen {
                             expected: len,
                             actual: actual_len,
                         })

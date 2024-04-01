@@ -232,15 +232,18 @@ impl<'a> Field<'a> {
         let fnum = self.num;
         let fname = &self.rust_name;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
+        let extra_deref = self.boxed.then(|| quote! { * });
 
         let decode_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
                 let key_decode_expr = key.generate_decode_mut(gen, tag, decoder, &mut_ref);
                 let val_decode_expr = val.generate_decode_mut(gen, tag, decoder, &mut_ref);
+                let key_type = key.generate_rust_type(gen);
+                let val_type = val.generate_rust_type(gen);
                 quote! {
                     #decoder.decode_map_elem(
-                        |#mut_ref, #decoder| { #key_decode_expr; Ok(()) },
-                        |#mut_ref, #decoder| { #val_decode_expr; Ok(()) },
+                        |#mut_ref: &mut #key_type, #decoder| { #key_decode_expr; Ok(()) },
+                        |#mut_ref: &mut #val_type, #decoder| { #val_decode_expr; Ok(()) },
                     )?;
                 }
             }
@@ -252,7 +255,7 @@ impl<'a> Field<'a> {
                     quote! { self._has.#setter(true); }
                 });
                 quote! {
-                    let #mut_ref = &mut self.#fname;
+                    let #mut_ref = &mut #extra_deref self.#fname;
                     #decode_expr;
                     #set_has
                 }
@@ -261,7 +264,7 @@ impl<'a> Field<'a> {
             FieldType::Optional(tspec, OptionalRepr::Option) => {
                 let decode_expr = tspec.generate_decode_mut(gen, tag, decoder, &mut_ref);
                 quote! {
-                    let #mut_ref = &mut *self.#fname.get_or_insert_default();
+                    let #mut_ref = &mut #extra_deref *self.#fname.get_or_insert_with(::core::default::Default::default);
                     #decode_expr;
                 }
             }
@@ -273,13 +276,13 @@ impl<'a> Field<'a> {
                     let packed_decode = if gen.little_endian && typ.packed_fixed() {
                         quote! { #decoder.decode_packed_fixed(&mut self.#fname)?; }
                     } else {
-                        quote! { #decoder.decode_packed(&mut self.#fname, |#decoder| #val)?; }
+                        quote! { #decoder.decode_packed(&mut self.#fname, |#decoder| #val.map(|v| v as _))?; }
                     };
                     quote! {
-                        if #tag.wire_type() == WIRE_TYPE_LEN {
+                        if #tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                             #packed_decode
                         } else {
-                            self.#fname.pb_push(#val).map_err(|_| ::micropb::DecodeError::Capacity)?;
+                            self.#fname.pb_push(#val? as _).map_err(|_| ::micropb::DecodeError::Capacity)?;
                         }
                     }
                 } else {

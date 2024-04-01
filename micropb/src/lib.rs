@@ -27,6 +27,14 @@ pub use container::{PbContainer, PbMap, PbString, PbVec};
 pub use decode::{DecodeError, DecodeFixedSize, PbDecoder, PbRead};
 #[cfg(feature = "encode")]
 pub use encode::{PbEncoder, PbWrite};
+#[cfg(feature = "decode")]
+pub use field::FieldDecode;
+#[cfg(feature = "encode")]
+pub use field::FieldEncode;
+#[cfg(feature = "decode")]
+pub use message::MessageDecode;
+#[cfg(feature = "encode")]
+pub use message::MessageEncode;
 
 pub const WIRE_TYPE_VARINT: u8 = 0;
 pub const WIRE_TYPE_I64: u8 = 1;
