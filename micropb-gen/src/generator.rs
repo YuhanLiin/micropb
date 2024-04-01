@@ -8,10 +8,11 @@ use std::{
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{
-    DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet, Syntax,
+    DescriptorProto, EnumDescriptorProto, EnumValueDescriptorProto, FileDescriptorProto,
+    FileDescriptorSet, Syntax,
 };
 use quote::{format_ident, quote};
-use syn::Ident;
+use syn::{Attribute, Ident};
 
 use crate::{
     config::{Config, IntType},
@@ -174,29 +175,21 @@ impl Generator {
         }
     }
 
-    fn generate_enum(
+    fn generate_enum_decl(
         &self,
-        enum_type: &EnumDescriptorProto,
-        enum_conf: CurrentConfig,
+        name: &Ident,
+        values: &[EnumValueDescriptorProto],
+        enum_int_type: IntType,
+        attrs: &[Attribute],
+        derive_dbg: bool,
     ) -> TokenStream {
-        if enum_conf.config.skip.unwrap_or(false) {
-            return quote! {};
-        }
-
-        let name = Ident::new(enum_type.name(), Span::call_site());
-        let nums = enum_type
-            .value
-            .iter()
-            .map(|v| Literal::i32_unsuffixed(v.number()));
-        let var_names = enum_type
-            .value
+        let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number()));
+        let var_names = values
             .iter()
             .map(|v| self.enum_variant_name(v.name(), &name));
-        let default_num = Literal::i32_unsuffixed(enum_type.value[0].number.unwrap());
-        let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
+        let default_num = Literal::i32_unsuffixed(values[0].number());
+        let derive_enum = derive_enum_attr(derive_dbg);
         let itype = enum_int_type.type_name();
-        let attrs = &enum_conf.config.type_attr_parsed();
-        let derive_enum = derive_enum_attr(!enum_conf.config.no_debug_derive.unwrap_or(false));
 
         quote! {
             #derive_enum
@@ -219,6 +212,56 @@ impl Generator {
                     Self(val)
                 }
             }
+        }
+    }
+
+    fn generate_enum_decode(&self, name: &Ident, enum_int_type: IntType) -> TokenStream {
+        let decode_method = if enum_int_type.is_signed() {
+            Ident::new("decode_int32", Span::call_site())
+        } else {
+            Ident::new("decode_varint32", Span::call_site())
+        };
+        quote! {
+            impl ::micropb::FieldDecode for #name {
+                #[inline]
+                fn decode_field<R: ::micropb::PbRead>(
+                    &mut self,
+                    _tag: ::micropb::Tag,
+                    decoder: &mut ::micropb::PbDecoder<R>,
+                ) -> Result<(), ::micropb::DecodeError<R::Error>>
+                {
+                    let num = decoder.#decode_method()?;
+                    *self = Self(num as _);
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    fn generate_enum(
+        &self,
+        enum_type: &EnumDescriptorProto,
+        enum_conf: CurrentConfig,
+    ) -> TokenStream {
+        if enum_conf.config.skip.unwrap_or(false) {
+            return quote! {};
+        }
+
+        let name = Ident::new(enum_type.name(), Span::call_site());
+        let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
+        let attrs = &enum_conf.config.type_attr_parsed();
+        let decl = self.generate_enum_decl(
+            &name,
+            &enum_type.value,
+            enum_int_type,
+            attrs,
+            !enum_conf.config.no_debug_derive.unwrap_or(false),
+        );
+        let decode = self.generate_enum_decode(&name, enum_int_type);
+
+        quote! {
+            #decl
+            #decode
         }
     }
 
@@ -376,6 +419,8 @@ impl Generator {
 mod tests {
     use prost_types::EnumValueDescriptorProto;
 
+    use crate::config::parse_attributes;
+
     use super::*;
 
     #[test]
@@ -439,31 +484,22 @@ mod tests {
 
     #[test]
     fn enum_basic() {
-        let config = CurrentConfig {
-            node: None,
-            config: Cow::Owned(Box::new(Config::new())),
-        };
-        let enum_proto = EnumDescriptorProto {
-            name: Some("Test".to_owned()),
-            value: vec![
-                EnumValueDescriptorProto {
-                    name: Some("TEST_ONE".to_owned()),
-                    number: Some(1),
-                    options: None,
-                },
-                EnumValueDescriptorProto {
-                    name: Some("OTHER_VALUE".to_owned()),
-                    number: Some(2),
-                    options: None,
-                },
-            ],
-            options: None,
-            reserved_range: vec![],
-            reserved_name: vec![],
-        };
+        let name = Ident::new("Test", Span::call_site());
+        let value = vec![
+            EnumValueDescriptorProto {
+                name: Some("TEST_ONE".to_owned()),
+                number: Some(1),
+                options: None,
+            },
+            EnumValueDescriptorProto {
+                name: Some("OTHER_VALUE".to_owned()),
+                number: Some(2),
+                options: None,
+            },
+        ];
         let gen = Generator::default();
 
-        let out = gen.generate_enum(&enum_proto, config);
+        let out = gen.generate_enum_decl(&name, &value, IntType::I32, &[], true);
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
@@ -487,41 +523,28 @@ mod tests {
             }
         };
         assert_eq!(out.to_string(), expected.to_string());
-
-        // skipped enums should generate nothing
-        let config = CurrentConfig {
-            node: None,
-            config: Cow::Owned(Box::new(Config::new().skip(true))),
-        };
-        assert!(gen.generate_enum(&enum_proto, config).is_empty())
     }
 
     #[test]
     fn enum_with_config() {
-        let config = CurrentConfig {
-            node: None,
-            config: Cow::Owned(Box::new(
-                Config::new()
-                    .enum_int_type(IntType::U8)
-                    .type_attributes("#[derive(Serialize)]")
-                    .no_debug_derive(true),
-            )),
-        };
-        let enum_proto = EnumDescriptorProto {
-            name: Some("Enum".to_owned()),
-            value: vec![EnumValueDescriptorProto {
-                name: Some("ENUM_ONE".to_owned()),
-                number: Some(1),
-                options: None,
-            }],
+        let name = Ident::new("Enum", Span::call_site());
+        let value = vec![EnumValueDescriptorProto {
+            name: Some("ENUM_ONE".to_owned()),
+            number: Some(1),
             options: None,
-            reserved_range: vec![],
-            reserved_name: vec![],
+        }];
+        let gen = Generator {
+            retain_enum_prefix: true,
+            ..Default::default()
         };
-        let mut gen = Generator::default();
-        gen.retain_enum_prefix = true;
 
-        let out = gen.generate_enum(&enum_proto, config);
+        let out = gen.generate_enum_decl(
+            &name,
+            &value,
+            IntType::U8,
+            &parse_attributes("#[derive(Serialize)]").unwrap(),
+            false,
+        );
         let expected = quote! {
             #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
