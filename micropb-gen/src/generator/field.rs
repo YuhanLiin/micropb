@@ -267,12 +267,17 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Repeated { typ, .. } => {
+                // Type can be packed and is Copy, so we check the wire type to see if we can
+                // do packed decoding
                 if let Some(val) = typ.generate_decode_val(decoder) {
-                    // Type can be packed and is Copy, so we check the wire type to see if we can
-                    // do packed decoding
+                    let packed_decode = if gen.little_endian && typ.packed_fixed() {
+                        quote! { #decoder.decode_packed_fixed(&mut self.#fname)?; }
+                    } else {
+                        quote! { #decoder.decode_packed(&mut self.#fname, |#decoder| #val)?; }
+                    };
                     quote! {
                         if #tag.wire_type() == WIRE_TYPE_LEN {
-                            #decoder.decode_packed(&mut self.#fname, |#decoder| #val)?;
+                            #packed_decode
                         } else {
                             self.#fname.pb_push(#val).map_err(|_| ::micropb::DecodeError::Capacity)?;
                         }

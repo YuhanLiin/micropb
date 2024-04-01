@@ -62,6 +62,17 @@ pub(crate) enum TypeSpec {
 }
 
 impl TypeSpec {
+    pub(crate) fn packed_fixed(&self) -> bool {
+        match self {
+            TypeSpec::Float | TypeSpec::Double => true,
+            // Only use packed fixed optimization for fixed proto types where the integer size
+            // isn't changed
+            TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, IntType::U32 | IntType::I32) => true,
+            TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, IntType::U64 | IntType::I64) => true,
+            _ => false,
+        }
+    }
+
     pub(crate) fn from_proto(proto: &FieldDescriptorProto, type_conf: &CurrentConfig) -> Self {
         let conf = &type_conf.config;
         match proto.r#type() {

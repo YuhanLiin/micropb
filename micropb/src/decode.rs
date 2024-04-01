@@ -40,7 +40,6 @@ impl<E> From<Utf8Error> for DecodeError<E> {
 /// Implementers must have no invalid bit-patterns.
 pub unsafe trait DecodeFixedSize: sealed::Sealed + Copy {}
 
-unsafe impl DecodeFixedSize for u8 {}
 unsafe impl DecodeFixedSize for u32 {}
 unsafe impl DecodeFixedSize for i32 {}
 unsafe impl DecodeFixedSize for u64 {}
@@ -50,7 +49,6 @@ unsafe impl DecodeFixedSize for f64 {}
 
 mod sealed {
     pub trait Sealed {}
-    impl Sealed for u8 {}
     impl Sealed for u32 {}
     impl Sealed for i32 {}
     impl Sealed for u64 {}
@@ -353,7 +351,7 @@ impl<R: PbRead> PbDecoder<R> {
             return Err(DecodeError::Capacity);
         }
         // SAFETY: Converting slice into uninitialized bytes is always valid. Moreover, we know
-        // that `spare_cap` has equal or more than `elem_num` values, so it's size in bytes can't
+        // that `spare_cap` has equal or more than `elem_num` values, so its size in bytes can't
         // be less than `len`, because `len` is equal to `elem_num * size_of<T>()`.
         let spare_bytes = unsafe {
             core::slice::from_raw_parts_mut(spare_cap.as_mut_ptr() as *mut MaybeUninit<u8>, len)

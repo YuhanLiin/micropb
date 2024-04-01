@@ -95,6 +95,7 @@ pub struct Generator {
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) use_std: bool,
+    pub(crate) little_endian: bool,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
 }
@@ -102,7 +103,6 @@ pub struct Generator {
 impl Default for Generator {
     fn default() -> Self {
         let config_tree = PathTree::new(Box::new(Config::new()));
-
         Self {
             syntax: Default::default(),
             pkg_path: Default::default(),
@@ -112,7 +112,9 @@ impl Default for Generator {
             size_cache: Default::default(),
             retain_enum_prefix: Default::default(),
             format: true,
+            little_endian: true,
             use_std: Default::default(),
+
             config_tree,
         }
     }
