@@ -96,7 +96,7 @@ impl<R: std::io::BufRead> PbRead for PbReader<R> {
 
 #[derive(Debug)]
 pub struct PbDecoder<R: PbRead> {
-    reader: R,
+    pub reader: R,
     idx: usize,
 }
 

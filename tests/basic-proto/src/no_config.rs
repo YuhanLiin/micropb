@@ -1,3 +1,5 @@
+use micropb::{MessageDecode, PbDecoder};
+
 mod proto {
     #![allow(clippy::all)]
     #![allow(warnings)]
@@ -132,4 +134,107 @@ fn proto3() {
     assert!(opt.zst_opt().is_none());
     // hazzer exists, so message size should exceed field size
     assert!(std::mem::size_of::<proto::basic3::Optional>() > std::mem::size_of::<i32>());
+}
+
+#[test]
+fn decode_varint() {
+    let mut basic = proto::basic::BasicTypes::new();
+    let mut decoder = PbDecoder::new([0x03, 0x08, 0x96, 0x01].as_slice()); // field 1
+    basic.decode_len_delimited(&mut decoder).unwrap();
+    assert_eq!(basic.int32_num(), Some(&150));
+
+    let mut decoder = PbDecoder::new(
+        [
+            0x10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01, // field 2
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.int64_num(), Some(&i64::min_value()));
+
+    let mut decoder = PbDecoder::new(
+        [
+            0x18, 0x96, 0x01, // field 3
+            0x20, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, // field 4
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.uint32_num(), Some(&150));
+    assert_eq!(basic.uint64_num(), Some(&u64::max_value()));
+
+    let mut decoder = PbDecoder::new(
+        [
+            0x28, 0xFE, 0xFF, 0xFF, 0xFF, 0x7F, // field 5
+            0x30, 0x01, // field 6
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.sint32_num(), Some(&0x7FFFFFFF));
+    assert_eq!(basic.sint64_num(), Some(&-1));
+}
+
+#[test]
+fn decode_fixed() {
+    let mut basic = proto::basic::BasicTypes::new();
+    let mut decoder = PbDecoder::new(
+        [
+            0x38, 0x11, 0x00, 0x00, 0x12, // field 7
+            0x40, 0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 8
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.fixed32_num(), Some(&0x12000011));
+    assert_eq!(basic.fixed64_num(), Some(&0x0130));
+
+    let mut decoder = PbDecoder::new(
+        [
+            0x48, 0x12, 0x32, 0x98, 0xF4, // field 9
+            0x50, 0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 10
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.sfixed32_num(), Some(&-0x0B67CDEE));
+    assert_eq!(basic.sfixed64_num(), Some(&0x0130));
+
+    let mut decoder = PbDecoder::new(
+        [
+            0x58, 0x01, // field 11
+            0x60, 0xC7, 0x46, 0xE8, 0xC1, // field 12
+            0x68, 0x5E, 0x09, 0x52, 0x2B, 0x83, 0x07, 0x3A, 0x40, // field 13
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.boolean(), Some(&true));
+    assert_eq!(basic.flt(), Some(&-29.03456));
+    assert_eq!(basic.dbl(), Some(&26.029345233467545));
+}
+
+#[test]
+fn decode_enum() {
+    let mut basic = proto::basic::BasicTypes::new();
+    let mut decoder = PbDecoder::new([0x70, 0x00].as_slice());
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.enumeration(), Some(&proto::basic::Enum::Zero));
+
+    let mut decoder = PbDecoder::new(
+        [
+            0x70, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.enumeration(), Some(&proto::basic::Enum(-2)));
 }
