@@ -1,4 +1,4 @@
-use micropb::{MessageDecode, PbDecoder};
+use micropb::{DecodeError, MessageDecode, PbDecoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -230,7 +230,7 @@ fn decode_enum() {
 
     let mut decoder = PbDecoder::new(
         [
-            0x70, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+            0x70, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, // field 14
         ]
         .as_slice(),
     );
@@ -292,4 +292,55 @@ fn decode_nested() {
         nested.inner.as_ref().unwrap(),
         &proto::nested::mod_Nested::Inner::Scalar(false)
     );
+}
+
+#[test]
+fn decode_non_optional() {
+    let mut non_opt = proto::basic3::NonOptional::new();
+    let mut decoder = PbDecoder::new([0x08, 0x96, 0x01].as_slice());
+    let len = decoder.reader.len();
+    non_opt.decode(&mut decoder, len).unwrap();
+    assert_eq!(non_opt.non_opt, 150);
+}
+
+#[test]
+fn decode_errors() {
+    let mut basic = proto::basic::BasicTypes::new();
+    let mut decoder = PbDecoder::new([0x00, 0x96, 0x01].as_slice()); // field 0
+    let len = decoder.reader.len();
+    assert_eq!(basic.decode(&mut decoder, len), Err(DecodeError::ZeroField));
+
+    let mut decoder = PbDecoder::new([0x18, 0x96, 0xFF, 0xFF, 0xFF, 0xFF, 0x01].as_slice()); // field 3
+    let len = decoder.reader.len();
+    assert_eq!(
+        basic.decode(&mut decoder, len),
+        Err(DecodeError::VarIntLimit(5))
+    );
+
+    let mut decoder = PbDecoder::new([0x10, 0x96, 0xFF, 0xFF, 0xFF, 0xFF].as_slice()); // field 2
+    let len = decoder.reader.len();
+    assert_eq!(
+        basic.decode(&mut decoder, len),
+        Err(DecodeError::UnexpectedEof)
+    );
+
+    let mut decoder = PbDecoder::new([0x10, 0x96, 0x01].as_slice()); // field 2
+    assert_eq!(
+        basic.decode(&mut decoder, 2),
+        Err(DecodeError::WrongLen {
+            expected: 2,
+            actual: 3
+        })
+    );
+    assert_eq!(decoder.bytes_read(), 3);
+
+    let mut decoder = PbDecoder::new([0x02, 0x10, 0x96, 0x01].as_slice()); // field 2
+    assert_eq!(
+        basic.decode_len_delimited(&mut decoder),
+        Err(DecodeError::WrongLen {
+            expected: 2,
+            actual: 3
+        })
+    );
+    assert_eq!(decoder.bytes_read(), 4);
 }
