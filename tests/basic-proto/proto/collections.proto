@@ -12,3 +12,11 @@ message List {
 message NumList {
     repeated uint32 list = 1;
 }
+
+message StrList {
+    repeated string list = 1;
+}
+
+message FixedList {
+    repeated fixed32 list = 1;
+}

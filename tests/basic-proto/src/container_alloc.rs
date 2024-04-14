@@ -119,6 +119,25 @@ fn decode_packed() {
 }
 
 #[test]
+fn decode_packed_fixed() {
+    let mut list = proto::FixedList::default();
+    // non-packed encoding
+    let mut decoder = PbDecoder::new([0x08, 0x12, 0x11, 0x00, 0x00].as_slice());
+    let len = decoder.reader.len();
+    list.decode(&mut decoder, len).unwrap();
+    assert_eq!(list.list.len(), 1);
+    assert_eq!(list.list, &[0x1112]);
+
+    // packed encoding
+    let mut decoder =
+        PbDecoder::new([0x0A, 8, 0x01, 0x96, 0x01, 0x03, 0x22, 0x34, 0xFF, 0xFF].as_slice());
+    let len = decoder.reader.len();
+    list.decode(&mut decoder, len).unwrap();
+    assert_eq!(list.list.len(), 3);
+    assert_eq!(&list.list[1..], &[0x03019601, 0xFFFF3422]);
+}
+
+#[test]
 fn decode_map() {
     let mut map = proto::Map::default();
     let mut decoder = PbDecoder::new(
