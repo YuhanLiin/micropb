@@ -183,8 +183,8 @@ fn decode_fixed() {
     let mut basic = proto::basic::BasicTypes::new();
     let mut decoder = PbDecoder::new(
         [
-            0x38, 0x11, 0x00, 0x00, 0x12, // field 7
-            0x40, 0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 8
+            0x39, 0x11, 0x00, 0x00, 0x12, // field 7
+            0x41, 0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 8
         ]
         .as_slice(),
     );
@@ -195,8 +195,8 @@ fn decode_fixed() {
 
     let mut decoder = PbDecoder::new(
         [
-            0x48, 0x12, 0x32, 0x98, 0xF4, // field 9
-            0x50, 0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 10
+            0x49, 0x12, 0x32, 0x98, 0xF4, // field 9
+            0x51, 0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 10
         ]
         .as_slice(),
     );
@@ -208,8 +208,8 @@ fn decode_fixed() {
     let mut decoder = PbDecoder::new(
         [
             0x58, 0x01, // field 11
-            0x60, 0xC7, 0x46, 0xE8, 0xC1, // field 12
-            0x68, 0x5E, 0x09, 0x52, 0x2B, 0x83, 0x07, 0x3A, 0x40, // field 13
+            0x61, 0xC7, 0x46, 0xE8, 0xC1, // field 12
+            0x69, 0x5E, 0x09, 0x52, 0x2B, 0x83, 0x07, 0x3A, 0x40, // field 13
         ]
         .as_slice(),
     );
@@ -237,4 +237,59 @@ fn decode_enum() {
     let len = decoder.reader.len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.enumeration(), Some(&proto::basic::Enum(-2)));
+}
+
+#[test]
+fn decode_nested() {
+    let mut nested = proto::nested::Nested::new();
+    let mut decoder = PbDecoder::new([0x0A, 0x00].as_slice());
+    let len = decoder.reader.len();
+    nested.decode(&mut decoder, len).unwrap();
+    assert_eq!(nested.basic(), Some(&Default::default()));
+
+    let mut decoder = PbDecoder::new([0x0A, 0x02, 0x08, 0x01].as_slice());
+    let len = decoder.reader.len();
+    nested.decode(&mut decoder, len).unwrap();
+    assert_eq!(nested.basic().unwrap().int32_num(), Some(&1));
+
+    let mut decoder = PbDecoder::new([0x0A, 0x02, 0x10, 0x02].as_slice());
+    let len = decoder.reader.len();
+    nested.decode(&mut decoder, len).unwrap();
+    assert_eq!(nested.basic().unwrap().int64_num(), Some(&2));
+
+    let mut decoder = PbDecoder::new([0x10, 0x00].as_slice());
+    let len = decoder.reader.len();
+    nested.decode(&mut decoder, len).unwrap();
+    assert_eq!(
+        nested.inner.as_ref().unwrap(),
+        &proto::nested::mod_Nested::Inner::Enumeration(0.into())
+    );
+
+    // Decode the InnerMsg variant twice to make sure the field isn't cleared between decodes
+    let mut decoder = PbDecoder::new([0x1A, 0x02, 0x08, 0x01].as_slice());
+    let len = decoder.reader.len();
+    nested.decode(&mut decoder, len).unwrap();
+    let mut decoder = PbDecoder::new([0x1A, 0x02, 0x10, 0x02].as_slice());
+    let len = decoder.reader.len();
+    nested.decode(&mut decoder, len).unwrap();
+    assert!(matches!(
+        nested.inner.as_ref().unwrap(),
+        proto::nested::mod_Nested::Inner::InnerMsg(msg) if msg.val() == Some(&-1) && msg.val2() == Some(&1)
+    ));
+
+    let mut decoder = PbDecoder::new([0x20, 0x00].as_slice());
+    let len = decoder.reader.len();
+    nested.decode(&mut decoder, len).unwrap();
+    assert_eq!(
+        nested.inner.as_ref().unwrap(),
+        &proto::nested::mod_Nested::Inner::InnerEnum(0.into())
+    );
+
+    let mut decoder = PbDecoder::new([0x28, 0x00].as_slice());
+    let len = decoder.reader.len();
+    nested.decode(&mut decoder, len).unwrap();
+    assert_eq!(
+        nested.inner.as_ref().unwrap(),
+        &proto::nested::mod_Nested::Inner::Scalar(false)
+    );
 }
