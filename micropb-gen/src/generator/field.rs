@@ -241,10 +241,13 @@ impl<'a> Field<'a> {
                 let key_type = key.generate_rust_type(gen);
                 let val_type = val.generate_rust_type(gen);
                 quote! {
-                    #decoder.decode_map_elem(
+                    if let Some((k, v)) = #decoder.decode_map_elem(
                         |#mut_ref: &mut #key_type, #decoder| { #key_decode_expr; Ok(()) },
                         |#mut_ref: &mut #val_type, #decoder| { #val_decode_expr; Ok(()) },
-                    )?;
+                    )?
+                    {
+                        self.#fname.pb_insert(k, v).map_err(|_| ::micropb::DecodeError::Capacity)?;
+                    }
                 }
             }
 

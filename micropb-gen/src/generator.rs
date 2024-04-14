@@ -188,7 +188,7 @@ impl Generator {
         let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number()));
         let var_names = values
             .iter()
-            .map(|v| self.enum_variant_name(v.name(), &name));
+            .map(|v| self.enum_variant_name(v.name(), name));
         let default_num = Literal::i32_unsuffixed(values[0].number());
         let derive_enum = derive_enum_attr(derive_dbg);
         let itype = enum_int_type.type_name();

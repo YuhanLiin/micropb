@@ -10,5 +10,5 @@ message List {
 }
 
 message NumList {
-    repeated fixed32 list = 1;
+    repeated uint32 list = 1;
 }
