@@ -1,5 +1,7 @@
 use std::mem::size_of;
 
+use micropb::{MessageDecode, PbDecoder};
+
 mod proto {
     #![allow(clippy::all)]
     #![allow(warnings)]
@@ -33,4 +35,16 @@ fn field_int_type() {
     let _: Option<&u64> = basic.fixed32_num();
     let _: usize = basic.fixed64_num;
     let _: Option<&usize> = basic.fixed64_num();
+}
+
+#[test]
+fn decode_int_overflow() {
+    let mut basic = proto::basic::BasicTypes::new();
+    let mut decoder = PbDecoder::new([0x03, 0x08, 0x96, 0x01].as_slice()); // field 1
+    basic.decode_len_delimited(&mut decoder).unwrap();
+    assert_eq!(basic.int32_num(), Some(&-106)); // 150 overflows i8
+
+    let mut decoder = PbDecoder::new([0x03, 0x18, 0x96, 0x02].as_slice()); // field 3
+    basic.decode_len_delimited(&mut decoder).unwrap();
+    assert_eq!(basic.uint32_num(), Some(&22)); // 278 overflows u8
 }

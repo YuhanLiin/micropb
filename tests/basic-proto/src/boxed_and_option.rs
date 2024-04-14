@@ -1,3 +1,5 @@
+use micropb::{MessageDecode, PbDecoder};
+
 mod proto {
     #![allow(clippy::all)]
     #![allow(warnings)]
@@ -29,4 +31,22 @@ fn boxed_and_option() {
     assert_eq!(basic.uint32_num, Box::new(3));
     assert_eq!(basic.uint32_num(), Some(&3));
     assert!(basic._has.uint32_num());
+}
+
+#[test]
+fn decode() {
+    let mut basic = proto::basic::BasicTypes::default();
+    let mut decoder = PbDecoder::new(
+        [
+            0x58, 0x01, // field 11
+            0x08, 0x96, 0x01, // field 1
+            0x18, 0x03, // field 3
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    basic.decode(&mut decoder, len).unwrap();
+    assert_eq!(basic.boolean, Some(Box::new(true)));
+    assert_eq!(basic.int32_num, Some(150));
+    assert_eq!(basic.uint32_num, Box::new(3));
 }
