@@ -30,10 +30,13 @@ fn boxed_and_option() {
             .boxed(true)
             .optional_repr(OptionalRepr::Hazzer),
     );
+    generator.configure(".nested.Nested.enumeration", Config::new().boxed(true));
+    generator.configure(".nested.Nested.inner_msg", Config::new().boxed(true));
+    generator.configure(".nested.Nested.InnerMsg.val", Config::new().boxed(true));
 
     generator
         .compile_protos(
-            &["proto/basic.proto"],
+            &["proto/basic.proto", "proto/nested.proto"],
             std::env::var("OUT_DIR").unwrap() + "/boxed_and_option.rs",
         )
         .unwrap();
