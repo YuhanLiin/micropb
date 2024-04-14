@@ -76,15 +76,23 @@ impl<'a> Message<'a> {
                         if f.proto3_optional() {
                             synthetic_oneof_idx.push(idx as usize);
                         } else {
-                            if let Some(OneofType::Enum { fields, .. }) = oneofs
+                            match oneofs
                                 .iter_mut()
                                 .find(|o| o.idx == idx as usize)
                                 .map(|o| &mut o.otype)
                             {
-                                // Oneof field
-                                if let Some(field) = OneofField::from_proto(f, &field_conf) {
-                                    fields.push(field);
+                                Some(OneofType::Enum { fields, .. }) => {
+                                    // Oneof field
+                                    if let Some(field) = OneofField::from_proto(f, &field_conf) {
+                                        fields.push(field);
+                                    }
                                 }
+                                Some(OneofType::Custom { nums, .. }) => {
+                                    if !field_conf.config.skip.unwrap_or(false) {
+                                        nums.push(f.number());
+                                    }
+                                }
+                                _ => (),
                             }
                             return None;
                         }
@@ -219,7 +227,11 @@ impl<'a> Message<'a> {
             }
         });
         let oneof_names = self.oneofs.iter().filter_map(|o| {
-            if let OneofType::Custom(CustomField::Delegate(_)) = o.otype {
+            if let OneofType::Custom {
+                field: CustomField::Delegate(_),
+                ..
+            } = o.otype
+            {
                 None
             } else {
                 Some(&o.rust_name)
@@ -321,11 +333,16 @@ impl<'a> Message<'a> {
         let name = &self.rust_name;
         let tag = Ident::new("tag", Span::call_site());
         let decoder = Ident::new("decoder", Span::call_site());
+        let mod_name = gen.resolve_path_elem(self.name);
 
-        let branches = self
+        let field_branches = self
             .fields
             .iter()
             .map(|f| f.generate_decode_branch(gen, &tag, &decoder));
+        let oneof_branches = self
+            .oneofs
+            .iter()
+            .map(|o| o.generate_decode_branches(gen, &mod_name, &tag, &decoder));
 
         let unknown_branch = if self.unknown_handler.is_some() {
             quote! { self._unknown.decode_field(#tag, #decoder)?; }
@@ -348,7 +365,8 @@ impl<'a> Message<'a> {
                         let #tag = #decoder.decode_tag()?;
                         match #tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
-                            #(#branches)*
+                            #(#field_branches)*
+                            #(#oneof_branches)*
                             _ => { #unknown_branch }
                         }
                     }
@@ -787,12 +805,18 @@ mod tests {
                 make_test_oneof(
                     "oneof_custom",
                     false,
-                    OneofType::Custom(CustomField::Type(syn::parse_str("Custom").unwrap())),
+                    OneofType::Custom {
+                        field: CustomField::Type(syn::parse_str("Custom").unwrap()),
+                        nums: vec![8],
+                    },
                 ),
                 make_test_oneof(
                     "oneof_delegate",
                     false,
-                    OneofType::Custom(CustomField::Delegate(syn::parse_str("d").unwrap())),
+                    OneofType::Custom {
+                        field: CustomField::Delegate(syn::parse_str("d").unwrap()),
+                        nums: vec![9],
+                    },
                 ),
             ],
             fields,
@@ -884,12 +908,18 @@ mod tests {
             make_test_oneof(
                 "oneof_custom",
                 false,
-                OneofType::Custom(CustomField::Type(syn::parse_str("Custom").unwrap())),
+                OneofType::Custom {
+                    field: CustomField::Type(syn::parse_str("Custom").unwrap()),
+                    nums: vec![3],
+                },
             ),
             make_test_oneof(
                 "oneof_delegate",
                 false,
-                OneofType::Custom(CustomField::Delegate(syn::parse_str("custom").unwrap())),
+                OneofType::Custom {
+                    field: CustomField::Delegate(syn::parse_str("custom").unwrap()),
+                    nums: vec![4],
+                },
             ),
         ];
         oneofs[1].field_attrs = parse_attributes("#[attr]").unwrap();

@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Span, TokenStream};
 use prost_types::{FieldDescriptorProto, OneofDescriptorProto};
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::Ident;
 
 use super::{derive_msg_attr, field::CustomField, type_spec::TypeSpec, CurrentConfig, Generator};
@@ -30,7 +30,7 @@ impl<'a> OneofField<'a> {
         let rust_name = Ident::new(
             &field_conf
                 .config
-                .rust_field_name(&name)
+                .rust_field_name(name)
                 .to_string()
                 .to_case(Case::Pascal),
             Span::call_site(),
@@ -55,6 +55,33 @@ impl<'a> OneofField<'a> {
         let attrs = &self.attrs;
         quote! { #(#attrs)* #name(#typ), }
     }
+
+    fn generate_decode_branch(
+        &self,
+        oneof_name: &Ident,
+        oneof_type: &TokenStream,
+        gen: &Generator,
+        tag: &Ident,
+        decoder: &Ident,
+    ) -> TokenStream {
+        let fnum = self.num;
+        let mut_ref = Ident::new("mut_ref", Span::call_site());
+        let variant_name = &self.rust_name;
+        let extra_deref = self.boxed.then(|| quote! { * });
+
+        let decode_expr = self.tspec.generate_decode_mut(gen, tag, decoder, &mut_ref);
+        quote! {
+            #fnum => {
+                match &mut self.#oneof_name {
+                    ::core::option::Option::Some(#oneof_type::#variant_name(_)) => {},
+                    _ => self.#oneof_name = ::core::option::Option::Some(#oneof_type::#variant_name(::core::default::Default::default())),
+                };
+                let #mut_ref = if let ::core::option::Option::Some(#oneof_type::#variant_name(variant))
+                    = &mut self.#oneof_name { &mut #extra_deref *variant } else { unreachable!() };
+                #decode_expr;
+            }
+        }
+    }
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -63,7 +90,10 @@ pub(crate) enum OneofType<'a> {
         type_name: Ident,
         fields: Vec<OneofField<'a>>,
     },
-    Custom(CustomField),
+    Custom {
+        field: CustomField,
+        nums: Vec<i32>,
+    },
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -80,7 +110,11 @@ pub(crate) struct Oneof<'a> {
 
 impl<'a> Oneof<'a> {
     pub(crate) fn delegate(&self) -> Option<&Ident> {
-        if let OneofType::Custom(CustomField::Delegate(d)) = &self.otype {
+        if let OneofType::Custom {
+            field: CustomField::Delegate(d),
+            ..
+        } = &self.otype
+        {
             Some(d)
         } else {
             None
@@ -88,7 +122,11 @@ impl<'a> Oneof<'a> {
     }
 
     pub(crate) fn custom_type_field(&self) -> Option<&Ident> {
-        if let OneofType::Custom(CustomField::Type(_)) = &self.otype {
+        if let OneofType::Custom {
+            field: CustomField::Type(_),
+            ..
+        } = &self.otype
+        {
             Some(&self.rust_name)
         } else {
             None
@@ -107,7 +145,10 @@ impl<'a> Oneof<'a> {
         let name = proto.name();
         let rust_name = oneof_conf.config.rust_field_name(name);
         let otype = match oneof_conf.config.custom_field_parsed() {
-            Some(custom) => OneofType::Custom(custom),
+            Some(custom) => OneofType::Custom {
+                field: custom,
+                nums: vec![],
+            },
             None => OneofType::Enum {
                 type_name: Ident::new(
                     &rust_name.to_string().to_case(Case::Pascal),
@@ -156,11 +197,54 @@ impl<'a> Oneof<'a> {
             OneofType::Enum { type_name, .. } => {
                 gen.wrapped_type(quote! { #msg_mod_name::#type_name }, self.boxed, true)
             }
-            OneofType::Custom(CustomField::Type(type_path)) => quote! { #type_path },
-            OneofType::Custom(CustomField::Delegate(_)) => return quote! {},
+            OneofType::Custom {
+                field: CustomField::Type(type_path),
+                ..
+            } => quote! { #type_path },
+            OneofType::Custom {
+                field: CustomField::Delegate(_),
+                ..
+            } => return quote! {},
         };
         let attrs = &self.field_attrs;
         quote! { #(#attrs)* pub #name: #oneof_type, }
+    }
+
+    pub(crate) fn generate_decode_branches(
+        &self,
+        gen: &Generator,
+        msg_mod_name: &Ident,
+        tag: &Ident,
+        decoder: &Ident,
+    ) -> TokenStream {
+        let name = &self.rust_name;
+        match &self.otype {
+            OneofType::Enum { fields, type_name } => {
+                let oneof_type = quote! { #msg_mod_name::#type_name };
+                let branches = fields
+                    .iter()
+                    .map(|f| f.generate_decode_branch(name, &oneof_type, gen, tag, decoder));
+                quote! {
+                    #(#branches)*
+                }
+            }
+            OneofType::Custom {
+                field: CustomField::Type(_),
+                nums,
+            } => {
+                quote! {
+                    #(#nums)|* => { self.#name.decode_field(#tag, #decoder)?; }
+                }
+            }
+            OneofType::Custom {
+                field: CustomField::Delegate(field),
+                nums,
+            } => {
+                quote! {
+                    #(#nums)|* => { self.#field.decode_field(#tag, #decoder)?; }
+                }
+            }
+        }
     }
 }
 
@@ -375,7 +459,10 @@ mod tests {
         let oneof = Oneof {
             name: "oneof",
             rust_name: Ident::new("oneof", Span::call_site()),
-            otype: OneofType::Custom(CustomField::Type(syn::parse_str("Custom<f32>").unwrap())),
+            otype: OneofType::Custom {
+                field: CustomField::Type(syn::parse_str("Custom<f32>").unwrap()),
+                nums: vec![1],
+            },
             boxed: true,
             field_attrs: vec![],
             type_attrs: vec![],
@@ -393,7 +480,10 @@ mod tests {
         let oneof = Oneof {
             name: "oneof",
             rust_name: Ident::new("oneof", Span::call_site()),
-            otype: OneofType::Custom(CustomField::Delegate(syn::parse_str("delegate").unwrap())),
+            otype: OneofType::Custom {
+                field: CustomField::Delegate(syn::parse_str("delegate").unwrap()),
+                nums: vec![1],
+            },
             boxed: false,
             field_attrs: vec![],
             type_attrs: vec![],
