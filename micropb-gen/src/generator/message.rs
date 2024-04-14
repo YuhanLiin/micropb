@@ -584,7 +584,6 @@ mod tests {
                             make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
                         ]
                     },
-                    boxed: false,
                     field_attrs: vec![],
                     // Overrides the type attrs of the message
                     type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
@@ -796,7 +795,6 @@ mod tests {
             oneofs: vec![
                 make_test_oneof(
                     "oneof",
-                    false,
                     OneofType::Enum {
                         type_name: Ident::new("Oneof", Span::call_site()),
                         fields: vec![make_test_oneof_field(7, "x", true, TypeSpec::Float)],
@@ -804,7 +802,6 @@ mod tests {
                 ),
                 make_test_oneof(
                     "oneof_custom",
-                    false,
                     OneofType::Custom {
                         field: CustomField::Type(syn::parse_str("Custom").unwrap()),
                         nums: vec![8],
@@ -812,7 +809,6 @@ mod tests {
                 ),
                 make_test_oneof(
                     "oneof_delegate",
-                    false,
                     OneofType::Custom {
                         field: CustomField::Delegate(syn::parse_str("d").unwrap()),
                         nums: vec![9],
@@ -899,7 +895,6 @@ mod tests {
         let mut oneofs = vec![
             make_test_oneof(
                 "oneof",
-                false,
                 OneofType::Enum {
                     type_name: Ident::new("Oneof", Span::call_site()),
                     fields: vec![],
@@ -907,7 +902,6 @@ mod tests {
             ),
             make_test_oneof(
                 "oneof_custom",
-                false,
                 OneofType::Custom {
                     field: CustomField::Type(syn::parse_str("Custom").unwrap()),
                     nums: vec![3],
@@ -915,7 +909,6 @@ mod tests {
             ),
             make_test_oneof(
                 "oneof_delegate",
-                false,
                 OneofType::Custom {
                     field: CustomField::Delegate(syn::parse_str("custom").unwrap()),
                     nums: vec![4],

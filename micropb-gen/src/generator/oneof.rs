@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Span, TokenStream};
 use prost_types::{FieldDescriptorProto, OneofDescriptorProto};
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::Ident;
 
 use super::{derive_msg_attr, field::CustomField, type_spec::TypeSpec, CurrentConfig, Generator};
@@ -101,7 +101,6 @@ pub(crate) struct Oneof<'a> {
     pub(crate) name: &'a str,
     pub(crate) rust_name: Ident,
     pub(crate) otype: OneofType<'a>,
-    pub(crate) boxed: bool,
     pub(crate) field_attrs: Vec<syn::Attribute>,
     pub(crate) type_attrs: Vec<syn::Attribute>,
     pub(crate) derive_dbg: bool,
@@ -166,7 +165,6 @@ impl<'a> Oneof<'a> {
             idx,
             otype,
             derive_dbg: oneof_conf.derive_dbg(),
-            boxed: oneof_conf.config.boxed.unwrap_or(false),
             field_attrs,
             type_attrs,
         })
@@ -195,7 +193,7 @@ impl<'a> Oneof<'a> {
         let name = &self.rust_name;
         let oneof_type = match &self.otype {
             OneofType::Enum { type_name, .. } => {
-                gen.wrapped_type(quote! { #msg_mod_name::#type_name }, self.boxed, true)
+                gen.wrapped_type(quote! { #msg_mod_name::#type_name }, false, true)
             }
             OneofType::Custom {
                 field: CustomField::Type(type_path),
@@ -266,12 +264,11 @@ pub(crate) fn make_test_oneof_field(
 }
 
 #[cfg(test)]
-pub(crate) fn make_test_oneof<'a>(name: &'a str, boxed: bool, otype: OneofType<'a>) -> Oneof<'a> {
+pub(crate) fn make_test_oneof<'a>(name: &'a str, otype: OneofType<'a>) -> Oneof<'a> {
     Oneof {
         name,
         rust_name: Ident::new(name, Span::call_site()),
         otype,
-        boxed,
         field_attrs: vec![],
         type_attrs: vec![],
         derive_dbg: true,
@@ -371,7 +368,6 @@ mod tests {
                     type_name: Ident::new("Oneof", Span::call_site()),
                     fields: vec![]
                 },
-                boxed: false,
                 field_attrs: vec![],
                 type_attrs: vec![],
                 derive_dbg: true,
@@ -379,7 +375,6 @@ mod tests {
             }
         );
 
-        config.boxed = Some(true);
         config.field_attributes = Some("#[attr]".to_owned());
         config.type_attributes = Some("#[derive(Eq)]".to_owned());
         config.no_debug_derive = Some(true);
@@ -397,7 +392,6 @@ mod tests {
                     type_name: Ident::new("RenamedOneof", Span::call_site()),
                     fields: vec![]
                 },
-                boxed: true,
                 field_attrs: parse_attributes("#[attr]").unwrap(),
                 type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
                 derive_dbg: false,
@@ -419,7 +413,6 @@ mod tests {
                     make_test_oneof_field(1, "b", false, TypeSpec::Bool),
                 ],
             },
-            boxed: false,
             field_attrs: parse_attributes("#[default]").unwrap(),
             type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
             derive_dbg: true,
@@ -443,14 +436,6 @@ mod tests {
                 .to_string(),
             quote! { #[default] pub oneof: ::core::option::Option<Msg::Oneof>, }.to_string()
         );
-
-        oneof.boxed = true;
-        assert_eq!(
-            oneof
-                .generate_field(&gen, &Ident::new("Msg", Span::call_site()))
-                .to_string(),
-            quote! { #[default] pub oneof: ::core::option::Option<::alloc::boxed::Box<Msg::Oneof> >, }.to_string()
-        );
     }
 
     #[test]
@@ -463,7 +448,6 @@ mod tests {
                 field: CustomField::Type(syn::parse_str("Custom<f32>").unwrap()),
                 nums: vec![1],
             },
-            boxed: true,
             field_attrs: vec![],
             type_attrs: vec![],
             derive_dbg: true,
@@ -484,7 +468,6 @@ mod tests {
                 field: CustomField::Delegate(syn::parse_str("delegate").unwrap()),
                 nums: vec![1],
             },
-            boxed: false,
             field_attrs: vec![],
             type_attrs: vec![],
             derive_dbg: true,
