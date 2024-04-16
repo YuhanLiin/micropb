@@ -404,7 +404,7 @@ impl<R: PbRead> PbDecoder<R> {
         Err(DecodeError::VarIntLimit(u64::BYTES))
     }
 
-    fn skip_bytes(&mut self, bytes: usize) -> Result<(), DecodeError<R::Error>> {
+    pub fn skip_bytes(&mut self, bytes: usize) -> Result<(), DecodeError<R::Error>> {
         let mut total = 0;
         while total < bytes {
             let chunk = self.reader.pb_read_chunk().map_err(DecodeError::Reader)?;
