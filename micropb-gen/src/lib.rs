@@ -128,10 +128,6 @@ impl Generator {
     pub fn use_std(&mut self, use_std: bool) {
         self.use_std = use_std;
     }
-
-    pub fn little_endian(&mut self, little_endian: bool) {
-        self.little_endian = little_endian;
-    }
 }
 
 fn split_pkg_name(name: &str) -> impl Iterator<Item = &str> {

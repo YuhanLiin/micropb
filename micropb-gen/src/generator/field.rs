@@ -246,7 +246,9 @@ impl<'a> Field<'a> {
                         |#mut_ref: &mut #val_type, #decoder| { #val_decode_expr; Ok(()) },
                     )?
                     {
-                        self.#fname.pb_insert(k, v).map_err(|_| ::micropb::DecodeError::Capacity)?;
+                        if let (Err(_), false) = (self.#fname.pb_insert(k, v), #decoder.ignore_repeated_cap_err) {
+                            return Err(::micropb::DecodeError::Capacity);
+                        }
                     }
                 }
             }
@@ -276,22 +278,21 @@ impl<'a> Field<'a> {
                 // Type can be packed and is Copy, so we check the wire type to see if we can
                 // do packed decoding
                 if let Some(val) = typ.generate_decode_val(decoder) {
-                    let packed_decode = if gen.little_endian && typ.packed_fixed() {
-                        quote! { #decoder.decode_packed_fixed(&mut self.#fname)?; }
-                    } else {
-                        quote! { #decoder.decode_packed(&mut self.#fname, |#decoder| #val.map(|v| v as _))?; }
-                    };
                     quote! {
                         if #tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
-                            #packed_decode
+                            #decoder.decode_packed(&mut self.#fname, |#decoder| #val.map(|v| v as _))?;
                         } else {
-                            self.#fname.pb_push(#val? as _).map_err(|_| ::micropb::DecodeError::Capacity)?;
+                            if let (Err(_), false) = (self.#fname.pb_push(#val? as _), #decoder.ignore_repeated_cap_err) {
+                                return Err(::micropb::DecodeError::Capacity);
+                            }
                         }
                     }
                 } else {
                     let decode_expr = typ.generate_decode_mut(gen, tag, decoder, &mut_ref);
                     quote! {
-                        self.#fname.pb_push(::core::default::Default::default()).map_err(|_| ::micropb::DecodeError::Capacity)?;
+                        if let (Err(_), false) = (self.#fname.pb_push(::core::default::Default::default()), #decoder.ignore_repeated_cap_err) {
+                            return Err(::micropb::DecodeError::Capacity);
+                        }
                         let #mut_ref = self.#fname.last_mut().unwrap();
                         #decode_expr;
                     }
