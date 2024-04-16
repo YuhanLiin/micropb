@@ -128,7 +128,7 @@ fn container_heapless() {
     generator.configure(".NumList.list.elem", Config::new().int_type(IntType::U8));
     generator.configure(".StrList.list", Config::new().max_len(3));
     generator.configure(".StrList.list.elem", Config::new().max_bytes(2));
-    generator.configure(".FixedList.list", Config::new().max_len(4));
+    generator.configure(".FixedList.list", Config::new().max_len(2));
 
     generator.configure(".Map.mapping", Config::new().max_len(8));
     generator.configure(".Map.mapping.key", Config::new().max_bytes(4));
@@ -152,7 +152,7 @@ fn container_arrayvec() {
     generator.configure(".NumList.list.elem", Config::new().int_type(IntType::U8));
     generator.configure(".StrList.list", Config::new().max_len(3));
     generator.configure(".StrList.list.elem", Config::new().max_bytes(2));
-    generator.configure(".FixedList.list", Config::new().max_len(4));
+    generator.configure(".FixedList.list", Config::new().max_len(2));
 
     generator
         .compile_protos(
