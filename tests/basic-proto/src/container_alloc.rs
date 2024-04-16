@@ -69,6 +69,13 @@ fn decode_string_bytes() {
     data.decode(&mut decoder, len).unwrap();
     assert_eq!(data.s, "Зд");
     assert_eq!(data.b, &[]);
+
+    let mut decoder = PbDecoder::new([0x0A, 2, 0xC3, 0x28].as_slice());
+    let len = decoder.reader.len();
+    assert!(matches!(
+        data.decode(&mut decoder, len),
+        Err(micropb::DecodeError::Utf8(_))
+    ));
 }
 
 #[test]
