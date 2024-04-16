@@ -107,6 +107,14 @@ fn decode_repeated_cap() {
     let mut decoder = PbDecoder::new([0x0A, 3, 0x0A, 1, b'x'].as_slice()); // field 1
     let len = decoder.reader.len();
     assert_eq!(list.decode(&mut decoder, len), Err(DecodeError::Capacity));
+
+    let mut decoder = PbDecoder::new([0x0A, 3, 0x0A, 1, b'x'].as_slice()); // field 1
+    decoder.ignore_repeated_cap_err = true;
+    let len = decoder.reader.len();
+    list.decode(&mut decoder, len).unwrap();
+    assert_eq!(list.list.len(), 2);
+    assert_eq!(list.list[0].s, "a");
+    assert_eq!(list.list[1].s, "b");
 }
 
 #[test]
@@ -132,6 +140,12 @@ fn decode_packed_cap() {
         numlist.decode(&mut decoder, len),
         Err(DecodeError::Capacity)
     );
+
+    let mut decoder = PbDecoder::new([0x0A, 1, 0x01].as_slice());
+    decoder.ignore_repeated_cap_err = true;
+    let len = decoder.reader.len();
+    numlist.decode(&mut decoder, len).unwrap();
+    assert_eq!(numlist.list, &[1, 150]);
 }
 
 #[test]
@@ -143,6 +157,13 @@ fn decode_packed_cap_oneshot() {
         numlist.decode(&mut decoder, len),
         Err(DecodeError::Capacity)
     );
+
+    numlist.list.clear();
+    let mut decoder = PbDecoder::new([0x0A, 3, 0x08, 0x01, 0x05].as_slice());
+    decoder.ignore_repeated_cap_err = true;
+    let len = decoder.reader.len();
+    numlist.decode(&mut decoder, len).unwrap();
+    assert_eq!(numlist.list, &[8, 1]);
 }
 
 #[test]
@@ -178,6 +199,19 @@ fn decode_map_cap() {
     );
     let len = decoder.reader.len();
     assert_eq!(map.decode(&mut decoder, len), Err(DecodeError::Capacity));
+    assert_eq!(map.mapping.len(), map.mapping.capacity());
+
+    let mut decoder = PbDecoder::new(
+        [
+            0x0A, 7, 0x0A, 2, b'x', b'y', 0x12, 1, 0x02, // field 1
+            0x0A, 7, 0x0A, 1, b'x', 0x12, 2, 0x02, 0x12, // field 1 again
+        ]
+        .as_slice(),
+    );
+    let len = decoder.reader.len();
+    decoder.ignore_repeated_cap_err = true;
+    map.decode(&mut decoder, len).unwrap();
+    assert_eq!(map.mapping.len(), map.mapping.capacity());
 }
 
 #[test]

@@ -261,7 +261,7 @@ impl<'a> Field<'a> {
                 });
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
-                    #decode_expr;
+                    { #decode_expr };
                     #set_has
                 }
             }
@@ -270,7 +270,7 @@ impl<'a> Field<'a> {
                 let decode_expr = tspec.generate_decode_mut(gen, tag, decoder, &mut_ref);
                 quote! {
                     let #mut_ref = &mut #extra_deref *self.#fname.get_or_insert_with(::core::default::Default::default);
-                    #decode_expr;
+                    { #decode_expr };
                 }
             }
 
@@ -289,12 +289,14 @@ impl<'a> Field<'a> {
                     }
                 } else {
                     let decode_expr = typ.generate_decode_mut(gen, tag, decoder, &mut_ref);
+                    let rust_type = typ.generate_rust_type(gen);
                     quote! {
-                        if let (Err(_), false) = (self.#fname.pb_push(::core::default::Default::default()), #decoder.ignore_repeated_cap_err) {
+                        let mut val: #rust_type = ::core::default::Default::default();
+                        let #mut_ref = &mut val;
+                        { #decode_expr };
+                        if let (Err(_), false) = (self.#fname.pb_push(val), #decoder.ignore_repeated_cap_err) {
                             return Err(::micropb::DecodeError::Capacity);
                         }
-                        let #mut_ref = self.#fname.last_mut().unwrap();
-                        #decode_expr;
                     }
                 }
             }
