@@ -605,7 +605,6 @@ mod tests {
                         FieldType::Map {
                             key: TypeSpec::Int(PbInt::Int64, IntType::I16),
                             val: TypeSpec::Int(PbInt::Uint64, IntType::U16),
-                            packed: true,
                             type_path: syn::parse_str("Map").unwrap(),
                             max_len: None
                         }

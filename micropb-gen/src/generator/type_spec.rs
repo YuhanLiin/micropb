@@ -77,14 +77,12 @@ pub(crate) enum TypeSpec {
 }
 
 impl TypeSpec {
-    pub(crate) fn packed_fixed(&self) -> bool {
+    pub(crate) fn fixed_size(&self) -> Option<usize> {
         match self {
-            TypeSpec::Float | TypeSpec::Double => true,
-            // Only use packed fixed optimization for fixed proto types where the integer size
-            // isn't changed
-            TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, IntType::U32 | IntType::I32) => true,
-            TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, IntType::U64 | IntType::I64) => true,
-            _ => false,
+            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),
+            TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => Some(8),
+            TypeSpec::Bool => Some(1),
+            _ => None,
         }
     }
 
@@ -177,7 +175,7 @@ impl TypeSpec {
 
     pub(crate) fn generate_implicit_presence_check(&self, val_ref: &Ident) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => todo!(),
+            TypeSpec::Message(_) => quote! { true },
             TypeSpec::Enum(_) => quote! { #val_ref.0 != 0 },
             TypeSpec::Float | TypeSpec::Double => quote! { *#val_ref != 0.0 },
             TypeSpec::Bool => quote! { *#val_ref },

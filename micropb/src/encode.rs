@@ -198,7 +198,7 @@ impl<W: PbWrite> PbEncoder<W> {
     pub fn encode_repeated_with_tag<T, F: FnMut(&mut Self, T) -> Result<(), W::Error>>(
         &mut self,
         tag: Tag,
-        elems: impl Iterator<Item = T>,
+        elems: impl IntoIterator<Item = T>,
         mut encoder: F,
     ) -> Result<(), W::Error> {
         for e in elems {
@@ -411,7 +411,7 @@ mod tests {
     #[test]
     fn packed() {
         let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
-        let len = sizeof_packed(&[0u32; 0], sizeof_varint32);
+        let len = sizeof_packed(&[0u32; 0], |n| sizeof_varint32(*n));
         encoder
             .encode_packed(len, &[0u32; 0], PbEncoder::encode_varint32)
             .unwrap();
@@ -420,7 +420,7 @@ mod tests {
         assert_eq!(1, sizeof_len_record(len));
 
         let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
-        let len = sizeof_packed(&[1, 156], sizeof_varint32);
+        let len = sizeof_packed(&[1, 156], |n| sizeof_varint32(*n));
         encoder
             .encode_packed(len, &[1, 156], PbEncoder::encode_varint32)
             .unwrap();
@@ -487,12 +487,12 @@ mod tests {
         let tag = Tag::from_parts(1, WIRE_TYPE_VARINT);
         assert_encode_with_tag!(
             b"",
-            encode_repeated_with_tag(tag, core::iter::empty::<&u32>()),
+            encode_repeated_with_tag(tag, &[]),
             sizeof_repeated_with_tag
         );
         assert_encode_with_tag!(
             [0x08, 0x01, 0x08, 0x96, 0x01],
-            encode_repeated_with_tag(tag, [1, 150].iter()),
+            encode_repeated_with_tag(tag, [1, 150].as_slice()),
             sizeof_repeated_with_tag
         );
     }
@@ -504,7 +504,7 @@ mod tests {
 
         let tag = Tag::from_parts(8, WIRE_TYPE_LEN);
         let elems = &[("x", true), ("xy", false), ("xyz", true)];
-        let len = sizeof_repeated_with_tag(tag, elems.iter(), |(k, v)| {
+        let len = sizeof_repeated_with_tag(tag, elems, |(k, v)| {
             let kvlen = sizeof_map_elem(k, v, |s| sizeof_len_record(s.len()), |_| 1);
             len_cache.push(kvlen);
             sizeof_len_record(kvlen)
@@ -512,7 +512,7 @@ mod tests {
 
         let mut cached = len_cache.iter().copied();
         encoder
-            .encode_repeated_with_tag(tag, elems.iter(), |wr, (k, v)| {
+            .encode_repeated_with_tag(tag, elems, |wr, (k, v)| {
                 wr.encode_map_elem(
                     cached.next().unwrap(),
                     k,

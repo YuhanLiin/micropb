@@ -22,7 +22,6 @@ pub(crate) enum FieldType {
     Map {
         key: TypeSpec,
         val: TypeSpec,
-        packed: bool,
         type_path: syn::Path,
         max_len: Option<u32>,
     },
@@ -110,11 +109,6 @@ impl<'a> Field<'a> {
                     val,
                     type_path: type_name,
                     max_len: field_conf.config.max_len,
-                    packed: proto
-                        .options
-                        .as_ref()
-                        .and_then(|opt| opt.packed)
-                        .unwrap_or(false),
                 }
             }
 
@@ -327,27 +321,22 @@ impl<'a> Field<'a> {
         let extra_deref = self.boxed.then(|| quote! { * });
 
         let sizeof_code = match &self.ftype {
-            FieldType::Map {
-                key,
-                val,
-                packed,
-                type_path,
-                max_len,
-            } => todo!(),
-
-            FieldType::Single(tspec @ TypeSpec::Message(_)) => {
-                let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
+            FieldType::Map { key, val, .. } => {
+                let key_sizeof = key.generate_sizeof(gen, &val_ref);
+                let val_sizeof = val.generate_sizeof(gen, &val_ref);
                 quote! {
-                    let #val_ref = &#extra_deref self.#fname;
-                    ::micropb::size::sizeof_tag(#tag) + #sizeof_expr
+                    ::micropb::size::sizeof_repeated_with_tag(#tag, self.#fname.pb_iter(), |(k, v)| {
+                        ::micropb::size::sizeof_map_elem(k, v, |#val_ref| #key_sizeof, |#val_ref| #val_sizeof)
+                    })
                 }
             }
 
             FieldType::Single(tspec) => {
+                let implicit_check = tspec.generate_implicit_presence_check(&val_ref);
                 let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
                 quote! {
                     let #val_ref = &#extra_deref self.#fname;
-                    if #val_ref.implicit_presence() { ::micropb::size::sizeof_tag(#tag) + #sizeof_expr } else { 0 }
+                    if #implicit_check { ::micropb::size::sizeof_tag(#tag) + #sizeof_expr } else { 0 }
                 }
             }
 
@@ -359,13 +348,37 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Repeated {
-                typ,
-                packed,
-                type_path,
-                max_len,
-            } => todo!(),
+                typ, packed: false, ..
+            } => {
+                if let Some(size) = typ.fixed_size() {
+                    quote! { self.#fname.len() * (::micropb::size::sizeof_tag(#tag) + #size) }
+                } else {
+                    let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
+                    quote! { ::micropb::size::sizeof_repeated_with_tag(#tag, &self.#fname, |#val_ref| #sizeof_expr) }
+                }
+            }
 
-            FieldType::Custom(_) => quote! { self.#fname.compute_field_size() },
+            FieldType::Repeated {
+                typ, packed: true, ..
+            } => {
+                let len_record_size = if let Some(size) = typ.fixed_size() {
+                    quote! { ::micropb::size::sizeof_len_record(self.#fname.len() * #size) }
+                } else {
+                    let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
+                    quote! { ::micropb::size::sizeof_len_record(::micropb::size::sizeof_packed(&self.#fname, |#val_ref| #sizeof_expr)) }
+                };
+                quote! {
+                    if !self.#fname.is_empty() { ::micropb::size::sizeof_tag(#tag) + #len_record_size } else { 0 }
+                }
+            }
+
+            FieldType::Custom(CustomField::Type(_)) => {
+                quote! { self.#fname.compute_field_size(#tag.field_num()) }
+            }
+
+            FieldType::Custom(CustomField::Delegate(field)) => {
+                quote! { self.#field.compute_field_size(#tag.field_num()) }
+            }
         };
 
         quote! {
@@ -665,7 +678,6 @@ mod tests {
                     type_path: syn::parse_str("std::String").unwrap(),
                     max_bytes: None
                 },
-                packed: false,
                 type_path: syn::parse_str("std::Map").unwrap(),
                 max_len: None
             }
@@ -731,7 +743,6 @@ mod tests {
                     val: TypeSpec::Int(PbInt::Uint64, IntType::U32),
                     type_path: syn::parse_str("std::HashMap").unwrap(),
                     max_len: None,
-                    packed: true
                 }
             )
             .generate_rust_type(&gen)
@@ -748,7 +759,6 @@ mod tests {
                     val: TypeSpec::Float,
                     type_path: syn::parse_str("std::HashMap").unwrap(),
                     max_len: Some(8),
-                    packed: true
                 }
             )
             .generate_rust_type(&gen)

@@ -48,8 +48,8 @@ pub fn sizeof_tag(tag: Tag) -> usize {
     sizeof_varint32(tag.varint())
 }
 
-pub fn sizeof_packed<T: Copy, F: Fn(T) -> usize>(elems: &[T], sizer: F) -> usize {
-    elems.iter().copied().map(sizer).sum()
+pub fn sizeof_packed<T: Copy, F: Fn(&T) -> usize>(elems: &[T], sizer: F) -> usize {
+    elems.iter().map(sizer).sum()
 }
 
 //pub fn sizeof_packed_fixed<T: Copy>(slice: &[T]) -> usize {
@@ -73,11 +73,11 @@ pub fn sizeof_map_elem<K: ?Sized, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&
 
 pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
     tag: Tag,
-    elems: impl Iterator<Item = T>,
+    elems: impl IntoIterator<Item = T>,
     mut sizer: F,
 ) -> usize {
     let tag_size = sizeof_tag(tag);
-    elems.map(|e| tag_size + sizer(e)).sum()
+    elems.into_iter().map(|e| tag_size + sizer(e)).sum()
 }
 
 pub trait SizeCache {
