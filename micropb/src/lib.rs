@@ -24,7 +24,7 @@ pub use heapless;
 
 pub use container::{PbContainer, PbMap, PbString, PbVec};
 #[cfg(feature = "decode")]
-pub use decode::{DecodeError, DecodeFixedSize, PbDecoder, PbRead};
+pub use decode::{DecodeError, PbDecoder, PbRead};
 #[cfg(feature = "encode")]
 pub use encode::{PbEncoder, PbWrite};
 #[cfg(feature = "decode")]

@@ -34,28 +34,28 @@ impl<E> From<Utf8Error> for DecodeError<E> {
     }
 }
 
-/// Implemented only for types decoded from fixed-size fields.
-///
-/// # Safety
-/// Implementers must have no invalid bit-patterns.
-pub unsafe trait DecodeFixedSize: sealed::Sealed + Copy {}
+///// Implemented only for types decoded from fixed-size fields.
+/////
+///// # Safety
+///// Implementers must have no invalid bit-patterns.
+//pub unsafe trait DecodeFixedSize: sealed::Sealed + Copy {}
 
-unsafe impl DecodeFixedSize for u32 {}
-unsafe impl DecodeFixedSize for i32 {}
-unsafe impl DecodeFixedSize for u64 {}
-unsafe impl DecodeFixedSize for i64 {}
-unsafe impl DecodeFixedSize for f32 {}
-unsafe impl DecodeFixedSize for f64 {}
+//unsafe impl DecodeFixedSize for u32 {}
+//unsafe impl DecodeFixedSize for i32 {}
+//unsafe impl DecodeFixedSize for u64 {}
+//unsafe impl DecodeFixedSize for i64 {}
+//unsafe impl DecodeFixedSize for f32 {}
+//unsafe impl DecodeFixedSize for f64 {}
 
-mod sealed {
-    pub trait Sealed {}
-    impl Sealed for u32 {}
-    impl Sealed for i32 {}
-    impl Sealed for u64 {}
-    impl Sealed for i64 {}
-    impl Sealed for f32 {}
-    impl Sealed for f64 {}
-}
+//mod sealed {
+//pub trait Sealed {}
+//impl Sealed for u32 {}
+//impl Sealed for i32 {}
+//impl Sealed for u64 {}
+//impl Sealed for i64 {}
+//impl Sealed for f32 {}
+//impl Sealed for f64 {}
+//}
 
 pub trait PbRead {
     type Error;
