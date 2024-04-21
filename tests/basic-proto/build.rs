@@ -218,6 +218,17 @@ fn custom_field() {
         .unwrap();
 }
 
+fn implicit_presence() {
+    let mut generator = Generator::new();
+    generator.use_container_alloc();
+    generator
+        .compile_protos(
+            &["proto/implicit_presence.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/implicit_presence.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -228,4 +239,5 @@ fn main() {
     container_arrayvec();
     container_alloc();
     custom_field();
+    implicit_presence();
 }

@@ -139,7 +139,7 @@ fn proto3() {
 #[test]
 fn decode_varint() {
     let mut basic = proto::basic::BasicTypes::new();
-    let mut decoder = PbDecoder::new([0x03, 0x08, 0x96, 0x01].as_slice()); // field 1
+    let mut decoder = PbDecoder::new([3, 0x08, 0x96, 0x01].as_slice()); // field 1
     basic.decode_len_delimited(&mut decoder).unwrap();
     assert_eq!(basic.int32_num(), Some(&150));
 

@@ -236,8 +236,8 @@ impl<'a> Field<'a> {
 
         let decode_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
-                let key_decode_expr = key.generate_decode_mut(gen, tag, decoder, &mut_ref);
-                let val_decode_expr = val.generate_decode_mut(gen, tag, decoder, &mut_ref);
+                let key_decode_expr = key.generate_decode_mut(gen, false, decoder, &mut_ref);
+                let val_decode_expr = val.generate_decode_mut(gen, false, decoder, &mut_ref);
                 let key_type = key.generate_rust_type(gen);
                 let val_type = val.generate_rust_type(gen);
                 quote! {
@@ -253,31 +253,36 @@ impl<'a> Field<'a> {
                 }
             }
 
-            FieldType::Single(tspec) | FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
-                let decode_expr = tspec.generate_decode_mut(gen, tag, decoder, &mut_ref);
-                let set_has = self.is_hazzer().then(|| {
-                    let setter = format_ident!("set_{fname}");
-                    quote! { self._has.#setter(true); }
-                });
+            FieldType::Single(tspec) => {
+                let decode_stmts = tspec.generate_decode_mut(gen, true, decoder, &mut_ref);
+                quote! {
+                    let #mut_ref = &mut #extra_deref self.#fname;
+                    { #decode_stmts };
+                }
+            }
+
+            FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
+                let decode_expr = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
+                let setter = format_ident!("set_{fname}");
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_expr };
-                    #set_has
+                    self._has.#setter(true);
                 }
             }
 
             FieldType::Optional(tspec, OptionalRepr::Option) => {
-                let decode_expr = tspec.generate_decode_mut(gen, tag, decoder, &mut_ref);
+                let decode_stmts = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
                 quote! {
                     let #mut_ref = &mut #extra_deref *self.#fname.get_or_insert_with(::core::default::Default::default);
-                    { #decode_expr };
+                    { #decode_stmts };
                 }
             }
 
             FieldType::Repeated { typ, .. } => {
                 // Type can be packed and is Copy, so we check the wire type to see if we can
                 // do packed decoding
-                if let Some(val) = typ.generate_decode_val(decoder) {
+                if let Some(val) = typ.generate_decode_val(gen, decoder) {
                     quote! {
                         if #tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                             #decoder.decode_packed(&mut self.#fname, |#decoder| #val.map(|v| v as _))?;
@@ -288,7 +293,7 @@ impl<'a> Field<'a> {
                         }
                     }
                 } else {
-                    let decode_expr = typ.generate_decode_mut(gen, tag, decoder, &mut_ref);
+                    let decode_expr = typ.generate_decode_mut(gen, false, decoder, &mut_ref);
                     let rust_type = typ.generate_rust_type(gen);
                     quote! {
                         let mut val: #rust_type = ::core::default::Default::default();

@@ -1,4 +1,4 @@
-use crate::{BasicPbType, Tag};
+use crate::Tag;
 
 pub fn sizeof_varint32(v: u32) -> usize {
     match v {

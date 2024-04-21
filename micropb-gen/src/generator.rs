@@ -215,29 +215,6 @@ impl Generator {
         }
     }
 
-    fn generate_enum_decode(&self, name: &Ident, enum_int_type: IntType) -> TokenStream {
-        let decode_method = if enum_int_type.is_signed() {
-            Ident::new("decode_int32", Span::call_site())
-        } else {
-            Ident::new("decode_varint32", Span::call_site())
-        };
-        quote! {
-            impl ::micropb::FieldDecode for #name {
-                #[inline]
-                fn decode_field<R: ::micropb::PbRead>(
-                    &mut self,
-                    _tag: ::micropb::Tag,
-                    decoder: &mut ::micropb::PbDecoder<R>,
-                ) -> Result<(), ::micropb::DecodeError<R::Error>>
-                {
-                    let num = decoder.#decode_method()?;
-                    *self = Self(num as _);
-                    Ok(())
-                }
-            }
-        }
-    }
-
     fn generate_enum(
         &self,
         enum_type: &EnumDescriptorProto,
@@ -250,19 +227,13 @@ impl Generator {
         let name = Ident::new(enum_type.name(), Span::call_site());
         let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
         let attrs = &enum_conf.config.type_attr_parsed();
-        let decl = self.generate_enum_decl(
+        self.generate_enum_decl(
             &name,
             &enum_type.value,
             enum_int_type,
             attrs,
             !enum_conf.config.no_debug_derive.unwrap_or(false),
-        );
-        let decode = self.generate_enum_decode(&name, enum_int_type);
-
-        quote! {
-            #decl
-            #decode
-        }
+        )
     }
 
     fn generate_msg_mod(

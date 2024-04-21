@@ -19,7 +19,7 @@ message BasicTypes {
     optional fixed64 fixed64_num = 8;
     optional sfixed32 sfixed32_num = 9;
     optional sfixed64 sfixed64_num = 10;
-    optional bool boolean = 11;
+    optional bool boolean = 11 [default = false];
     optional float flt = 12 [default = 1.0];
     optional double dbl = 13;
     required Enum enumeration = 14 [default = ENUM_ONE];

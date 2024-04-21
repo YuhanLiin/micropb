@@ -61,7 +61,6 @@ impl<'a> OneofField<'a> {
         oneof_name: &Ident,
         oneof_type: &TokenStream,
         gen: &Generator,
-        tag: &Ident,
         decoder: &Ident,
     ) -> TokenStream {
         let fnum = self.num;
@@ -69,7 +68,9 @@ impl<'a> OneofField<'a> {
         let variant_name = &self.rust_name;
         let extra_deref = self.boxed.then(|| quote! { * });
 
-        let decode_expr = self.tspec.generate_decode_mut(gen, tag, decoder, &mut_ref);
+        let decode_expr = self
+            .tspec
+            .generate_decode_mut(gen, false, decoder, &mut_ref);
         quote! {
             #fnum => {
                 match &mut self.#oneof_name {
@@ -221,7 +222,7 @@ impl<'a> Oneof<'a> {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
                 let branches = fields
                     .iter()
-                    .map(|f| f.generate_decode_branch(name, &oneof_type, gen, tag, decoder));
+                    .map(|f| f.generate_decode_branch(name, &oneof_type, gen, decoder));
                 quote! {
                     #(#branches)*
                 }

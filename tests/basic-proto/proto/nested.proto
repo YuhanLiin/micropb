@@ -15,9 +15,9 @@ message Nested {
 
     optional .basic.BasicTypes basic = 1;
     oneof inner {
-        .basic.Enum enumeration = 2;
+        .basic.Enum enumeration = 2 [default = ENUM_TWO];
         InnerMsg inner_msg = 3;
-        InnerEnum inner_enum = 4;
+        InnerEnum inner_enum = 4 [default = INNER_ENUM_VAL];
         bool scalar = 5;
     }
 }

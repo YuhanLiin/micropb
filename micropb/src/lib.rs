@@ -85,57 +85,6 @@ pub enum Presence {
     Explicit,
 }
 
-pub trait BasicPbType {
-    fn implicit_presence(&self) -> bool;
-}
-
-macro_rules! impl_implicit_presence_num {
-    ($typ:ty) => {
-        impl BasicPbType for $typ {
-            fn implicit_presence(&self) -> bool {
-                !self.is_zero()
-            }
-        }
-    };
-}
-
-impl_implicit_presence_num!(u8);
-impl_implicit_presence_num!(i8);
-impl_implicit_presence_num!(u16);
-impl_implicit_presence_num!(i16);
-impl_implicit_presence_num!(u32);
-impl_implicit_presence_num!(i32);
-impl_implicit_presence_num!(u64);
-impl_implicit_presence_num!(i64);
-impl_implicit_presence_num!(usize);
-impl_implicit_presence_num!(isize);
-impl_implicit_presence_num!(f32);
-impl_implicit_presence_num!(f64);
-
-impl BasicPbType for bool {
-    fn implicit_presence(&self) -> bool {
-        *self
-    }
-}
-
-impl BasicPbType for str {
-    fn implicit_presence(&self) -> bool {
-        !self.is_empty()
-    }
-}
-
-impl BasicPbType for [u8] {
-    fn implicit_presence(&self) -> bool {
-        !self.is_empty()
-    }
-}
-
-impl<T: BasicPbType> BasicPbType for &T {
-    fn implicit_presence(&self) -> bool {
-        (*self).implicit_presence()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

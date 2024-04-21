@@ -11,6 +11,8 @@ mod container_heapless;
 #[cfg(test)]
 mod custom_field;
 #[cfg(test)]
+mod implicit_presence;
+#[cfg(test)]
 mod int_type;
 #[cfg(test)]
 mod keyword_fields;

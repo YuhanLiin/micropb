@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+enum Enum {
+    ENUM_ZERO = 0;
+    ENUM_ONE = 1;
+    ENUM_TWO = 2;
+}
+
+message NonOptional {
+    int32 int32_num = 1;
+    int64 int64_num = 2;
+    uint32 uint32_num = 3;
+    uint64 uint64_num = 4;
+    sint32 sint32_num = 5;
+    sint64 sint64_num = 6;
+    fixed32 fixed32_num = 7;
+    fixed64 fixed64_num = 8;
+    sfixed32 sfixed32_num = 9;
+    sfixed64 sfixed64_num = 10;
+    bool boolean = 11;
+    float flt = 12;
+    double dbl = 13;
+    Enum enumeration = 14;
+    string st = 15;
+    bytes bt = 16;
+}
+
+message Optional {
+    optional int32 int32_num = 1;
+    optional int64 int64_num = 2;
+    optional uint32 uint32_num = 3;
+    optional uint64 uint64_num = 4;
+    optional sint32 sint32_num = 5;
+    optional sint64 sint64_num = 6;
+    optional fixed32 fixed32_num = 7;
+    optional fixed64 fixed64_num = 8;
+    optional sfixed32 sfixed32_num = 9;
+    optional sfixed64 sfixed64_num = 10;
+    optional bool boolean = 11;
+    optional float flt = 12;
+    optional double dbl = 13;
+    optional Enum enumeration = 14;
+    optional string st = 15;
+    optional bytes bt = 16;
+}

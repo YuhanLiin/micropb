@@ -160,11 +160,12 @@ impl TypeSpec {
             TypeSpec::Message(_) => {
                 unreachable!("message fields shouldn't have custom defaults")
             }
-            TypeSpec::Enum(tname) => {
+            TypeSpec::Enum(tpath) => {
+                let enum_path = gen.resolve_type_name(tpath);
                 let enum_name =
-                    Ident::new(&path_suffix(tname).to_case(Case::Pascal), Span::call_site());
+                    Ident::new(&path_suffix(tpath).to_case(Case::Pascal), Span::call_site());
                 let variant = gen.enum_variant_name(default, &enum_name);
-                quote! { #enum_name::#variant }
+                quote! { #enum_path::#variant }
             }
             _ => {
                 let default: TokenStream =
@@ -174,12 +175,34 @@ impl TypeSpec {
         }
     }
 
-    pub(crate) fn generate_decode_val(&self, decoder: &Ident) -> Option<TokenStream> {
+    pub(crate) fn generate_implicit_presence_check(&self, val_ref: &Ident) -> TokenStream {
+        match self {
+            TypeSpec::Message(_) => todo!(),
+            TypeSpec::Enum(_) => quote! { #val_ref.0 != 0 },
+            TypeSpec::Float | TypeSpec::Double => quote! { *#val_ref != 0.0 },
+            TypeSpec::Bool => quote! { *#val_ref },
+            TypeSpec::Int(_, _) => quote! { *#val_ref != 0 },
+            TypeSpec::String { .. } => quote! { !#val_ref.is_empty() },
+            TypeSpec::Bytes { .. } => quote! { !#val_ref.is_empty() },
+        }
+    }
+
+    /// Generate decode value expressions (Result<T, DecodeError>) for "packable" types
+    pub(crate) fn generate_decode_val(
+        &self,
+        gen: &Generator,
+        decoder: &Ident,
+    ) -> Option<TokenStream> {
         match self {
             TypeSpec::Float => Some(quote! { #decoder.decode_float() }),
             TypeSpec::Double => Some(quote! { #decoder.decode_double() }),
             TypeSpec::Bool => Some(quote! { decoder.decode_bool() }),
             TypeSpec::Int(pbint, _) => Some(pbint.generate_decode_val(decoder)),
+            // Enum is actually packable due to https://github.com/protocolbuffers/protobuf/issues/15480
+            TypeSpec::Enum(tpath) => {
+                let enum_path = gen.resolve_type_name(tpath);
+                Some(quote! { #decoder.decode_int32().map(|n| #enum_path(n as _)) })
+            }
             _ => None,
         }
     }
@@ -187,29 +210,47 @@ impl TypeSpec {
     pub(crate) fn generate_decode_mut(
         &self,
         gen: &Generator,
-        tag: &Ident,
+        implicit_presence: bool,
         decoder: &Ident,
         mut_ref: &Ident,
     ) -> TokenStream {
-        let presence = if gen.syntax == Syntax::Proto2 {
-            "Explicit"
-        } else {
+        let presence = if implicit_presence {
             "Implicit"
+        } else {
+            "Explicit"
         };
         let presence_ident = Ident::new(presence, Span::call_site());
 
         match self {
-            TypeSpec::Message(_) => quote! { #mut_ref.decode_len_delimited(#decoder)? },
-            TypeSpec::Enum(_) => quote! { #mut_ref.decode_field(#tag, #decoder)? },
-            TypeSpec::Float | TypeSpec::Double | TypeSpec::Bool | TypeSpec::Int(..) => {
-                let val = self.generate_decode_val(decoder).unwrap();
-                quote! { *#mut_ref = (#val? as _) }
+            TypeSpec::Message(_) => quote! { #mut_ref.decode_len_delimited(#decoder)?; },
+            TypeSpec::Enum(_)
+            | TypeSpec::Float
+            | TypeSpec::Double
+            | TypeSpec::Bool
+            | TypeSpec::Int(..) => {
+                let val_expr = self.generate_decode_val(gen, decoder).unwrap();
+                let val_ref = Ident::new("val_ref", Span::call_site());
+                let setter = if implicit_presence {
+                    let presence_check = self.generate_implicit_presence_check(&val_ref);
+                    quote! {
+                        if #presence_check {
+                            *#mut_ref = val as _;
+                        }
+                    }
+                } else {
+                    quote! { *#mut_ref = val as _; }
+                };
+                quote! {
+                    let val = #val_expr?;
+                    let #val_ref = &val;
+                    #setter
+                }
             }
             TypeSpec::String { .. } => {
-                quote! { #decoder.decode_string(#mut_ref, ::micropb::Presence::#presence_ident)? }
+                quote! { #decoder.decode_string(#mut_ref, ::micropb::Presence::#presence_ident)?; }
             }
             TypeSpec::Bytes { .. } => {
-                quote! { #decoder.decode_bytes(#mut_ref, ::micropb::Presence::#presence_ident)? }
+                quote! { #decoder.decode_bytes(#mut_ref, ::micropb::Presence::#presence_ident)?; }
             }
         }
     }
