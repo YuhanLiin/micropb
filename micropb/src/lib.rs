@@ -99,10 +99,16 @@ macro_rules! impl_implicit_presence_num {
     };
 }
 
+impl_implicit_presence_num!(u8);
+impl_implicit_presence_num!(i8);
+impl_implicit_presence_num!(u16);
+impl_implicit_presence_num!(i16);
 impl_implicit_presence_num!(u32);
 impl_implicit_presence_num!(i32);
 impl_implicit_presence_num!(u64);
 impl_implicit_presence_num!(i64);
+impl_implicit_presence_num!(usize);
+impl_implicit_presence_num!(isize);
 impl_implicit_presence_num!(f32);
 impl_implicit_presence_num!(f64);
 

@@ -314,6 +314,59 @@ impl<'a> Field<'a> {
             #fnum => { #decode_code }
         }
     }
+
+    pub(crate) fn generate_sizeof(&self, gen: &Generator, tag: &Ident) -> TokenStream {
+        let fnum = self.num;
+        let fname = &self.rust_name;
+        let val_ref = Ident::new("val_ref", Span::call_site());
+        let extra_deref = self.boxed.then(|| quote! { * });
+
+        let sizeof_code = match &self.ftype {
+            FieldType::Map {
+                key,
+                val,
+                packed,
+                type_path,
+                max_len,
+            } => todo!(),
+
+            FieldType::Single(tspec @ TypeSpec::Message(_)) => {
+                let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
+                quote! {
+                    let #val_ref = &#extra_deref self.#fname;
+                    ::micropb::size::sizeof_tag(#tag) + #sizeof_expr
+                }
+            }
+
+            FieldType::Single(tspec) => {
+                let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
+                quote! {
+                    let #val_ref = &#extra_deref self.#fname;
+                    if #val_ref.implicit_presence() { ::micropb::size::sizeof_tag(#tag) + #sizeof_expr } else { 0 }
+                }
+            }
+
+            FieldType::Optional(tspec, _) => {
+                let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
+                quote! {
+                    if let Some(#val_ref) = self.#fname() { ::micropb::size::sizeof_tag(#tag) + #sizeof_expr } else { 0 }
+                }
+            }
+
+            FieldType::Repeated {
+                typ,
+                packed,
+                type_path,
+                max_len,
+            } => todo!(),
+
+            FieldType::Custom(_) => quote! { self.#fname.compute_field_size() },
+        };
+
+        quote! {
+            #fnum => { #sizeof_code }
+        }
+    }
 }
 
 #[cfg(test)]

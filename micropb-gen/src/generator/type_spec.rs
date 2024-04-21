@@ -34,11 +34,26 @@ impl PbInt {
             PbInt::Uint32 => quote! { #decoder.decode_varint32() },
             PbInt::Uint64 => quote! { #decoder.decode_varint64() },
             PbInt::Sint32 => quote! { #decoder.decode_sint32() },
-            PbInt::Sfixed32 => quote! { #decoder.decode_sfixed32() },
             PbInt::Sint64 => quote! { #decoder.decode_sint64() },
+            PbInt::Sfixed32 => quote! { #decoder.decode_sfixed32() },
             PbInt::Sfixed64 => quote! { #decoder.decode_sfixed64() },
             PbInt::Fixed32 => quote! { #decoder.decode_fixed32() },
             PbInt::Fixed64 => quote! { #decoder.decode_fixed64() },
+        }
+    }
+
+    pub(crate) fn generate_sizeof(&self, val_ref: &Ident) -> TokenStream {
+        match self {
+            PbInt::Int32 => quote! { ::micropb::size::sizeof_int32(* #val_ref) },
+            PbInt::Int64 => quote! { ::micropb::size::sizeof_int64(* #val_ref) },
+            PbInt::Uint32 => quote! { ::micropb::size::sizeof_varint32(* #val_ref) },
+            PbInt::Uint64 => quote! { ::micropb::size::sizeof_varint64(* #val_ref) },
+            PbInt::Sint32 => quote! { ::micropb::size::sizeof_sint32(* #val_ref) },
+            PbInt::Sint64 => quote! { ::micropb::size::sizeof_sint64(* #val_ref) },
+            PbInt::Sfixed32 => quote! { 4 },
+            PbInt::Sfixed64 => quote! { 8 },
+            PbInt::Fixed32 => quote! { 4 },
+            PbInt::Fixed64 => quote! { 8 },
         }
     }
 }
@@ -196,6 +211,23 @@ impl TypeSpec {
             TypeSpec::Bytes { .. } => {
                 quote! { #decoder.decode_bytes(#mut_ref, ::micropb::Presence::#presence_ident)? }
             }
+        }
+    }
+
+    pub(crate) fn generate_sizeof(&self, gen: &Generator, val_ref: &Ident) -> TokenStream {
+        match self {
+            TypeSpec::Message(_) => {
+                quote! { ::micropb::size::sizeof_len_record(#val_ref.compute_size()) }
+            }
+            TypeSpec::Enum(_) => todo!(),
+            TypeSpec::Float => quote! { 4 },
+            TypeSpec::Double => quote! { 8 },
+            TypeSpec::Bool => quote! { 1 },
+            TypeSpec::Int(pbint, _) => pbint.generate_sizeof(val_ref),
+            TypeSpec::String { .. } => {
+                quote! { ::micropb::size::sizeof_len_record(#val_ref.len()) }
+            }
+            TypeSpec::Bytes { .. } => quote! { ::micropb::size::sizeof_len_record(#val_ref.len()) },
         }
     }
 }
