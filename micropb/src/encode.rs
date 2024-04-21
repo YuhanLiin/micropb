@@ -1,4 +1,4 @@
-use crate::{size::sizeof_packed_fixed, Tag, VarInt};
+use crate::{Tag, VarInt};
 
 pub trait PbWrite {
     type Error;
@@ -147,12 +147,12 @@ impl<W: PbWrite> PbEncoder<W> {
         self.encode_bytes(string.as_bytes())
     }
 
-    pub fn encode_packed_fixed<T: Copy>(&mut self, elems: &[T]) -> Result<(), W::Error> {
-        // O(1) operation that gets total size of slice
-        let len = sizeof_packed_fixed(elems);
-        let bytes = unsafe { core::slice::from_raw_parts(elems.as_ptr() as *const u8, len) };
-        self.encode_bytes(bytes)
-    }
+    //pub fn encode_packed_fixed<T: Copy>(&mut self, elems: &[T]) -> Result<(), W::Error> {
+    //// O(1) operation that gets total size of slice
+    //let len = sizeof_packed_fixed(elems);
+    //let bytes = unsafe { core::slice::from_raw_parts(elems.as_ptr() as *const u8, len) };
+    //self.encode_bytes(bytes)
+    //}
 
     pub fn encode_packed<T: Copy, F: FnMut(&mut Self, T) -> Result<(), W::Error>>(
         &mut self,
@@ -394,19 +394,19 @@ mod tests {
         assert_encode_nosize!(&[4, 208, 151, 208, 180], encode_string("Зд"));
     }
 
-    #[test]
-    #[cfg(target_endian = "little")]
-    fn packed_fixed() {
-        assert_encode_nosize!([0], encode_packed_fixed(&[0u32; 0]));
-        assert_encode_nosize!(
-            [4, 0x1, 0x0, 0x0, 0x1],
-            encode_packed_fixed(&[true, false, false, true])
-        );
-        assert_encode_nosize!(
-            [8, 0x1, 0x0, 0x0, 0x0, 0x6, 0x0, 0x0, 0x0],
-            encode_packed_fixed(&[1u32, 6u32])
-        );
-    }
+    //#[test]
+    //#[cfg(target_endian = "little")]
+    //fn packed_fixed() {
+    //assert_encode_nosize!([0], encode_packed_fixed(&[0u32; 0]));
+    //assert_encode_nosize!(
+    //[4, 0x1, 0x0, 0x0, 0x1],
+    //encode_packed_fixed(&[true, false, false, true])
+    //);
+    //assert_encode_nosize!(
+    //[8, 0x1, 0x0, 0x0, 0x0, 0x6, 0x0, 0x0, 0x0],
+    //encode_packed_fixed(&[1u32, 6u32])
+    //);
+    //}
 
     #[test]
     fn packed() {

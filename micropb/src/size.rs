@@ -52,9 +52,9 @@ pub fn sizeof_packed<T: Copy, F: Fn(T) -> usize>(elems: &[T], sizer: F) -> usize
     elems.iter().copied().map(sizer).sum()
 }
 
-pub fn sizeof_packed_fixed<T: Copy>(slice: &[T]) -> usize {
-    core::mem::size_of_val(slice)
-}
+//pub fn sizeof_packed_fixed<T: Copy>(slice: &[T]) -> usize {
+//core::mem::size_of_val(slice)
+//}
 
 pub fn sizeof_len_record(len: usize) -> usize {
     len + sizeof_varint32(len as u32)
