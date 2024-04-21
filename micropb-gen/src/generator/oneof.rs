@@ -68,7 +68,7 @@ impl<'a> OneofField<'a> {
         let variant_name = &self.rust_name;
         let extra_deref = self.boxed.then(|| quote! { * });
 
-        let decode_expr = self
+        let decode_stmts = self
             .tspec
             .generate_decode_mut(gen, false, decoder, &mut_ref);
         quote! {
@@ -79,7 +79,22 @@ impl<'a> OneofField<'a> {
                 };
                 let #mut_ref = if let ::core::option::Option::Some(#oneof_type::#variant_name(variant))
                     = &mut self.#oneof_name { &mut #extra_deref *variant } else { unreachable!() };
-                #decode_expr;
+                #decode_stmts;
+            }
+        }
+    }
+
+    fn generate_sizeof_branch(&self, oneof_type: &TokenStream, gen: &Generator) -> TokenStream {
+        let val_ref = Ident::new("val_ref", Span::call_site());
+        let variant_name = &self.rust_name;
+        let extra_deref = self.boxed.then(|| quote! { * });
+        let fnum = self.num;
+
+        let sizeof_expr = self.tspec.generate_sizeof(gen, &val_ref);
+        quote! {
+            #oneof_type::#variant_name(#val_ref) => {
+                let #val_ref = &* #extra_deref #val_ref;
+                ::micropb::size::sizeof_tag(::micropb::Tag::from_parts(#fnum, 0)) + #sizeof_expr
             }
         }
     }
@@ -245,6 +260,33 @@ impl<'a> Oneof<'a> {
                     #(#nums)|* => { self.#field.decode_field(#tag, #decoder)?; }
                 }
             }
+        }
+    }
+
+    pub(crate) fn generate_sizeof(&self, gen: &Generator, msg_mod_name: &Ident) -> TokenStream {
+        let name = &self.rust_name;
+        match &self.otype {
+            OneofType::Enum { type_name, fields } => {
+                let oneof_type = quote! { #msg_mod_name::#type_name };
+                let branches = fields
+                    .iter()
+                    .map(|f| f.generate_sizeof_branch(&oneof_type, gen));
+                quote! {
+                    (if let Some(oneof) = &self.#name {
+                        match oneof {
+                            #(#branches)*
+                        }
+                    } else { 0 })
+                }
+            }
+            OneofType::Custom {
+                field: CustomField::Type(_),
+                ..
+            } => quote! { self.#name.compute_field_size() },
+            OneofType::Custom {
+                field: CustomField::Delegate(_),
+                ..
+            } => quote! { 0 },
         }
     }
 }

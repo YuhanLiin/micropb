@@ -44,12 +44,12 @@ impl PbInt {
 
     pub(crate) fn generate_sizeof(&self, val_ref: &Ident) -> TokenStream {
         match self {
-            PbInt::Int32 => quote! { ::micropb::size::sizeof_int32(* #val_ref) },
-            PbInt::Int64 => quote! { ::micropb::size::sizeof_int64(* #val_ref) },
-            PbInt::Uint32 => quote! { ::micropb::size::sizeof_varint32(* #val_ref) },
-            PbInt::Uint64 => quote! { ::micropb::size::sizeof_varint64(* #val_ref) },
-            PbInt::Sint32 => quote! { ::micropb::size::sizeof_sint32(* #val_ref) },
-            PbInt::Sint64 => quote! { ::micropb::size::sizeof_sint64(* #val_ref) },
+            PbInt::Int32 => quote! { ::micropb::size::sizeof_int32(* #val_ref as _) },
+            PbInt::Int64 => quote! { ::micropb::size::sizeof_int64(* #val_ref as _) },
+            PbInt::Uint32 => quote! { ::micropb::size::sizeof_varint32(* #val_ref as _) },
+            PbInt::Uint64 => quote! { ::micropb::size::sizeof_varint64(* #val_ref as _) },
+            PbInt::Sint32 => quote! { ::micropb::size::sizeof_sint32(* #val_ref as _) },
+            PbInt::Sint64 => quote! { ::micropb::size::sizeof_sint64(* #val_ref as _) },
             PbInt::Sfixed32 => quote! { 4 },
             PbInt::Sfixed64 => quote! { 8 },
             PbInt::Fixed32 => quote! { 4 },
@@ -258,7 +258,7 @@ impl TypeSpec {
             TypeSpec::Message(_) => {
                 quote! { ::micropb::size::sizeof_len_record(#val_ref.compute_size()) }
             }
-            TypeSpec::Enum(_) => todo!(),
+            TypeSpec::Enum(_) => quote! { ::micropb::size::sizeof_int32(#val_ref.0 as _) },
             TypeSpec::Float => quote! { 4 },
             TypeSpec::Double => quote! { 8 },
             TypeSpec::Bool => quote! { 1 },

@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use micropb::{FieldDecode, MessageDecode, PbDecoder, Tag};
+use micropb::{FieldDecode, FieldEncode, MessageDecode, PbDecoder, Tag};
 
 mod proto {
     #![allow(clippy::all)]
@@ -22,6 +22,19 @@ impl FieldDecode for MockField {
         decoder.skip_wire_value(tag.wire_type())?;
         self.tags.push(tag);
         Ok(())
+    }
+}
+
+impl FieldEncode for MockField {
+    fn encode_field<W: micropb::PbWrite>(
+        &self,
+        encoder: &mut micropb::PbEncoder<W>,
+    ) -> Result<(), W::Error> {
+        todo!()
+    }
+
+    fn compute_field_size(&self) -> usize {
+        0
     }
 }
 

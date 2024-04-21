@@ -286,7 +286,8 @@ impl Generator {
         let default = msg.generate_default_impl(self, hazzer_field_attr.is_some());
         let decl = msg.generate_decl(self, hazzer_field_attr, unknown_field_attr);
         let msg_impl = msg.generate_impl(self);
-        let decode = msg.generate_decode(self);
+        let decode = msg.generate_decode_trait(self);
+        let encode = msg.generate_encode_trait(self);
 
         quote! {
             #msg_mod
@@ -294,6 +295,7 @@ impl Generator {
             #default
             #msg_impl
             #decode
+            #encode
         }
     }
 

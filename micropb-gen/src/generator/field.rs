@@ -314,11 +314,12 @@ impl<'a> Field<'a> {
         }
     }
 
-    pub(crate) fn generate_sizeof(&self, gen: &Generator, tag: &Ident) -> TokenStream {
+    pub(crate) fn generate_sizeof(&self, gen: &Generator) -> TokenStream {
         let fnum = self.num;
         let fname = &self.rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
         let extra_deref = self.boxed.then(|| quote! { * });
+        let tag = Ident::new("tag", Span::call_site());
 
         let sizeof_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
@@ -372,17 +373,16 @@ impl<'a> Field<'a> {
                 }
             }
 
-            FieldType::Custom(CustomField::Type(_)) => {
-                quote! { self.#fname.compute_field_size(#tag.field_num()) }
-            }
+            FieldType::Custom(CustomField::Type(_)) => quote! { self.#fname.compute_field_size() },
 
-            FieldType::Custom(CustomField::Delegate(field)) => {
-                quote! { self.#field.compute_field_size(#tag.field_num()) }
-            }
+            FieldType::Custom(CustomField::Delegate(_)) => quote! { 0 },
         };
 
         quote! {
-            #fnum => { #sizeof_code }
+            ({
+                let #tag = ::micropb::Tag::from_parts(#fnum, 0);
+                #sizeof_code
+            })
         }
     }
 }

@@ -329,7 +329,7 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub(crate) fn generate_decode(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_decode_trait(&self, gen: &Generator) -> TokenStream {
         let name = &self.rust_name;
         let tag = Ident::new("tag", Span::call_site());
         let decoder = Ident::new("decoder", Span::call_site());
@@ -381,6 +381,47 @@ impl<'a> Message<'a> {
                         Ok(())
                     }
                 }
+            }
+        }
+    }
+
+    fn generate_sizeof(&self, gen: &Generator) -> TokenStream {
+        let mod_name = gen.resolve_path_elem(self.name);
+
+        let field_sizeof = self.fields.iter().map(|f| f.generate_sizeof(gen));
+        let oneof_sizeof = self
+            .oneofs
+            .iter()
+            .map(|o| o.generate_sizeof(gen, &mod_name));
+
+        let unknown_sizeof = if self.unknown_handler.is_some() {
+            quote! { self._unknown.compute_field_size() }
+        } else {
+            quote! { 0 }
+        };
+
+        quote! {
+            fn compute_size(&self) -> usize {
+                use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
+
+                #(#field_sizeof +)* #(#oneof_sizeof +)* #unknown_sizeof
+            }
+        }
+    }
+
+    pub(crate) fn generate_encode_trait(&self, gen: &Generator) -> TokenStream {
+        let name = &self.rust_name;
+        let sizeof = self.generate_sizeof(gen);
+
+        quote! {
+            impl ::micropb::MessageEncode for #name {
+                fn encode<W: ::micropb::PbWrite>(
+                    &self,
+                    encoder: &mut ::micropb::PbEncoder<W>,
+                    encode_len: bool,
+                ) -> Result<(), W::Error> { todo!() }
+
+                #sizeof
             }
         }
     }
