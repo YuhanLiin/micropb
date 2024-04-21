@@ -250,7 +250,7 @@ impl<'a> Message<'a> {
                 fn default() -> Self {
                     Self {
                         #(#field_defaults)*
-                        #(#oneof_names: ::core::option::Option::None,)*
+                        #(#oneof_names: ::core::default::Default::default(),)*
                         #hazzer_default
                         #unknown_default
                     }

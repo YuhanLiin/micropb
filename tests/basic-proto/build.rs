@@ -1,5 +1,5 @@
 use micropb_gen::{
-    config::{IntType, OptionalRepr},
+    config::{CustomField, IntType, OptionalRepr},
     Config, Generator,
 };
 
@@ -175,6 +175,49 @@ fn container_alloc() {
         .unwrap();
 }
 
+fn custom_field() {
+    let mut generator = Generator::new();
+    generator.configure(".", Config::new().no_debug_derive(true));
+    generator.configure(
+        ".nested.Nested.inner",
+        Config::new()
+            .custom_field(CustomField::Type(
+                "crate::custom_field::MockField".to_owned(),
+            ))
+            .rename_field("custom_inner"),
+    );
+    generator.configure(
+        ".nested.Nested.basic",
+        Config::new().custom_field(CustomField::Delegate("custom_inner".to_owned())),
+    );
+    generator.configure(
+        ".nested.Nested",
+        Config::new().unknown_handler("crate::custom_field::MockField"),
+    );
+
+    generator.configure(
+        ".List.list",
+        Config::new().custom_field(CustomField::Type(
+            "crate::custom_field::MockField".to_owned(),
+        )),
+    );
+    generator.configure(".Data", Config::new().skip(true));
+    generator.configure(".NumList", Config::new().skip(true));
+    generator.configure(".StrList", Config::new().skip(true));
+    generator.configure(".FixedList", Config::new().skip(true));
+
+    generator
+        .compile_protos(
+            &[
+                "proto/basic.proto",
+                "proto/nested.proto",
+                "proto/collections.proto",
+            ],
+            std::env::var("OUT_DIR").unwrap() + "/custom_field.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -184,4 +227,5 @@ fn main() {
     container_heapless();
     container_arrayvec();
     container_alloc();
+    custom_field();
 }

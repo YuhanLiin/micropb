@@ -1,5 +1,5 @@
 use convert_case::{Case, Casing};
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{FieldDescriptorProto, OneofDescriptorProto};
 use quote::quote;
 use syn::Ident;
@@ -230,6 +230,7 @@ impl<'a> Oneof<'a> {
                 field: CustomField::Type(_),
                 nums,
             } => {
+                let nums = nums.iter().map(|n| Literal::i32_unsuffixed(*n));
                 quote! {
                     #(#nums)|* => { self.#name.decode_field(#tag, #decoder)?; }
                 }
@@ -238,6 +239,7 @@ impl<'a> Oneof<'a> {
                 field: CustomField::Delegate(field),
                 nums,
             } => {
+                let nums = nums.iter().map(|n| Literal::i32_unsuffixed(*n));
                 quote! {
                     #(#nums)|* => { self.#field.decode_field(#tag, #decoder)?; }
                 }
@@ -403,7 +405,7 @@ mod tests {
     #[test]
     fn oneof_enum() {
         let gen = Generator::default();
-        let mut oneof = Oneof {
+        let oneof = Oneof {
             name: "oneof",
             rust_name: Ident::new("oneof", Span::call_site()),
             otype: OneofType::Enum {

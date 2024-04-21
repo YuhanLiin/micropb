@@ -9,6 +9,8 @@ mod container_arrayvec;
 #[cfg(test)]
 mod container_heapless;
 #[cfg(test)]
+mod custom_field;
+#[cfg(test)]
 mod int_type;
 #[cfg(test)]
 mod keyword_fields;
