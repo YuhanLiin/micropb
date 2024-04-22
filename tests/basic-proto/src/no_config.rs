@@ -138,7 +138,7 @@ fn proto3() {
 
 #[test]
 fn decode_varint() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     let mut decoder = PbDecoder::new([3, 0x08, 0x96, 0x01].as_slice()); // field 1
     basic.decode_len_delimited(&mut decoder).unwrap();
     assert_eq!(basic.int32_num(), Some(&150));
@@ -180,7 +180,7 @@ fn decode_varint() {
 
 #[test]
 fn encode_varint() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     assert_eq!(basic.compute_size(), 0);
     basic.set_int32_num(1);
     assert_eq!(basic.compute_size(), 2);
@@ -196,7 +196,7 @@ fn encode_varint() {
 
 #[test]
 fn decode_fixed() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     let mut decoder = PbDecoder::new(
         [
             0x39, 0x11, 0x00, 0x00, 0x12, // field 7
@@ -238,7 +238,7 @@ fn decode_fixed() {
 
 #[test]
 fn encode_fixed() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     basic.set_fixed32_num(0);
     assert_eq!(basic.compute_size(), 5);
     basic.set_fixed64_num(12345);
@@ -257,7 +257,7 @@ fn encode_fixed() {
 
 #[test]
 fn decode_enum() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     let mut decoder = PbDecoder::new([0x70, 0x00].as_slice());
     let len = decoder.reader.len();
     basic.decode(&mut decoder, len).unwrap();
@@ -276,7 +276,7 @@ fn decode_enum() {
 
 #[test]
 fn encode_enum() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     basic.set_enumeration(proto::basic::Enum::Two);
     assert_eq!(basic.compute_size(), 2);
     basic.set_enumeration(proto::basic::Enum(130));
@@ -285,7 +285,7 @@ fn encode_enum() {
 
 #[test]
 fn decode_nested() {
-    let mut nested = proto::nested::Nested::new();
+    let mut nested = proto::nested::Nested::default();
     let mut decoder = PbDecoder::new([0x0A, 0x00].as_slice());
     let len = decoder.reader.len();
     nested.decode(&mut decoder, len).unwrap();
@@ -340,7 +340,7 @@ fn decode_nested() {
 
 #[test]
 fn encode_nested() {
-    let mut nested = proto::nested::Nested::new();
+    let mut nested = proto::nested::Nested::default();
     nested._has.set_basic(true);
     assert_eq!(nested.compute_size(), 2);
     nested.basic.set_int32_num(14);
@@ -349,7 +349,7 @@ fn encode_nested() {
     assert_eq!(nested.compute_size(), 0);
 
     nested.inner = Some(proto::nested::mod_Nested::Inner::InnerMsg({
-        let mut msg = proto::nested::mod_Nested::InnerMsg::new();
+        let mut msg = proto::nested::mod_Nested::InnerMsg::default();
         msg.set_val(-1);
         msg.set_val2(-3);
         msg
@@ -363,7 +363,7 @@ fn encode_nested() {
 
 #[test]
 fn decode_non_optional() {
-    let mut non_opt = proto::basic3::NonOptional::new();
+    let mut non_opt = proto::basic3::NonOptional::default();
     let mut decoder = PbDecoder::new([0x08, 0x96, 0x01].as_slice());
     let len = decoder.reader.len();
     non_opt.decode(&mut decoder, len).unwrap();
@@ -372,7 +372,7 @@ fn decode_non_optional() {
 
 #[test]
 fn encode_non_optional() {
-    let mut non_opt = proto::basic3::NonOptional::new();
+    let mut non_opt = proto::basic3::NonOptional::default();
     assert_eq!(non_opt.compute_size(), 0);
     non_opt.non_opt = 150;
     assert_eq!(non_opt.compute_size(), 3);
@@ -380,7 +380,7 @@ fn encode_non_optional() {
 
 #[test]
 fn decode_errors() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     let mut decoder = PbDecoder::new([0x00, 0x96, 0x01].as_slice()); // field 0
     let len = decoder.reader.len();
     assert_eq!(basic.decode(&mut decoder, len), Err(DecodeError::ZeroField));

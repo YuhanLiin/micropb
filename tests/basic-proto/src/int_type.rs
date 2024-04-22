@@ -39,7 +39,7 @@ fn field_int_type() {
 
 #[test]
 fn decode_int_overflow() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     let mut decoder = PbDecoder::new([0x03, 0x08, 0x96, 0x01].as_slice()); // field 1
     basic.decode_len_delimited(&mut decoder).unwrap();
     assert_eq!(basic.int32_num(), Some(&-106)); // 150 overflows i8
@@ -51,7 +51,7 @@ fn decode_int_overflow() {
 
 #[test]
 fn encode() {
-    let mut basic = proto::basic::BasicTypes::new();
+    let mut basic = proto::basic::BasicTypes::default();
     basic.set_int32_num(-1);
     assert_eq!(basic.compute_size(), 11);
     // Regardless of the int type, fixed numbers have fixed size
