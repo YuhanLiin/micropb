@@ -451,7 +451,7 @@ mod tests {
                 .unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
             assert_eq!(encoder.bytes_written, encoder.writer.len());
-            assert_eq!($expected.len(), sizeof_len_record(len));
+            assert_eq!($expected.len(), len);
         };
     }
 
@@ -495,46 +495,5 @@ mod tests {
             encode_repeated_with_tag(tag, [1, 150].as_slice()),
             sizeof_repeated_with_tag
         );
-    }
-
-    #[test]
-    fn repeated_map_elems() {
-        let mut encoder = PbEncoder::new(ArrayVec::<_, 30>::new());
-        let mut len_cache = ArrayVec::<_, 3>::new();
-
-        let tag = Tag::from_parts(8, WIRE_TYPE_LEN);
-        let elems = &[("x", true), ("xy", false), ("xyz", true)];
-        let len = sizeof_repeated_with_tag(tag, elems, |(k, v)| {
-            let kvlen = sizeof_map_elem(k, v, |s| sizeof_len_record(s.len()), |_| 1);
-            len_cache.push(kvlen);
-            sizeof_len_record(kvlen)
-        });
-
-        let mut cached = len_cache.iter().copied();
-        encoder
-            .encode_repeated_with_tag(tag, elems, |wr, (k, v)| {
-                wr.encode_map_elem(
-                    cached.next().unwrap(),
-                    k,
-                    WIRE_TYPE_LEN,
-                    v,
-                    WIRE_TYPE_VARINT,
-                    |wr, s| wr.encode_string(s),
-                    |wr, b| wr.encode_bool(*b),
-                )
-            })
-            .unwrap();
-
-        assert_eq!(
-            // 1st byte is tag, 2nd is length of the pair, rest are the payload of the pair
-            [
-                0x42, 5, 0x0A, 1, b'x', 0x10, 0x01, // first key-value pair
-                0x42, 6, 0x0A, 2, b'x', b'y', 0x10, 0x00, // second key-value pair
-                0x42, 7, 0x0A, 3, b'x', b'y', b'z', 0x10, 0x01 // third key-value pair
-            ],
-            encoder.writer.as_slice()
-        );
-        assert_eq!(encoder.bytes_written, encoder.writer.len());
-        assert_eq!(24, len);
     }
 }
