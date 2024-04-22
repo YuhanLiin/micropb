@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use micropb::{MessageDecode, PbDecoder};
+use micropb::{MessageDecode, MessageEncode, PbDecoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -47,4 +47,16 @@ fn decode_int_overflow() {
     let mut decoder = PbDecoder::new([0x03, 0x18, 0x96, 0x02].as_slice()); // field 3
     basic.decode_len_delimited(&mut decoder).unwrap();
     assert_eq!(basic.uint32_num(), Some(&22)); // 278 overflows u8
+}
+
+#[test]
+fn encode() {
+    let mut basic = proto::basic::BasicTypes::new();
+    basic.set_int32_num(-1);
+    assert_eq!(basic.compute_size(), 11);
+    // Regardless of the int type, fixed numbers have fixed size
+    basic.set_sfixed32_num(i64::min_value());
+    assert_eq!(basic.compute_size(), 16);
+    basic.set_sfixed64_num(isize::min_value());
+    assert_eq!(basic.compute_size(), 25);
 }

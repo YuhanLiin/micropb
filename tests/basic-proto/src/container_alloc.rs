@@ -3,7 +3,7 @@ use std::{
     mem::{size_of, size_of_val},
 };
 
-use micropb::{MessageDecode, PbDecoder};
+use micropb::{MessageDecode, MessageEncode, PbDecoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -79,6 +79,23 @@ fn decode_string_bytes() {
 }
 
 #[test]
+fn encode_string_bytes() {
+    let mut data = proto::Data::default();
+    assert_eq!(data.compute_size(), 0);
+    data.set_s(String::from("abcdefg"));
+    assert_eq!(data.compute_size(), 9);
+    data.set_s(String::from(""));
+    assert_eq!(data.compute_size(), 2);
+    data.clear_s();
+
+    data.set_b(vec![0x0A, 0x0B]);
+    assert_eq!(data.compute_size(), 4);
+    data.set_b(vec![0x01; 150]);
+    // 2 bytes for length of bytes instead of 1
+    assert_eq!(data.compute_size(), 153);
+}
+
+#[test]
 fn decode_repeated() {
     let mut list = proto::List::default();
     let mut decoder = PbDecoder::new(
@@ -102,9 +119,24 @@ fn decode_repeated() {
 }
 
 #[test]
+fn encode_repeated() {
+    let mut list = proto::List::default();
+    assert_eq!(list.compute_size(), 0);
+    list.list.push(proto::Data::default());
+    list.list.push(proto::Data::default());
+    assert_eq!(list.compute_size(), 4);
+
+    list.list[0].set_s(String::from("xyz"));
+    assert_eq!(list.compute_size(), 9);
+    list.list[1].set_s(String::from("u"));
+    list.list[1].set_b(vec![b'x']);
+    assert_eq!(list.compute_size(), 15);
+}
+
+#[test]
 fn decode_packed() {
     let mut numlist = proto::NumList::default();
-    // non-packed encoding
+    // non-packed decoding
     let mut decoder = PbDecoder::new(
         [
             0x08, 0x12, // field 1
@@ -117,7 +149,7 @@ fn decode_packed() {
     assert_eq!(numlist.list.len(), 2);
     assert_eq!(numlist.list, &[0x12, 0x01]);
 
-    // packed encoding
+    // packed decoding
     let mut decoder = PbDecoder::new([0x0A, 4, 0x01, 0x96, 0x01, 0x03].as_slice());
     let len = decoder.reader.len();
     numlist.decode(&mut decoder, len).unwrap();
@@ -128,20 +160,39 @@ fn decode_packed() {
 #[test]
 fn decode_packed_fixed() {
     let mut list = proto::FixedList::default();
-    // non-packed encoding
+    // non-packed decoding
     let mut decoder = PbDecoder::new([0x08, 0x12, 0x11, 0x00, 0x00].as_slice());
     let len = decoder.reader.len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 1);
     assert_eq!(list.list, &[0x1112]);
 
-    // packed encoding
+    // packed decoding
     let mut decoder =
         PbDecoder::new([0x0A, 8, 0x01, 0x96, 0x01, 0x03, 0x22, 0x34, 0xFF, 0xFF].as_slice());
     let len = decoder.reader.len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 3);
     assert_eq!(&list.list[1..], &[0x03019601, 0xFFFF3422]);
+}
+
+#[test]
+fn encode_non_packed() {
+    let mut list = proto::NumList::default();
+    assert_eq!(list.compute_size(), 0);
+    list.list.push(12);
+    list.list.push(150);
+    list.list.push(0);
+    assert_eq!(list.compute_size(), 7);
+}
+
+#[test]
+fn encode_packed() {
+    let mut list = proto::FixedList::default();
+    assert_eq!(list.compute_size(), 0);
+    list.list.push(12);
+    list.list.push(150);
+    assert_eq!(list.compute_size(), 10);
 }
 
 #[test]
@@ -171,4 +222,14 @@ fn decode_map() {
     map.decode(&mut decoder, len).unwrap();
     assert_eq!(map.mapping.len(), 2);
     assert_eq!(map.mapping["ac"], &[0x02, 0x01, 0x02]);
+}
+
+#[test]
+fn encode_map() {
+    let mut map = proto::Map::default();
+    assert_eq!(map.compute_size(), 0);
+    map.mapping.insert(String::from("ab"), vec![0x01]);
+    assert_eq!(map.compute_size(), 9);
+    map.mapping.insert(String::from("a"), vec![0x01, 0x02]);
+    assert_eq!(map.compute_size(), 18);
 }

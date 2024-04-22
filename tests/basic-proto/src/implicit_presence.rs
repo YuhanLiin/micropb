@@ -1,4 +1,4 @@
-use micropb::{MessageDecode, PbDecoder};
+use micropb::{MessageDecode, MessageEncode, PbDecoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -53,6 +53,15 @@ fn implicit_presence() {
     let len = decoder.reader.len();
     non_opt.decode(&mut decoder, len).unwrap();
     assert_eq!(non_opt, orig);
+}
+
+#[test]
+fn encode_implicit_presence() {
+    let mut non_opt = proto::NonOptional::default();
+    assert_eq!(non_opt.compute_size(), 0);
+    non_opt.st = String::from("");
+    non_opt.bt = vec![];
+    assert_eq!(non_opt.compute_size(), 0);
 }
 
 #[test]
@@ -114,6 +123,29 @@ fn explicit_presence() {
     assert_eq!(opt.boolean(), Some(&false));
     assert_eq!(opt.flt(), Some(&0.0));
     assert_eq!(opt.dbl(), Some(&0.0));
+    assert_eq!(opt.enumeration(), Some(&proto::Enum(0)));
     assert!(opt.st().as_ref().unwrap().is_empty());
     assert!(opt.bt().as_ref().unwrap().is_empty());
+}
+
+#[test]
+fn encode_explicit_presence() {
+    let mut opt = proto::Optional::default();
+    opt.set_int32_num(0);
+    opt.set_int64_num(0);
+    opt.set_uint32_num(0);
+    opt.set_uint64_num(0);
+    opt.set_sint32_num(0);
+    opt.set_sint64_num(0);
+    opt.set_fixed32_num(0);
+    opt.set_fixed64_num(0);
+    opt.set_sfixed32_num(0);
+    opt.set_sfixed64_num(0);
+    opt.set_boolean(false);
+    opt.set_flt(0.0);
+    opt.set_dbl(0.0);
+    opt.set_enumeration(0.into());
+    opt.set_st(String::from(""));
+    opt.set_bt(vec![]);
+    assert_eq!(opt.compute_size(), 63);
 }

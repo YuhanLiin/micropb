@@ -1,4 +1,4 @@
-use micropb::{DecodeError, MessageDecode, PbDecoder};
+use micropb::{DecodeError, MessageDecode, MessageEncode, PbDecoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -179,6 +179,22 @@ fn decode_varint() {
 }
 
 #[test]
+fn encode_varint() {
+    let mut basic = proto::basic::BasicTypes::new();
+    assert_eq!(basic.compute_size(), 0);
+    basic.set_int32_num(1);
+    assert_eq!(basic.compute_size(), 2);
+    basic.set_int64_num(-1);
+    assert_eq!(basic.compute_size(), 13);
+    basic.set_uint32_num(150);
+    assert_eq!(basic.compute_size(), 16);
+    basic.set_uint64_num(0);
+    assert_eq!(basic.compute_size(), 18);
+    basic.set_sint32_num(-1);
+    assert_eq!(basic.compute_size(), 20);
+}
+
+#[test]
 fn decode_fixed() {
     let mut basic = proto::basic::BasicTypes::new();
     let mut decoder = PbDecoder::new(
@@ -221,6 +237,25 @@ fn decode_fixed() {
 }
 
 #[test]
+fn encode_fixed() {
+    let mut basic = proto::basic::BasicTypes::new();
+    basic.set_fixed32_num(0);
+    assert_eq!(basic.compute_size(), 5);
+    basic.set_fixed64_num(12345);
+    assert_eq!(basic.compute_size(), 14);
+    basic.set_sfixed32_num(-10);
+    assert_eq!(basic.compute_size(), 19);
+    basic.set_sfixed64_num(-10);
+    assert_eq!(basic.compute_size(), 28);
+    basic.set_flt(0.9834);
+    assert_eq!(basic.compute_size(), 33);
+    basic.set_dbl(123.345);
+    assert_eq!(basic.compute_size(), 42);
+    basic.set_boolean(true);
+    assert_eq!(basic.compute_size(), 44);
+}
+
+#[test]
 fn decode_enum() {
     let mut basic = proto::basic::BasicTypes::new();
     let mut decoder = PbDecoder::new([0x70, 0x00].as_slice());
@@ -237,6 +272,15 @@ fn decode_enum() {
     let len = decoder.reader.len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.enumeration(), Some(&proto::basic::Enum(-2)));
+}
+
+#[test]
+fn encode_enum() {
+    let mut basic = proto::basic::BasicTypes::new();
+    basic.set_enumeration(proto::basic::Enum::Two);
+    assert_eq!(basic.compute_size(), 2);
+    basic.set_enumeration(proto::basic::Enum(130));
+    assert_eq!(basic.compute_size(), 3);
 }
 
 #[test]
@@ -295,12 +339,43 @@ fn decode_nested() {
 }
 
 #[test]
+fn encode_nested() {
+    let mut nested = proto::nested::Nested::new();
+    nested._has.set_basic(true);
+    assert_eq!(nested.compute_size(), 2);
+    nested.basic.set_int32_num(14);
+    assert_eq!(nested.compute_size(), 4);
+    nested.clear_basic();
+    assert_eq!(nested.compute_size(), 0);
+
+    nested.inner = Some(proto::nested::mod_Nested::Inner::InnerMsg({
+        let mut msg = proto::nested::mod_Nested::InnerMsg::new();
+        msg.set_val(-1);
+        msg.set_val2(-3);
+        msg
+    }));
+    assert_eq!(nested.compute_size(), 6);
+    nested.inner = Some(proto::nested::mod_Nested::Inner::InnerEnum(0.into()));
+    assert_eq!(nested.compute_size(), 2);
+    nested.inner = Some(proto::nested::mod_Nested::Inner::Scalar(false));
+    assert_eq!(nested.compute_size(), 2);
+}
+
+#[test]
 fn decode_non_optional() {
     let mut non_opt = proto::basic3::NonOptional::new();
     let mut decoder = PbDecoder::new([0x08, 0x96, 0x01].as_slice());
     let len = decoder.reader.len();
     non_opt.decode(&mut decoder, len).unwrap();
     assert_eq!(non_opt.non_opt, 150);
+}
+
+#[test]
+fn encode_non_optional() {
+    let mut non_opt = proto::basic3::NonOptional::new();
+    assert_eq!(non_opt.compute_size(), 0);
+    non_opt.non_opt = 150;
+    assert_eq!(non_opt.compute_size(), 3);
 }
 
 #[test]

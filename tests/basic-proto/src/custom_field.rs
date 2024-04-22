@@ -1,6 +1,8 @@
 use std::mem::size_of;
 
-use micropb::{FieldDecode, FieldEncode, MessageDecode, PbDecoder, Tag};
+use micropb::{
+    size::sizeof_tag, FieldDecode, FieldEncode, MessageDecode, MessageEncode, PbDecoder, Tag,
+};
 
 mod proto {
     #![allow(clippy::all)]
@@ -25,6 +27,7 @@ impl FieldDecode for MockField {
     }
 }
 
+// All this impl does is write out all the tags as varints
 impl FieldEncode for MockField {
     fn encode_field<W: micropb::PbWrite>(
         &self,
@@ -34,7 +37,7 @@ impl FieldEncode for MockField {
     }
 
     fn compute_field_size(&self) -> usize {
-        0
+        self.tags.iter().copied().map(sizeof_tag).sum()
     }
 }
 
@@ -74,6 +77,19 @@ fn decode_custom_fields() {
     assert_eq!(nested.custom_inner.tags[1], Tag::from_parts(3, 2));
     assert_eq!(nested.custom_inner.tags[2], Tag::from_parts(4, 0));
     assert_eq!(nested.custom_inner.tags[3], Tag::from_parts(5, 0));
+}
+
+#[test]
+fn encode_custom_fields() {
+    let mut nested = proto::nested::Nested::default();
+    assert_eq!(nested.compute_size(), 0);
+    nested.custom_inner.tags.push(Tag::from_parts(1, 2));
+    nested.custom_inner.tags.push(Tag::from_parts(3, 2));
+    nested.custom_inner.tags.push(Tag::from_parts(4, 0));
+    assert_eq!(nested.compute_size(), 3);
+
+    nested._unknown.tags.push(Tag::from_parts(6, 2));
+    assert_eq!(nested.compute_size(), 4);
 }
 
 #[test]

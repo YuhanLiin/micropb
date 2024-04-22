@@ -18,5 +18,5 @@ message StrList {
 }
 
 message FixedList {
-    repeated fixed32 list = 1;
+    repeated fixed32 list = 1 [packed = true];
 }

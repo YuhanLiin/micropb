@@ -68,7 +68,7 @@ pub fn sizeof_map_elem<K: ?Sized, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&
 ) -> usize {
     // key and value field numbers are 1 and 2, so the tags will always be small numbers, so tag
     // sizes are 1 each
-    2 + key_sizer(key) + val_sizer(val)
+    sizeof_len_record(2 + key_sizer(key) + val_sizer(val))
 }
 
 pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(

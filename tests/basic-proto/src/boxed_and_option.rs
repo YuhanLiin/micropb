@@ -1,4 +1,4 @@
-use micropb::{MessageDecode, PbDecoder};
+use micropb::{MessageDecode, MessageEncode, PbDecoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -52,6 +52,16 @@ fn decode() {
 }
 
 #[test]
+fn encode() {
+    let mut basic = proto::basic::BasicTypes::default();
+    assert_eq!(basic.compute_size(), 0);
+    basic.boolean = Some(Box::new(true));
+    assert_eq!(basic.compute_size(), 2);
+    basic.int32_num = Some(150);
+    assert_eq!(basic.compute_size(), 5);
+}
+
+#[test]
 fn decode_boxed_oneof() {
     let mut nested = proto::nested::Nested::default();
 
@@ -74,4 +84,13 @@ fn decode_boxed_oneof() {
         nested.inner.as_ref().unwrap(),
         proto::nested::mod_Nested::Inner::InnerMsg(msg) if msg.val == Some(Box::new(-1)) && msg.val2() == Some(&1)
     ));
+}
+
+#[test]
+fn encode_boxed_oneof() {
+    let mut nested = proto::nested::Nested::default();
+    nested.inner = Some(proto::nested::mod_Nested::Inner::Enumeration(Box::new(
+        0.into(),
+    )));
+    assert_eq!(nested.compute_size(), 2);
 }
