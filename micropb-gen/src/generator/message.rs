@@ -169,7 +169,7 @@ impl<'a> Message<'a> {
         let decl = quote! {
             #derive_msg
             #(#attrs)*
-            pub struct #hazzer_name(::micropb::bitvec::BitArr!(for #count, in u8));
+            pub struct #hazzer_name(::micropb::BitArr!(for #count, in u8));
 
             impl #hazzer_name {
                 #(#methods)*
@@ -735,7 +735,7 @@ mod tests {
         let expected = quote! {
             #[derive(Default, Clone, PartialEq)]
             #[derive(Eq)]
-            pub struct _Hazzer(::micropb::bitvec::BitArr!(for 2, in u8));
+            pub struct _Hazzer(::micropb::BitArr!(for 2, in u8));
 
             impl _Hazzer {
                 #[inline]
@@ -867,8 +867,8 @@ mod tests {
                         b: ::core::option::Option::None,
                         c: ::alloc::boxed::Box::new(-3.45 as _),
                         d: ::core::default::Default::default(),
-                        oneof: ::core::option::Option::None,
-                        oneof_custom: ::core::option::Option::None,
+                        oneof: ::core::default::Default::default(),
+                        oneof_custom: ::core::default::Default::default(),
                         _has: ::core::default::Default::default(),
                         _unknown: ::core::default::Default::default(),
                     }

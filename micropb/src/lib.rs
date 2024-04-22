@@ -3,7 +3,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use num_traits::{AsPrimitive, PrimInt, Zero};
+use num_traits::{AsPrimitive, PrimInt};
 
 pub mod container;
 #[cfg(feature = "decode")]
@@ -17,10 +17,11 @@ mod misc;
 pub mod size;
 
 #[cfg(feature = "container-arrayvec")]
-pub use arrayvec;
-pub use bitvec;
+pub use ::arrayvec;
 #[cfg(feature = "container-heapless")]
-pub use heapless;
+pub use ::heapless;
+
+pub use ::bitvec::BitArr;
 
 pub use container::{PbContainer, PbMap, PbString, PbVec};
 #[cfg(feature = "decode")]
