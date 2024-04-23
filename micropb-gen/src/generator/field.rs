@@ -314,7 +314,7 @@ impl<'a> Field<'a> {
         }
     }
 
-    pub(crate) fn generate_sizeof(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_sizeof(&self, gen: &Generator, size: &Ident) -> TokenStream {
         let fnum = self.num;
         let fname = &self.rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
@@ -326,9 +326,10 @@ impl<'a> Field<'a> {
                 let key_sizeof = key.generate_sizeof(gen, &val_ref);
                 let val_sizeof = val.generate_sizeof(gen, &val_ref);
                 quote! {
-                    ::micropb::size::sizeof_repeated_with_tag(#tag, self.#fname.pb_iter(), |(k, v)| {
-                        ::micropb::size::sizeof_map_elem(k, v, |#val_ref| #key_sizeof, |#val_ref| #val_sizeof)
-                    })
+                    for (k, v) in self.#fname.pb_iter() {
+                        let len = ::micropb::size::sizeof_map_elem(k, v, |#val_ref| #key_sizeof, |#val_ref| #val_sizeof);
+                        #size += ::micropb::size::sizeof_len_record(len) + ::micropb::size::sizeof_tag(#tag);
+                    }
                 }
             }
 
@@ -337,53 +338,64 @@ impl<'a> Field<'a> {
                 let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
                 quote! {
                     let #val_ref = &#extra_deref self.#fname;
-                    if #implicit_check { ::micropb::size::sizeof_tag(#tag) + #sizeof_expr } else { 0 }
+                    if #implicit_check {
+                        #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr;
+                    }
                 }
             }
 
             FieldType::Optional(tspec, _) => {
                 let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
                 quote! {
-                    if let Some(#val_ref) = self.#fname() { ::micropb::size::sizeof_tag(#tag) + #sizeof_expr } else { 0 }
+                    if let Some(#val_ref) = self.#fname() {
+                        #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr;
+                    }
                 }
             }
 
             FieldType::Repeated {
                 typ, packed: false, ..
             } => {
-                if let Some(size) = typ.fixed_size() {
-                    quote! { self.#fname.len() * (::micropb::size::sizeof_tag(#tag) + #size) }
+                if let Some(fixed) = typ.fixed_size() {
+                    quote! { #size += self.#fname.len() * (::micropb::size::sizeof_tag(#tag) + #fixed); }
                 } else {
                     let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
-                    quote! { ::micropb::size::sizeof_repeated_with_tag(#tag, &self.#fname, |#val_ref| #sizeof_expr) }
+                    quote! {
+                        for #val_ref in self.#fname.iter() {
+                            #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr;
+                        }
+                    }
                 }
             }
 
             FieldType::Repeated {
                 typ, packed: true, ..
             } => {
-                let len = if let Some(size) = typ.fixed_size() {
-                    quote! { self.#fname.len() * #size }
+                let len = if let Some(fixed) = typ.fixed_size() {
+                    quote! { self.#fname.len() * #fixed }
                 } else {
                     let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
                     quote! { ::micropb::size::sizeof_packed(&self.#fname, |#val_ref| #sizeof_expr) }
                 };
                 quote! {
-                    if !self.#fname.is_empty() { ::micropb::size::sizeof_tag(#tag) + ::micropb::size::sizeof_len_record(#len) } else { 0 }
+                    if !self.#fname.is_empty() {
+                        let len = #len;
+                        #size += ::micropb::size::sizeof_tag(#tag) + ::micropb::size::sizeof_len_record(len);
+                    }
                 }
             }
 
-            FieldType::Custom(CustomField::Type(_)) => quote! { self.#fname.compute_field_size() },
+            FieldType::Custom(CustomField::Type(_)) => {
+                quote! { #size += self.#fname.compute_field_size(); }
+            }
 
-            FieldType::Custom(CustomField::Delegate(_)) => quote! { 0 },
+            FieldType::Custom(CustomField::Delegate(_)) => quote! {},
         };
 
-        quote! {
-            ({
-                let #tag = ::micropb::Tag::from_parts(#fnum, 0);
-                #sizeof_code
-            })
-        }
+        quote! {{
+            let #tag = ::micropb::Tag::from_parts(#fnum, 0);
+            #sizeof_code
+        }}
     }
 }
 
