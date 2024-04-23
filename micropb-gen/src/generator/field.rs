@@ -362,14 +362,14 @@ impl<'a> Field<'a> {
             FieldType::Repeated {
                 typ, packed: true, ..
             } => {
-                let len_record_size = if let Some(size) = typ.fixed_size() {
-                    quote! { ::micropb::size::sizeof_len_record(self.#fname.len() * #size) }
+                let len = if let Some(size) = typ.fixed_size() {
+                    quote! { self.#fname.len() * #size }
                 } else {
                     let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
-                    quote! { ::micropb::size::sizeof_len_record(::micropb::size::sizeof_packed(&self.#fname, |#val_ref| #sizeof_expr)) }
+                    quote! { ::micropb::size::sizeof_packed(&self.#fname, |#val_ref| #sizeof_expr) }
                 };
                 quote! {
-                    if !self.#fname.is_empty() { ::micropb::size::sizeof_tag(#tag) + #len_record_size } else { 0 }
+                    if !self.#fname.is_empty() { ::micropb::size::sizeof_tag(#tag) + ::micropb::size::sizeof_len_record(#len) } else { 0 }
                 }
             }
 

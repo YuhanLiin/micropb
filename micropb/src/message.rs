@@ -24,20 +24,21 @@ pub trait MessageDecode {
 
 #[cfg(feature = "encode")]
 pub trait MessageEncode {
-    fn encode<W: PbWrite>(
-        &self,
-        encoder: &mut PbEncoder<W>,
-        encode_len: bool,
-    ) -> Result<(), W::Error>;
+    fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
 
-    fn encode_cached<W: PbWrite>(
-        &self,
-        encoder: &mut PbEncoder<W>,
-        encode_len: bool,
-        _cache: &dyn SizeCache,
-    ) -> Result<(), W::Error> {
-        self.encode(encoder, encode_len)
+    fn encode_len_delimited<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
+        encoder.encode_varint32(self.compute_size() as u32)?;
+        self.encode(encoder)
     }
+
+    //fn encode_cached<W: PbWrite>(
+    //&self,
+    //encoder: &mut PbEncoder<W>,
+    //encode_len: bool,
+    //_cache: &dyn SizeCache,
+    //) -> Result<(), W::Error> {
+    //self.encode(encoder, encode_len)
+    //}
 
     fn compute_size(&self) -> usize;
 

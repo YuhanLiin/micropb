@@ -27,22 +27,23 @@ pub(crate) enum PbInt {
 }
 
 impl PbInt {
-    pub(crate) fn generate_decode_val(&self, decoder: &Ident) -> TokenStream {
-        match self {
-            PbInt::Int32 => quote! { #decoder.decode_int32() },
-            PbInt::Int64 => quote! { #decoder.decode_int64() },
-            PbInt::Uint32 => quote! { #decoder.decode_varint32() },
-            PbInt::Uint64 => quote! { #decoder.decode_varint64() },
-            PbInt::Sint32 => quote! { #decoder.decode_sint32() },
-            PbInt::Sint64 => quote! { #decoder.decode_sint64() },
-            PbInt::Sfixed32 => quote! { #decoder.decode_sfixed32() },
-            PbInt::Sfixed64 => quote! { #decoder.decode_sfixed64() },
-            PbInt::Fixed32 => quote! { #decoder.decode_fixed32() },
-            PbInt::Fixed64 => quote! { #decoder.decode_fixed64() },
-        }
+    fn generate_decode_func(&self) -> Ident {
+        let func = match self {
+            PbInt::Int32 => "decode_int32",
+            PbInt::Int64 => "decode_int64",
+            PbInt::Uint32 => "decode_varint32",
+            PbInt::Uint64 => "decode_varint64",
+            PbInt::Sint32 => "decode_sint32",
+            PbInt::Sint64 => "decode_sint64",
+            PbInt::Sfixed32 => "decode_sfixed32",
+            PbInt::Sfixed64 => "decode_sfixed64",
+            PbInt::Fixed32 => "decode_fixed32",
+            PbInt::Fixed64 => "decode_fixed64",
+        };
+        Ident::new(func, Span::call_site())
     }
 
-    pub(crate) fn generate_sizeof(&self, val_ref: &Ident) -> TokenStream {
+    fn generate_sizeof(&self, val_ref: &Ident) -> TokenStream {
         match self {
             PbInt::Int32 => quote! { ::micropb::size::sizeof_int32(* #val_ref as _) },
             PbInt::Int64 => quote! { ::micropb::size::sizeof_int64(* #val_ref as _) },
@@ -55,6 +56,22 @@ impl PbInt {
             PbInt::Fixed32 => quote! { 4 },
             PbInt::Fixed64 => quote! { 8 },
         }
+    }
+
+    fn generate_encode_func(&self) -> Ident {
+        let func = match self {
+            PbInt::Int32 => "encode_int32",
+            PbInt::Int64 => "encode_int64",
+            PbInt::Uint32 => "encode_varint32",
+            PbInt::Uint64 => "encode_varint64",
+            PbInt::Sint32 => "encode_sint32",
+            PbInt::Sint64 => "encode_sint64",
+            PbInt::Sfixed32 => "encode_sfixed32",
+            PbInt::Sfixed64 => "encode_sfixed64",
+            PbInt::Fixed32 => "encode_fixed32",
+            PbInt::Fixed64 => "encode_fixed64",
+        };
+        Ident::new(func, Span::call_site())
     }
 }
 
@@ -194,9 +211,13 @@ impl TypeSpec {
         match self {
             TypeSpec::Float => Some(quote! { #decoder.decode_float() }),
             TypeSpec::Double => Some(quote! { #decoder.decode_double() }),
-            TypeSpec::Bool => Some(quote! { decoder.decode_bool() }),
-            TypeSpec::Int(pbint, _) => Some(pbint.generate_decode_val(decoder)),
+            TypeSpec::Bool => Some(quote! { #decoder.decode_bool() }),
+            TypeSpec::Int(pbint, _) => {
+                let func = pbint.generate_decode_func();
+                Some(quote! { #decoder.#func() })
+            }
             // Enum is actually packable due to https://github.com/protocolbuffers/protobuf/issues/15480
+            // TODO use varint32 if possible
             TypeSpec::Enum(tpath) => {
                 let enum_path = gen.resolve_type_name(tpath);
                 Some(quote! { #decoder.decode_int32().map(|n| #enum_path(n as _)) })
@@ -267,6 +288,27 @@ impl TypeSpec {
                 quote! { ::micropb::size::sizeof_len_record(#val_ref.len()) }
             }
             TypeSpec::Bytes { .. } => quote! { ::micropb::size::sizeof_len_record(#val_ref.len()) },
+        }
+    }
+
+    pub(crate) fn generate_encode(
+        &self,
+        gen: &Generator,
+        encoder: &Ident,
+        val_ref: &Ident,
+    ) -> TokenStream {
+        match self {
+            TypeSpec::Message(_) => quote! { #val_ref.encode_len_delimited(#encoder)?; },
+            TypeSpec::Enum(_) => quote! { #encoder.encode_int32(#val_ref.0 as _)?; },
+            TypeSpec::Float => quote! { #encoder.encode_float(* #val_ref)?; },
+            TypeSpec::Double => quote! { #encoder.encode_double(* #val_ref)?; },
+            TypeSpec::Bool => quote! { #encoder.encode_bool(* #val_ref)?; },
+            TypeSpec::Int(pbint, _) => {
+                let func = pbint.generate_encode_func();
+                quote! { #encoder.#func(* #val_ref as _)?; }
+            }
+            TypeSpec::String { .. } => quote! { #encoder.encode_string(#val_ref)?; },
+            TypeSpec::Bytes { .. } => quote! { #encoder.encode_bytes(#val_ref)?; },
         }
     }
 }
