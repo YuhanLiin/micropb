@@ -451,7 +451,7 @@ mod tests {
                 .unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
             assert_eq!(encoder.bytes_written, encoder.writer.len());
-            assert_eq!($expected.len(), len);
+            assert_eq!($expected.len(), sizeof_len_record(len));
         };
     }
 
