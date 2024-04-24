@@ -8,7 +8,7 @@ use syn::Ident;
 
 use crate::config::OptionalRepr;
 
-use super::{type_spec::TypeSpec, CurrentConfig, Generator};
+use super::{type_spec::TypeSpec, CurrentConfig, EncodeFunc, Generator};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum CustomField {
@@ -314,7 +314,23 @@ impl<'a> Field<'a> {
         }
     }
 
-    pub(crate) fn generate_sizeof(&self, gen: &Generator, size: &Ident) -> TokenStream {
+    fn wire_type(&self) -> Ident {
+        let s = match &self.ftype {
+            FieldType::Single(typ)
+            | FieldType::Optional(typ, _)
+            | FieldType::Repeated {
+                typ, packed: false, ..
+            } => return typ.wire_type(),
+
+            FieldType::Map { .. } | FieldType::Repeated { packed: true, .. } => "WIRE_TYPE_LEN",
+
+            // Custom fields don't need tags, so just return a placeholder wiretype
+            FieldType::Custom(_) => "WIRE_TYPE_VARINT",
+        };
+        Ident::new(s, Span::call_site())
+    }
+
+    pub(crate) fn generate_encode(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
         let fnum = self.num;
         let fname = &self.rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
@@ -325,45 +341,86 @@ impl<'a> Field<'a> {
             FieldType::Map { key, val, .. } => {
                 let key_sizeof = key.generate_sizeof(gen, &val_ref);
                 let val_sizeof = val.generate_sizeof(gen, &val_ref);
+
+                let stmts = match &func_type {
+                    EncodeFunc::Sizeof(size) => {
+                        quote! { #size += ::micropb::size::sizeof_len_record(len) + ::micropb::size::sizeof_tag(#tag); }
+                    }
+                    EncodeFunc::Encode(encoder) => {
+                        let key_encode = key.generate_encode_expr(gen, encoder, &val_ref);
+                        let key_wtype = key.wire_type();
+                        let val_encode = val.generate_encode_expr(gen, encoder, &val_ref);
+                        let val_wtype = val.wire_type();
+                        quote! {
+                            #encoder.encode_tag(#tag)?;
+                            #encoder.encode_map_elem(
+                                len, k, ::micropb::#key_wtype, v, ::micropb::#val_wtype,
+                                |#encoder, #val_ref| { #key_encode },
+                                |#encoder, #val_ref| { #val_encode }
+                            )?;
+                        }
+                    }
+                };
                 quote! {
                     for (k, v) in self.#fname.pb_iter() {
-                        let len = ::micropb::size::sizeof_map_elem(k, v, |#val_ref| #key_sizeof, |#val_ref| #val_sizeof);
-                        #size += ::micropb::size::sizeof_len_record(len) + ::micropb::size::sizeof_tag(#tag);
+                        let len = ::micropb::size::sizeof_map_elem(k, v, |#val_ref| { #key_sizeof }, |#val_ref| { #val_sizeof });
+                        #stmts
                     }
                 }
             }
 
-            FieldType::Single(tspec) => {
-                let implicit_check = tspec.generate_implicit_presence_check(&val_ref);
-                let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
-                quote! {
-                    let #val_ref = &#extra_deref self.#fname;
-                    if #implicit_check {
-                        #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr;
+            FieldType::Single(tspec) | FieldType::Optional(tspec, _) => {
+                let check = if let FieldType::Optional(..) = self.ftype {
+                    quote! { if let Some(#val_ref) = self.#fname() }
+                } else {
+                    let implicit_presence = tspec.generate_implicit_presence_check(&val_ref);
+                    quote! {
+                        let #val_ref = &#extra_deref self.#fname;
+                        if #implicit_presence
                     }
-                }
-            }
-
-            FieldType::Optional(tspec, _) => {
-                let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
+                };
+                let stmts = match &func_type {
+                    EncodeFunc::Sizeof(size) => {
+                        let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
+                        quote! { #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr; }
+                    }
+                    EncodeFunc::Encode(encoder) => {
+                        let encode_expr = tspec.generate_encode_expr(gen, encoder, &val_ref);
+                        quote! {
+                            #encoder.encode_tag(#tag)?;
+                            #encode_expr?;
+                        }
+                    }
+                };
                 quote! {
-                    if let Some(#val_ref) = self.#fname() {
-                        #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr;
+                    #check {
+                        #stmts
                     }
                 }
             }
 
             FieldType::Repeated {
                 typ, packed: false, ..
-            } => {
-                if let Some(fixed) = typ.fixed_size() {
-                    quote! { #size += self.#fname.len() * (::micropb::size::sizeof_tag(#tag) + #fixed); }
-                } else {
-                    let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
-                    quote! {
-                        for #val_ref in self.#fname.iter() {
-                            #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr;
+            } => 'expr: {
+                let stmts = match (&func_type, typ.fixed_size()) {
+                    (EncodeFunc::Sizeof(size), Some(fixed)) => {
+                        break 'expr quote! { #size += self.#fname.len() * (::micropb::size::sizeof_tag(#tag) + #fixed); };
+                    }
+                    (EncodeFunc::Sizeof(size), None) => {
+                        let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
+                        quote! { #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr; }
+                    }
+                    (EncodeFunc::Encode(encoder), _) => {
+                        let encode_expr = typ.generate_encode_expr(gen, encoder, &val_ref);
+                        quote! {
+                            #encoder.encode_tag(#tag)?;
+                            #encode_expr?;
                         }
+                    }
+                };
+                quote! {
+                    for #val_ref in self.#fname.iter() {
+                        #stmts
                     }
                 }
             }
@@ -377,23 +434,34 @@ impl<'a> Field<'a> {
                     let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
                     quote! { ::micropb::size::sizeof_packed(&self.#fname, |#val_ref| #sizeof_expr) }
                 };
+                let stmts = match &func_type {
+                    EncodeFunc::Sizeof(size) => {
+                        quote! { #size += ::micropb::size::sizeof_tag(#tag) + ::micropb::size::sizeof_len_record(len); }
+                    }
+                    EncodeFunc::Encode(encoder) => {
+                        let encode_expr = typ.generate_encode_expr(gen, encoder, &val_ref);
+                        quote! { #encoder.encode_packed(len, &self.#fname, |#encoder, val| {let #val_ref = &val; #encode_expr})?; }
+                    }
+                };
                 quote! {
                     if !self.#fname.is_empty() {
                         let len = #len;
-                        #size += ::micropb::size::sizeof_tag(#tag) + ::micropb::size::sizeof_len_record(len);
+                        #stmts
                     }
                 }
             }
 
-            FieldType::Custom(CustomField::Type(_)) => {
-                quote! { #size += self.#fname.compute_field_size(); }
-            }
+            FieldType::Custom(CustomField::Type(_)) => match &func_type {
+                EncodeFunc::Sizeof(size) => quote! { #size += self.#fname.compute_field_size(); },
+                EncodeFunc::Encode(encoder) => quote! { self.#fname.encode_field(#encoder)?; },
+            },
 
             FieldType::Custom(CustomField::Delegate(_)) => quote! {},
         };
 
+        let wire_type = self.wire_type();
         quote! {{
-            let #tag = ::micropb::Tag::from_parts(#fnum, 0);
+            let #tag = ::micropb::Tag::from_parts(#fnum, ::micropb::#wire_type);
             #sizeof_code
         }}
     }

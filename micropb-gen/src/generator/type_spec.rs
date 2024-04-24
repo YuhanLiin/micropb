@@ -190,6 +190,30 @@ impl TypeSpec {
         }
     }
 
+    pub(crate) fn wire_type(&self) -> Ident {
+        let s = match self {
+            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => "WIRE_TYPE_I32",
+            TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => {
+                "WIRE_TYPE_I64"
+            }
+            TypeSpec::Enum(_)
+            | TypeSpec::Bool
+            | TypeSpec::Int(
+                PbInt::Int32
+                | PbInt::Int64
+                | PbInt::Uint32
+                | PbInt::Uint64
+                | PbInt::Sint32
+                | PbInt::Sint64,
+                _,
+            ) => "WIRE_TYPE_VARINT",
+            TypeSpec::Message(_) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => {
+                "WIRE_TYPE_LEN"
+            }
+        };
+        Ident::new(s, Span::call_site())
+    }
+
     pub(crate) fn generate_implicit_presence_check(&self, val_ref: &Ident) -> TokenStream {
         match self {
             TypeSpec::Message(_) => quote! { true },
@@ -291,24 +315,24 @@ impl TypeSpec {
         }
     }
 
-    pub(crate) fn generate_encode(
+    pub(crate) fn generate_encode_expr(
         &self,
         gen: &Generator,
         encoder: &Ident,
         val_ref: &Ident,
     ) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => quote! { #val_ref.encode_len_delimited(#encoder)?; },
-            TypeSpec::Enum(_) => quote! { #encoder.encode_int32(#val_ref.0 as _)?; },
-            TypeSpec::Float => quote! { #encoder.encode_float(* #val_ref)?; },
-            TypeSpec::Double => quote! { #encoder.encode_double(* #val_ref)?; },
-            TypeSpec::Bool => quote! { #encoder.encode_bool(* #val_ref)?; },
+            TypeSpec::Message(_) => quote! { #val_ref.encode_len_delimited(#encoder) },
+            TypeSpec::Enum(_) => quote! { #encoder.encode_int32(#val_ref.0 as _) },
+            TypeSpec::Float => quote! { #encoder.encode_float(* #val_ref) },
+            TypeSpec::Double => quote! { #encoder.encode_double(* #val_ref) },
+            TypeSpec::Bool => quote! { #encoder.encode_bool(* #val_ref) },
             TypeSpec::Int(pbint, _) => {
                 let func = pbint.generate_encode_func();
-                quote! { #encoder.#func(* #val_ref as _)?; }
+                quote! { #encoder.#func(* #val_ref as _) }
             }
-            TypeSpec::String { .. } => quote! { #encoder.encode_string(#val_ref)?; },
-            TypeSpec::Bytes { .. } => quote! { #encoder.encode_bytes(#val_ref)?; },
+            TypeSpec::String { .. } => quote! { #encoder.encode_string(#val_ref) },
+            TypeSpec::Bytes { .. } => quote! { #encoder.encode_bytes(#val_ref) },
         }
     }
 }

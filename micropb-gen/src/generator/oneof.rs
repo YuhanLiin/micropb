@@ -4,7 +4,9 @@ use prost_types::{FieldDescriptorProto, OneofDescriptorProto};
 use quote::quote;
 use syn::Ident;
 
-use super::{derive_msg_attr, field::CustomField, type_spec::TypeSpec, CurrentConfig, Generator};
+use super::{
+    derive_msg_attr, field::CustomField, type_spec::TypeSpec, CurrentConfig, EncodeFunc, Generator,
+};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
@@ -84,22 +86,38 @@ impl<'a> OneofField<'a> {
         }
     }
 
-    fn generate_sizeof_branch(
+    fn generate_encode_branch(
         &self,
         oneof_type: &TokenStream,
         gen: &Generator,
-        size: &Ident,
+        func_type: &EncodeFunc,
     ) -> TokenStream {
         let val_ref = Ident::new("val_ref", Span::call_site());
         let variant_name = &self.rust_name;
         let extra_deref = self.boxed.then(|| quote! { * });
         let fnum = self.num;
+        let tag = Ident::new("tag", Span::call_site());
 
-        let sizeof_expr = self.tspec.generate_sizeof(gen, &val_ref);
+        let stmts = match &func_type {
+            EncodeFunc::Sizeof(size) => {
+                let sizeof_expr = self.tspec.generate_sizeof(gen, &val_ref);
+                quote! { #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr; }
+            }
+            EncodeFunc::Encode(encoder) => {
+                let encode_expr = self.tspec.generate_encode_expr(gen, encoder, &val_ref);
+                quote! {
+                    #encoder.encode_tag(#tag)?;
+                    #encode_expr?;
+                }
+            }
+        };
+
+        let wire_type = self.tspec.wire_type();
         quote! {
             #oneof_type::#variant_name(#val_ref) => {
+                let #tag = ::micropb::Tag::from_parts(#fnum, ::micropb::#wire_type);
                 let #val_ref = &* #extra_deref #val_ref;
-                #size += ::micropb::size::sizeof_tag(::micropb::Tag::from_parts(#fnum, 0)) + #sizeof_expr;
+                #stmts
             }
         }
     }
@@ -268,11 +286,11 @@ impl<'a> Oneof<'a> {
         }
     }
 
-    pub(crate) fn generate_sizeof(
+    pub(crate) fn generate_encode(
         &self,
         gen: &Generator,
         msg_mod_name: &Ident,
-        size: &Ident,
+        func_type: &EncodeFunc,
     ) -> TokenStream {
         let name = &self.rust_name;
         match &self.otype {
@@ -280,7 +298,7 @@ impl<'a> Oneof<'a> {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
                 let branches = fields
                     .iter()
-                    .map(|f| f.generate_sizeof_branch(&oneof_type, gen, size));
+                    .map(|f| f.generate_encode_branch(&oneof_type, gen, func_type));
                 quote! {
                     if let Some(oneof) = &self.#name {
                         match oneof {
@@ -289,10 +307,15 @@ impl<'a> Oneof<'a> {
                     }
                 }
             }
+
             OneofType::Custom {
                 field: CustomField::Type(_),
                 ..
-            } => quote! { #size += self.#name.compute_field_size(); },
+            } => match &func_type {
+                EncodeFunc::Sizeof(size) => quote! { #size += self.#name.compute_field_size(); },
+                EncodeFunc::Encode(encoder) => quote! { self.#name.encode_field(#encoder)?; },
+            },
+
             OneofType::Custom {
                 field: CustomField::Delegate(_),
                 ..

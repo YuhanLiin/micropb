@@ -84,6 +84,11 @@ fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
     }
 }
 
+enum EncodeFunc {
+    Sizeof(Ident),
+    Encode(Ident),
+}
+
 #[derive(Debug)]
 pub struct Generator {
     syntax: Syntax,

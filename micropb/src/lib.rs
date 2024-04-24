@@ -47,23 +47,23 @@ pub struct Tag(u32);
 
 impl Tag {
     #[inline]
-    pub fn from_parts(field_num: u32, wire_type: u8) -> Self {
+    pub const fn from_parts(field_num: u32, wire_type: u8) -> Self {
         debug_assert!(wire_type <= 7);
         Self((field_num << 3) | (wire_type as u32))
     }
 
     #[inline]
-    pub fn wire_type(&self) -> u8 {
+    pub const fn wire_type(&self) -> u8 {
         (self.0 & 0b111) as u8
     }
 
     #[inline]
-    pub fn field_num(&self) -> u32 {
+    pub const fn field_num(&self) -> u32 {
         self.0 >> 3
     }
 
     #[inline]
-    pub fn varint(&self) -> u32 {
+    pub const fn varint(&self) -> u32 {
         self.0
     }
 }

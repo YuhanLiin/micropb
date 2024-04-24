@@ -7,7 +7,10 @@ use syn::Ident;
 
 use crate::{
     config::OptionalRepr,
-    generator::field::{CustomField, FieldType},
+    generator::{
+        field::{CustomField, FieldType},
+        EncodeFunc,
+    },
 };
 
 use super::{
@@ -381,47 +384,63 @@ impl<'a> Message<'a> {
         }
     }
 
-    fn generate_sizeof(&self, gen: &Generator) -> TokenStream {
+    fn generate_encode_func(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
         let mod_name = gen.resolve_path_elem(self.name);
-        let size = Ident::new("size", Span::call_site());
 
-        let field_sizeof = self.fields.iter().map(|f| f.generate_sizeof(gen, &size));
-        let oneof_sizeof = self
+        let field_logic = self
+            .fields
+            .iter()
+            .map(|f| f.generate_encode(gen, func_type));
+        let oneof_logic = self
             .oneofs
             .iter()
-            .map(|o| o.generate_sizeof(gen, &mod_name, &size));
+            .map(|o| o.generate_encode(gen, &mod_name, func_type));
 
-        let unknown_sizeof = if self.unknown_handler.is_some() {
-            quote! { #size += self._unknown.compute_field_size(); }
+        let unknown_logic = if self.unknown_handler.is_some() {
+            match func_type {
+                EncodeFunc::Sizeof(size) => quote! { #size += self._unknown.compute_field_size(); },
+                EncodeFunc::Encode(encoder) => quote! { self._unknown.encode_field(#encoder)?; },
+            }
         } else {
             quote! {}
         };
 
         quote! {
-            fn compute_size(&self) -> usize {
-                use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
-
-                let mut #size = 0;
-                #(#field_sizeof)*
-                #(#oneof_sizeof)*
-                #unknown_sizeof
-                #size
-            }
+            #(#field_logic)*
+            #(#oneof_logic)*
+            #unknown_logic
         }
     }
 
     pub(crate) fn generate_encode_trait(&self, gen: &Generator) -> TokenStream {
         let name = &self.rust_name;
-        let sizeof = self.generate_sizeof(gen);
+        let sizeof = self.generate_encode_func(
+            gen,
+            &EncodeFunc::Sizeof(Ident::new("size", Span::call_site())),
+        );
+        let encode = self.generate_encode_func(
+            gen,
+            &EncodeFunc::Encode(Ident::new("encoder", Span::call_site())),
+        );
 
         quote! {
             impl ::micropb::MessageEncode for #name {
                 fn encode<W: ::micropb::PbWrite>(
                     &self,
                     encoder: &mut ::micropb::PbEncoder<W>,
-                ) -> Result<(), W::Error> { todo!() }
+                ) -> Result<(), W::Error>
+                {
+                    use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
+                    #encode
+                    Ok(())
+                }
 
-                #sizeof
+                fn compute_size(&self) -> usize {
+                    use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
+                    let mut size = 0;
+                    #sizeof
+                    size
+                }
             }
         }
     }
