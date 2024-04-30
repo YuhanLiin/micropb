@@ -19,6 +19,8 @@ fn no_config() {
 
 fn boxed_and_option() {
     let mut generator = Generator::new();
+    generator.use_container_alloc();
+
     generator.configure(".basic.BasicTypes.boolean", Config::new().boxed(true));
     generator.configure(
         ".basic.BasicTypes.int32_num",
@@ -34,9 +36,27 @@ fn boxed_and_option() {
     generator.configure(".nested.Nested.inner_msg", Config::new().boxed(true));
     generator.configure(".nested.Nested.InnerMsg.val", Config::new().boxed(true));
 
+    generator.configure(".Data.s", Config::new().boxed(true));
+    generator.configure(
+        ".Data.b",
+        Config::new()
+            .boxed(true)
+            .optional_repr(OptionalRepr::Hazzer),
+    );
+    generator.configure(".List", Config::new().boxed(true));
+    generator.configure(".NumList", Config::new().boxed(true));
+    generator.configure(".StrList", Config::new().boxed(true));
+    generator.configure(".FixedList", Config::new().boxed(true));
+    generator.configure(".Map", Config::new().boxed(true));
+
     generator
         .compile_protos(
-            &["proto/basic.proto", "proto/nested.proto"],
+            &[
+                "proto/basic.proto",
+                "proto/nested.proto",
+                "proto/collections.proto",
+                "proto/map.proto",
+            ],
             std::env::var("OUT_DIR").unwrap() + "/boxed_and_option.rs",
         )
         .unwrap();
@@ -129,6 +149,7 @@ fn container_heapless() {
     generator.configure(".StrList.list", Config::new().max_len(3));
     generator.configure(".StrList.list.elem", Config::new().max_bytes(2));
     generator.configure(".FixedList.list", Config::new().max_len(2));
+    generator.configure(".EnumList.list", Config::new().max_len(2));
 
     generator.configure(".Map.mapping", Config::new().max_len(8));
     generator.configure(".Map.mapping.key", Config::new().max_bytes(4));
@@ -153,6 +174,7 @@ fn container_arrayvec() {
     generator.configure(".StrList.list", Config::new().max_len(3));
     generator.configure(".StrList.list.elem", Config::new().max_bytes(2));
     generator.configure(".FixedList.list", Config::new().max_len(2));
+    generator.configure(".EnumList.list", Config::new().max_len(2));
 
     generator
         .compile_protos(
@@ -205,6 +227,7 @@ fn custom_field() {
     generator.configure(".NumList", Config::new().skip(true));
     generator.configure(".StrList", Config::new().skip(true));
     generator.configure(".FixedList", Config::new().skip(true));
+    generator.configure(".EnumList", Config::new().skip(true));
 
     generator
         .compile_protos(

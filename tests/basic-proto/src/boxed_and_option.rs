@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod proto {
@@ -31,6 +33,36 @@ fn boxed_and_option() {
     assert_eq!(basic.uint32_num, Box::new(3));
     assert_eq!(basic.uint32_num(), Some(&3));
     assert!(basic._has.uint32_num());
+}
+
+#[test]
+fn boxed_collections() {
+    let mut data = proto::Data::default();
+
+    assert_eq!(data.s(), None);
+    data.set_s(String::from("a"));
+    assert_eq!(data.s(), Some(&String::from("a")));
+    assert_eq!(data.s, Some(Box::new(String::from("a"))));
+
+    assert_eq!(data.b(), None);
+    data.set_b(vec![]);
+    assert_eq!(data.b(), Some(&vec![]));
+    assert_eq!(data.b, Box::new(vec![]));
+
+    let list = proto::List::default();
+    let _: Box<Vec<proto::Data>> = list.list;
+
+    let numlist = proto::NumList::default();
+    let _: Box<Vec<u32>> = numlist.list;
+
+    let strlist = proto::StrList::default();
+    let _: Box<Vec<String>> = strlist.list;
+
+    let fixedlist = proto::FixedList::default();
+    let _: Box<Vec<u32>> = fixedlist.list;
+
+    let map = proto::Map::default();
+    let _: Box<BTreeMap<String, Vec<u8>>> = map.mapping;
 }
 
 #[test]

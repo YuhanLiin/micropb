@@ -260,6 +260,28 @@ fn encode_packed() {
 }
 
 #[test]
+fn decode_packed_enums() {
+    let mut enumlist = proto::EnumList::default();
+    let mut decoder = PbDecoder::new([0x0A, 3, 0x01, 0x02, 0x03].as_slice());
+    let len = decoder.as_reader().len();
+    enumlist.decode(&mut decoder, len).unwrap();
+    assert_eq!(
+        enumlist.list,
+        &[proto::Enum(1), proto::Enum(2), proto::Enum(3)]
+    );
+}
+
+#[test]
+fn encode_packed_enums() {
+    let mut enumlist = proto::EnumList {
+        list: vec![proto::Enum(1), proto::Enum(2), proto::Enum(150)],
+    };
+    let mut encoder = PbEncoder::new(vec![]);
+    enumlist.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x0A, 4, 0x01, 002, 0x96, 0x01]);
+}
+
+#[test]
 fn decode_map() {
     let mut map = proto::Map::default();
     let mut decoder = PbDecoder::new(

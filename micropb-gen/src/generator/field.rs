@@ -279,7 +279,7 @@ impl<'a> Field<'a> {
                 if let Some(val) = typ.generate_decode_val(gen, decoder) {
                     quote! {
                         if #tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
-                            #decoder.decode_packed(&mut self.#fname, |#decoder| #val.map(|v| v as _))?;
+                            #decoder.decode_packed(&mut #extra_deref self.#fname, |#decoder| #val.map(|v| v as _))?;
                         } else {
                             if let (Err(_), false) = (self.#fname.pb_push(#val? as _), #decoder.ignore_repeated_cap_err) {
                                 return Err(::micropb::DecodeError::Capacity);
@@ -432,7 +432,7 @@ impl<'a> Field<'a> {
                     quote! { self.#fname.len() * #fixed }
                 } else {
                     let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
-                    quote! { ::micropb::size::sizeof_packed(&self.#fname, |#val_ref| #sizeof_expr) }
+                    quote! { ::micropb::size::sizeof_packed(& #extra_deref self.#fname, |#val_ref| #sizeof_expr) }
                 };
                 let stmts = match &func_type {
                     EncodeFunc::Sizeof(size) => {
@@ -442,7 +442,7 @@ impl<'a> Field<'a> {
                         let encode_expr = typ.generate_encode_expr(gen, encoder, &val_ref);
                         quote! {
                             #encoder.encode_tag(#tag)?;
-                            #encoder.encode_packed(len, &self.#fname, |#encoder, val| {let #val_ref = &val; #encode_expr})?;
+                            #encoder.encode_packed(len, & #extra_deref self.#fname, |#encoder, val| {let #val_ref = &val; #encode_expr})?;
                         }
                     }
                 };

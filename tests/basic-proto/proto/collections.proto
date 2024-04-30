@@ -20,3 +20,11 @@ message StrList {
 message FixedList {
     repeated fixed32 list = 1 [packed = true];
 }
+
+enum Enum {
+    ZERO = 0;
+}
+
+message EnumList {
+    repeated Enum list = 1 [packed = true];
+}
