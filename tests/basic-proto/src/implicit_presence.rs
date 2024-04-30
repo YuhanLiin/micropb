@@ -1,10 +1,29 @@
-use micropb::{MessageDecode, MessageEncode, PbDecoder};
+use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod proto {
     #![allow(clippy::all)]
     #![allow(warnings)]
     include!(concat!(env!("OUT_DIR"), "/implicit_presence.rs"));
 }
+
+static ZEROED_REPR: &[u8] = &[
+    0x08, 0x00, // field 1
+    0x10, 0x00, // field 2
+    0x18, 0x00, // field 3
+    0x20, 0x00, // field 4
+    0x28, 0x00, // field 5
+    0x30, 0x00, // field 6
+    0x3D, 0x00, 0x00, 0x00, 0x00, // field 7
+    0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 8
+    0x4D, 0x00, 0x00, 0x00, 0x00, // field 9
+    0x51, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 10
+    0x58, 0x00, // field 11
+    0x65, 0x00, 0x00, 0x00, 0x00, // field 12
+    0x69, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 13
+    0x70, 0x00, // field 14
+    0x7A, 0x00, // field 15
+    0x82, 0x01, 0x00, // field 16
+];
 
 #[test]
 fn implicit_presence() {
@@ -29,27 +48,7 @@ fn implicit_presence() {
     let orig = non_opt.clone();
 
     // Decoding 0s shouldn't overwrite any field
-    let mut decoder = PbDecoder::new(
-        [
-            0x08, 0x00, // field 1
-            0x10, 0x00, // field 2
-            0x18, 0x00, // field 3
-            0x20, 0x00, // field 4
-            0x28, 0x00, // field 5
-            0x30, 0x00, // field 6
-            0x38, 0x00, 0x00, 0x00, 0x00, // field 7
-            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 8
-            0x48, 0x00, 0x00, 0x00, 0x00, // field 9
-            0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 10
-            0x58, 0x00, // field 11
-            0x60, 0x00, 0x00, 0x00, 0x00, // field 12
-            0x68, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 13
-            0x70, 0x00, // field 14
-            0x7A, 0x00, // field 15
-            0x82, 0x01, 0x00, // field 16
-        ]
-        .as_slice(),
-    );
+    let mut decoder = PbDecoder::new(ZEROED_REPR);
     let len = decoder.reader.len();
     non_opt.decode(&mut decoder, len).unwrap();
     assert_eq!(non_opt, orig);
@@ -59,13 +58,36 @@ fn implicit_presence() {
 fn encode_implicit_presence() {
     let mut non_opt = proto::NonOptional::default();
     assert_eq!(non_opt.compute_size(), 0);
-    non_opt.st = String::from("");
-    non_opt.bt = vec![];
+    let mut encoder = PbEncoder::new(vec![]);
+    non_opt.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[]);
+
+    non_opt.st = String::from("axe");
+    non_opt.bt = vec![0, 1, 2];
+    non_opt.flt = 1.0;
+    assert_eq!(non_opt.compute_size(), 16);
+    let mut encoder = PbEncoder::new(vec![]);
+    non_opt.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        &[
+            0x65, 0x00, 0x00, 0x80, 0x3F, // field 12
+            0x7A, 3, b'a', b'x', b'e', // field 15
+            0x82, 0x01, 3, 0x0, 0x1, 0x2, // field 16
+        ]
+    );
+
+    non_opt.st.clear();
+    non_opt.bt.clear();
+    non_opt.flt = 0.0;
     assert_eq!(non_opt.compute_size(), 0);
+    let mut encoder = PbEncoder::new(vec![]);
+    non_opt.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[]);
 }
 
 #[test]
-fn explicit_presence() {
+fn decode_explicit_presence() {
     let mut opt = proto::Optional {
         int32_num: 3,
         int64_num: 3,
@@ -148,4 +170,8 @@ fn encode_explicit_presence() {
     opt.set_st(String::from(""));
     opt.set_bt(vec![]);
     assert_eq!(opt.compute_size(), 63);
+
+    let mut encoder = PbEncoder::new(vec![]);
+    opt.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), ZEROED_REPR);
 }

@@ -3,7 +3,7 @@ use std::{
     mem::{size_of, size_of_val},
 };
 
-use micropb::{MessageDecode, MessageEncode, PbDecoder};
+use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -76,6 +76,12 @@ fn decode_string_bytes() {
         data.decode(&mut decoder, len),
         Err(micropb::DecodeError::Utf8(_))
     ));
+
+    let mut decoder = PbDecoder::new([0x0A, 0, 0x12, 0].as_slice());
+    let len = decoder.reader.len();
+    data.decode(&mut decoder, len).unwrap();
+    assert_eq!(data.s, "");
+    assert_eq!(data.b, &[]);
 }
 
 #[test]
@@ -84,8 +90,19 @@ fn encode_string_bytes() {
     assert_eq!(data.compute_size(), 0);
     data.set_s(String::from("abcdefg"));
     assert_eq!(data.compute_size(), 9);
+    let mut encoder = PbEncoder::new(vec![]);
+    data.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        &[0x0A, 7, b'a', b'b', b'c', b'd', b'e', b'f', b'g',]
+    );
+
     data.set_s(String::from(""));
     assert_eq!(data.compute_size(), 2);
+    let mut encoder = PbEncoder::new(vec![]);
+    data.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x0A, 0]);
+
     data.clear_s();
 
     data.set_b(vec![0x0A, 0x0B]);
@@ -93,6 +110,12 @@ fn encode_string_bytes() {
     data.set_b(vec![0x01; 150]);
     // 2 bytes for length of bytes instead of 1
     assert_eq!(data.compute_size(), 153);
+    let mut encoder = PbEncoder::new(vec![]);
+    data.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        [[0x12, 0x96, 0x01].as_slice(), [0x01; 150].as_slice()].concat()
+    );
 }
 
 #[test]
@@ -116,6 +139,14 @@ fn decode_repeated() {
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 3);
     assert_eq!(list.list[2].s, "x");
+
+    list.list.clear();
+    // Decode empty struct
+    let mut decoder = PbDecoder::new([0x0A, 0].as_slice());
+    let len = decoder.reader.len();
+    list.decode(&mut decoder, len).unwrap();
+    assert_eq!(list.list.len(), 1);
+    assert_eq!(list.list[0], Default::default());
 }
 
 #[test]
@@ -125,12 +156,24 @@ fn encode_repeated() {
     list.list.push(proto::Data::default());
     list.list.push(proto::Data::default());
     assert_eq!(list.compute_size(), 4);
+    let mut encoder = PbEncoder::new(vec![]);
+    list.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x0A, 0, 0x0A, 0]); // field 1 twice
 
     list.list[0].set_s(String::from("xyz"));
     assert_eq!(list.compute_size(), 9);
     list.list[1].set_s(String::from("u"));
     list.list[1].set_b(vec![b'x']);
     assert_eq!(list.compute_size(), 15);
+    let mut encoder = PbEncoder::new(vec![]);
+    list.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        &[
+            0x0A, 5, 0x0A, 3, b'x', b'y', b'z', // field 1
+            0x0A, 6, 0x0A, 1, b'u', 0x12, 1, b'x', // field 1
+        ]
+    );
 }
 
 #[test]
@@ -180,19 +223,40 @@ fn decode_packed_fixed() {
 fn encode_non_packed() {
     let mut list = proto::NumList::default();
     assert_eq!(list.compute_size(), 0);
+    let mut encoder = PbEncoder::new(vec![]);
+    list.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[]);
+
     list.list.push(12);
     list.list.push(150);
     list.list.push(0);
     assert_eq!(list.compute_size(), 7);
+    let mut encoder = PbEncoder::new(vec![]);
+    list.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        &[0x08, 0x0C, 0x08, 0x96, 0x01, 0x08, 0x00]
+    );
 }
 
 #[test]
 fn encode_packed() {
     let mut list = proto::FixedList::default();
     assert_eq!(list.compute_size(), 0);
+    let mut encoder = PbEncoder::new(vec![]);
+    list.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[]);
+
     list.list.push(12);
     list.list.push(150);
-    assert_eq!(list.compute_size(), 10);
+    list.list.push(0xFFFFFFFF);
+    assert_eq!(list.compute_size(), 14);
+    let mut encoder = PbEncoder::new(vec![]);
+    list.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        &[0x0A, 12, 0x0C, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF]
+    );
 }
 
 #[test]
@@ -228,8 +292,22 @@ fn decode_map() {
 fn encode_map() {
     let mut map = proto::Map::default();
     assert_eq!(map.compute_size(), 0);
+    let mut encoder = PbEncoder::new(vec![]);
+    map.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[]);
+
     map.mapping.insert(String::from("ab"), vec![0x01]);
     assert_eq!(map.compute_size(), 9);
     map.mapping.insert(String::from("a"), vec![0x01, 0x02]);
     assert_eq!(map.compute_size(), 18);
+    let mut encoder = PbEncoder::new(vec![]);
+    map.encode(&mut encoder).unwrap();
+    // Order of expected output relies on order of elements in the map, which isn't guaranteed
+    assert_eq!(
+        encoder.into_writer(),
+        &[
+            0xA, 7, 0xA, 1, b'a', 0x12, 2, 0x01, 0x02, // field 1
+            0xA, 7, 0xA, 2, b'a', b'b', 0x12, 1, 0x01, // field 1 again
+        ]
+    );
 }

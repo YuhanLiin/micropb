@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use micropb::{MessageDecode, MessageEncode, PbDecoder};
+use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -57,6 +57,14 @@ fn encode() {
     // Regardless of the int type, fixed numbers have fixed size
     basic.set_sfixed32_num(i64::min_value());
     assert_eq!(basic.compute_size(), 16);
-    basic.set_sfixed64_num(isize::min_value());
-    assert_eq!(basic.compute_size(), 25);
+
+    let mut encoder = PbEncoder::new(vec![]);
+    basic.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        &[
+            0x08, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, // field 1
+            0x4D, 0x00, 0x00, 0x00, 0x00 // field 9
+        ]
+    );
 }

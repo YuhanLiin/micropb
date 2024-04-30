@@ -1,7 +1,8 @@
 use std::mem::size_of;
 
 use micropb::{
-    size::sizeof_tag, FieldDecode, FieldEncode, MessageDecode, MessageEncode, PbDecoder, Tag,
+    size::sizeof_tag, FieldDecode, FieldEncode, MessageDecode, MessageEncode, PbDecoder, PbEncoder,
+    Tag,
 };
 
 mod proto {
@@ -33,7 +34,10 @@ impl FieldEncode for MockField {
         &self,
         encoder: &mut micropb::PbEncoder<W>,
     ) -> Result<(), W::Error> {
-        todo!()
+        for tag in &self.tags {
+            encoder.encode_tag(*tag)?;
+        }
+        Ok(())
     }
 
     fn compute_field_size(&self) -> usize {
@@ -90,6 +94,10 @@ fn encode_custom_fields() {
 
     nested._unknown.tags.push(Tag::from_parts(6, 2));
     assert_eq!(nested.compute_size(), 4);
+
+    let mut encoder = PbEncoder::new(vec![]);
+    nested.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0xA, 0x1A, 0x20, 0x32]);
 }
 
 #[test]

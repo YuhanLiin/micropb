@@ -440,7 +440,10 @@ impl<'a> Field<'a> {
                     }
                     EncodeFunc::Encode(encoder) => {
                         let encode_expr = typ.generate_encode_expr(gen, encoder, &val_ref);
-                        quote! { #encoder.encode_packed(len, &self.#fname, |#encoder, val| {let #val_ref = &val; #encode_expr})?; }
+                        quote! {
+                            #encoder.encode_tag(#tag)?;
+                            #encoder.encode_packed(len, &self.#fname, |#encoder, val| {let #val_ref = &val; #encode_expr})?;
+                        }
                     }
                 };
                 quote! {

@@ -1,4 +1,4 @@
-use micropb::{DecodeError, MessageDecode, MessageEncode, PbDecoder};
+use micropb::{DecodeError, MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -182,6 +182,10 @@ fn decode_varint() {
 fn encode_varint() {
     let mut basic = proto::basic::BasicTypes::default();
     assert_eq!(basic.compute_size(), 0);
+    let mut encoder = PbEncoder::new(vec![]);
+    basic.encode(&mut encoder).unwrap();
+    assert!(encoder.into_writer().is_empty());
+
     basic.set_int32_num(1);
     assert_eq!(basic.compute_size(), 2);
     basic.set_int64_num(-1);
@@ -192,6 +196,19 @@ fn encode_varint() {
     assert_eq!(basic.compute_size(), 18);
     basic.set_sint32_num(-1);
     assert_eq!(basic.compute_size(), 20);
+
+    let mut encoder = PbEncoder::new(vec![]);
+    basic.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        &[
+            0x08, 0x01, // field 1
+            0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, // field 2
+            0x18, 0x96, 0x01, // field 3
+            0x20, 0x00, // field 4
+            0x28, 0x01, // field 5
+        ]
+    );
 }
 
 #[test]
@@ -241,18 +258,33 @@ fn encode_fixed() {
     let mut basic = proto::basic::BasicTypes::default();
     basic.set_fixed32_num(0);
     assert_eq!(basic.compute_size(), 5);
-    basic.set_fixed64_num(12345);
+    basic.set_fixed64_num(0xABCDEF);
     assert_eq!(basic.compute_size(), 14);
     basic.set_sfixed32_num(-10);
     assert_eq!(basic.compute_size(), 19);
-    basic.set_sfixed64_num(-10);
+    basic.set_sfixed64_num(-9);
     assert_eq!(basic.compute_size(), 28);
-    basic.set_flt(0.9834);
+    basic.set_flt(-29.03456);
     assert_eq!(basic.compute_size(), 33);
-    basic.set_dbl(123.345);
+    basic.set_dbl(26.029345233467545);
     assert_eq!(basic.compute_size(), 42);
     basic.set_boolean(true);
     assert_eq!(basic.compute_size(), 44);
+
+    let mut encoder = PbEncoder::new(vec![]);
+    basic.encode(&mut encoder).unwrap();
+    assert_eq!(
+        encoder.into_writer(),
+        &[
+            0x3D, 0x00, 0x00, 0x00, 0x00, // field 7
+            0x41, 0xEF, 0xCD, 0xAB, 0x00, 0x00, 0x00, 0x00, 0x00, // field 8
+            0x4D, 0xF6, 0xFF, 0xFF, 0xFF, // field 9
+            0x51, 0xF7, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // field 10
+            0x58, 0x01, // field 13
+            0x65, 0xC7, 0x46, 0xE8, 0xC1, // field 11
+            0x69, 0x5E, 0x09, 0x52, 0x2B, 0x83, 0x07, 0x3A, 0x40, // field 12
+        ]
+    );
 }
 
 #[test]
@@ -281,6 +313,10 @@ fn encode_enum() {
     assert_eq!(basic.compute_size(), 2);
     basic.set_enumeration(proto::basic::Enum(130));
     assert_eq!(basic.compute_size(), 3);
+
+    let mut encoder = PbEncoder::new(vec![]);
+    basic.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x70, 0x82, 0x01]);
 }
 
 #[test]
@@ -345,6 +381,10 @@ fn encode_nested() {
     assert_eq!(nested.compute_size(), 2);
     nested.basic.set_int32_num(14);
     assert_eq!(nested.compute_size(), 4);
+    let mut encoder = PbEncoder::new(vec![]);
+    nested.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x0A, 2, 0x08, 0x0E]);
+
     nested.clear_basic();
     assert_eq!(nested.compute_size(), 0);
 
@@ -355,10 +395,21 @@ fn encode_nested() {
         msg
     }));
     assert_eq!(nested.compute_size(), 6);
+    let mut encoder = PbEncoder::new(vec![]);
+    nested.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x1A, 4, 0x08, 1, 0x10, 5]);
+
     nested.inner = Some(proto::nested::mod_Nested::Inner::InnerEnum(0.into()));
     assert_eq!(nested.compute_size(), 2);
+    let mut encoder = PbEncoder::new(vec![]);
+    nested.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x20, 0x00]);
+
     nested.inner = Some(proto::nested::mod_Nested::Inner::Scalar(false));
     assert_eq!(nested.compute_size(), 2);
+    let mut encoder = PbEncoder::new(vec![]);
+    nested.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x28, 0x00]);
 }
 
 #[test]
@@ -374,8 +425,15 @@ fn decode_non_optional() {
 fn encode_non_optional() {
     let mut non_opt = proto::basic3::NonOptional::default();
     assert_eq!(non_opt.compute_size(), 0);
+    let mut encoder = PbEncoder::new(vec![]);
+    non_opt.encode(&mut encoder).unwrap();
+    assert!(encoder.into_writer().is_empty());
+
     non_opt.non_opt = 150;
     assert_eq!(non_opt.compute_size(), 3);
+    let mut encoder = PbEncoder::new(vec![]);
+    non_opt.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.into_writer(), &[0x08, 0x96, 0x01]);
 }
 
 #[test]
