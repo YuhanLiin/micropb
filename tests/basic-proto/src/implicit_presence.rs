@@ -49,7 +49,7 @@ fn implicit_presence() {
 
     // Decoding 0s shouldn't overwrite any field
     let mut decoder = PbDecoder::new(ZEROED_REPR);
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     non_opt.decode(&mut decoder, len).unwrap();
     assert_eq!(non_opt, orig);
 }
@@ -130,7 +130,7 @@ fn decode_explicit_presence() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     opt.decode(&mut decoder, len).unwrap();
     assert_eq!(opt.int32_num(), Some(&0));
     assert_eq!(opt.int64_num(), Some(&0));

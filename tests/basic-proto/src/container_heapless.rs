@@ -74,17 +74,17 @@ fn decode_string_bytes_cap() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     data.decode(&mut decoder, len).unwrap();
     assert_eq!(data.s, "abc");
     assert_eq!(data.b, &[1, 2, 3, 4, 5]);
 
     let mut decoder = PbDecoder::new([0x0A, 4, b'a', b'b', b'c', b'd'].as_slice()); // field 1
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(data.decode(&mut decoder, len), Err(DecodeError::Capacity));
 
     let mut decoder = PbDecoder::new([0x12, 6, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06].as_slice()); // field 2
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(data.decode(&mut decoder, len), Err(DecodeError::Capacity));
 }
 
@@ -98,19 +98,19 @@ fn decode_repeated_cap() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 2);
     assert_eq!(list.list[0].s, "a");
     assert_eq!(list.list[1].s, "b");
 
     let mut decoder = PbDecoder::new([0x0A, 3, 0x0A, 1, b'x'].as_slice()); // field 1
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(list.decode(&mut decoder, len), Err(DecodeError::Capacity));
 
     let mut decoder = PbDecoder::new([0x0A, 3, 0x0A, 1, b'x'].as_slice()); // field 1
     decoder.ignore_repeated_cap_err = true;
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 2);
     assert_eq!(list.list[0].s, "a");
@@ -121,7 +121,7 @@ fn decode_repeated_cap() {
 fn decode_repeated_cap_inner() {
     let mut list = proto::StrList::default();
     let mut decoder = PbDecoder::new([0x0A, 3, b'a', b'b', b'c'].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(list.decode(&mut decoder, len), Err(DecodeError::Capacity));
 }
 
@@ -130,12 +130,12 @@ fn decode_packed_cap() {
     let mut numlist = proto::NumList::default();
     // packed encoding
     let mut decoder = PbDecoder::new([0x0A, 3, 0x01, 0x96, 0x01].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     numlist.decode(&mut decoder, len).unwrap();
     assert_eq!(numlist.list, &[1, 150]);
 
     let mut decoder = PbDecoder::new([0x0A, 1, 0x01].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(
         numlist.decode(&mut decoder, len),
         Err(DecodeError::Capacity)
@@ -143,7 +143,7 @@ fn decode_packed_cap() {
 
     let mut decoder = PbDecoder::new([0x0A, 1, 0x01].as_slice());
     decoder.ignore_repeated_cap_err = true;
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     numlist.decode(&mut decoder, len).unwrap();
     assert_eq!(numlist.list, &[1, 150]);
 }
@@ -152,7 +152,7 @@ fn decode_packed_cap() {
 fn decode_packed_cap_oneshot() {
     let mut numlist = proto::NumList::default();
     let mut decoder = PbDecoder::new([0x0A, 4, 0x01, 0x96, 0x01, 0x05].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(
         numlist.decode(&mut decoder, len),
         Err(DecodeError::Capacity)
@@ -161,7 +161,7 @@ fn decode_packed_cap_oneshot() {
     numlist.list.clear();
     let mut decoder = PbDecoder::new([0x0A, 3, 0x08, 0x01, 0x05].as_slice());
     decoder.ignore_repeated_cap_err = true;
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     numlist.decode(&mut decoder, len).unwrap();
     assert_eq!(numlist.list, &[8, 1]);
 }
@@ -176,7 +176,7 @@ fn decode_packed_fixed_cap() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(list.decode(&mut decoder, len), Err(DecodeError::Capacity));
 }
 
@@ -197,7 +197,7 @@ fn decode_map_cap() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(map.decode(&mut decoder, len), Err(DecodeError::Capacity));
     assert_eq!(map.mapping.len(), map.mapping.capacity());
 
@@ -208,7 +208,7 @@ fn decode_map_cap() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     decoder.ignore_repeated_cap_err = true;
     map.decode(&mut decoder, len).unwrap();
     assert_eq!(map.mapping.len(), map.mapping.capacity());
@@ -223,7 +223,7 @@ fn decode_map_cap_inner() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(map.decode(&mut decoder, len), Err(DecodeError::Capacity));
 
     let mut decoder = PbDecoder::new(
@@ -232,6 +232,6 @@ fn decode_map_cap_inner() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(map.decode(&mut decoder, len), Err(DecodeError::Capacity));
 }

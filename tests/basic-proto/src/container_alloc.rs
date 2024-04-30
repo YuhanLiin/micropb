@@ -53,7 +53,7 @@ fn decode_string_bytes() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     data.decode(&mut decoder, len).unwrap();
     assert_eq!(data.s, "abcd");
     assert_eq!(data.b, &[1, 2, 3, 4, 5, 6, 7]);
@@ -65,20 +65,20 @@ fn decode_string_bytes() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     data.decode(&mut decoder, len).unwrap();
     assert_eq!(data.s, "Зд");
     assert_eq!(data.b, &[]);
 
     let mut decoder = PbDecoder::new([0x0A, 2, 0xC3, 0x28].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert!(matches!(
         data.decode(&mut decoder, len),
         Err(micropb::DecodeError::Utf8(_))
     ));
 
     let mut decoder = PbDecoder::new([0x0A, 0, 0x12, 0].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     data.decode(&mut decoder, len).unwrap();
     assert_eq!(data.s, "");
     assert_eq!(data.b, &[]);
@@ -128,14 +128,14 @@ fn decode_repeated() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 2);
     assert_eq!(list.list[0].s, "a");
     assert_eq!(list.list[1].s, "b");
 
     let mut decoder = PbDecoder::new([0x0A, 3, 0x0A, 1, b'x'].as_slice()); // field 1
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 3);
     assert_eq!(list.list[2].s, "x");
@@ -143,7 +143,7 @@ fn decode_repeated() {
     list.list.clear();
     // Decode empty struct
     let mut decoder = PbDecoder::new([0x0A, 0].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 1);
     assert_eq!(list.list[0], Default::default());
@@ -187,14 +187,14 @@ fn decode_packed() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     numlist.decode(&mut decoder, len).unwrap();
     assert_eq!(numlist.list.len(), 2);
     assert_eq!(numlist.list, &[0x12, 0x01]);
 
     // packed decoding
     let mut decoder = PbDecoder::new([0x0A, 4, 0x01, 0x96, 0x01, 0x03].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     numlist.decode(&mut decoder, len).unwrap();
     assert_eq!(numlist.list.len(), 5);
     assert_eq!(&numlist.list[2..], &[1, 150, 3]);
@@ -205,7 +205,7 @@ fn decode_packed_fixed() {
     let mut list = proto::FixedList::default();
     // non-packed decoding
     let mut decoder = PbDecoder::new([0x08, 0x12, 0x11, 0x00, 0x00].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 1);
     assert_eq!(list.list, &[0x1112]);
@@ -213,7 +213,7 @@ fn decode_packed_fixed() {
     // packed decoding
     let mut decoder =
         PbDecoder::new([0x0A, 8, 0x01, 0x96, 0x01, 0x03, 0x22, 0x34, 0xFF, 0xFF].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 3);
     assert_eq!(&list.list[1..], &[0x03019601, 0xFFFF3422]);
@@ -269,7 +269,7 @@ fn decode_map() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     map.decode(&mut decoder, len).unwrap();
     assert_eq!(map.mapping.len(), 2);
     assert_eq!(map.mapping["ac"], &[0x02]);
@@ -282,7 +282,7 @@ fn decode_map() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     map.decode(&mut decoder, len).unwrap();
     assert_eq!(map.mapping.len(), 2);
     assert_eq!(map.mapping["ac"], &[0x02, 0x01, 0x02]);

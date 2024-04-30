@@ -149,7 +149,7 @@ fn decode_varint() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.int64_num(), Some(&i64::min_value()));
 
@@ -160,7 +160,7 @@ fn decode_varint() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.uint32_num(), Some(&150));
     assert_eq!(basic.uint64_num(), Some(&u64::max_value()));
@@ -172,7 +172,7 @@ fn decode_varint() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.sint32_num(), Some(&0x7FFFFFFF));
     assert_eq!(basic.sint64_num(), Some(&-1));
@@ -221,7 +221,7 @@ fn decode_fixed() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.fixed32_num(), Some(&0x12000011));
     assert_eq!(basic.fixed64_num(), Some(&0x0130));
@@ -233,7 +233,7 @@ fn decode_fixed() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.sfixed32_num(), Some(&-0x0B67CDEE));
     assert_eq!(basic.sfixed64_num(), Some(&0x0130));
@@ -246,7 +246,7 @@ fn decode_fixed() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.boolean(), Some(&true));
     assert_eq!(basic.flt(), Some(&-29.03456));
@@ -291,7 +291,7 @@ fn encode_fixed() {
 fn decode_enum() {
     let mut basic = proto::basic::BasicTypes::default();
     let mut decoder = PbDecoder::new([0x70, 0x00].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.enumeration(), Some(&proto::basic::Enum::Zero));
 
@@ -301,7 +301,7 @@ fn decode_enum() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.enumeration(), Some(&proto::basic::Enum(-2)));
 }
@@ -323,22 +323,22 @@ fn encode_enum() {
 fn decode_nested() {
     let mut nested = proto::nested::Nested::default();
     let mut decoder = PbDecoder::new([0x0A, 0x00].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(nested.basic(), Some(&Default::default()));
 
     let mut decoder = PbDecoder::new([0x0A, 0x02, 0x08, 0x01].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(nested.basic().unwrap().int32_num(), Some(&1));
 
     let mut decoder = PbDecoder::new([0x0A, 0x02, 0x10, 0x02].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(nested.basic().unwrap().int64_num(), Some(&2));
 
     let mut decoder = PbDecoder::new([0x10, 0x00].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(
         nested.inner.as_ref().unwrap(),
@@ -347,10 +347,10 @@ fn decode_nested() {
 
     // Decode the InnerMsg variant twice to make sure the field isn't cleared between decodes
     let mut decoder = PbDecoder::new([0x1A, 0x02, 0x08, 0x01].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     let mut decoder = PbDecoder::new([0x1A, 0x02, 0x10, 0x02].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert!(matches!(
         nested.inner.as_ref().unwrap(),
@@ -358,7 +358,7 @@ fn decode_nested() {
     ));
 
     let mut decoder = PbDecoder::new([0x20, 0x00].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(
         nested.inner.as_ref().unwrap(),
@@ -366,7 +366,7 @@ fn decode_nested() {
     );
 
     let mut decoder = PbDecoder::new([0x28, 0x00].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(
         nested.inner.as_ref().unwrap(),
@@ -416,7 +416,7 @@ fn encode_nested() {
 fn decode_non_optional() {
     let mut non_opt = proto::basic3::NonOptional::default();
     let mut decoder = PbDecoder::new([0x08, 0x96, 0x01].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     non_opt.decode(&mut decoder, len).unwrap();
     assert_eq!(non_opt.non_opt, 150);
 }
@@ -440,18 +440,18 @@ fn encode_non_optional() {
 fn decode_errors() {
     let mut basic = proto::basic::BasicTypes::default();
     let mut decoder = PbDecoder::new([0x00, 0x96, 0x01].as_slice()); // field 0
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(basic.decode(&mut decoder, len), Err(DecodeError::ZeroField));
 
     let mut decoder = PbDecoder::new([0x18, 0x96, 0xFF, 0xFF, 0xFF, 0xFF, 0x01].as_slice()); // field 3
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(
         basic.decode(&mut decoder, len),
         Err(DecodeError::VarIntLimit(5))
     );
 
     let mut decoder = PbDecoder::new([0x10, 0x96, 0xFF, 0xFF, 0xFF, 0xFF].as_slice()); // field 2
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     assert_eq!(
         basic.decode(&mut decoder, len),
         Err(DecodeError::UnexpectedEof)

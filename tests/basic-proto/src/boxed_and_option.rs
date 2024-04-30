@@ -44,7 +44,7 @@ fn decode() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.boolean, Some(Box::new(true)));
     assert_eq!(basic.int32_num, Some(150));
@@ -76,7 +76,7 @@ fn decode_boxed_oneof() {
     let mut nested = proto::nested::Nested::default();
 
     let mut decoder = PbDecoder::new([0x10, 0x00].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(
         nested.inner.as_ref().unwrap(),
@@ -85,10 +85,10 @@ fn decode_boxed_oneof() {
 
     // Decode the InnerMsg variant twice to make sure the field isn't cleared between decodes
     let mut decoder = PbDecoder::new([0x1A, 0x02, 0x08, 0x01].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     let mut decoder = PbDecoder::new([0x1A, 0x02, 0x10, 0x02].as_slice());
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert!(matches!(
         nested.inner.as_ref().unwrap(),

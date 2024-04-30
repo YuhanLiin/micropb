@@ -41,8 +41,12 @@ impl<W: PbWrite> PbEncoder<W> {
         }
     }
 
-    pub fn into_inner(self) -> W {
+    pub fn into_writer(self) -> W {
         self.writer
+    }
+
+    pub fn as_writer(&self) -> &W {
+        &self.writer
     }
 
     #[inline]

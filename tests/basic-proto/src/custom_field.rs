@@ -74,7 +74,7 @@ fn decode_custom_fields() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(nested.custom_inner.tags.len(), 4);
     assert_eq!(nested.custom_inner.tags[0], Tag::from_parts(1, 2));
@@ -110,7 +110,7 @@ fn decode_unknown() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(nested._unknown.tags.len(), 2);
     assert_eq!(nested._unknown.tags[0], Tag::from_parts(6, 0));
@@ -130,7 +130,7 @@ fn decode_custom_repeated() {
         ]
         .as_slice(),
     );
-    let len = decoder.reader.len();
+    let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.tags.len(), 3);
     assert_eq!(list.list.tags[0], Tag::from_parts(1, 0));

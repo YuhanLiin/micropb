@@ -96,7 +96,7 @@ impl<R: std::io::BufRead> PbRead for PbReader<R> {
 
 #[derive(Debug)]
 pub struct PbDecoder<R: PbRead> {
-    pub reader: R,
+    reader: R,
     idx: usize,
     pub ignore_repeated_cap_err: bool,
 }
@@ -109,6 +109,14 @@ impl<R: PbRead> PbDecoder<R> {
             idx: 0,
             ignore_repeated_cap_err: false,
         }
+    }
+
+    pub fn into_reader(self) -> R {
+        self.reader
+    }
+
+    pub fn as_reader(&self) -> &R {
+        &self.reader
     }
 
     pub fn bytes_read(&self) -> usize {
