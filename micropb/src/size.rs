@@ -24,6 +24,7 @@ pub fn sizeof_varint64(v: u64) -> usize {
     }
 }
 
+#[inline]
 pub fn sizeof_int32(i: i32) -> usize {
     if i >= 0 {
         sizeof_varint32(i as u32)
@@ -32,18 +33,22 @@ pub fn sizeof_int32(i: i32) -> usize {
     }
 }
 
+#[inline]
 pub fn sizeof_int64(i: i64) -> usize {
     sizeof_varint64(i as u64)
 }
 
+#[inline]
 pub fn sizeof_sint32(i: i32) -> usize {
     sizeof_varint32(((i << 1) ^ (i >> 31)) as u32)
 }
 
+#[inline]
 pub fn sizeof_sint64(i: i64) -> usize {
     sizeof_varint64(((i << 1) ^ (i >> 63)) as u64)
 }
 
+#[inline]
 pub fn sizeof_tag(tag: Tag) -> usize {
     sizeof_varint32(tag.varint())
 }
@@ -56,6 +61,7 @@ pub fn sizeof_packed<T: Copy, F: Fn(&T) -> usize>(elems: &[T], sizer: F) -> usiz
 //core::mem::size_of_val(slice)
 //}
 
+#[inline]
 pub fn sizeof_len_record(len: usize) -> usize {
     len + sizeof_varint32(len as u32)
 }

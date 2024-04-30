@@ -23,6 +23,7 @@ pub struct PbWriter<W>(pub W);
 impl<W: std::io::Write> PbWrite for PbWriter<W> {
     type Error = std::io::Error;
 
+    #[inline]
     fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
         self.0.write_all(data)
     }
@@ -34,6 +35,7 @@ pub struct PbEncoder<W: PbWrite> {
 }
 
 impl<W: PbWrite> PbEncoder<W> {
+    #[inline]
     pub fn new(writer: W) -> Self {
         Self {
             writer,
@@ -41,10 +43,12 @@ impl<W: PbWrite> PbEncoder<W> {
         }
     }
 
+    #[inline]
     pub fn into_writer(self) -> W {
         self.writer
     }
 
+    #[inline]
     pub fn as_writer(&self) -> &W {
         &self.writer
     }
@@ -80,14 +84,17 @@ impl<W: PbWrite> PbEncoder<W> {
         Ok(())
     }
 
+    #[inline]
     pub fn encode_varint32(&mut self, u: u32) -> Result<(), W::Error> {
         self.encode_varint(u)
     }
 
+    #[inline]
     pub fn encode_varint64(&mut self, u: u64) -> Result<(), W::Error> {
         self.encode_varint(u)
     }
 
+    #[inline]
     pub fn encode_int32(&mut self, i: i32) -> Result<(), W::Error> {
         if i >= 0 {
             // Can avoid 64-bit operations if number if non-negative
@@ -97,47 +104,57 @@ impl<W: PbWrite> PbEncoder<W> {
         }
     }
 
+    #[inline]
     pub fn encode_int64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_varint64(i as u64)
     }
 
+    #[inline]
     pub fn encode_sint32(&mut self, i: i32) -> Result<(), W::Error> {
         self.encode_varint32(((i << 1) ^ (i >> 31)) as u32)
     }
 
+    #[inline]
     pub fn encode_sint64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_varint64(((i << 1) ^ (i >> 63)) as u64)
     }
 
+    #[inline]
     pub fn encode_bool(&mut self, b: bool) -> Result<(), W::Error> {
         self.encode_byte(b as u8)
     }
 
+    #[inline]
     pub fn encode_fixed32(&mut self, u: u32) -> Result<(), W::Error> {
         self.write(&u.to_le_bytes())
     }
 
+    #[inline]
     pub fn encode_fixed64(&mut self, u: u64) -> Result<(), W::Error> {
         self.write(&u.to_le_bytes())
     }
 
+    #[inline]
     pub fn encode_sfixed32(&mut self, i: i32) -> Result<(), W::Error> {
         self.encode_fixed32(i as u32)
     }
 
+    #[inline]
     pub fn encode_sfixed64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_fixed64(i as u64)
     }
 
+    #[inline]
     pub fn encode_float(&mut self, f: f32) -> Result<(), W::Error> {
         self.encode_fixed32(f.to_bits())
     }
 
+    #[inline]
     pub fn encode_double(&mut self, f: f64) -> Result<(), W::Error> {
         self.encode_fixed64(f.to_bits())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn encode_tag(&mut self, tag: Tag) -> Result<(), W::Error> {
         self.encode_varint32(tag.varint())
     }
@@ -147,6 +164,7 @@ impl<W: PbWrite> PbEncoder<W> {
         self.write(bytes)
     }
 
+    #[inline]
     pub fn encode_string(&mut self, string: &str) -> Result<(), W::Error> {
         self.encode_bytes(string.as_bytes())
     }

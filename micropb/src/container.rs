@@ -54,30 +54,36 @@ mod impl_arrayvec {
     use arrayvec::{ArrayString, ArrayVec};
 
     impl<T, const N: usize> PbContainer for ArrayVec<T, N> {
+        #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.set_len(len)
         }
 
+        #[inline]
         fn pb_clear(&mut self) {
             self.clear()
         }
     }
 
     impl<const N: usize> PbContainer for ArrayString<N> {
+        #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.set_len(len)
         }
 
+        #[inline]
         fn pb_clear(&mut self) {
             self.clear()
         }
     }
 
     impl<T, const N: usize> PbVec<T> for ArrayVec<T, N> {
+        #[inline]
         fn pb_push(&mut self, elem: T) -> Result<(), ()> {
             self.try_push(elem).map_err(drop)
         }
 
+        #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
             let len = self.len();
             // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
@@ -88,6 +94,7 @@ mod impl_arrayvec {
             &mut slice[len..]
         }
 
+        #[inline]
         fn pb_from_slice(s: &[T]) -> Result<Self, ()>
         where
             T: Clone,
@@ -97,6 +104,7 @@ mod impl_arrayvec {
     }
 
     impl<const N: usize> PbString for ArrayString<N> {
+        #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             let len = self.len();
             // Works in Miri with tree borrows, but not stack borrows due to provenance issues with
@@ -108,6 +116,7 @@ mod impl_arrayvec {
             &mut slice[len..]
         }
 
+        #[inline]
         fn pb_from_str(s: &str) -> Result<Self, ()> {
             Self::try_from(s).map_err(drop)
         }
@@ -117,6 +126,7 @@ mod impl_arrayvec {
     impl<const N: usize> crate::encode::PbWrite for ArrayVec<u8, N> {
         type Error = arrayvec::CapacityError;
 
+        #[inline]
         fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
             self.try_extend_from_slice(data)
         }
@@ -132,30 +142,36 @@ mod impl_heapless {
     use heapless::{IndexMap, IndexMapIter, String, Vec};
 
     impl<T, const N: usize> PbContainer for Vec<T, N> {
+        #[inline]
         fn pb_clear(&mut self) {
             self.clear()
         }
 
+        #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.set_len(len)
         }
     }
 
     impl<const N: usize> PbContainer for String<N> {
+        #[inline]
         fn pb_clear(&mut self) {
             self.clear()
         }
 
+        #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.as_mut_vec().set_len(len)
         }
     }
 
     impl<T, const N: usize> PbVec<T> for Vec<T, N> {
+        #[inline]
         fn pb_push(&mut self, elem: T) -> Result<(), ()> {
             self.push(elem).map_err(drop)
         }
 
+        #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
             let len = self.len();
             // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
@@ -166,6 +182,7 @@ mod impl_heapless {
             &mut slice[len..]
         }
 
+        #[inline]
         fn pb_from_slice(s: &[T]) -> Result<Self, ()>
         where
             T: Clone,
@@ -175,6 +192,7 @@ mod impl_heapless {
     }
 
     impl<const N: usize> PbString for String<N> {
+        #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             let len = self.len();
             // SAFETY: Underlying storage is array of N bytes, so the slice is valid
@@ -187,6 +205,7 @@ mod impl_heapless {
             &mut slice[len..]
         }
 
+        #[inline]
         fn pb_from_str(s: &str) -> Result<Self, ()> {
             Self::try_from(s).map_err(drop)
         }
@@ -197,11 +216,13 @@ mod impl_heapless {
     {
         type Iter<'a> = IndexMapIter<'a, K, V> where S: 'a, K: 'a, V: 'a;
 
+        #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val).map_err(drop)?;
             Ok(())
         }
 
+        #[inline]
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
         }
@@ -211,6 +232,7 @@ mod impl_heapless {
     impl<const N: usize> crate::encode::PbWrite for Vec<u8, N> {
         type Error = ();
 
+        #[inline]
         fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
             self.extend_from_slice(data)
         }
@@ -229,14 +251,17 @@ mod impl_alloc {
     };
 
     impl<T> PbContainer for Vec<T> {
+        #[inline]
         fn pb_clear(&mut self) {
             self.clear()
         }
 
+        #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.set_len(len)
         }
 
+        #[inline]
         fn pb_reserve(&mut self, additional: usize) {
             self.reserve(additional)
         }
@@ -260,14 +285,17 @@ mod impl_alloc {
     //}
 
     impl PbContainer for String {
+        #[inline]
         fn pb_clear(&mut self) {
             self.clear()
         }
 
+        #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.as_mut_vec().set_len(len)
         }
 
+        #[inline]
         fn pb_reserve(&mut self, additional: usize) {
             self.reserve(additional)
         }
@@ -288,15 +316,18 @@ mod impl_alloc {
     //}
 
     impl<T> PbVec<T> for Vec<T> {
+        #[inline]
         fn pb_push(&mut self, elem: T) -> Result<(), ()> {
             self.push(elem);
             Ok(())
         }
 
+        #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
             self.spare_capacity_mut()
         }
 
+        #[inline]
         fn pb_from_slice(s: &[T]) -> Result<Self, ()>
         where
             T: Clone,
@@ -320,11 +351,13 @@ mod impl_alloc {
     //}
 
     impl PbString for String {
+        #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
             unsafe { self.as_mut_vec().spare_capacity_mut() }
         }
 
+        #[inline]
         fn pb_from_str(s: &str) -> Result<Self, ()> {
             Ok(s.to_owned())
         }
@@ -340,11 +373,13 @@ mod impl_alloc {
     impl<K: Ord, V> PbMap<K, V> for BTreeMap<K, V> {
         type Iter<'a> = btree_map::Iter<'a, K, V> where K: 'a, V: 'a;
 
+        #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val);
             Ok(())
         }
 
+        #[inline]
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
         }
@@ -354,11 +389,13 @@ mod impl_alloc {
     impl<K: Eq + core::hash::Hash, V> PbMap<K, V> for std::collections::HashMap<K, V> {
         type Iter<'a> = std::collections::hash_map::Iter<'a, K, V> where K: 'a, V: 'a;
 
+        #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val);
             Ok(())
         }
 
+        #[inline]
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
         }
@@ -368,6 +405,7 @@ mod impl_alloc {
     impl crate::encode::PbWrite for Vec<u8> {
         type Error = never::Never;
 
+        #[inline]
         fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
             self.extend_from_slice(data);
             Ok(())

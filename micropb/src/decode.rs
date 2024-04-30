@@ -68,10 +68,12 @@ pub trait PbRead {
 impl PbRead for &[u8] {
     type Error = Never;
 
+    #[inline]
     fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error> {
         Ok(*self)
     }
 
+    #[inline]
     fn pb_advance(&mut self, bytes: usize) {
         *self = &self[bytes..];
     }
@@ -85,10 +87,12 @@ pub struct PbReader<R>(pub R);
 impl<R: std::io::BufRead> PbRead for PbReader<R> {
     type Error = std::io::Error;
 
+    #[inline]
     fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error> {
         self.0.fill_buf()
     }
 
+    #[inline]
     fn pb_advance(&mut self, bytes: usize) {
         self.0.consume(bytes)
     }
