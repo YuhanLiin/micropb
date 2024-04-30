@@ -197,20 +197,6 @@ impl<W: PbWrite> PbEncoder<W> {
         val_encoder(self, val)?;
         Ok(())
     }
-
-    // Only for non-packed fields
-    pub fn encode_repeated_with_tag<T, F: FnMut(&mut Self, T) -> Result<(), W::Error>>(
-        &mut self,
-        tag: Tag,
-        elems: impl IntoIterator<Item = T>,
-        mut encoder: F,
-    ) -> Result<(), W::Error> {
-        for e in elems {
-            self.encode_tag(tag)?;
-            encoder(self, e)?;
-        }
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -469,35 +455,5 @@ mod tests {
             "cdef"
         );
         assert_encode_map_elem!([5, 0x08, 0x96, 0x01, 0x12, 0], &150, "");
-    }
-
-    macro_rules! assert_encode_with_tag {
-        ($expected:expr, $encode:ident($($args:tt)+), $sizeof:ident) => {
-            let mut encoder = PbEncoder::new(ArrayVec::<_, 10>::new());
-            encoder
-                .$encode($($args)+, |wr, v| wr.encode_varint32(*v))
-                .unwrap();
-            assert_eq!($expected, encoder.writer.as_slice());
-            assert_eq!(encoder.bytes_written, encoder.writer.len());
-            assert_eq!(
-                $expected.len(),
-                $sizeof($($args)+, |v| sizeof_varint32(*v))
-            );
-        };
-    }
-
-    #[test]
-    fn repeated_with_tag() {
-        let tag = Tag::from_parts(1, WIRE_TYPE_VARINT);
-        assert_encode_with_tag!(
-            b"",
-            encode_repeated_with_tag(tag, &[]),
-            sizeof_repeated_with_tag
-        );
-        assert_encode_with_tag!(
-            [0x08, 0x01, 0x08, 0x96, 0x01],
-            encode_repeated_with_tag(tag, [1, 150].as_slice()),
-            sizeof_repeated_with_tag
-        );
     }
 }

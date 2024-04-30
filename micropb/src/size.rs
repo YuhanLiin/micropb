@@ -71,15 +71,6 @@ pub fn sizeof_map_elem<K: ?Sized, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&
     2 + key_sizer(key) + val_sizer(val)
 }
 
-pub fn sizeof_repeated_with_tag<T, F: FnMut(T) -> usize>(
-    tag: Tag,
-    elems: impl IntoIterator<Item = T>,
-    mut sizer: F,
-) -> usize {
-    let tag_size = sizeof_tag(tag);
-    elems.into_iter().map(|e| tag_size + sizer(e)).sum()
-}
-
 pub trait SizeCache {
     fn set_total_size(&mut self, size: usize);
 
