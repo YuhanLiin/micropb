@@ -115,18 +115,22 @@ impl<R: PbRead> PbDecoder<R> {
         }
     }
 
+    #[inline]
     pub fn into_reader(self) -> R {
         self.reader
     }
 
+    #[inline]
     pub fn as_reader(&self) -> &R {
         &self.reader
     }
 
+    #[inline]
     pub fn bytes_read(&self) -> usize {
         self.idx
     }
 
+    #[inline]
     fn advance(&mut self, bytes: usize) {
         self.reader.pb_advance(bytes);
         self.idx += bytes;
@@ -162,32 +166,39 @@ impl<R: PbRead> PbDecoder<R> {
         Err(DecodeError::VarIntLimit(U::BYTES))
     }
 
+    #[inline]
     pub fn decode_varint32(&mut self) -> Result<u32, DecodeError<R::Error>> {
         self.decode_varint::<u32>()
     }
 
+    #[inline]
     pub fn decode_varint64(&mut self) -> Result<u64, DecodeError<R::Error>> {
         self.decode_varint::<u64>()
     }
 
+    #[inline]
     pub fn decode_int64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_varint64().map(|u| u as i64)
     }
 
+    #[inline]
     pub fn decode_int32(&mut self) -> Result<i32, DecodeError<R::Error>> {
         self.decode_int64().map(|u| u as i32)
     }
 
+    #[inline]
     pub fn decode_sint32(&mut self) -> Result<i32, DecodeError<R::Error>> {
         self.decode_varint32()
             .map(|u| ((u >> 1) as i32) ^ -((u & 1) as i32))
     }
 
+    #[inline]
     pub fn decode_sint64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_varint64()
             .map(|u| ((u >> 1) as i64) ^ -((u & 1) as i64))
     }
 
+    #[inline]
     pub fn decode_bool(&mut self) -> Result<bool, DecodeError<R::Error>> {
         let b = self.get_byte()?;
         if b & 0x80 != 0 {
@@ -218,6 +229,7 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(())
     }
 
+    #[inline]
     pub fn decode_fixed32(&mut self) -> Result<u32, DecodeError<R::Error>> {
         let mut data = [MaybeUninit::uninit(); 4];
         self.read_exact(&mut data)?;
@@ -226,6 +238,7 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(u32::from_le_bytes(data))
     }
 
+    #[inline]
     pub fn decode_fixed64(&mut self) -> Result<u64, DecodeError<R::Error>> {
         let mut data = [MaybeUninit::uninit(); 8];
         self.read_exact(&mut data)?;
@@ -234,18 +247,22 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(u64::from_le_bytes(data))
     }
 
+    #[inline]
     pub fn decode_sfixed32(&mut self) -> Result<i32, DecodeError<R::Error>> {
         self.decode_fixed32().map(|u| u as i32)
     }
 
+    #[inline]
     pub fn decode_sfixed64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_fixed64().map(|u| u as i64)
     }
 
+    #[inline]
     pub fn decode_float(&mut self) -> Result<f32, DecodeError<R::Error>> {
         self.decode_fixed32().map(f32::from_bits)
     }
 
+    #[inline]
     pub fn decode_double(&mut self) -> Result<f64, DecodeError<R::Error>> {
         self.decode_fixed64().map(f64::from_bits)
     }
