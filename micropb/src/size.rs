@@ -1,6 +1,6 @@
 use crate::Tag;
 
-pub fn sizeof_varint32(v: u32) -> usize {
+pub const fn sizeof_varint32(v: u32) -> usize {
     match v {
         0x0..=0x7F => 1,
         0x80..=0x3FFF => 2,
@@ -10,7 +10,7 @@ pub fn sizeof_varint32(v: u32) -> usize {
     }
 }
 
-pub fn sizeof_varint64(v: u64) -> usize {
+pub const fn sizeof_varint64(v: u64) -> usize {
     const U32_MAX: u64 = u32::MAX as u64;
     const U32_OVER_MAX: u64 = U32_MAX + 1;
     match v {
@@ -25,7 +25,7 @@ pub fn sizeof_varint64(v: u64) -> usize {
 }
 
 #[inline]
-pub fn sizeof_int32(i: i32) -> usize {
+pub const fn sizeof_int32(i: i32) -> usize {
     if i >= 0 {
         sizeof_varint32(i as u32)
     } else {
@@ -34,22 +34,22 @@ pub fn sizeof_int32(i: i32) -> usize {
 }
 
 #[inline]
-pub fn sizeof_int64(i: i64) -> usize {
+pub const fn sizeof_int64(i: i64) -> usize {
     sizeof_varint64(i as u64)
 }
 
 #[inline]
-pub fn sizeof_sint32(i: i32) -> usize {
+pub const fn sizeof_sint32(i: i32) -> usize {
     sizeof_varint32(((i << 1) ^ (i >> 31)) as u32)
 }
 
 #[inline]
-pub fn sizeof_sint64(i: i64) -> usize {
+pub const fn sizeof_sint64(i: i64) -> usize {
     sizeof_varint64(((i << 1) ^ (i >> 63)) as u64)
 }
 
 #[inline]
-pub fn sizeof_tag(tag: Tag) -> usize {
+pub const fn sizeof_tag(tag: Tag) -> usize {
     sizeof_varint32(tag.varint())
 }
 
@@ -62,7 +62,7 @@ pub fn sizeof_packed<T: Copy, F: Fn(&T) -> usize>(elems: &[T], sizer: F) -> usiz
 //}
 
 #[inline]
-pub fn sizeof_len_record(len: usize) -> usize {
+pub const fn sizeof_len_record(len: usize) -> usize {
     len + sizeof_varint32(len as u32)
 }
 
