@@ -190,11 +190,13 @@ impl TypeSpec {
         }
     }
 
-    pub(crate) fn wire_type(&self) -> Ident {
-        let s = match self {
-            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => "WIRE_TYPE_I32",
+    pub(crate) fn wire_type(&self) -> u8 {
+        match self {
+            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => {
+                micropb::WIRE_TYPE_I32
+            }
             TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => {
-                "WIRE_TYPE_I64"
+                micropb::WIRE_TYPE_I64
             }
             TypeSpec::Enum(_)
             | TypeSpec::Bool
@@ -206,12 +208,11 @@ impl TypeSpec {
                 | PbInt::Sint32
                 | PbInt::Sint64,
                 _,
-            ) => "WIRE_TYPE_VARINT",
+            ) => micropb::WIRE_TYPE_VARINT,
             TypeSpec::Message(_) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => {
-                "WIRE_TYPE_LEN"
+                micropb::WIRE_TYPE_LEN
             }
-        };
-        Ident::new(s, Span::call_site())
+        }
     }
 
     pub(crate) fn generate_implicit_presence_check(&self, val_ref: &Ident) -> TokenStream {

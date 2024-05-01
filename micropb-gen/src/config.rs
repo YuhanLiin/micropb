@@ -32,13 +32,6 @@ impl IntType {
         };
         Ident::new(t, Span::call_site())
     }
-
-    pub(crate) fn is_signed(self) -> bool {
-        matches!(
-            self,
-            IntType::I8 | IntType::I16 | IntType::I32 | IntType::Isize | IntType::I64
-        )
-    }
 }
 
 #[derive(Debug, Clone)]

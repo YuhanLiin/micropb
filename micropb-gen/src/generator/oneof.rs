@@ -95,27 +95,27 @@ impl<'a> OneofField<'a> {
         let val_ref = Ident::new("val_ref", Span::call_site());
         let variant_name = &self.rust_name;
         let extra_deref = self.boxed.then(|| quote! { * });
-        let fnum = self.num;
-        let tag = Ident::new("tag", Span::call_site());
+        let wire_type = self.tspec.wire_type();
+        let tag = micropb::Tag::from_parts(self.num, wire_type);
+        let tag_val = tag.varint();
+        let tag_len = ::micropb::size::sizeof_tag(tag);
 
         let stmts = match &func_type {
             EncodeFunc::Sizeof(size) => {
                 let sizeof_expr = self.tspec.generate_sizeof(gen, &val_ref);
-                quote! { #size += ::micropb::size::sizeof_tag(#tag) + #sizeof_expr; }
+                quote! { #size += #tag_len + #sizeof_expr; }
             }
             EncodeFunc::Encode(encoder) => {
                 let encode_expr = self.tspec.generate_encode_expr(gen, encoder, &val_ref);
                 quote! {
-                    #encoder.encode_tag(#tag)?;
+                    #encoder.encode_varint32(#tag_val)?;
                     #encode_expr?;
                 }
             }
         };
 
-        let wire_type = self.tspec.wire_type();
         quote! {
             #oneof_type::#variant_name(#val_ref) => {
-                let #tag = ::micropb::Tag::from_parts(#fnum, ::micropb::#wire_type);
                 let #val_ref = &* #extra_deref #val_ref;
                 #stmts
             }
