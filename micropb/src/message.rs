@@ -1,10 +1,7 @@
 #[cfg(feature = "decode")]
 use crate::decode::{DecodeError, PbDecoder, PbRead};
 #[cfg(feature = "encode")]
-use crate::{
-    encode::{PbEncoder, PbWrite},
-    size::SizeCache,
-};
+use crate::encode::{PbEncoder, PbWrite};
 
 #[cfg(feature = "decode")]
 pub trait MessageDecode {
