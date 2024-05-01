@@ -31,18 +31,5 @@ pub trait MessageEncode {
         self.encode(encoder)
     }
 
-    //fn encode_cached<W: PbWrite>(
-    //&self,
-    //encoder: &mut PbEncoder<W>,
-    //encode_len: bool,
-    //_cache: &dyn SizeCache,
-    //) -> Result<(), W::Error> {
-    //self.encode(encoder, encode_len)
-    //}
-
     fn compute_size(&self) -> usize;
-
-    fn compute_size_cached(&self, _cache: &mut dyn SizeCache) -> usize {
-        self.compute_size()
-    }
 }

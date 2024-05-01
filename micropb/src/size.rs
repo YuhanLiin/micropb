@@ -76,13 +76,3 @@ pub fn sizeof_map_elem<K: ?Sized, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&
     // sizes are 1 each
     2 + key_sizer(key) + val_sizer(val)
 }
-
-pub trait SizeCache {
-    fn set_total_size(&mut self, size: usize);
-
-    fn get_total_size(&self) -> Option<usize>;
-
-    fn set_field_size(&mut self, field_num: u32, size: usize);
-
-    fn get_field_size(&mut self, field_num: u32) -> Option<usize>;
-}
