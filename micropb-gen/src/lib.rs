@@ -127,8 +127,6 @@ impl Generator {
         let fdset = FileDescriptorSet::decode(&*bytes)?;
         let code = self.generate_fdset(&fdset);
 
-        let mut file = fs::File::create(out_filename)?;
-
         #[cfg(feature = "format")]
         let output = if self.format {
             prettyplease::unparse(
@@ -139,7 +137,11 @@ impl Generator {
         };
         #[cfg(not(feature = "format"))]
         let output = code.to_string();
+
+        let mut file = fs::File::create(out_filename)?;
         file.write_all(output.as_bytes())?;
+
+        self.warn_unused_configs();
         Ok(())
     }
 

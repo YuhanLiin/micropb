@@ -1,7 +1,10 @@
+use std::cell::Cell;
+
 #[derive(Debug)]
 pub struct Node<T> {
     value: Option<T>,
     children: Vec<(String, Node<T>)>,
+    accessed: Cell<bool>,
 }
 
 impl<T> Default for Node<T> {
@@ -9,6 +12,7 @@ impl<T> Default for Node<T> {
         Self {
             value: Default::default(),
             children: Default::default(),
+            accessed: Default::default(),
         }
     }
 }
@@ -21,7 +25,8 @@ impl<T> Node<T> {
             .map(|(_, next)| next)
     }
 
-    pub fn value(&self) -> &Option<T> {
+    pub fn access_value(&self) -> &Option<T> {
+        self.accessed.set(true);
         &self.value
     }
 
@@ -50,7 +55,7 @@ impl<T> Node<T> {
         let mut node = self;
         for segment in path {
             if let Some(next) = node.next(segment) {
-                next.value.as_ref().map(&mut callback);
+                next.access_value().as_ref().map(&mut callback);
                 node = next;
             } else {
                 return None;
@@ -75,9 +80,35 @@ impl<T> PathTree<T> {
             root: Node {
                 value: Some(value),
                 children: vec![],
+                accessed: Cell::new(true), // root will always be accessed
             },
         }
     }
+
+    pub fn find_all_unaccessed(&self, mut reporter: impl FnMut(&Node<T>, &[&str])) {
+        let mut edges = vec![DfsElem::Edge(("", &self.root))];
+        let mut path = vec![];
+        while let Some(elem) = edges.pop() {
+            if let DfsElem::Edge((next_part, cur_node)) = elem {
+                path.push(next_part);
+                if cur_node.value.is_some() && !cur_node.accessed.get() {
+                    reporter(cur_node, &path);
+                }
+                edges.push(DfsElem::NodeEnd);
+                for (part, node) in &cur_node.children {
+                    edges.push(DfsElem::Edge((part, node)));
+                }
+            } else {
+                // NodeEnd
+                path.pop();
+            }
+        }
+    }
+}
+
+enum DfsElem<T> {
+    Edge(T),
+    NodeEnd,
 }
 
 #[cfg(test)]
@@ -159,5 +190,42 @@ mod tests {
         assert_eq!(assert_visit_path(&root, &["car", "salesman"], "c"), None);
         assert_eq!(assert_visit_path(&root, &["fruit", "salesman"], "f"), None);
         assert_eq!(assert_visit_path(&root, &["alien"], ""), None);
+    }
+
+    fn get_unaccessed_paths<T>(tree: &PathTree<T>) -> Vec<String> {
+        let mut paths = vec![];
+        tree.find_all_unaccessed(|_node, path| paths.push(path.join(".")));
+        paths
+    }
+
+    #[test]
+    fn find_all_unaccessed() {
+        let mut tree = PathTree::new('0');
+        tree.root.add_path(["fruit", "apple"].into_iter()).value = Some('a');
+        tree.root.add_path(["fruit", "orange"].into_iter()).value = Some('o');
+        tree.root.add_path(["fruit", "pear"].into_iter()).value = Some('p');
+        tree.root.add_path(["animal", "cat"].into_iter()).value = Some('c');
+        tree.root.add_path(["fruit"].into_iter()).value = Some('f');
+        tree.root.add_path(["car"].into_iter()).value = Some('c');
+
+        tree.root
+            .next("fruit")
+            .unwrap()
+            .next("apple")
+            .unwrap()
+            .accessed
+            .set(true);
+
+        let unaccessed = get_unaccessed_paths(&tree);
+        assert_eq!(
+            unaccessed,
+            &[
+                ".car",
+                ".animal.cat",
+                ".fruit",
+                ".fruit.pear",
+                ".fruit.orange",
+            ]
+        );
     }
 }

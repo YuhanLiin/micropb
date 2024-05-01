@@ -50,7 +50,7 @@ impl<'a> CurrentConfig<'a> {
         let mut config: Cow<Box<Config>> = Cow::Borrowed(self.config.borrow());
         if let Some(node) = self.node {
             let next = node.next(segment);
-            if let Some(conf) = next.and_then(|n| n.value().as_ref()) {
+            if let Some(conf) = next.and_then(|n| n.access_value().as_ref()) {
                 (*config.to_mut()).merge(conf);
             }
             Self { node: next, config }
@@ -120,6 +120,14 @@ impl Default for Generator {
 }
 
 impl Generator {
+    pub(crate) fn warn_unused_configs(&self) {
+        self.config_tree.find_all_unaccessed(|_node, path| {
+            let path = path.join(".");
+            // TODO generate real warnings
+            println!("Unused configuration path: \"{path}\". Make sure the path points to an actual Protobuf type or module.");
+        });
+    }
+
     pub(crate) fn generate_fdset(&mut self, fdset: &FileDescriptorSet) -> TokenStream {
         let mut mod_tree = PathTree::new(TokenStream::new());
 
@@ -148,7 +156,7 @@ impl Generator {
 
         let root_node = &self.config_tree.root;
         let mut conf = root_node
-            .value()
+            .access_value()
             .as_ref()
             .expect("root config should exist")
             .clone();
