@@ -1,8 +1,10 @@
 use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
+    ffi::OsString,
     iter,
     ops::Deref,
+    path::PathBuf,
 };
 
 use convert_case::{Case, Casing};
@@ -17,7 +19,7 @@ use syn::{Attribute, Ident};
 use crate::{
     config::{Config, IntType},
     pathtree::{Node, PathTree},
-    split_pkg_name,
+    split_pkg_name, EncodeDecode,
 };
 
 use self::message::Message;
@@ -62,14 +64,6 @@ impl<'a> CurrentConfig<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-enum EncodeDecode {
-    EncodeOnly,
-    DecodeOnly,
-    #[default]
-    Both,
-}
-
 fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
     let code = mod_node.value_mut().take().unwrap_or_default();
     let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
@@ -96,10 +90,11 @@ pub struct Generator {
     type_path: RefCell<Vec<String>>,
 
     pub(crate) encode_decode: EncodeDecode,
-    pub(crate) size_cache: bool,
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) use_std: bool,
+    pub(crate) fdset_path: Option<PathBuf>,
+    pub(crate) protoc_args: Vec<OsString>,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
 }
@@ -113,10 +108,11 @@ impl Default for Generator {
             type_path: Default::default(),
 
             encode_decode: Default::default(),
-            size_cache: Default::default(),
             retain_enum_prefix: Default::default(),
             format: true,
             use_std: Default::default(),
+            fdset_path: Default::default(),
+            protoc_args: Default::default(),
 
             config_tree,
         }
@@ -291,8 +287,14 @@ impl Generator {
         let default = msg.generate_default_impl(self, hazzer_field_attr.is_some());
         let decl = msg.generate_decl(self, hazzer_field_attr, unknown_field_attr);
         let msg_impl = msg.generate_impl(self);
-        let decode = msg.generate_decode_trait(self);
-        let encode = msg.generate_encode_trait(self);
+        let decode = self
+            .encode_decode
+            .is_decode()
+            .then(|| msg.generate_decode_trait(self));
+        let encode = self
+            .encode_decode
+            .is_encode()
+            .then(|| msg.generate_encode_trait(self));
 
         quote! {
             #msg_mod

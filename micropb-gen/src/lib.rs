@@ -4,9 +4,11 @@ mod pathtree;
 mod utils;
 
 use std::{
-    env, fs,
+    env,
+    ffi::OsStr,
+    fs,
     io::{self, Write},
-    path::Path,
+    path::{Path, PathBuf},
     process::Command,
 };
 
@@ -14,6 +16,24 @@ pub use config::Config;
 pub use generator::Generator;
 use prost::Message;
 use prost_types::FileDescriptorSet;
+
+#[derive(Debug, Clone, Copy, Default)]
+pub enum EncodeDecode {
+    EncodeOnly,
+    DecodeOnly,
+    #[default]
+    Both,
+}
+
+impl EncodeDecode {
+    fn is_encode(self) -> bool {
+        matches!(self, Self::EncodeOnly | Self::Both)
+    }
+
+    fn is_decode(self) -> bool {
+        matches!(self, Self::DecodeOnly | Self::Both)
+    }
+}
 
 impl Generator {
     pub fn new() -> Self {
@@ -70,12 +90,18 @@ impl Generator {
         protos: &[impl AsRef<Path>],
         out_filename: impl AsRef<Path>,
     ) -> io::Result<()> {
-        let tmp = tempfile::tempdir()?;
-        let fdset_file = tmp.path().join("micropb-fdset");
+        let tmp;
+        let fdset_file = if let Some(fdset_path) = &self.fdset_path {
+            fdset_path.to_owned()
+        } else {
+            tmp = tempfile::tempdir()?;
+            tmp.path().join("micropb-fdset")
+        };
 
         // Get protoc command from PROTOC env-var, otherwise just use "protoc"
         let mut cmd = Command::new(env::var("PROTOC").as_deref().unwrap_or("protoc"));
         cmd.arg("-o").arg(fdset_file.as_os_str());
+        cmd.args(&self.protoc_args);
 
         for proto in protos {
             cmd.arg(proto.as_ref());
@@ -117,16 +143,34 @@ impl Generator {
         Ok(())
     }
 
-    pub fn retain_enum_prefix(&mut self, retain_enum_prefix: bool) {
+    pub fn retain_enum_prefix(&mut self, retain_enum_prefix: bool) -> &mut Self {
         self.retain_enum_prefix = retain_enum_prefix;
+        self
     }
 
-    pub fn format(&mut self, format: bool) {
+    pub fn format(&mut self, format: bool) -> &mut Self {
         self.format = format;
+        self
     }
 
-    pub fn use_std(&mut self, use_std: bool) {
+    pub fn use_std(&mut self, use_std: bool) -> &mut Self {
         self.use_std = use_std;
+        self
+    }
+
+    pub fn encode_decode(&mut self, encode_decode: EncodeDecode) -> &mut Self {
+        self.encode_decode = encode_decode;
+        self
+    }
+
+    pub fn file_descriptor_set_path<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
+        self.fdset_path = Some(path.into());
+        self
+    }
+
+    pub fn add_protoc_arg<S: AsRef<OsStr>>(&mut self, arg: S) -> &mut Self {
+        self.protoc_args.push(arg.as_ref().to_owned());
+        self
     }
 }
 
