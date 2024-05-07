@@ -75,12 +75,12 @@ impl<'a> OneofField<'a> {
             .generate_decode_mut(gen, false, decoder, &mut_ref);
         quote! {
             #fnum => {
-                match &mut self.#oneof_name {
-                    ::core::option::Option::Some(#oneof_type::#variant_name(_)) => {},
-                    _ => self.#oneof_name = ::core::option::Option::Some(#oneof_type::#variant_name(::core::default::Default::default())),
+                let #mut_ref = loop {
+                    match &mut self.#oneof_name {
+                        ::core::option::Option::Some(#oneof_type::#variant_name(variant)) => break &mut #extra_deref *variant,
+                        _ => self.#oneof_name = ::core::option::Option::Some(#oneof_type::#variant_name(::core::default::Default::default())),
+                    }
                 };
-                let #mut_ref = if let ::core::option::Option::Some(#oneof_type::#variant_name(variant))
-                    = &mut self.#oneof_name { &mut #extra_deref *variant } else { unreachable!() };
                 #decode_stmts;
             }
         }
