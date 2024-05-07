@@ -242,10 +242,14 @@ impl TypeSpec {
                 Some(quote! { #decoder.#func() })
             }
             // Enum is actually packable due to https://github.com/protocolbuffers/protobuf/issues/15480
-            // TODO use varint32 if possible
             TypeSpec::Enum(tpath) => {
                 let enum_path = gen.resolve_type_name(tpath);
-                Some(quote! { #decoder.decode_int32().map(|n| #enum_path(n as _)) })
+                let decode_fn = if gen.signed_enums {
+                    Ident::new("decode_int32", Span::call_site())
+                } else {
+                    Ident::new("decode_varint32", Span::call_site())
+                };
+                Some(quote! { #decoder.#decode_fn().map(|n| #enum_path(n as _)) })
             }
             _ => None,
         }

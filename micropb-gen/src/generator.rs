@@ -94,6 +94,7 @@ pub struct Generator {
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) use_std: bool,
+    pub(crate) signed_enums: bool,
     pub(crate) fdset_path: Option<PathBuf>,
     pub(crate) protoc_args: Vec<OsString>,
 
@@ -112,6 +113,7 @@ impl Default for Generator {
             encode_decode: Default::default(),
             retain_enum_prefix: Default::default(),
             format: true,
+            signed_enums: true,
             use_std: Default::default(),
             fdset_path: Default::default(),
             protoc_args: Default::default(),
