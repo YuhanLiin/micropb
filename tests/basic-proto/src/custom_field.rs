@@ -21,10 +21,10 @@ impl FieldDecode for MockField {
         &mut self,
         tag: Tag,
         decoder: &mut micropb::PbDecoder<R>,
-    ) -> Result<(), micropb::DecodeError<R::Error>> {
+    ) -> Result<bool, micropb::DecodeError<R::Error>> {
         decoder.skip_wire_value(tag.wire_type())?;
         self.tags.push(tag);
-        Ok(())
+        Ok(true)
     }
 }
 

@@ -10,7 +10,7 @@ pub trait FieldDecode {
         &mut self,
         tag: Tag,
         decoder: &mut PbDecoder<R>,
-    ) -> Result<(), DecodeError<R::Error>>;
+    ) -> Result<bool, DecodeError<R::Error>>;
 }
 
 #[cfg(feature = "encode")]
