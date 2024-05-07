@@ -1,6 +1,7 @@
 use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
+    collections::HashMap,
     ffi::OsString,
     iter,
     ops::Deref,
@@ -97,6 +98,7 @@ pub struct Generator {
     pub(crate) protoc_args: Vec<OsString>,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
+    pub(crate) extern_paths: HashMap<String, TokenStream>,
 }
 
 impl Default for Generator {
@@ -115,6 +117,7 @@ impl Default for Generator {
             protoc_args: Default::default(),
 
             config_tree,
+            extern_paths: Default::default(),
         }
     }
 }
@@ -315,8 +318,13 @@ impl Generator {
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> TokenStream {
-        // type names provided by protoc will always be fully-qualified
+        // Type names provided by protoc will always be fully-qualified
         assert_eq!(".", &pb_fq_type_name[..1]);
+
+        // Check if we're substituting with an extern type
+        if let Some(rust_type) = self.extern_paths.get(pb_fq_type_name) {
+            return rust_type.clone();
+        }
 
         let mut ident_path = pb_fq_type_name[1..].split('.');
         let ident_type = Ident::new(ident_path.next_back().unwrap(), Span::call_site());

@@ -174,6 +174,18 @@ impl Generator {
         self.protoc_args.push(arg.as_ref().to_owned());
         self
     }
+
+    pub fn extern_path<P1: AsRef<str>, P2: AsRef<str>>(
+        &mut self,
+        proto_path: P1,
+        rust_path: P2,
+    ) -> &mut Self {
+        self.extern_paths.insert(
+            proto_path.as_ref().to_owned(),
+            syn::parse_str(rust_path.as_ref()).expect("Tokenization failure"),
+        );
+        self
+    }
 }
 
 fn split_pkg_name(name: &str) -> impl Iterator<Item = &str> {
