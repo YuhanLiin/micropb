@@ -19,6 +19,24 @@ pub trait MessageDecode {
     }
 }
 
+#[cfg(feature = "decode")]
+impl<T: MessageDecode> MessageDecode for &mut T {
+    fn decode<R: PbRead>(
+        &mut self,
+        decoder: &mut PbDecoder<R>,
+        len: usize,
+    ) -> Result<(), DecodeError<R::Error>> {
+        (*self).decode(decoder, len)
+    }
+
+    fn decode_len_delimited<R: PbRead>(
+        &mut self,
+        decoder: &mut PbDecoder<R>,
+    ) -> Result<(), DecodeError<R::Error>> {
+        (*self).decode_len_delimited(decoder)
+    }
+}
+
 #[cfg(feature = "encode")]
 pub trait MessageEncode {
     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
@@ -29,4 +47,19 @@ pub trait MessageEncode {
     }
 
     fn compute_size(&self) -> usize;
+}
+
+#[cfg(feature = "encode")]
+impl<T: MessageEncode> MessageEncode for &T {
+    fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
+        (*self).encode(encoder)
+    }
+
+    fn compute_size(&self) -> usize {
+        (*self).compute_size()
+    }
+
+    fn encode_len_delimited<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
+        (*self).encode_len_delimited(encoder)
+    }
 }
