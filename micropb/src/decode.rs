@@ -9,7 +9,7 @@ use crate::{
         maybe_uninit_slice_assume_init_ref, maybe_uninit_write_slice,
         maybe_ununit_array_assume_init,
     },
-    Presence, Tag, VarInt, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
+    Presence, Tag, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
 };
 
 use never::Never;
@@ -33,29 +33,6 @@ impl<E> From<Utf8Error> for DecodeError<E> {
         Self::Utf8(err)
     }
 }
-
-///// Implemented only for types decoded from fixed-size fields.
-/////
-///// # Safety
-///// Implementers must have no invalid bit-patterns.
-//pub unsafe trait DecodeFixedSize: sealed::Sealed + Copy {}
-
-//unsafe impl DecodeFixedSize for u32 {}
-//unsafe impl DecodeFixedSize for i32 {}
-//unsafe impl DecodeFixedSize for u64 {}
-//unsafe impl DecodeFixedSize for i64 {}
-//unsafe impl DecodeFixedSize for f32 {}
-//unsafe impl DecodeFixedSize for f64 {}
-
-//mod sealed {
-//pub trait Sealed {}
-//impl Sealed for u32 {}
-//impl Sealed for i32 {}
-//impl Sealed for u64 {}
-//impl Sealed for i64 {}
-//impl Sealed for f32 {}
-//impl Sealed for f64 {}
-//}
 
 pub trait PbRead {
     type Error;
@@ -199,36 +176,52 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(b)
     }
 
-    fn decode_varint<U: VarInt>(&mut self) -> Result<U, DecodeError<R::Error>> {
+    #[inline]
+    pub fn decode_varint32(&mut self) -> Result<u32, DecodeError<R::Error>> {
         let b = self.get_byte()?;
-        let mut varint = From::from(b & !0x80);
         // Single byte case
         if b & 0x80 == 0 {
-            return Ok(varint);
+            return Ok(b as u32);
         }
 
+        let mut varint: u32 = b as u32 & !0x80;
         let mut bitpos = 7;
-        for _ in 1..U::BYTES {
+        for i in 1..10 {
             let b = self.get_byte()?;
-            // possible truncation in the last byte
-            let u: U = From::from(b & !0x80);
-            varint = varint | u << bitpos;
+            // Take the first 5 bytes into account, but ignore the later 5 bytes since they're
+            // going to be truncated anyways
+            if i < 5 {
+                let u = b & !0x80;
+                varint |= (u as u32) << bitpos;
+                bitpos += 7;
+            }
             if b & 0x80 == 0 {
                 return Ok(varint);
             }
-            bitpos += 7;
         }
-        Err(DecodeError::VarIntLimit(U::BYTES))
-    }
-
-    #[inline]
-    pub fn decode_varint32(&mut self) -> Result<u32, DecodeError<R::Error>> {
-        self.decode_varint::<u32>()
+        Err(DecodeError::VarIntLimit(10))
     }
 
     #[inline]
     pub fn decode_varint64(&mut self) -> Result<u64, DecodeError<R::Error>> {
-        self.decode_varint::<u64>()
+        let b = self.get_byte()?;
+        // Single byte case
+        if b & 0x80 == 0 {
+            return Ok(b as u64);
+        }
+
+        let mut varint: u64 = b as u64 & !0x80;
+        let mut bitpos = 7;
+        for _ in 1..10 {
+            let b = self.get_byte()?;
+            let u = b & !0x80;
+            varint |= (u as u64) << bitpos;
+            bitpos += 7;
+            if b & 0x80 == 0 {
+                return Ok(varint);
+            }
+        }
+        Err(DecodeError::VarIntLimit(10))
     }
 
     #[inline]
@@ -238,7 +231,7 @@ impl<R: PbRead> PbDecoder<R> {
 
     #[inline]
     pub fn decode_int32(&mut self) -> Result<i32, DecodeError<R::Error>> {
-        self.decode_int64().map(|u| u as i32)
+        self.decode_varint32().map(|u| u as i32)
     }
 
     #[inline]
@@ -479,13 +472,13 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     fn skip_varint(&mut self) -> Result<(), DecodeError<R::Error>> {
-        for _ in 0..u64::BYTES {
+        for _ in 0..10 {
             let b = self.get_byte()?;
             if b & 0x80 == 0 {
                 return Ok(());
             }
         }
-        Err(DecodeError::VarIntLimit(u64::BYTES))
+        Err(DecodeError::VarIntLimit(10))
     }
 
     pub fn skip_bytes(&mut self, bytes: usize) -> Result<(), DecodeError<R::Error>> {
@@ -596,8 +589,8 @@ mod tests {
         assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], decode_varint32());
         assert_decode!(Err(DecodeError::UnexpectedEof), [], decode_varint32());
         assert_decode!(
-            Err(DecodeError::VarIntLimit(5)),
-            [0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
+            Ok(1),
+            [0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00],
             decode_varint32()
         );
     }
@@ -651,7 +644,7 @@ mod tests {
         assert_decode!(Ok(5), [5], decode_int32());
         assert_decode!(Ok(5), [5], decode_int64());
 
-        // int32 is decoded as varint64, so big varints get casted down to 32 bits
+        // big varints get casted down to 32 bits
         assert_decode!(
             Ok(0b00000000000000000000000000000001),
             [0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F],
@@ -702,8 +695,8 @@ mod tests {
             decode_sint32()
         );
         assert_decode!(
-            Err(DecodeError::VarIntLimit(5)),
-            [0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
+            Ok(-1),
+            [0x81, 0x80, 0x80, 0x80, 0x80, 0x00],
             decode_sint32()
         );
     }

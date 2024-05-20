@@ -65,7 +65,11 @@ impl<W: PbWrite> PbEncoder<W> {
         self.write(&[b])
     }
 
-    fn encode_varint<U: VarInt>(&mut self, mut varint: U) -> Result<(), W::Error> {
+    fn encode_varint<U: VarInt>(
+        &mut self,
+        mut varint: U,
+        negative_int32: bool,
+    ) -> Result<(), W::Error> {
         if varint <= From::from(0x7F) {
             return self.encode_byte(varint.as_());
         }
@@ -76,32 +80,37 @@ impl<W: PbWrite> PbEncoder<W> {
             let zero = varint.is_zero();
             if !zero {
                 b |= 0x80;
+            } else if negative_int32 {
+                // The last encoded byte of an i32 only writes the lower 4 bits, so if it's a
+                // negative int, then we need to sign extend to the upper 3 bits. Also set the
+                // highest bit since we also need to sign extend for 5 more bytes.
+                b |= 0b11110000;
             }
             self.encode_byte(b)?;
             !zero
         } {}
+
+        // Sign extend for 5 bytes
+        if negative_int32 {
+            self.write(&[0xFF, 0xFF, 0xFF, 0xFF, 0x01])?;
+        }
 
         Ok(())
     }
 
     #[inline]
     pub fn encode_varint32(&mut self, u: u32) -> Result<(), W::Error> {
-        self.encode_varint(u)
+        self.encode_varint(u, false)
     }
 
     #[inline]
     pub fn encode_varint64(&mut self, u: u64) -> Result<(), W::Error> {
-        self.encode_varint(u)
+        self.encode_varint(u, false)
     }
 
     #[inline]
     pub fn encode_int32(&mut self, i: i32) -> Result<(), W::Error> {
-        if i >= 0 {
-            // Can avoid 64-bit operations if number if non-negative
-            self.encode_varint32(i as u32)
-        } else {
-            self.encode_varint64(i as u64)
-        }
+        self.encode_varint(i as u32, i < 0)
     }
 
     #[inline]
@@ -316,6 +325,11 @@ mod tests {
             &[0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
             encode_int64(i64::MIN),
             sizeof_int64
+        );
+        assert_encode!(
+            &[0x81, 0x80, 0x80, 0x80, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
+            encode_int32(0xC0000001u32 as i32),
+            sizeof_int32
         );
     }
 
