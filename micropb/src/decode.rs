@@ -248,11 +248,7 @@ impl<R: PbRead> PbDecoder<R> {
 
     #[inline]
     pub fn decode_bool(&mut self) -> Result<bool, DecodeError<R::Error>> {
-        let b = self.get_byte()?;
-        if b & 0x80 != 0 {
-            return Err(DecodeError::VarIntLimit(1));
-        }
-        Ok(b != 0)
+        Ok(self.decode_varint32()? != 0)
     }
 
     #[inline]
@@ -727,7 +723,8 @@ mod tests {
         assert_decode!(Ok(false), [0], decode_bool());
         assert_decode!(Ok(true), [1], decode_bool());
         assert_decode!(Ok(true), [0x3], decode_bool());
-        assert_decode!(Err(DecodeError::VarIntLimit(1)), [0x80], decode_bool());
+        assert_decode!(Ok(false), [0x80, 0x00], decode_bool());
+        assert_decode!(Ok(true), [0x80, 0x01], decode_bool());
     }
 
     #[test]
