@@ -404,15 +404,6 @@ impl Generator {
             boxed_type
         }
     }
-
-    fn fq_name(&self, name: &str) -> String {
-        self.pkg_path
-            .iter()
-            .map(Deref::deref)
-            .chain(self.type_path.borrow().iter().map(Deref::deref))
-            .chain(iter::once(name))
-            .fold(String::new(), |acc, s| acc + "." + s)
-    }
 }
 
 #[cfg(test)]

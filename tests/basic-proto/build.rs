@@ -252,6 +252,26 @@ fn implicit_presence() {
         .unwrap();
 }
 
+fn extern_import() {
+    let mut gen1 = Generator::new();
+    gen1.compile_protos(
+        &["proto/basic.proto"],
+        std::env::var("OUT_DIR").unwrap() + "/import_basic.rs",
+    )
+    .unwrap();
+
+    let mut gen2 = Generator::new();
+    // Replace `BasicTypes` with an empty message
+    gen2.extern_path(".basic.BasicTypes", "crate::extern_import::Empty")
+        // Replace `Enum` with the generated enum type
+        .extern_path(".basic.Enum", "crate::extern_import::proto::basic::Enum")
+        .compile_protos(
+            &["proto/nested.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/import_nested.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -263,4 +283,5 @@ fn main() {
     container_alloc();
     custom_field();
     implicit_presence();
+    extern_import();
 }
