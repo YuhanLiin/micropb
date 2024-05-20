@@ -93,6 +93,25 @@ pub trait PbRead {
     }
 }
 
+impl<T: PbRead> PbRead for &mut T {
+    type Error = T::Error;
+
+    #[inline]
+    fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error> {
+        (*self).pb_read_chunk()
+    }
+
+    #[inline]
+    fn pb_advance(&mut self, bytes: usize) {
+        (*self).pb_advance(bytes)
+    }
+
+    #[inline]
+    fn pb_read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<usize, Self::Error> {
+        (*self).pb_read_exact(buf)
+    }
+}
+
 impl PbRead for &[u8] {
     type Error = Never;
 
@@ -117,10 +136,10 @@ impl PbRead for &[u8] {
 
 #[cfg(feature = "std")]
 #[derive(Debug, Clone)]
-pub struct PbReader<R>(pub R);
+pub struct StdReader<R>(pub R);
 
 #[cfg(feature = "std")]
-impl<R: std::io::BufRead> PbRead for PbReader<R> {
+impl<R: std::io::BufRead> PbRead for StdReader<R> {
     type Error = std::io::Error;
 
     #[inline]

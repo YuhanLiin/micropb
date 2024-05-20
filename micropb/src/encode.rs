@@ -17,10 +17,10 @@ impl<W: PbWrite> PbWrite for &mut W {
 
 #[cfg(feature = "std")]
 #[derive(Debug, Clone)]
-pub struct PbWriter<W>(pub W);
+pub struct StdWriter<W>(pub W);
 
 #[cfg(feature = "std")]
-impl<W: std::io::Write> PbWrite for PbWriter<W> {
+impl<W: std::io::Write> PbWrite for StdWriter<W> {
     type Error = std::io::Error;
 
     #[inline]
