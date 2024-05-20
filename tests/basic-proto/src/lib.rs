@@ -22,3 +22,5 @@ mod keyword_fields;
 mod no_config;
 #[cfg(test)]
 mod skip;
+#[cfg(test)]
+mod unsigned_enum;

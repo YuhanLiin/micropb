@@ -273,12 +273,12 @@ fn decode_packed_enums() {
 
 #[test]
 fn encode_packed_enums() {
-    let mut enumlist = proto::EnumList {
+    let enumlist = proto::EnumList {
         list: vec![proto::Enum(1), proto::Enum(2), proto::Enum(150)],
     };
     let mut encoder = PbEncoder::new(vec![]);
     enumlist.encode(&mut encoder).unwrap();
-    assert_eq!(encoder.into_writer(), &[0x0A, 4, 0x01, 002, 0x96, 0x01]);
+    assert_eq!(encoder.into_writer(), &[0x0A, 4, 0x01, 0x02, 0x96, 0x01]);
 }
 
 #[test]

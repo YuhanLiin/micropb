@@ -308,7 +308,14 @@ impl TypeSpec {
             TypeSpec::Message(_) => {
                 quote! { ::micropb::size::sizeof_len_record(#val_ref.compute_size()) }
             }
-            TypeSpec::Enum(_) => quote! { ::micropb::size::sizeof_int32(#val_ref.0 as _) },
+            TypeSpec::Enum(_) => {
+                let size_fn = if gen.signed_enums {
+                    Ident::new("sizeof_int32", Span::call_site())
+                } else {
+                    Ident::new("sizeof_varint32", Span::call_site())
+                };
+                quote! { ::micropb::size::#size_fn(#val_ref.0 as _) }
+            }
             TypeSpec::Float => quote! { 4 },
             TypeSpec::Double => quote! { 8 },
             TypeSpec::Bool => quote! { 1 },
@@ -328,7 +335,14 @@ impl TypeSpec {
     ) -> TokenStream {
         match self {
             TypeSpec::Message(_) => quote! { #val_ref.encode_len_delimited(#encoder) },
-            TypeSpec::Enum(_) => quote! { #encoder.encode_int32(#val_ref.0 as _) },
+            TypeSpec::Enum(_) => {
+                let encode_fn = if gen.signed_enums {
+                    Ident::new("encode_int32", Span::call_site())
+                } else {
+                    Ident::new("encode_varint32", Span::call_site())
+                };
+                quote! { #encoder.#encode_fn(#val_ref.0 as _) }
+            }
             TypeSpec::Float => quote! { #encoder.encode_float(* #val_ref) },
             TypeSpec::Double => quote! { #encoder.encode_double(* #val_ref) },
             TypeSpec::Bool => quote! { #encoder.encode_bool(* #val_ref) },

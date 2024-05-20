@@ -272,6 +272,17 @@ fn extern_import() {
         .unwrap();
 }
 
+fn unsigned_enum() {
+    let mut generator = Generator::new();
+    generator
+        .signed_enums(false)
+        .compile_protos(
+            &["proto/basic.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/unsigned_enum.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -284,4 +295,5 @@ fn main() {
     custom_field();
     implicit_presence();
     extern_import();
+    unsigned_enum();
 }
