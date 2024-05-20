@@ -40,7 +40,7 @@ impl Generator {
         Self::default()
     }
 
-    pub fn configure(&mut self, mut proto_path: &str, config: Config) {
+    pub fn configure(&mut self, mut proto_path: &str, config: Config) -> &mut Self {
         if proto_path.starts_with('.') {
             proto_path = &proto_path[1..];
         }
@@ -54,9 +54,10 @@ impl Generator {
             Some(existing) => existing.merge(&config),
             None => *config_slot = Some(Box::new(config)),
         }
+        self
     }
 
-    pub fn use_container_heapless(&mut self) {
+    pub fn use_container_heapless(&mut self) -> &mut Self {
         self.configure(
             ".",
             Config::new()
@@ -64,18 +65,20 @@ impl Generator {
                 .string_type("::micropb::heapless::String")
                 .map_type("::micropb::heapless::FnvIndexMap"),
         );
+        self
     }
 
-    pub fn use_container_arrayvec(&mut self) {
+    pub fn use_container_arrayvec(&mut self) -> &mut Self {
         self.configure(
             ".",
             Config::new()
                 .vec_type("::micropb::arrayvec::ArrayVec")
                 .string_type("::micropb::arrayvec::ArrayString"),
         );
+        self
     }
 
-    pub fn use_container_alloc(&mut self) {
+    pub fn use_container_alloc(&mut self) -> &mut Self {
         self.configure(
             ".",
             Config::new()
@@ -83,6 +86,7 @@ impl Generator {
                 .string_type("::alloc::string::String")
                 .map_type("::alloc::collections::BTreeMap"),
         );
+        self
     }
 
     pub fn compile_protos(

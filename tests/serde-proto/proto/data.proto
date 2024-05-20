@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+message Data {
+    enum Enum {
+        ENUM_ONE = 1;
+    }
+
+    optional uint32 int = 1;
+    optional string s = 2;
+    optional bytes b = 3;
+    repeated string list = 4;
+
+    oneof inner {
+        Enum en = 5;
+        bool flag = 6;
+    }
+}

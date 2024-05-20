@@ -4,5 +4,6 @@ resolver = "2"
 members = [
     "micropb",
     "micropb-gen",
-    "tests/basic-proto"
+    "tests/basic-proto", 
+    "tests/serde-proto"
 ]
