@@ -63,6 +63,34 @@ pub trait PbRead {
     fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error>;
 
     fn pb_advance(&mut self, bytes: usize);
+
+    /// Try to read exactly the number of bytes needed to fill `buf`.
+    ///
+    /// Returns the number of bytes read, which will be at most the size of `buf`. If the return is
+    /// less than `buf`, then the reader reached EoF before filling `buf`. Unlike `pb_read_chunk`,
+    /// this function will advance the reader by the amount of bytes read.
+    fn pb_read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<usize, Self::Error> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+
+        let mut pos = 0;
+        while {
+            let remaining = &mut buf[pos..];
+            let chunk = &self.pb_read_chunk()?;
+            if chunk.is_empty() {
+                return Ok(pos);
+            }
+            let n = chunk.len().min(remaining.len());
+            maybe_uninit_write_slice(&mut remaining[..n], &chunk[..n]);
+            self.pb_advance(n);
+            pos += n;
+            pos < buf.len()
+        } {}
+
+        debug_assert_eq!(pos, buf.len());
+        Ok(pos)
+    }
 }
 
 impl PbRead for &[u8] {
@@ -76,6 +104,14 @@ impl PbRead for &[u8] {
     #[inline]
     fn pb_advance(&mut self, bytes: usize) {
         *self = &self[bytes..];
+    }
+
+    #[inline]
+    fn pb_read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<usize, Self::Error> {
+        let n = buf.len().min(self.len());
+        maybe_uninit_write_slice(&mut buf[..n], &self[..n]);
+        self.pb_advance(n);
+        Ok(n)
     }
 }
 
@@ -207,25 +243,17 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(b != 0)
     }
 
+    #[inline]
     fn read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<(), DecodeError<R::Error>> {
-        if buf.is_empty() {
-            return Ok(());
-        }
+        let bytes_read = self
+            .reader
+            .pb_read_exact(buf)
+            .map_err(DecodeError::Reader)?;
+        self.idx += bytes_read;
 
-        let mut pos = 0;
-        while {
-            let remaining = &mut buf[pos..];
-            let chunk = &self.reader.pb_read_chunk().map_err(DecodeError::Reader)?;
-            if chunk.is_empty() {
-                return Err(DecodeError::UnexpectedEof);
-            }
-            let n = chunk.len().min(remaining.len());
-            maybe_uninit_write_slice(&mut remaining[..n], &chunk[..n]);
-            self.advance(n);
-            pos += n;
-            pos < buf.len()
-        } {}
-        debug_assert_eq!(pos, buf.len());
+        if bytes_read < buf.len() {
+            return Err(DecodeError::UnexpectedEof);
+        }
         Ok(())
     }
 
