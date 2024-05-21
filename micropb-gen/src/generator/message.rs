@@ -369,16 +369,7 @@ impl<'a> Message<'a> {
                             _ => { #unknown_branch }
                         }
                     }
-
-                    let actual_len = #decoder.bytes_read() - before;
-                    if actual_len != len {
-                        Err(::micropb::DecodeError::WrongLen {
-                            expected: len,
-                            actual: actual_len,
-                        })
-                    } else {
-                        Ok(())
-                    }
+                    Ok(())
                 }
             }
         }

@@ -74,7 +74,7 @@ fn decode_string_bytes() {
     let len = decoder.as_reader().len();
     assert!(matches!(
         data.decode(&mut decoder, len),
-        Err(micropb::DecodeError::Utf8(_))
+        Err(micropb::DecodeError::Utf8)
     ));
 
     let mut decoder = PbDecoder::new([0x0A, 0, 0x12, 0].as_slice());

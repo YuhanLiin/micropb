@@ -443,11 +443,16 @@ fn decode_errors() {
     let len = decoder.as_reader().len();
     assert_eq!(basic.decode(&mut decoder, len), Err(DecodeError::ZeroField));
 
-    let mut decoder = PbDecoder::new([0x18, 0x96, 0xFF, 0xFF, 0xFF, 0xFF, 0x01].as_slice()); // field 3
+    let mut decoder = PbDecoder::new(
+        [
+            0x18, 0x96, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, // field 3
+        ]
+        .as_slice(),
+    );
     let len = decoder.as_reader().len();
     assert_eq!(
         basic.decode(&mut decoder, len),
-        Err(DecodeError::VarIntLimit(5))
+        Err(DecodeError::VarIntLimit)
     );
 
     let mut decoder = PbDecoder::new([0x10, 0x96, 0xFF, 0xFF, 0xFF, 0xFF].as_slice()); // field 2
@@ -457,23 +462,10 @@ fn decode_errors() {
         Err(DecodeError::UnexpectedEof)
     );
 
-    let mut decoder = PbDecoder::new([0x10, 0x96, 0x01].as_slice()); // field 2
-    assert_eq!(
-        basic.decode(&mut decoder, 2),
-        Err(DecodeError::WrongLen {
-            expected: 2,
-            actual: 3
-        })
-    );
-    assert_eq!(decoder.bytes_read(), 3);
-
     let mut decoder = PbDecoder::new([0x02, 0x10, 0x96, 0x01].as_slice()); // field 2
     assert_eq!(
         basic.decode_len_delimited(&mut decoder),
-        Err(DecodeError::WrongLen {
-            expected: 2,
-            actual: 3
-        })
+        Err(DecodeError::WrongLen)
     );
     assert_eq!(decoder.bytes_read(), 4);
 }

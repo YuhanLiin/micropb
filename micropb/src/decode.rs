@@ -14,23 +14,22 @@ use crate::{
 
 use never::Never;
 
-#[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
 pub enum DecodeError<E> {
-    VarIntLimit(u8),
+    VarIntLimit,
     UnexpectedEof,
     Deprecation,
-    BadWireType(u8),
+    UnknownWireType,
     ZeroField,
-    Utf8(Utf8Error),
+    Utf8,
     Capacity,
-    WrongLen { expected: usize, actual: usize },
+    WrongLen,
     Reader(E),
 }
 
 impl<E> From<Utf8Error> for DecodeError<E> {
-    fn from(err: Utf8Error) -> Self {
-        Self::Utf8(err)
+    fn from(_: Utf8Error) -> Self {
+        Self::Utf8
     }
 }
 
@@ -199,7 +198,7 @@ impl<R: PbRead> PbDecoder<R> {
                 return Ok(varint);
             }
         }
-        Err(DecodeError::VarIntLimit(10))
+        Err(DecodeError::VarIntLimit)
     }
 
     #[inline]
@@ -221,7 +220,7 @@ impl<R: PbRead> PbDecoder<R> {
                 return Ok(varint);
             }
         }
-        Err(DecodeError::VarIntLimit(10))
+        Err(DecodeError::VarIntLimit)
     }
 
     #[inline]
@@ -371,10 +370,7 @@ impl<R: PbRead> PbDecoder<R> {
         let val = decoder(len, before, self)?;
         let actual_len = self.bytes_read() - before;
         if actual_len != len {
-            Err(DecodeError::WrongLen {
-                expected: len,
-                actual: actual_len,
-            })
+            Err(DecodeError::WrongLen)
         } else {
             Ok(val)
         }
@@ -474,7 +470,7 @@ impl<R: PbRead> PbDecoder<R> {
                 return Ok(());
             }
         }
-        Err(DecodeError::VarIntLimit(10))
+        Err(DecodeError::VarIntLimit)
     }
 
     pub fn skip_bytes(&mut self, bytes: usize) -> Result<(), DecodeError<R::Error>> {
@@ -502,7 +498,7 @@ impl<R: PbRead> PbDecoder<R> {
             }
             3 | 4 => return Err(DecodeError::Deprecation),
             WIRE_TYPE_I32 => self.skip_bytes(4)?,
-            w => return Err(DecodeError::BadWireType(w)),
+            _ => return Err(DecodeError::UnknownWireType),
         }
         Ok(())
     }
@@ -610,7 +606,7 @@ mod tests {
         assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], decode_varint64());
         assert_decode!(Err(DecodeError::UnexpectedEof), [], decode_varint64());
         assert_decode!(
-            Err(DecodeError::VarIntLimit(10)),
+            Err(DecodeError::VarIntLimit),
             [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
             decode_varint64()
         );
@@ -629,7 +625,7 @@ mod tests {
         assert_decode!(Err(DecodeError::UnexpectedEof), [0x80], skip_varint());
         assert_decode!(Err(DecodeError::UnexpectedEof), [], skip_varint());
         assert_decode!(
-            Err(DecodeError::VarIntLimit(10)),
+            Err(DecodeError::VarIntLimit),
             [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
             skip_varint()
         );
@@ -712,7 +708,7 @@ mod tests {
             decode_sint64()
         );
         assert_decode!(
-            Err(DecodeError::VarIntLimit(10)),
+            Err(DecodeError::VarIntLimit),
             [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
             decode_sint64()
         );
@@ -834,7 +830,7 @@ mod tests {
 
         assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(3));
         assert_decode!(Err(DecodeError::Deprecation), [], skip_wire_value(4));
-        assert_decode!(Err(DecodeError::BadWireType(10)), [], skip_wire_value(10));
+        assert_decode!(Err(DecodeError::UnknownWireType), [], skip_wire_value(10));
     }
 
     macro_rules! assert_decode_vec {
@@ -910,7 +906,7 @@ mod tests {
             );
         }
         assert_decode_vec!(
-            Err(DecodeError::Utf8(_)),
+            Err(DecodeError::Utf8),
             [4, 0x80, 0x80, 0x80, 0x80],
             decode_string(string, Presence::Explicit)
         );
@@ -967,10 +963,7 @@ mod tests {
             decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
         assert_decode_vec!(
-            Err(DecodeError::WrongLen {
-                expected: 1,
-                actual: 2
-            }),
+            Err(DecodeError::WrongLen),
             [1, 0x90, 0x01],
             decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
@@ -1092,7 +1085,7 @@ mod tests {
         assert_decode_map_elem!(Err(DecodeError::UnexpectedEof), [1, 0x08]);
         // Key and value, then an unknown tag with bad wire type
         assert_decode_map_elem!(
-            Err(DecodeError::BadWireType(7)),
+            Err(DecodeError::UnknownWireType),
             [7, 0x08, 0x01, 0x12, 2, b'a', b'c', 0x07]
         );
     }
