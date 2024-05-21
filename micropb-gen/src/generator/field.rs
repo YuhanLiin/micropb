@@ -491,7 +491,7 @@ mod tests {
     use proc_macro2::Span;
 
     use crate::{
-        config::{parse_attributes, Config, IntType},
+        config::{parse_attributes, Config, IntSize},
         generator::type_spec::PbInt,
         pathtree::Node,
     };
@@ -684,7 +684,7 @@ mod tests {
         let config = Box::new(Config::new().max_len(21).vec_type("Vec"));
         let mut node = Node::default();
         *node.add_path(std::iter::once("elem")).value_mut() =
-            Some(Box::new(Config::new().int_type(IntType::U8)));
+            Some(Box::new(Config::new().int_size(IntSize::S8)));
         let field_conf = CurrentConfig {
             node: Some(&node),
             config: Cow::Borrowed(&config),
@@ -697,7 +697,7 @@ mod tests {
                 .unwrap()
                 .ftype,
             FieldType::Repeated {
-                typ: TypeSpec::Int(PbInt::Int32, IntType::U8),
+                typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: false,
                 type_path: syn::parse_str("Vec").unwrap(),
                 max_len: Some(21)
@@ -710,7 +710,7 @@ mod tests {
                 .unwrap()
                 .ftype,
             FieldType::Repeated {
-                typ: TypeSpec::Int(PbInt::Int32, IntType::U8),
+                typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: true,
                 type_path: syn::parse_str("Vec").unwrap(),
                 max_len: Some(21)
@@ -723,7 +723,7 @@ mod tests {
         let config = Box::new(Config::new().map_type("std::Map"));
         let mut node = Node::default();
         *node.add_path(std::iter::once("key")).value_mut() =
-            Some(Box::new(Config::new().int_type(IntType::U8)));
+            Some(Box::new(Config::new().int_size(IntSize::S8)));
         *node.add_path(std::iter::once("value")).value_mut() =
             Some(Box::new(Config::new().string_type("std::String")));
         let field_conf = CurrentConfig {
@@ -757,7 +757,7 @@ mod tests {
                 .unwrap()
                 .ftype,
             FieldType::Map {
-                key: TypeSpec::Int(PbInt::Int32, IntType::U8),
+                key: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 val: TypeSpec::String {
                     type_path: syn::parse_str("std::String").unwrap(),
                     max_bytes: None
@@ -824,7 +824,7 @@ mod tests {
                 false,
                 FieldType::Map {
                     key: TypeSpec::Float,
-                    val: TypeSpec::Int(PbInt::Uint64, IntType::U32),
+                    val: TypeSpec::Int(PbInt::Uint64, IntSize::S32),
                     type_path: syn::parse_str("std::HashMap").unwrap(),
                     max_len: None,
                 }
@@ -839,7 +839,7 @@ mod tests {
                 "field",
                 false,
                 FieldType::Map {
-                    key: TypeSpec::Int(PbInt::Uint64, IntType::U32),
+                    key: TypeSpec::Int(PbInt::Uint64, IntSize::S32),
                     val: TypeSpec::Float,
                     type_path: syn::parse_str("std::HashMap").unwrap(),
                     max_len: Some(8),

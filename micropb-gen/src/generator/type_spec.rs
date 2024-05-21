@@ -1,11 +1,11 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{field_descriptor_proto::Type, FieldDescriptorProto, Syntax};
+use prost_types::{field_descriptor_proto::Type, FieldDescriptorProto};
 use quote::quote;
 use syn::Ident;
 
 use crate::{
-    config::IntType,
+    config::IntSize,
     utils::{path_suffix, unescape_c_escape_string},
 };
 
@@ -19,14 +19,26 @@ pub(crate) enum PbInt {
     Uint32,
     Uint64,
     Sint32,
-    Sfixed32,
     Sint64,
+    Sfixed32,
     Sfixed64,
     Fixed32,
     Fixed64,
 }
 
 impl PbInt {
+    fn is_signed(&self) -> bool {
+        matches!(
+            self,
+            PbInt::Int32
+                | PbInt::Int64
+                | PbInt::Sint32
+                | PbInt::Sint64
+                | PbInt::Sfixed32
+                | PbInt::Sfixed64
+        )
+    }
+
     fn generate_decode_func(&self) -> Ident {
         let func = match self {
             PbInt::Int32 => "decode_int32",
@@ -82,7 +94,7 @@ pub(crate) enum TypeSpec {
     Float,
     Double,
     Bool,
-    Int(PbInt, IntType),
+    Int(PbInt, IntSize),
     String {
         type_path: syn::Path,
         max_bytes: Option<u32>,
@@ -120,23 +132,23 @@ impl TypeSpec {
             },
             Type::Message => TypeSpec::Message(proto.type_name().to_owned()),
             Type::Enum => TypeSpec::Enum(proto.type_name().to_owned()),
-            Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_type.unwrap_or(IntType::U32)),
-            Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_type.unwrap_or(IntType::I64)),
-            Type::Uint64 => TypeSpec::Int(PbInt::Uint64, conf.int_type.unwrap_or(IntType::U64)),
-            Type::Int32 => TypeSpec::Int(PbInt::Int32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Fixed64 => TypeSpec::Int(PbInt::Fixed64, conf.int_type.unwrap_or(IntType::U64)),
-            Type::Fixed32 => TypeSpec::Int(PbInt::Fixed32, conf.int_type.unwrap_or(IntType::U32)),
-            Type::Sfixed32 => TypeSpec::Int(PbInt::Sfixed32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Sfixed64 => TypeSpec::Int(PbInt::Sfixed64, conf.int_type.unwrap_or(IntType::I64)),
-            Type::Sint32 => TypeSpec::Int(PbInt::Sint32, conf.int_type.unwrap_or(IntType::I32)),
-            Type::Sint64 => TypeSpec::Int(PbInt::Sint64, conf.int_type.unwrap_or(IntType::I64)),
+            Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_size.unwrap_or(IntSize::S32)),
+            Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_size.unwrap_or(IntSize::S64)),
+            Type::Uint64 => TypeSpec::Int(PbInt::Uint64, conf.int_size.unwrap_or(IntSize::S64)),
+            Type::Int32 => TypeSpec::Int(PbInt::Int32, conf.int_size.unwrap_or(IntSize::S32)),
+            Type::Fixed64 => TypeSpec::Int(PbInt::Fixed64, conf.int_size.unwrap_or(IntSize::S64)),
+            Type::Fixed32 => TypeSpec::Int(PbInt::Fixed32, conf.int_size.unwrap_or(IntSize::S32)),
+            Type::Sfixed32 => TypeSpec::Int(PbInt::Sfixed32, conf.int_size.unwrap_or(IntSize::S32)),
+            Type::Sfixed64 => TypeSpec::Int(PbInt::Sfixed64, conf.int_size.unwrap_or(IntSize::S64)),
+            Type::Sint32 => TypeSpec::Int(PbInt::Sint32, conf.int_size.unwrap_or(IntSize::S32)),
+            Type::Sint64 => TypeSpec::Int(PbInt::Sint64, conf.int_size.unwrap_or(IntSize::S64)),
         }
     }
 
     pub(crate) fn generate_rust_type(&self, gen: &Generator) -> TokenStream {
         match self {
-            TypeSpec::Int(_, itype) => {
-                let typ = itype.type_name();
+            TypeSpec::Int(pbint, itype) => {
+                let typ = itype.type_name(pbint.is_signed());
                 quote! { #typ }
             }
             TypeSpec::Float => quote! {f32},
@@ -244,12 +256,7 @@ impl TypeSpec {
             // Enum is actually packable due to https://github.com/protocolbuffers/protobuf/issues/15480
             TypeSpec::Enum(tpath) => {
                 let enum_path = gen.resolve_type_name(tpath);
-                let decode_fn = if gen.signed_enums {
-                    Ident::new("decode_int32", Span::call_site())
-                } else {
-                    Ident::new("decode_varint32", Span::call_site())
-                };
-                Some(quote! { #decoder.#decode_fn().map(|n| #enum_path(n as _)) })
+                Some(quote! { #decoder.decode_int32().map(|n| #enum_path(n as _)) })
             }
             _ => None,
         }
@@ -308,14 +315,7 @@ impl TypeSpec {
             TypeSpec::Message(_) => {
                 quote! { ::micropb::size::sizeof_len_record(#val_ref.compute_size()) }
             }
-            TypeSpec::Enum(_) => {
-                let size_fn = if gen.signed_enums {
-                    Ident::new("sizeof_int32", Span::call_site())
-                } else {
-                    Ident::new("sizeof_varint32", Span::call_site())
-                };
-                quote! { ::micropb::size::#size_fn(#val_ref.0 as _) }
-            }
+            TypeSpec::Enum(_) => quote! { ::micropb::size::sizeof_int32(#val_ref.0 as _) },
             TypeSpec::Float => quote! { 4 },
             TypeSpec::Double => quote! { 8 },
             TypeSpec::Bool => quote! { 1 },
@@ -335,14 +335,7 @@ impl TypeSpec {
     ) -> TokenStream {
         match self {
             TypeSpec::Message(_) => quote! { #val_ref.encode_len_delimited(#encoder) },
-            TypeSpec::Enum(_) => {
-                let encode_fn = if gen.signed_enums {
-                    Ident::new("encode_int32", Span::call_site())
-                } else {
-                    Ident::new("encode_varint32", Span::call_site())
-                };
-                quote! { #encoder.#encode_fn(#val_ref.0 as _) }
-            }
+            TypeSpec::Enum(_) => quote! { #encoder.encode_int32(#val_ref.0 as _) },
             TypeSpec::Float => quote! { #encoder.encode_float(* #val_ref) },
             TypeSpec::Double => quote! { #encoder.encode_double(* #val_ref) },
             TypeSpec::Bool => quote! { #encoder.encode_bool(* #val_ref) },
@@ -452,33 +445,33 @@ mod tests {
         };
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Sint32, ""), &type_conf),
-            TypeSpec::Int(PbInt::Sint32, IntType::I32)
+            TypeSpec::Int(PbInt::Sint32, IntSize::S32)
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Int64, ""), &type_conf),
-            TypeSpec::Int(PbInt::Int64, IntType::I64)
+            TypeSpec::Int(PbInt::Int64, IntSize::S64)
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Fixed32, ""), &type_conf),
-            TypeSpec::Int(PbInt::Fixed32, IntType::U32)
+            TypeSpec::Int(PbInt::Fixed32, IntSize::S32)
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Uint64, ""), &type_conf),
-            TypeSpec::Int(PbInt::Uint64, IntType::U64)
+            TypeSpec::Int(PbInt::Uint64, IntSize::S64)
         );
 
-        config.int_type = Some(IntType::I8);
+        config.int_size = Some(IntSize::S8);
         let type_conf = CurrentConfig {
             node: None,
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Sint32, ""), &type_conf),
-            TypeSpec::Int(PbInt::Sint32, IntType::I8)
+            TypeSpec::Int(PbInt::Sint32, IntSize::S8)
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Uint64, ""), &type_conf),
-            TypeSpec::Int(PbInt::Uint64, IntType::I8)
+            TypeSpec::Int(PbInt::Uint64, IntSize::S8)
         );
     }
 
@@ -489,22 +482,16 @@ mod tests {
         assert_eq!(TypeSpec::Float.generate_rust_type(&gen).to_string(), "f32");
         assert_eq!(TypeSpec::Double.generate_rust_type(&gen).to_string(), "f64");
         assert_eq!(
-            TypeSpec::Int(PbInt::Int32, IntType::I32)
+            TypeSpec::Int(PbInt::Int32, IntSize::S32)
                 .generate_rust_type(&gen)
                 .to_string(),
             "i32"
         );
         assert_eq!(
-            TypeSpec::Int(PbInt::Fixed32, IntType::I32)
+            TypeSpec::Int(PbInt::Fixed32, IntSize::S32)
                 .generate_rust_type(&gen)
                 .to_string(),
             "i32"
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Fixed32, IntType::Usize)
-                .generate_rust_type(&gen)
-                .to_string(),
-            "usize"
         );
         assert_eq!(
             TypeSpec::String {
@@ -572,7 +559,7 @@ mod tests {
             quote! { -4.1 as _ }.to_string()
         );
         assert_eq!(
-            TypeSpec::Int(PbInt::Int32, IntType::I8)
+            TypeSpec::Int(PbInt::Int32, IntSize::S8)
                 .generate_default("-99", &gen)
                 .to_string(),
             quote! { -99 as _ }.to_string()

@@ -1,5 +1,5 @@
 use micropb_gen::{
-    config::{CustomField, IntType, OptionalRepr},
+    config::{CustomField, IntSize, OptionalRepr},
     Config, Generator,
 };
 
@@ -64,38 +64,38 @@ fn boxed_and_option() {
 
 fn int_type() {
     let mut generator = Generator::new();
-    generator.configure(".basic.Enum", Config::new().enum_int_type(IntType::I8));
+    generator.configure(".basic.Enum", Config::new().enum_int_size(IntSize::S8));
     generator.configure(
         ".basic.BasicTypes.int32_num",
-        Config::new().int_type(IntType::I8),
+        Config::new().int_size(IntSize::S8),
     );
     generator.configure(
         ".basic.BasicTypes.int64_num",
-        Config::new().int_type(IntType::I16),
+        Config::new().int_size(IntSize::S16),
     );
     generator.configure(
         ".basic.BasicTypes.uint32_num",
-        Config::new().int_type(IntType::U8),
+        Config::new().int_size(IntSize::S8),
     );
     generator.configure(
         ".basic.BasicTypes.uint64_num",
-        Config::new().int_type(IntType::U16),
+        Config::new().int_size(IntSize::S16),
     );
     generator.configure(
         ".basic.BasicTypes.sfixed32_num",
-        Config::new().int_type(IntType::I64),
+        Config::new().int_size(IntSize::S64),
     );
     generator.configure(
         ".basic.BasicTypes.sfixed64_num",
-        Config::new().int_type(IntType::Isize),
+        Config::new().int_size(IntSize::S32),
     );
     generator.configure(
         ".basic.BasicTypes.fixed32_num",
-        Config::new().int_type(IntType::U64),
+        Config::new().int_size(IntSize::S64),
     );
     generator.configure(
         ".basic.BasicTypes.fixed64_num",
-        Config::new().int_type(IntType::Usize),
+        Config::new().int_size(IntSize::S32),
     );
 
     generator
@@ -145,7 +145,7 @@ fn container_heapless() {
     generator.configure(".Data.b", Config::new().max_bytes(5));
     generator.configure(".List.list", Config::new().max_len(2));
     generator.configure(".NumList.list", Config::new().max_len(2));
-    generator.configure(".NumList.list.elem", Config::new().int_type(IntType::U8));
+    generator.configure(".NumList.list.elem", Config::new().int_size(IntSize::S8));
     generator.configure(".StrList.list", Config::new().max_len(3));
     generator.configure(".StrList.list.elem", Config::new().max_bytes(2));
     generator.configure(".FixedList.list", Config::new().max_len(2));
@@ -170,7 +170,7 @@ fn container_arrayvec() {
     generator.configure(".Data.b", Config::new().max_bytes(5));
     generator.configure(".List.list", Config::new().max_len(2));
     generator.configure(".NumList.list", Config::new().max_len(2));
-    generator.configure(".NumList.list.elem", Config::new().int_type(IntType::U8));
+    generator.configure(".NumList.list.elem", Config::new().int_size(IntSize::S8));
     generator.configure(".StrList.list", Config::new().max_len(3));
     generator.configure(".StrList.list.elem", Config::new().max_bytes(2));
     generator.configure(".FixedList.list", Config::new().max_len(2));
@@ -187,7 +187,7 @@ fn container_arrayvec() {
 fn container_alloc() {
     let mut generator = Generator::new();
     generator.use_container_alloc();
-    generator.configure(".NumList.list.elem", Config::new().int_type(IntType::U8));
+    generator.configure(".NumList.list.elem", Config::new().int_size(IntSize::S8));
 
     generator
         .compile_protos(
@@ -272,17 +272,6 @@ fn extern_import() {
         .unwrap();
 }
 
-fn unsigned_enum() {
-    let mut generator = Generator::new();
-    generator
-        .signed_enums(false)
-        .compile_protos(
-            &["proto/basic.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/unsigned_enum.rs",
-        )
-        .unwrap();
-}
-
 fn main() {
     no_config();
     boxed_and_option();
@@ -295,5 +284,4 @@ fn main() {
     custom_field();
     implicit_presence();
     extern_import();
-    unsigned_enum();
 }

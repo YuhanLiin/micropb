@@ -447,7 +447,7 @@ mod tests {
     };
 
     use crate::{
-        config::{parse_attributes, Config, IntType, OptionalRepr},
+        config::{parse_attributes, Config, IntSize, OptionalRepr},
         generator::{
             field::{make_test_field, CustomField, FieldType},
             oneof::{make_test_oneof, make_test_oneof_field},
@@ -600,16 +600,16 @@ mod tests {
         *node.add_path(["bool_field"].into_iter()).value_mut() =
             Some(Box::new(Config::new().boxed(true)));
         *node.add_path(["oneof_field"].into_iter()).value_mut() =
-            Some(Box::new(Config::new().int_type(IntType::U8)));
+            Some(Box::new(Config::new().int_size(IntSize::S8)));
         *node.add_path(["oneof_field2"].into_iter()).value_mut() =
             Some(Box::new(Config::new().boxed(true)));
         *node.add_path(["oneof"].into_iter()).value_mut() =
             Some(Box::new(Config::new().type_attributes("#[derive(Eq)]")));
         *node.add_path(["map_field", "key"].into_iter()).value_mut() =
-            Some(Box::new(Config::new().int_type(IntType::I16)));
+            Some(Box::new(Config::new().int_size(IntSize::S16)));
         *node
             .add_path(["map_field", "value"].into_iter())
-            .value_mut() = Some(Box::new(Config::new().int_type(IntType::U16)));
+            .value_mut() = Some(Box::new(Config::new().int_size(IntSize::S16)));
         let msg_conf = CurrentConfig {
             node: Some(&node),
             config: Cow::Borrowed(&config),
@@ -630,7 +630,7 @@ mod tests {
                                 2,
                                 "oneof_field",
                                 false,
-                                TypeSpec::Int(PbInt::Sint32, IntType::U8)
+                                TypeSpec::Int(PbInt::Sint32, IntSize::S8)
                             ),
                             make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
                         ]
@@ -654,8 +654,8 @@ mod tests {
                         "map_field",
                         false,
                         FieldType::Map {
-                            key: TypeSpec::Int(PbInt::Int64, IntType::I16),
-                            val: TypeSpec::Int(PbInt::Uint64, IntType::U16),
+                            key: TypeSpec::Int(PbInt::Int64, IntSize::S16),
+                            val: TypeSpec::Int(PbInt::Uint64, IntSize::S16),
                             type_path: syn::parse_str("Map").unwrap(),
                             max_len: None
                         }

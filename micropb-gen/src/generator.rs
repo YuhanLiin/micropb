@@ -3,8 +3,6 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     ffi::OsString,
-    iter,
-    ops::Deref,
     path::PathBuf,
 };
 
@@ -18,7 +16,7 @@ use quote::{format_ident, quote};
 use syn::{Attribute, Ident};
 
 use crate::{
-    config::{Config, IntType},
+    config::{Config, IntSize},
     pathtree::{Node, PathTree},
     split_pkg_name, EncodeDecode,
 };
@@ -94,7 +92,6 @@ pub struct Generator {
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) use_std: bool,
-    pub(crate) signed_enums: bool,
     pub(crate) fdset_path: Option<PathBuf>,
     pub(crate) protoc_args: Vec<OsString>,
 
@@ -113,7 +110,6 @@ impl Default for Generator {
             encode_decode: Default::default(),
             retain_enum_prefix: Default::default(),
             format: true,
-            signed_enums: true,
             use_std: Default::default(),
             fdset_path: Default::default(),
             protoc_args: Default::default(),
@@ -193,7 +189,7 @@ impl Generator {
         &self,
         name: &Ident,
         values: &[EnumValueDescriptorProto],
-        enum_int_type: IntType,
+        enum_int_type: IntSize,
         attrs: &[Attribute],
         derive_dbg: bool,
     ) -> TokenStream {
@@ -203,7 +199,7 @@ impl Generator {
             .map(|v| self.enum_variant_name(v.name(), name));
         let default_num = Literal::i32_unsuffixed(values[0].number());
         let derive_enum = derive_enum_attr(derive_dbg);
-        let itype = enum_int_type.type_name();
+        let itype = enum_int_type.type_name(true);
 
         quote! {
             #derive_enum
@@ -239,7 +235,7 @@ impl Generator {
         }
 
         let name = Ident::new(enum_type.name(), Span::call_site());
-        let enum_int_type = enum_conf.config.enum_int_type.unwrap_or(IntType::I32);
+        let enum_int_type = enum_conf.config.enum_int_size.unwrap_or(IntSize::S32);
         let attrs = &enum_conf.config.type_attr_parsed();
         self.generate_enum_decl(
             &name,
@@ -490,7 +486,7 @@ mod tests {
         ];
         let gen = Generator::default();
 
-        let out = gen.generate_enum_decl(&name, &value, IntType::I32, &[], true);
+        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, &[], true);
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
@@ -532,7 +528,7 @@ mod tests {
         let out = gen.generate_enum_decl(
             &name,
             &value,
-            IntType::U8,
+            IntSize::S8,
             &parse_attributes("#[derive(Serialize)]").unwrap(),
             false,
         );

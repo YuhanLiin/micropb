@@ -3,32 +3,24 @@ use syn::Ident;
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
-pub enum IntType {
-    I8,
-    U8,
-    I16,
-    U16,
-    I32,
-    U32,
-    I64,
-    U64,
-    Isize,
-    Usize,
+pub enum IntSize {
+    S8,
+    S16,
+    S32,
+    S64,
 }
 
-impl IntType {
-    pub(crate) fn type_name(self) -> Ident {
+impl IntSize {
+    pub(crate) fn type_name(self, signed: bool) -> Ident {
         let t = match self {
-            IntType::I8 => "i8",
-            IntType::U8 => "u8",
-            IntType::I16 => "i16",
-            IntType::U16 => "u16",
-            IntType::I32 => "i32",
-            IntType::U32 => "u32",
-            IntType::I64 => "i64",
-            IntType::U64 => "u64",
-            IntType::Isize => "isize",
-            IntType::Usize => "usize",
+            IntSize::S8 if signed => "i8",
+            IntSize::S8 => "u8",
+            IntSize::S16 if signed => "i16",
+            IntSize::S16 => "u16",
+            IntSize::S32 if signed => "i32",
+            IntSize::S32 => "u32",
+            IntSize::S64 if signed => "i64",
+            IntSize::S64 => "u64",
         };
         Ident::new(t, Span::call_site())
     }
@@ -97,7 +89,7 @@ config_decl! {
     // Field configs
     max_len: Option<u32>,
     max_bytes: Option<u32>,
-    int_type: Option<IntType>,
+    int_size: Option<IntSize>,
     field_attributes: [deref] Option<String>,
     boxed: Option<bool>,
     vec_type: [deref] Option<String>,
@@ -109,7 +101,7 @@ config_decl! {
     [no_inherit] rename_field: [deref] Option<String>,
 
     // Type configs
-    enum_int_type: Option<IntType>,
+    enum_int_size: Option<IntSize>,
     type_attributes: [deref] Option<String>,
     no_debug_derive: Option<bool>,
 

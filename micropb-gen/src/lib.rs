@@ -174,11 +174,6 @@ impl Generator {
         self
     }
 
-    pub fn signed_enums(&mut self, signed_enums: bool) -> &mut Self {
-        self.signed_enums = signed_enums;
-        self
-    }
-
     pub fn add_protoc_arg<S: AsRef<OsStr>>(&mut self, arg: S) -> &mut Self {
         self.protoc_args.push(arg.as_ref().to_owned());
         self

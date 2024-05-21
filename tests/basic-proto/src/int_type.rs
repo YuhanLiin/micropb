@@ -29,12 +29,12 @@ fn field_int_type() {
     let _: Option<&u16> = basic.uint64_num();
     let _: i64 = basic.sfixed32_num;
     let _: Option<&i64> = basic.sfixed32_num();
-    let _: isize = basic.sfixed64_num;
-    let _: Option<&isize> = basic.sfixed64_num();
+    let _: i32 = basic.sfixed64_num;
+    let _: Option<&i32> = basic.sfixed64_num();
     let _: u64 = basic.fixed32_num;
     let _: Option<&u64> = basic.fixed32_num();
-    let _: usize = basic.fixed64_num;
-    let _: Option<&usize> = basic.fixed64_num();
+    let _: u32 = basic.fixed64_num;
+    let _: Option<&u32> = basic.fixed64_num();
 }
 
 #[test]
