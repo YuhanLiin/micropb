@@ -144,6 +144,13 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    pub fn encode_fixed64_as_32(&mut self, u: u32) -> Result<(), W::Error> {
+        let mut bytes = [0; 8];
+        bytes[..4].copy_from_slice(&u.to_le_bytes());
+        self.write(&bytes)
+    }
+
+    #[inline]
     pub fn encode_sfixed32(&mut self, i: i32) -> Result<(), W::Error> {
         self.encode_fixed32(i as u32)
     }
@@ -151,6 +158,13 @@ impl<W: PbWrite> PbEncoder<W> {
     #[inline]
     pub fn encode_sfixed64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_fixed64(i as u64)
+    }
+
+    #[inline]
+    pub fn encode_sfixed64_as_32(&mut self, i: i32) -> Result<(), W::Error> {
+        let mut bytes = [0; 8];
+        bytes[..4].copy_from_slice(&i.to_le_bytes());
+        self.write(&bytes)
     }
 
     #[inline]

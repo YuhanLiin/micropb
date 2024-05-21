@@ -97,6 +97,10 @@ fn int_type() {
         ".basic.BasicTypes.fixed64_num",
         Config::new().int_size(IntSize::S32),
     );
+    generator.configure(
+        ".basic.BasicTypes.sint64_num",
+        Config::new().int_size(IntSize::S32),
+    );
 
     generator
         .compile_protos(

@@ -283,6 +283,13 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    pub fn decode_fixed64_as_32(&mut self) -> Result<u32, DecodeError<R::Error>> {
+        let n = self.decode_fixed32()?;
+        self.skip_bytes(4)?;
+        Ok(n)
+    }
+
+    #[inline]
     pub fn decode_sfixed32(&mut self) -> Result<i32, DecodeError<R::Error>> {
         self.decode_fixed32().map(|u| u as i32)
     }
@@ -290,6 +297,13 @@ impl<R: PbRead> PbDecoder<R> {
     #[inline]
     pub fn decode_sfixed64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_fixed64().map(|u| u as i64)
+    }
+
+    #[inline]
+    pub fn decode_sfixed64_as_32(&mut self) -> Result<i32, DecodeError<R::Error>> {
+        let n = self.decode_sfixed32()?;
+        self.skip_bytes(4)?;
+        Ok(n)
     }
 
     #[inline]

@@ -29,7 +29,7 @@ pub const fn sizeof_int32(i: i32) -> usize {
     if i >= 0 {
         sizeof_varint32(i as u32)
     } else {
-        sizeof_varint64(i as u64)
+        10
     }
 }
 
