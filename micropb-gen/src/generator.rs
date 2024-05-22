@@ -3,6 +3,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     ffi::OsString,
+    io,
     path::PathBuf,
 };
 
@@ -129,22 +130,30 @@ impl Generator {
         });
     }
 
-    pub(crate) fn generate_fdset(&mut self, fdset: &FileDescriptorSet) -> TokenStream {
+    pub(crate) fn generate_fdset(&mut self, fdset: &FileDescriptorSet) -> io::Result<TokenStream> {
         let mut mod_tree = PathTree::new(TokenStream::new());
 
         for file in &fdset.file {
-            let code = self.generate_fdproto(file);
+            let code = self.generate_fdproto(file)?;
             if let Some(pkg_name) = &file.package {
                 *mod_tree.root.add_path(split_pkg_name(pkg_name)).value_mut() = Some(code);
             } else {
-                mod_tree.root.value_mut().as_mut().unwrap().extend([code]);
+                mod_tree
+                    .root
+                    .value_mut()
+                    .as_mut()
+                    .expect("root config should exist")
+                    .extend([code]);
             }
         }
 
-        generate_mod_tree(&mut mod_tree.root)
+        Ok(generate_mod_tree(&mut mod_tree.root))
     }
 
-    pub(crate) fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> TokenStream {
+    pub(crate) fn generate_fdproto(
+        &mut self,
+        fdproto: &FileDescriptorProto,
+    ) -> io::Result<TokenStream> {
         self.syntax = match fdproto.syntax.as_deref() {
             Some("proto3") => Syntax::Proto3,
             _ => Syntax::Proto2,
@@ -170,19 +179,15 @@ impl Generator {
             config: Cow::Owned(conf),
         };
 
-        let msgs = fdproto
-            .message_type
-            .iter()
-            .map(|m| self.generate_msg(m, cur_config.next_conf(m.name())));
-        let enums = fdproto
-            .enum_type
-            .iter()
-            .map(|e| self.generate_enum(e, cur_config.next_conf(e.name())));
-
-        quote! {
-            #(#msgs)*
-            #(#enums)*
+        let mut out = TokenStream::new();
+        for m in &fdproto.message_type {
+            out.extend(self.generate_msg(m, cur_config.next_conf(m.name()))?);
         }
+        for e in &fdproto.enum_type {
+            out.extend(self.generate_enum(e, cur_config.next_conf(e.name()))?);
+        }
+
+        Ok(out)
     }
 
     fn generate_enum_decl(
@@ -229,21 +234,22 @@ impl Generator {
         &self,
         enum_type: &EnumDescriptorProto,
         enum_conf: CurrentConfig,
-    ) -> TokenStream {
+    ) -> io::Result<TokenStream> {
         if enum_conf.config.skip.unwrap_or(false) {
-            return quote! {};
+            return Ok(quote! {});
         }
 
         let name = Ident::new(enum_type.name(), Span::call_site());
         let enum_int_type = enum_conf.config.enum_int_size.unwrap_or(IntSize::S32);
-        let attrs = &enum_conf.config.type_attr_parsed();
-        self.generate_enum_decl(
+        let attrs = &enum_conf.config.type_attr_parsed()?;
+        let out = self.generate_enum_decl(
             &name,
             &enum_type.value,
             enum_int_type,
             attrs,
             !enum_conf.config.no_debug_derive.unwrap_or(false),
-        )
+        );
+        Ok(out)
     }
 
     fn generate_msg_mod(
@@ -251,47 +257,50 @@ impl Generator {
         msg: &Message,
         proto: &DescriptorProto,
         msg_conf: &CurrentConfig,
-    ) -> (TokenStream, Option<Vec<syn::Attribute>>) {
+    ) -> io::Result<(TokenStream, Option<Vec<syn::Attribute>>)> {
         let msg_mod_name = self.resolve_path_elem(msg.name);
         self.type_path.borrow_mut().push(msg.name.to_owned());
 
-        let oneof_decls = msg.oneofs.iter().map(|oneof| oneof.generate_decl(self));
-        let nested_msgs = proto
+        let mut msg_mod = TokenStream::new();
+        for m in proto
             .nested_type
             .iter()
             .filter(|m| !m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false))
-            .map(|m| self.generate_msg(m, msg_conf.next_conf(m.name())));
-        let nested_enums = proto
-            .enum_type
-            .iter()
-            .map(|e| self.generate_enum(e, msg_conf.next_conf(e.name())));
+        {
+            msg_mod.extend(self.generate_msg(m, msg_conf.next_conf(m.name()))?);
+        }
+        for e in proto.enum_type.iter() {
+            msg_mod.extend(self.generate_enum(e, msg_conf.next_conf(e.name()))?);
+        }
+        for o in &msg.oneofs {
+            msg_mod.extend(o.generate_decl(self));
+        }
 
         let (hazzer_decl, hazzer_field_attr) =
-            match msg.generate_hazzer_decl(msg_conf.next_conf("_has")) {
+            match msg.generate_hazzer_decl(msg_conf.next_conf("_has"))? {
                 Some((d, a)) => (Some(d), Some(a)),
                 None => (None, None),
             };
-
-        let msg_mod = quote! {
-            pub mod #msg_mod_name {
-                #(#nested_msgs)*
-                #(#nested_enums)*
-                #(#oneof_decls)*
-                #hazzer_decl
-            }
-        };
+        msg_mod.extend(hazzer_decl);
 
         self.type_path.borrow_mut().pop();
-        (msg_mod, hazzer_field_attr)
+        Ok((
+            quote! { pub mod #msg_mod_name { #msg_mod } },
+            hazzer_field_attr,
+        ))
     }
 
-    fn generate_msg(&self, proto: &DescriptorProto, msg_conf: CurrentConfig) -> TokenStream {
-        let Some(msg) = Message::from_proto(proto, self.syntax, &msg_conf) else {
-            return quote! {};
+    fn generate_msg(
+        &self,
+        proto: &DescriptorProto,
+        msg_conf: CurrentConfig,
+    ) -> io::Result<TokenStream> {
+        let Some(msg) = Message::from_proto(proto, self.syntax, &msg_conf)? else {
+            return Ok(quote! {});
         };
         msg.check_delegates();
-        let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf);
-        let unknown_field_attr = msg_conf.next_conf("_unknown").config.field_attr_parsed();
+        let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf)?;
+        let unknown_field_attr = msg_conf.next_conf("_unknown").config.field_attr_parsed()?;
 
         let default = msg.generate_default_impl(self, hazzer_field_attr.is_some());
         let decl = msg.generate_decl(self, hazzer_field_attr, unknown_field_attr);
@@ -305,14 +314,14 @@ impl Generator {
             .is_encode()
             .then(|| msg.generate_encode_trait(self));
 
-        quote! {
+        Ok(quote! {
             #msg_mod
             #decl
             #default
             #msg_impl
             #decode
             #encode
-        }
+        })
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> TokenStream {
@@ -536,7 +545,7 @@ mod tests {
             #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             #[derive(Serialize)]
-            pub struct Enum(pub u8);
+            pub struct Enum(pub i8);
 
             impl Enum {
                 pub const EnumOne: Self = Self(1);
@@ -548,8 +557,8 @@ mod tests {
                 }
             }
 
-            impl core::convert::From<u8> for Enum {
-                fn from(val: u8) -> Self {
+            impl core::convert::From<i8> for Enum {
+                fn from(val: i8) -> Self {
                     Self(val)
                 }
             }

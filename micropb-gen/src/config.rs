@@ -1,3 +1,5 @@
+use std::io;
+
 use proc_macro2::Span;
 use syn::Ident;
 
@@ -123,56 +125,115 @@ pub(crate) fn parse_attributes(s: &str) -> syn::Result<Vec<syn::Attribute>> {
 }
 
 impl Config {
-    pub(crate) fn field_attr_parsed(&self) -> Vec<syn::Attribute> {
-        // TODO handle parse error
-        parse_attributes(self.field_attributes.as_deref().unwrap_or("")).unwrap()
+    pub(crate) fn field_attr_parsed(&self) -> io::Result<Vec<syn::Attribute>> {
+        let s = self.field_attributes.as_deref().unwrap_or("");
+        parse_attributes(s).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("Failed to parse field_attributes \"{s}\" as Rust attributes: {e}"),
+            )
+        })
     }
 
-    pub(crate) fn type_attr_parsed(&self) -> Vec<syn::Attribute> {
-        // TODO handle parse error
-        parse_attributes(self.type_attributes.as_deref().unwrap_or("")).unwrap()
+    pub(crate) fn type_attr_parsed(&self) -> io::Result<Vec<syn::Attribute>> {
+        let s = self.type_attributes.as_deref().unwrap_or("");
+        parse_attributes(s).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("Failed to parse type_attributes \"{s}\" as Rust attributes: {e}"),
+            )
+        })
     }
 
-    pub(crate) fn rust_field_name(&self, name: &str) -> Ident {
-        // TODO handle parse error
-        syn::parse_str(self.rename_field.as_deref().unwrap_or(name)).unwrap()
+    pub(crate) fn rust_field_name(&self, name: &str) -> io::Result<Ident> {
+        let s = self.rename_field.as_deref().unwrap_or(name);
+        syn::parse_str(s).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("Failed to parse rename_field \"{s}\" as identifier: {e}"),
+            )
+        })
     }
 
-    pub(crate) fn vec_type_parsed(&self) -> Option<syn::Path> {
-        // TODO handle parse error
-        self.vec_type.as_ref().map(|t| syn::parse_str(t).unwrap())
+    pub(crate) fn vec_type_parsed(&self) -> io::Result<Option<syn::Path>> {
+        self.vec_type
+            .as_ref()
+            .map(|t| {
+                syn::parse_str(t).map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to parse vec_type \"{t}\" as type path: {e}"),
+                    )
+                })
+            })
+            .transpose()
     }
 
-    pub(crate) fn string_type_parsed(&self) -> Option<syn::Path> {
-        // TODO handle parse error
+    pub(crate) fn string_type_parsed(&self) -> io::Result<Option<syn::Path>> {
         self.string_type
             .as_ref()
-            .map(|t| syn::parse_str(t).unwrap())
+            .map(|t| {
+                syn::parse_str(t).map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to parse string_type \"{t}\" as type path: {e}"),
+                    )
+                })
+            })
+            .transpose()
     }
 
-    pub(crate) fn map_type_parsed(&self) -> Option<syn::Path> {
-        // TODO handle parse error
-        self.map_type.as_ref().map(|t| syn::parse_str(t).unwrap())
+    pub(crate) fn map_type_parsed(&self) -> io::Result<Option<syn::Path>> {
+        self.map_type
+            .as_ref()
+            .map(|t| {
+                syn::parse_str(t).map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to parse map_type \"{t}\" as type path: {e}"),
+                    )
+                })
+            })
+            .transpose()
     }
 
-    pub(crate) fn unknown_handler_parsed(&self) -> Option<syn::Type> {
-        // TODO handle parse error
+    pub(crate) fn unknown_handler_parsed(&self) -> io::Result<Option<syn::Type>> {
         self.unknown_handler
             .as_ref()
-            .map(|t| syn::parse_str(t).unwrap())
+            .map(|t| {
+                syn::parse_str(t).map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to parse unknown_handler \"{t}\" as Rust type: {e}"),
+                    )
+                })
+            })
+            .transpose()
     }
 
-    pub(crate) fn custom_field_parsed(&self) -> Option<crate::generator::field::CustomField> {
-        // TODO handle parse error
-        match &self.custom_field {
+    pub(crate) fn custom_field_parsed(
+        &self,
+    ) -> io::Result<Option<crate::generator::field::CustomField>> {
+        let res = match &self.custom_field {
             Some(CustomField::Type(s)) => Some(crate::generator::field::CustomField::Type(
-                syn::parse_str(s).unwrap(),
+                syn::parse_str(s).map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to parse custom field \"{s}\" as Rust type: {e}"),
+                    )
+                })?,
             )),
             Some(CustomField::Delegate(s)) => Some(crate::generator::field::CustomField::Delegate(
-                syn::parse_str(s).unwrap(),
+                syn::parse_str(s).map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to parse custom delegate \"{s}\" as identifier: {e}"),
+                    )
+                })?,
             )),
             None => None,
-        }
+        };
+        Ok(res)
     }
 }
 
@@ -233,27 +294,34 @@ mod tests {
                 .to_string(),
             "Map"
         );
-        let attrs = config.type_attr_parsed();
+        let attrs = config.type_attr_parsed().unwrap();
         assert_eq!(
             quote! { #(#attrs)* }.to_string(),
             quote! { #[derive(Hash)] }.to_string()
         );
 
-        let attrs = config.field_attr_parsed();
+        let attrs = config.field_attr_parsed().unwrap();
         assert_eq!(quote! { #(#attrs)* }.to_string(), "");
         config.field_attributes = Some("#[default] #[delete]".to_owned());
-        let attrs = config.field_attr_parsed();
+        let attrs = config.field_attr_parsed().unwrap();
         assert_eq!(
             quote! { #(#attrs)* }.to_string(),
             quote! { #[default] #[delete] }.to_string()
         );
 
-        assert_eq!(config.rust_field_name("name"), format_ident!("name"));
+        assert_eq!(
+            config.rust_field_name("name").unwrap(),
+            format_ident!("name")
+        );
         config.rename_field = Some("rename".to_string());
-        assert_eq!(config.rust_field_name("name"), format_ident!("rename"));
+        assert_eq!(
+            config.rust_field_name("name").unwrap(),
+            format_ident!("rename")
+        );
 
         config.custom_field = Some(CustomField::Type("Vec<u16, 4>".to_owned()));
-        let crate::generator::field::CustomField::Type(typ) = config.custom_field_parsed().unwrap()
+        let crate::generator::field::CustomField::Type(typ) =
+            config.custom_field_parsed().unwrap().unwrap()
         else {
             unreachable!()
         };
@@ -264,7 +332,7 @@ mod tests {
 
         config.custom_field = Some(CustomField::Delegate("name".to_owned()));
         let crate::generator::field::CustomField::Delegate(del) =
-            config.custom_field_parsed().unwrap()
+            config.custom_field_parsed().unwrap().unwrap()
         else {
             unreachable!()
         };

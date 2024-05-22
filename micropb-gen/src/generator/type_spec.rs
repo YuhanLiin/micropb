@@ -1,3 +1,5 @@
+use std::io;
+
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{field_descriptor_proto::Type, FieldDescriptorProto};
@@ -135,19 +137,31 @@ impl TypeSpec {
         }
     }
 
-    pub(crate) fn from_proto(proto: &FieldDescriptorProto, type_conf: &CurrentConfig) -> Self {
+    pub(crate) fn from_proto(
+        proto: &FieldDescriptorProto,
+        type_conf: &CurrentConfig,
+        msg_name: &str,
+    ) -> io::Result<Self> {
         let conf = &type_conf.config;
-        match proto.r#type() {
+        let res = match proto.r#type() {
             Type::Group => panic!("Groups are unsupported"),
             Type::Double => TypeSpec::Double,
             Type::Float => TypeSpec::Float,
             Type::Bool => TypeSpec::Bool,
             Type::String => TypeSpec::String {
-                type_path: conf.string_type_parsed().unwrap(),
+                type_path: conf
+                    .string_type_parsed()?
+                    .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput,
+                        format!("Field {}.{} is of type `string`, but string_type was not configured for it", msg_name, proto.name()))
+                    )?,
                 max_bytes: conf.max_bytes,
             },
             Type::Bytes => TypeSpec::Bytes {
-                type_path: conf.vec_type_parsed().unwrap(),
+                type_path: conf
+                    .vec_type_parsed()?
+                    .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput,
+                        format!("Field {}.{} is of type `bytes`, but vec_type was not configured for it", msg_name, proto.name()))
+                    )?,
                 max_bytes: conf.max_bytes,
             },
             Type::Message => TypeSpec::Message(proto.type_name().to_owned()),
@@ -162,7 +176,8 @@ impl TypeSpec {
             Type::Sfixed64 => TypeSpec::Int(PbInt::Sfixed64, conf.int_size.unwrap_or(IntSize::S64)),
             Type::Sint32 => TypeSpec::Int(PbInt::Sint32, conf.int_size.unwrap_or(IntSize::S32)),
             Type::Sint64 => TypeSpec::Int(PbInt::Sint64, conf.int_size.unwrap_or(IntSize::S64)),
-        }
+        };
+        Ok(res)
     }
 
     pub(crate) fn generate_rust_type(&self, gen: &Generator) -> TokenStream {
@@ -303,7 +318,9 @@ impl TypeSpec {
             | TypeSpec::Double
             | TypeSpec::Bool
             | TypeSpec::Int(..) => {
-                let val_expr = self.generate_decode_val(gen, decoder).unwrap();
+                let val_expr = self
+                    .generate_decode_val(gen, decoder)
+                    .expect("ints should be packable");
                 let val_ref = Ident::new("val_ref", Span::call_site());
                 let setter = if implicit_presence {
                     let presence_check = self.generate_implicit_presence_check(&val_ref);
@@ -401,37 +418,38 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Float, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Float, ""), &type_conf, "").unwrap(),
             TypeSpec::Float
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Double, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Double, ""), &type_conf, "").unwrap(),
             TypeSpec::Double
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Bool, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Bool, ""), &type_conf, "").unwrap(),
             TypeSpec::Bool
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::String, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::String, ""), &type_conf, "").unwrap(),
             TypeSpec::String {
                 type_path: syn::parse_str("string::String").unwrap(),
                 max_bytes: Some(10)
             }
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf, "").unwrap(),
             TypeSpec::Bytes {
                 type_path: syn::parse_str("vec::Vec").unwrap(),
                 max_bytes: Some(10)
             }
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Message, ".msg.Message"), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Message, ".msg.Message"), &type_conf, "")
+                .unwrap(),
             TypeSpec::Message(".msg.Message".to_owned())
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Enum, ".Enum"), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Enum, ".Enum"), &type_conf, "").unwrap(),
             TypeSpec::Enum(".Enum".to_owned())
         );
 
@@ -441,14 +459,14 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::String, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::String, ""), &type_conf, "").unwrap(),
             TypeSpec::String {
                 type_path: syn::parse_str("string::String").unwrap(),
                 max_bytes: None
             }
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf, "").unwrap(),
             TypeSpec::Bytes {
                 type_path: syn::parse_str("vec::Vec").unwrap(),
                 max_bytes: None
@@ -464,19 +482,19 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Sint32, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Sint32, ""), &type_conf, "").unwrap(),
             TypeSpec::Int(PbInt::Sint32, IntSize::S32)
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Int64, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Int64, ""), &type_conf, "").unwrap(),
             TypeSpec::Int(PbInt::Int64, IntSize::S64)
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Fixed32, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Fixed32, ""), &type_conf, "").unwrap(),
             TypeSpec::Int(PbInt::Fixed32, IntSize::S32)
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Uint64, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Uint64, ""), &type_conf, "").unwrap(),
             TypeSpec::Int(PbInt::Uint64, IntSize::S64)
         );
 
@@ -486,11 +504,11 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Sint32, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Sint32, ""), &type_conf, "").unwrap(),
             TypeSpec::Int(PbInt::Sint32, IntSize::S8)
         );
         assert_eq!(
-            TypeSpec::from_proto(&field_proto(Type::Uint64, ""), &type_conf),
+            TypeSpec::from_proto(&field_proto(Type::Uint64, ""), &type_conf, "").unwrap(),
             TypeSpec::Int(PbInt::Uint64, IntSize::S8)
         );
     }
@@ -511,7 +529,7 @@ mod tests {
             TypeSpec::Int(PbInt::Fixed32, IntSize::S32)
                 .generate_rust_type(&gen)
                 .to_string(),
-            "i32"
+            "u32"
         );
         assert_eq!(
             TypeSpec::String {

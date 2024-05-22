@@ -129,7 +129,7 @@ impl Generator {
     ) -> io::Result<()> {
         let bytes = fs::read(fdset_file)?;
         let fdset = FileDescriptorSet::decode(&*bytes)?;
-        let code = self.generate_fdset(&fdset);
+        let code = self.generate_fdset(&fdset)?;
 
         #[cfg(feature = "format")]
         let output = if self.format {
@@ -186,7 +186,7 @@ impl Generator {
     ) -> &mut Self {
         self.extern_paths.insert(
             proto_path.as_ref().to_owned(),
-            syn::parse_str(rust_path.as_ref()).expect("Tokenization failure"),
+            syn::parse_str(rust_path.as_ref()).expect("failed to tokenize extern path"),
         );
         self
     }

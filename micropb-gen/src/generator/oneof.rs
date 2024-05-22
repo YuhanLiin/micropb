@@ -1,3 +1,5 @@
+use std::io;
+
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{FieldDescriptorProto, OneofDescriptorProto};
@@ -22,9 +24,10 @@ impl<'a> OneofField<'a> {
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
         field_conf: &CurrentConfig,
-    ) -> Option<Self> {
+        msg_name: &str,
+    ) -> io::Result<Option<Self>> {
         if field_conf.config.skip.unwrap_or(false) {
-            return None;
+            return Ok(None);
         }
 
         let name = proto.name();
@@ -32,23 +35,23 @@ impl<'a> OneofField<'a> {
         let rust_name = Ident::new(
             &field_conf
                 .config
-                .rust_field_name(name)
+                .rust_field_name(name)?
                 .to_string()
                 .to_case(Case::Pascal),
             Span::call_site(),
         );
-        let num = proto.number.unwrap() as u32;
-        let tspec = TypeSpec::from_proto(proto, field_conf);
-        let attrs = field_conf.config.field_attr_parsed();
+        let num = proto.number() as u32;
+        let tspec = TypeSpec::from_proto(proto, field_conf, msg_name)?;
+        let attrs = field_conf.config.field_attr_parsed()?;
 
-        Some(OneofField {
+        Ok(Some(OneofField {
             num,
             tspec,
             name,
             rust_name,
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs,
-        })
+        }))
     }
 
     fn generate_field(&self, gen: &Generator) -> TokenStream {
@@ -175,14 +178,14 @@ impl<'a> Oneof<'a> {
         proto: &'a OneofDescriptorProto,
         oneof_conf: CurrentConfig,
         idx: usize,
-    ) -> Option<Self> {
+    ) -> io::Result<Option<Self>> {
         if oneof_conf.config.skip.unwrap_or(false) {
-            return None;
+            return Ok(None);
         }
 
         let name = proto.name();
-        let rust_name = oneof_conf.config.rust_field_name(name);
-        let otype = match oneof_conf.config.custom_field_parsed() {
+        let rust_name = oneof_conf.config.rust_field_name(name)?;
+        let otype = match oneof_conf.config.custom_field_parsed()? {
             Some(custom) => OneofType::Custom {
                 field: custom,
                 nums: vec![],
@@ -195,10 +198,10 @@ impl<'a> Oneof<'a> {
                 fields: vec![],
             },
         };
-        let field_attrs = oneof_conf.config.field_attr_parsed();
-        let type_attrs = oneof_conf.config.type_attr_parsed();
+        let field_attrs = oneof_conf.config.field_attr_parsed()?;
+        let type_attrs = oneof_conf.config.type_attr_parsed()?;
 
-        Some(Oneof {
+        Ok(Some(Oneof {
             name,
             rust_name,
             idx,
@@ -206,7 +209,7 @@ impl<'a> Oneof<'a> {
             derive_dbg: oneof_conf.derive_dbg(),
             field_attrs,
             type_attrs,
-        })
+        }))
     }
 
     pub(crate) fn generate_decl(&self, gen: &Generator) -> TokenStream {
@@ -381,9 +384,11 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(1, "field");
-        assert!(OneofField::from_proto(&field, &oneof_conf).is_none());
+        assert!(OneofField::from_proto(&field, &oneof_conf, "")
+            .unwrap()
+            .is_none());
         let oneof = OneofDescriptorProto::default();
-        assert!(Oneof::from_proto(&oneof, oneof_conf, 0).is_none());
+        assert!(Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().is_none());
     }
 
     #[test]
@@ -395,7 +400,9 @@ mod tests {
         };
         let field = field_proto(1, "field");
         assert_eq!(
-            OneofField::from_proto(&field, &field_conf).unwrap(),
+            OneofField::from_proto(&field, &field_conf, "")
+                .unwrap()
+                .unwrap(),
             OneofField {
                 num: 1,
                 tspec: TypeSpec::Bool,
@@ -414,7 +421,9 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            OneofField::from_proto(&field, &field_conf).unwrap(),
+            OneofField::from_proto(&field, &field_conf, "")
+                .unwrap()
+                .unwrap(),
             OneofField {
                 num: 1,
                 tspec: TypeSpec::Bool,
@@ -438,7 +447,7 @@ mod tests {
             options: None,
         };
         assert_eq!(
-            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap(),
+            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
             Oneof {
                 name: "oneof",
                 rust_name: Ident::new("oneof", Span::call_site()),
@@ -462,7 +471,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap(),
+            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
             Oneof {
                 name: "oneof",
                 rust_name: Ident::new("renamed_oneof", Span::call_site()),

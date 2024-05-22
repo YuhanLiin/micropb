@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io};
 
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{DescriptorProto, Syntax};
@@ -36,21 +36,23 @@ impl<'a> Message<'a> {
         proto: &'a DescriptorProto,
         syntax: Syntax,
         msg_conf: &CurrentConfig,
-    ) -> Option<Self> {
+    ) -> io::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
-            return None;
+            return Ok(None);
         }
 
-        let name = proto.name.as_ref().unwrap();
-
-        let mut oneofs: Vec<_> = proto
+        let name = proto.name();
+        let mut oneofs = vec![];
+        for oneof in proto
             .oneof_decl
             .iter()
             .enumerate()
             .filter_map(|(idx, oneof)| {
-                Oneof::from_proto(oneof, msg_conf.next_conf(oneof.name()), idx)
+                Oneof::from_proto(oneof, msg_conf.next_conf(oneof.name()), idx).transpose()
             })
-            .collect();
+        {
+            oneofs.push(oneof?);
+        }
 
         let mut map_types = HashMap::new();
         for m in &proto.nested_type {
@@ -61,50 +63,51 @@ impl<'a> Message<'a> {
 
         let mut synthetic_oneof_idx = vec![];
 
-        let fields: Vec<_> = proto
-            .field
-            .iter()
-            .filter_map(|f| {
-                let field_conf = msg_conf.next_conf(f.name());
-                let raw_msg_name = f
-                    .type_name()
-                    .rsplit_once('.')
-                    .map(|(_, r)| r)
-                    .unwrap_or(f.type_name());
-                if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                    // Map field
-                    Field::from_proto(f, &field_conf, syntax, Some(map_msg))
-                } else {
-                    if let Some(idx) = f.oneof_index {
-                        if f.proto3_optional() {
-                            synthetic_oneof_idx.push(idx as usize);
-                        } else {
-                            match oneofs
-                                .iter_mut()
-                                .find(|o| o.idx == idx as usize)
-                                .map(|o| &mut o.otype)
-                            {
-                                Some(OneofType::Enum { fields, .. }) => {
-                                    // Oneof field
-                                    if let Some(field) = OneofField::from_proto(f, &field_conf) {
-                                        fields.push(field);
-                                    }
+        let mut fields = vec![];
+        for f in proto.field.iter() {
+            let field_conf = msg_conf.next_conf(f.name());
+            let raw_msg_name = f
+                .type_name()
+                .rsplit_once('.')
+                .map(|(_, r)| r)
+                .unwrap_or(f.type_name());
+            let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
+                Field::from_proto(f, &field_conf, syntax, Some(map_msg), proto.name())?
+            } else {
+                if let Some(idx) = f.oneof_index {
+                    if f.proto3_optional() {
+                        synthetic_oneof_idx.push(idx as usize);
+                    } else {
+                        match oneofs
+                            .iter_mut()
+                            .find(|o| o.idx == idx as usize)
+                            .map(|o| &mut o.otype)
+                        {
+                            Some(OneofType::Enum { fields, .. }) => {
+                                // Oneof field
+                                if let Some(field) =
+                                    OneofField::from_proto(f, &field_conf, proto.name())?
+                                {
+                                    fields.push(field);
                                 }
-                                Some(OneofType::Custom { nums, .. }) => {
-                                    if !field_conf.config.skip.unwrap_or(false) {
-                                        nums.push(f.number());
-                                    }
-                                }
-                                _ => (),
                             }
-                            return None;
+                            Some(OneofType::Custom { nums, .. }) => {
+                                if !field_conf.config.skip.unwrap_or(false) {
+                                    nums.push(f.number());
+                                }
+                            }
+                            _ => (),
                         }
+                        continue;
                     }
-                    // Normal field
-                    Field::from_proto(f, &field_conf, syntax, None)
                 }
-            })
-            .collect();
+                // Normal field
+                Field::from_proto(f, &field_conf, syntax, None, proto.name())?
+            };
+            if let Some(field) = field {
+                fields.push(field);
+            }
+        }
 
         // Remove all oneofs that are empty enums or synthetic oneofs
         let oneofs: Vec<_> = oneofs
@@ -113,15 +116,15 @@ impl<'a> Message<'a> {
             .filter(|o| !synthetic_oneof_idx.contains(&o.idx))
             .collect();
 
-        Some(Self {
+        Ok(Some(Self {
             name,
             rust_name: Ident::new(name, Span::call_site()),
             oneofs,
             fields,
             derive_dbg: !msg_conf.config.no_debug_derive.unwrap_or(false),
-            attrs: msg_conf.config.type_attr_parsed(),
-            unknown_handler: msg_conf.config.unknown_handler_parsed(),
-        })
+            attrs: msg_conf.config.type_attr_parsed()?,
+            unknown_handler: msg_conf.config.unknown_handler_parsed()?,
+        }))
     }
 
     pub(crate) fn check_delegates(&self) {
@@ -139,15 +142,15 @@ impl<'a> Message<'a> {
     pub(crate) fn generate_hazzer_decl(
         &self,
         conf: CurrentConfig,
-    ) -> Option<(TokenStream, Vec<syn::Attribute>)> {
+    ) -> io::Result<Option<(TokenStream, Vec<syn::Attribute>)>> {
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
-        let attrs = &conf.config.type_attr_parsed();
+        let attrs = &conf.config.type_attr_parsed()?;
         let derive_msg = derive_msg_attr(!conf.config.no_debug_derive.unwrap_or(false), true);
 
         let hazzers = self.fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
         if count == 0 {
-            return None;
+            return Ok(None);
         }
 
         let methods = hazzers.enumerate().map(|(i, f)| {
@@ -178,7 +181,7 @@ impl<'a> Message<'a> {
                 #(#methods)*
             }
         };
-        Some((decl, conf.config.field_attr_parsed()))
+        Ok(Some((decl, conf.config.field_attr_parsed()?)))
     }
 
     pub(crate) fn generate_decl(
@@ -535,7 +538,9 @@ mod tests {
             node: None,
             config: Cow::Borrowed(&config),
         };
-        assert!(Message::from_proto(&proto, Syntax::Proto2, &msg_conf).is_none());
+        assert!(Message::from_proto(&proto, Syntax::Proto2, &msg_conf)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -565,7 +570,9 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, Syntax::Proto2, &msg_conf).unwrap(),
+            Message::from_proto(&proto, Syntax::Proto2, &msg_conf)
+                .unwrap()
+                .unwrap(),
             empty_msg
         );
 
@@ -581,7 +588,9 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, Syntax::Proto2, &msg_conf).unwrap(),
+            Message::from_proto(&proto, Syntax::Proto2, &msg_conf)
+                .unwrap()
+                .unwrap(),
             empty_msg
         );
     }
@@ -616,7 +625,9 @@ mod tests {
         };
 
         assert_eq!(
-            Message::from_proto(&proto, Syntax::Proto2, &msg_conf).unwrap(),
+            Message::from_proto(&proto, Syntax::Proto2, &msg_conf)
+                .unwrap()
+                .unwrap(),
             Message {
                 name: "Message",
                 rust_name: Ident::new("Message", Span::call_site()),
@@ -692,7 +703,9 @@ mod tests {
         };
 
         assert_eq!(
-            Message::from_proto(&proto, Syntax::Proto3, &msg_conf).unwrap(),
+            Message::from_proto(&proto, Syntax::Proto3, &msg_conf)
+                .unwrap()
+                .unwrap(),
             Message {
                 name: "Msg",
                 rust_name: Ident::new("Msg", Span::call_site()),
@@ -745,7 +758,7 @@ mod tests {
             unknown_handler: None,
         };
 
-        let (decl, field_attrs) = msg.generate_hazzer_decl(config).unwrap();
+        let (decl, field_attrs) = msg.generate_hazzer_decl(config).unwrap().unwrap();
         let expected = quote! {
             #[derive(Default, Clone, PartialEq)]
             #[derive(Eq)]
@@ -803,7 +816,7 @@ mod tests {
             attrs: vec![],
             unknown_handler: None,
         };
-        assert!(msg.generate_hazzer_decl(config).is_none());
+        assert!(msg.generate_hazzer_decl(config).unwrap().is_none());
     }
 
     #[test]
