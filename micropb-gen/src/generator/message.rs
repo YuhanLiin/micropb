@@ -1,4 +1,7 @@
-use std::{collections::HashMap, io};
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+};
 
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{DescriptorProto, Syntax};
@@ -127,16 +130,31 @@ impl<'a> Message<'a> {
         }))
     }
 
-    pub(crate) fn check_delegates(&self) {
-        let odelegates = self.oneofs.iter().filter_map(|o| o.delegate());
-        let fdelegates = self.fields.iter().filter_map(|f| f.delegate());
-        for delegate in odelegates.chain(fdelegates) {
-            let ocustoms = self.oneofs.iter().filter_map(|o| o.custom_type_field());
-            let fcustoms = self.fields.iter().filter_map(|f| f.custom_type_field());
-            if !ocustoms.chain(fcustoms).any(|custom| delegate == custom) {
-                // TODO error about how delegate != custom
+    pub(crate) fn check_delegates(&self) -> io::Result<()> {
+        let ocustoms = self.oneofs.iter().filter_map(|o| o.custom_type_field());
+        let fcustoms = self.fields.iter().filter_map(|f| f.custom_type_field());
+        let customs: HashSet<_> = ocustoms.chain(fcustoms).collect();
+
+        let odelegates = self
+            .oneofs
+            .iter()
+            .filter_map(|o| o.delegate().map(|d| (d, o.name)));
+        let fdelegates = self
+            .fields
+            .iter()
+            .filter_map(|f| f.delegate().map(|d| (d, f.name)));
+        for (delegate, fname) in odelegates.chain(fdelegates) {
+            if !customs.contains(delegate) {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!(
+                        "Delegate field {}.{} refers to custom field of {}, which doesn't exist",
+                        self.name, fname, delegate
+                    ),
+                ));
             }
         }
+        Ok(())
     }
 
     pub(crate) fn generate_hazzer_decl(
