@@ -1,5 +1,3 @@
-use std::io;
-
 use proc_macro2::Span;
 use syn::Ident;
 
@@ -125,87 +123,61 @@ pub(crate) fn parse_attributes(s: &str) -> syn::Result<Vec<syn::Attribute>> {
 }
 
 impl Config {
-    pub(crate) fn field_attr_parsed(&self) -> io::Result<Vec<syn::Attribute>> {
+    pub(crate) fn field_attr_parsed(&self) -> Result<Vec<syn::Attribute>, String> {
         let s = self.field_attributes.as_deref().unwrap_or("");
         parse_attributes(s).map_err(|e| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Failed to parse field_attributes \"{s}\" as Rust attributes: {e}"),
-            )
+            format!("Failed to parse field_attributes \"{s}\" as Rust attributes: {e}")
         })
     }
 
-    pub(crate) fn type_attr_parsed(&self) -> io::Result<Vec<syn::Attribute>> {
+    pub(crate) fn type_attr_parsed(&self) -> Result<Vec<syn::Attribute>, String> {
         let s = self.type_attributes.as_deref().unwrap_or("");
-        parse_attributes(s).map_err(|e| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Failed to parse type_attributes \"{s}\" as Rust attributes: {e}"),
-            )
-        })
+        parse_attributes(s)
+            .map_err(|e| format!("Failed to parse type_attributes \"{s}\" as Rust attributes: {e}"))
     }
 
-    pub(crate) fn rust_field_name(&self, name: &str) -> io::Result<Ident> {
+    pub(crate) fn rust_field_name(&self, name: &str) -> Result<Ident, String> {
         let s = self.rename_field.as_deref().unwrap_or(name);
-        syn::parse_str(s).map_err(|e| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Failed to parse rename_field \"{s}\" as identifier: {e}"),
-            )
-        })
+        syn::parse_str(s)
+            .map_err(|e| format!("Failed to parse rename_field \"{s}\" as identifier: {e}"))
     }
 
-    pub(crate) fn vec_type_parsed(&self) -> io::Result<Option<syn::Path>> {
+    pub(crate) fn vec_type_parsed(&self) -> Result<Option<syn::Path>, String> {
         self.vec_type
             .as_ref()
             .map(|t| {
-                syn::parse_str(t).map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("Failed to parse vec_type \"{t}\" as type path: {e}"),
-                    )
-                })
+                syn::parse_str(t)
+                    .map_err(|e| format!("Failed to parse vec_type \"{t}\" as type path: {e}"))
             })
             .transpose()
     }
 
-    pub(crate) fn string_type_parsed(&self) -> io::Result<Option<syn::Path>> {
+    pub(crate) fn string_type_parsed(&self) -> Result<Option<syn::Path>, String> {
         self.string_type
             .as_ref()
             .map(|t| {
-                syn::parse_str(t).map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("Failed to parse string_type \"{t}\" as type path: {e}"),
-                    )
-                })
+                syn::parse_str(t)
+                    .map_err(|e| format!("Failed to parse string_type \"{t}\" as type path: {e}"))
             })
             .transpose()
     }
 
-    pub(crate) fn map_type_parsed(&self) -> io::Result<Option<syn::Path>> {
+    pub(crate) fn map_type_parsed(&self) -> Result<Option<syn::Path>, String> {
         self.map_type
             .as_ref()
             .map(|t| {
-                syn::parse_str(t).map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("Failed to parse map_type \"{t}\" as type path: {e}"),
-                    )
-                })
+                syn::parse_str(t)
+                    .map_err(|e| format!("Failed to parse map_type \"{t}\" as type path: {e}"))
             })
             .transpose()
     }
 
-    pub(crate) fn unknown_handler_parsed(&self) -> io::Result<Option<syn::Type>> {
+    pub(crate) fn unknown_handler_parsed(&self) -> Result<Option<syn::Type>, String> {
         self.unknown_handler
             .as_ref()
             .map(|t| {
                 syn::parse_str(t).map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("Failed to parse unknown_handler \"{t}\" as Rust type: {e}"),
-                    )
+                    format!("Failed to parse unknown_handler \"{t}\" as Rust type: {e}")
                 })
             })
             .transpose()
@@ -213,22 +185,16 @@ impl Config {
 
     pub(crate) fn custom_field_parsed(
         &self,
-    ) -> io::Result<Option<crate::generator::field::CustomField>> {
+    ) -> Result<Option<crate::generator::field::CustomField>, String> {
         let res = match &self.custom_field {
             Some(CustomField::Type(s)) => Some(crate::generator::field::CustomField::Type(
                 syn::parse_str(s).map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("Failed to parse custom field \"{s}\" as Rust type: {e}"),
-                    )
+                    format!("Failed to parse custom field \"{s}\" as Rust type: {e}")
                 })?,
             )),
             Some(CustomField::Delegate(s)) => Some(crate::generator::field::CustomField::Delegate(
                 syn::parse_str(s).map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("Failed to parse custom delegate \"{s}\" as identifier: {e}"),
-                    )
+                    format!("Failed to parse custom delegate \"{s}\" as identifier: {e}")
                 })?,
             )),
             None => None,

@@ -1,5 +1,3 @@
-use std::io;
-
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{FieldDescriptorProto, OneofDescriptorProto};
@@ -24,8 +22,7 @@ impl<'a> OneofField<'a> {
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
         field_conf: &CurrentConfig,
-        msg_name: &str,
-    ) -> io::Result<Option<Self>> {
+    ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
             return Ok(None);
         }
@@ -41,7 +38,7 @@ impl<'a> OneofField<'a> {
             Span::call_site(),
         );
         let num = proto.number() as u32;
-        let tspec = TypeSpec::from_proto(proto, field_conf, msg_name)?;
+        let tspec = TypeSpec::from_proto(proto, field_conf)?;
         let attrs = field_conf.config.field_attr_parsed()?;
 
         Ok(Some(OneofField {
@@ -178,7 +175,7 @@ impl<'a> Oneof<'a> {
         proto: &'a OneofDescriptorProto,
         oneof_conf: CurrentConfig,
         idx: usize,
-    ) -> io::Result<Option<Self>> {
+    ) -> Result<Option<Self>, String> {
         if oneof_conf.config.skip.unwrap_or(false) {
             return Ok(None);
         }
@@ -384,7 +381,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(1, "field");
-        assert!(OneofField::from_proto(&field, &oneof_conf, "")
+        assert!(OneofField::from_proto(&field, &oneof_conf)
             .unwrap()
             .is_none());
         let oneof = OneofDescriptorProto::default();
@@ -400,7 +397,7 @@ mod tests {
         };
         let field = field_proto(1, "field");
         assert_eq!(
-            OneofField::from_proto(&field, &field_conf, "")
+            OneofField::from_proto(&field, &field_conf)
                 .unwrap()
                 .unwrap(),
             OneofField {
@@ -421,7 +418,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            OneofField::from_proto(&field, &field_conf, "")
+            OneofField::from_proto(&field, &field_conf)
                 .unwrap()
                 .unwrap(),
             OneofField {

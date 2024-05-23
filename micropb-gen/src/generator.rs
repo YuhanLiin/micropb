@@ -78,6 +78,20 @@ fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
     }
 }
 
+fn field_error(msg_name: &str, field_name: &str, err_text: &str) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::InvalidInput,
+        format!("({msg_name}.{field_name}) {err_text}"),
+    )
+}
+
+fn msg_error(msg_name: &str, err_text: &str) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::InvalidInput,
+        format!("({msg_name}) {err_text}"),
+    )
+}
+
 enum EncodeFunc {
     Sizeof(Ident),
     Encode(Ident),
@@ -241,7 +255,10 @@ impl Generator {
 
         let name = Ident::new(enum_type.name(), Span::call_site());
         let enum_int_type = enum_conf.config.enum_int_size.unwrap_or(IntSize::S32);
-        let attrs = &enum_conf.config.type_attr_parsed()?;
+        let attrs = &enum_conf
+            .config
+            .type_attr_parsed()
+            .map_err(|e| msg_error(enum_type.name(), &e))?;
         let out = self.generate_enum_decl(
             &name,
             &enum_type.value,
@@ -276,11 +293,13 @@ impl Generator {
             msg_mod.extend(o.generate_decl(self));
         }
 
-        let (hazzer_decl, hazzer_field_attr) =
-            match msg.generate_hazzer_decl(msg_conf.next_conf("_has"))? {
-                Some((d, a)) => (Some(d), Some(a)),
-                None => (None, None),
-            };
+        let (hazzer_decl, hazzer_field_attr) = match msg
+            .generate_hazzer_decl(msg_conf.next_conf("_has"))
+            .map_err(|e| field_error(msg.name, "_has", &e))?
+        {
+            Some((d, a)) => (Some(d), Some(a)),
+            None => (None, None),
+        };
         msg_mod.extend(hazzer_decl);
 
         self.type_path.borrow_mut().pop();
@@ -300,7 +319,11 @@ impl Generator {
         };
         msg.check_delegates()?;
         let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf)?;
-        let unknown_field_attr = msg_conf.next_conf("_unknown").config.field_attr_parsed()?;
+        let unknown_field_attr = msg_conf
+            .next_conf("_unknown")
+            .config
+            .field_attr_parsed()
+            .map_err(|e| field_error(proto.name(), "_unknown", &e))?;
 
         let default = msg.generate_default_impl(self, hazzer_field_attr.is_some());
         let decl = msg.generate_decl(self, hazzer_field_attr, unknown_field_attr);

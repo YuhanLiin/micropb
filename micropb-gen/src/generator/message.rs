@@ -19,6 +19,7 @@ use crate::{
 use super::{
     derive_msg_attr,
     field::Field,
+    field_error, msg_error,
     oneof::{Oneof, OneofField, OneofType},
     CurrentConfig, Generator,
 };
@@ -44,17 +45,14 @@ impl<'a> Message<'a> {
             return Ok(None);
         }
 
-        let name = proto.name();
+        let msg_name = proto.name();
         let mut oneofs = vec![];
-        for oneof in proto
-            .oneof_decl
-            .iter()
-            .enumerate()
-            .filter_map(|(idx, oneof)| {
-                Oneof::from_proto(oneof, msg_conf.next_conf(oneof.name()), idx).transpose()
-            })
-        {
-            oneofs.push(oneof?);
+        for (idx, oneof) in proto.oneof_decl.iter().enumerate() {
+            let oneof = Oneof::from_proto(oneof, msg_conf.next_conf(oneof.name()), idx)
+                .map_err(|e| field_error(msg_name, oneof.name(), &e))?;
+            if let Some(oneof) = oneof {
+                oneofs.push(oneof);
+            }
         }
 
         let mut map_types = HashMap::new();
@@ -75,7 +73,8 @@ impl<'a> Message<'a> {
                 .map(|(_, r)| r)
                 .unwrap_or(f.type_name());
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, syntax, Some(map_msg), proto.name())?
+                Field::from_proto(f, &field_conf, syntax, Some(map_msg))
+                    .map_err(|e| field_error(msg_name, f.name(), &e))?
             } else {
                 if let Some(idx) = f.oneof_index {
                     if f.proto3_optional() {
@@ -88,8 +87,8 @@ impl<'a> Message<'a> {
                         {
                             Some(OneofType::Enum { fields, .. }) => {
                                 // Oneof field
-                                if let Some(field) =
-                                    OneofField::from_proto(f, &field_conf, proto.name())?
+                                if let Some(field) = OneofField::from_proto(f, &field_conf)
+                                    .map_err(|e| field_error(msg_name, f.name(), &e))?
                                 {
                                     fields.push(field);
                                 }
@@ -105,7 +104,8 @@ impl<'a> Message<'a> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, syntax, None, proto.name())?
+                Field::from_proto(f, &field_conf, syntax, None)
+                    .map_err(|e| field_error(msg_name, f.name(), &e))?
             };
             if let Some(field) = field {
                 fields.push(field);
@@ -119,14 +119,23 @@ impl<'a> Message<'a> {
             .filter(|o| !synthetic_oneof_idx.contains(&o.idx))
             .collect();
 
+        let attrs = msg_conf
+            .config
+            .type_attr_parsed()
+            .map_err(|e| msg_error(msg_name, &e))?;
+        let unknown_handler = msg_conf
+            .config
+            .unknown_handler_parsed()
+            .map_err(|e| msg_error(msg_name, &e))?;
+
         Ok(Some(Self {
-            name,
-            rust_name: Ident::new(name, Span::call_site()),
+            name: msg_name,
+            rust_name: Ident::new(msg_name, Span::call_site()),
             oneofs,
             fields,
             derive_dbg: !msg_conf.config.no_debug_derive.unwrap_or(false),
-            attrs: msg_conf.config.type_attr_parsed()?,
-            unknown_handler: msg_conf.config.unknown_handler_parsed()?,
+            attrs,
+            unknown_handler,
         }))
     }
 
@@ -145,11 +154,11 @@ impl<'a> Message<'a> {
             .filter_map(|f| f.delegate().map(|d| (d, f.name)));
         for (delegate, fname) in odelegates.chain(fdelegates) {
             if !customs.contains(delegate) {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Delegate field {}.{} refers to custom field of {}, which doesn't exist",
-                        self.name, fname, delegate
+                return Err(field_error(
+                    self.name,
+                    fname,
+                    &format!(
+                        "Delegate field refers to custom field of {delegate}, which doesn't exist"
                     ),
                 ));
             }
@@ -160,7 +169,7 @@ impl<'a> Message<'a> {
     pub(crate) fn generate_hazzer_decl(
         &self,
         conf: CurrentConfig,
-    ) -> io::Result<Option<(TokenStream, Vec<syn::Attribute>)>> {
+    ) -> Result<Option<(TokenStream, Vec<syn::Attribute>)>, String> {
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
         let attrs = &conf.config.type_attr_parsed()?;
         let derive_msg = derive_msg_attr(!conf.config.no_debug_derive.unwrap_or(false), true);

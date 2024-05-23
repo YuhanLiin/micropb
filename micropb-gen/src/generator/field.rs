@@ -1,5 +1,3 @@
-use std::io;
-
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{
     field_descriptor_proto::{Label, Type},
@@ -52,10 +50,6 @@ pub(crate) struct Field<'a> {
 }
 
 impl<'a> Field<'a> {
-    pub(crate) fn explicit_presence(&self) -> bool {
-        matches!(self.ftype, FieldType::Optional(..))
-    }
-
     pub(crate) fn is_option(&self) -> bool {
         matches!(self.ftype, FieldType::Optional(_, OptionalRepr::Option))
     }
@@ -85,8 +79,7 @@ impl<'a> Field<'a> {
         field_conf: &CurrentConfig,
         syntax: Syntax,
         map_msg: Option<&DescriptorProto>,
-        msg_name: &str,
-    ) -> io::Result<Option<Self>> {
+    ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
             return Ok(None);
         }
@@ -104,25 +97,10 @@ impl<'a> Field<'a> {
             (Some(t), _, _) => FieldType::Custom(t),
 
             (None, Some(map_msg), _) => {
-                let key = TypeSpec::from_proto(
-                    &map_msg.field[0],
-                    &field_conf.next_conf("key"),
-                    msg_name,
-                )?;
-                let val = TypeSpec::from_proto(
-                    &map_msg.field[1],
-                    &field_conf.next_conf("value"),
-                    msg_name,
-                )?;
+                let key = TypeSpec::from_proto(&map_msg.field[0], &field_conf.next_conf("key"))?;
+                let val = TypeSpec::from_proto(&map_msg.field[1], &field_conf.next_conf("value"))?;
                 let type_path = field_conf.config.map_type_parsed()?.ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Field {}.{} is of type `map`, but map_type was not configured for it",
-                            msg_name,
-                            proto.name()
-                        ),
-                    )
+                    "Field is of type `map`, but map_type was not configured for it".to_owned()
                 })?;
                 FieldType::Map {
                     key,
@@ -133,16 +111,9 @@ impl<'a> Field<'a> {
             }
 
             (None, None, Label::Repeated) => FieldType::Repeated {
-                typ: TypeSpec::from_proto(proto, &field_conf.next_conf("elem"), msg_name)?,
+                typ: TypeSpec::from_proto(proto, &field_conf.next_conf("elem"))?,
                 type_path: field_conf.config.vec_type_parsed()?.ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Field {}.{} is repeated, but vec_type was not configured for it",
-                            msg_name,
-                            proto.name()
-                        ),
-                    )
+                    "Field is repeated, but vec_type was not configured for it".to_owned()
                 })?,
                 max_len: field_conf.config.max_len,
                 packed: proto
@@ -162,12 +133,10 @@ impl<'a> Field<'a> {
                 } else {
                     OptionalRepr::Hazzer
                 });
-                FieldType::Optional(TypeSpec::from_proto(proto, field_conf, msg_name)?, repr)
+                FieldType::Optional(TypeSpec::from_proto(proto, field_conf)?, repr)
             }
 
-            (None, None, _) => {
-                FieldType::Single(TypeSpec::from_proto(proto, field_conf, msg_name)?)
-            }
+            (None, None, _) => FieldType::Single(TypeSpec::from_proto(proto, field_conf)?),
         };
         let attrs = field_conf.config.field_attr_parsed()?;
 
@@ -553,11 +522,9 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(2, "field", None, false);
-        assert!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None, "")
-                .unwrap()
-                .is_none()
-        );
+        assert!(Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -569,7 +536,7 @@ mod tests {
         };
         let field = field_proto(2, "field", None, false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -597,7 +564,7 @@ mod tests {
         let mut field = field_proto(2, "field", None, false);
         field.default_value = Some("true".to_owned());
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -621,14 +588,14 @@ mod tests {
         };
         let field = field_proto(0, "field", None, false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
             FieldType::Single(TypeSpec::Bool)
         );
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -638,7 +605,7 @@ mod tests {
         // Required fields are treated like optionals
         let field = field_proto(0, "field", Some(Label::Required), false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -648,7 +615,7 @@ mod tests {
         // In proto3, if proto3_optional is set then field is optional
         let field = field_proto(0, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -662,7 +629,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -676,7 +643,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -699,7 +666,7 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -717,7 +684,7 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -740,7 +707,7 @@ mod tests {
         let mut field = field_proto(0, "field", Some(Label::Repeated), false);
         field.r#type = Some(Type::Int32.into());
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -754,7 +721,7 @@ mod tests {
         field.options = Some(Default::default());
         field.options.as_mut().unwrap().packed = Some(true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None, "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -802,7 +769,7 @@ mod tests {
         field.type_name = Some("MapElem".to_owned());
 
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, Some(&map_elem), "")
+            Field::from_proto(&field, &field_conf, Syntax::Proto2, Some(&map_elem))
                 .unwrap()
                 .unwrap()
                 .ftype,
