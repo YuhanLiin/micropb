@@ -204,18 +204,34 @@ impl TypeSpec {
         }
     }
 
-    pub(crate) fn generate_default(&self, default: &str, gen: &Generator) -> TokenStream {
-        match self {
-            TypeSpec::String { .. } => {
-                quote! { ::micropb::PbString::pb_from_str(#default).unwrap_or_default() }
+    pub(crate) fn generate_default(
+        &self,
+        default: &str,
+        gen: &Generator,
+    ) -> Result<TokenStream, String> {
+        let out = match self {
+            TypeSpec::String { max_bytes, .. } => {
+                match *max_bytes {
+                    Some(max_bytes) if default.len() > max_bytes as usize =>
+                        return Err(format!("String field is limited to {max_bytes} bytes, but its default value is {} bytes", default.len())),
+                    _ => quote! { ::micropb::PbString::pb_from_str(#default).unwrap_or_default() }
+                }
             }
-            TypeSpec::Bytes { .. } => {
-                let bytes = Literal::byte_string(&unescape_c_escape_string(default));
-                quote! { ::micropb::PbVec::pb_from_slice(#bytes).unwrap_or_default() }
+
+            TypeSpec::Bytes { max_bytes, .. } => {
+                let bytes = unescape_c_escape_string(default);
+                let default_bytes = Literal::byte_string(&bytes);
+                match *max_bytes {
+                    Some(max_bytes) if bytes.len() > max_bytes as usize =>
+                        return Err(format!("Bytes field is limited to {max_bytes} bytes, but its default value is {} bytes", bytes.len())),
+                    _ => quote! { ::micropb::PbVec::pb_from_slice(#default_bytes).unwrap_or_default() }
+                }
             }
+
             TypeSpec::Message(_) => {
                 unreachable!("message fields shouldn't have custom defaults")
             }
+            
             TypeSpec::Enum(tpath) => {
                 let enum_path = gen.resolve_type_name(tpath);
                 let enum_name =
@@ -223,12 +239,14 @@ impl TypeSpec {
                 let variant = gen.enum_variant_name(default, &enum_name);
                 quote! { #enum_path::#variant }
             }
+
             _ => {
                 let default: TokenStream =
                     syn::parse_str(default).expect("default value tokenization error");
                 quote! { #default as _ }
             }
-        }
+        };
+        Ok(out)
     }
 
     pub(crate) fn wire_type(&self) -> u8 {
@@ -574,25 +592,25 @@ mod tests {
     fn tspec_default() {
         let gen = Generator::default();
         assert_eq!(
-            TypeSpec::Bool.generate_default("true", &gen).to_string(),
+            TypeSpec::Bool.generate_default("true", &gen).unwrap().to_string(),
             quote! { true as _ }.to_string()
         );
         assert_eq!(
-            TypeSpec::Bool.generate_default("false", &gen).to_string(),
+            TypeSpec::Bool.generate_default("false", &gen).unwrap().to_string(),
             quote! { false as _ }.to_string()
         );
         assert_eq!(
-            TypeSpec::Float.generate_default("0.1", &gen).to_string(),
+            TypeSpec::Float.generate_default("0.1", &gen).unwrap().to_string(),
             quote! { 0.1 as _ }.to_string()
         );
         assert_eq!(
-            TypeSpec::Double.generate_default("-4.1", &gen).to_string(),
+            TypeSpec::Double.generate_default("-4.1", &gen).unwrap().to_string(),
             quote! { -4.1 as _ }.to_string()
         );
         assert_eq!(
             TypeSpec::Int(PbInt::Int32, IntSize::S8)
                 .generate_default("-99", &gen)
-                .to_string(),
+                .unwrap().to_string(),
             quote! { -99 as _ }.to_string()
         );
         assert_eq!(
@@ -601,7 +619,7 @@ mod tests {
                 max_bytes: None
             }
             .generate_default("abc\n\tddd", &gen)
-            .to_string(),
+            .unwrap().to_string(),
             quote! { ::micropb::PbString::pb_from_str("abc\n\tddd").unwrap_or_default() }
                 .to_string()
         );
@@ -611,7 +629,7 @@ mod tests {
                 max_bytes: None
             }
             .generate_default("abc\\n\\t\\a\\xA0ddd", &gen)
-            .to_string(),
+            .unwrap().to_string(),
             quote! { ::micropb::PbVec::pb_from_slice(b"abc\n\t\x07\xA0ddd").unwrap_or_default() }
                 .to_string()
         );

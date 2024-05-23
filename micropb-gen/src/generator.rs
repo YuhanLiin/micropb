@@ -325,7 +325,7 @@ impl Generator {
             .field_attr_parsed()
             .map_err(|e| field_error(proto.name(), "_unknown", &e))?;
 
-        let default = msg.generate_default_impl(self, hazzer_field_attr.is_some());
+        let default = msg.generate_default_impl(self, hazzer_field_attr.is_some())?;
         let decl = msg.generate_decl(self, hazzer_field_attr, unknown_field_attr);
         let msg_impl = msg.generate_impl(self);
         let decode = self

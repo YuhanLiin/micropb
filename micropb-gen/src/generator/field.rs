@@ -197,24 +197,24 @@ impl<'a> Field<'a> {
         quote! { #(#attrs)* pub #name : #typ, }
     }
 
-    pub(crate) fn generate_default(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_default(&self, gen: &Generator) -> Result<TokenStream, String> {
         match self.ftype {
             FieldType::Single(ref t) | FieldType::Optional(ref t, OptionalRepr::Hazzer) => {
                 if let Some(default) = self.default {
-                    let value = t.generate_default(default, gen);
-                    return gen.wrapped_value(value, self.boxed, false);
+                    let value = t.generate_default(default, gen)?;
+                    return Ok(gen.wrapped_value(value, self.boxed, false));
                 }
             }
             // Options don't use custom defaults, they should just default to None
             FieldType::Optional(_, OptionalRepr::Option) => {
-                return quote! { ::core::option::Option::None }
+                return Ok(quote! { ::core::option::Option::None })
             }
             FieldType::Custom(CustomField::Delegate(_)) => {
                 unreachable!("delegate field cannot have default")
             }
             _ => {}
         }
-        quote! { ::core::default::Default::default() }
+        Ok(quote! { ::core::default::Default::default() })
     }
 
     pub(crate) fn generate_decode_branch(
@@ -918,6 +918,7 @@ mod tests {
                 FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
             )
             .generate_default(&gen)
+            .unwrap()
             .to_string(),
             quote! { ::core::default::Default::default() }.to_string()
         );
@@ -930,7 +931,7 @@ mod tests {
         );
         field.default = Some("false");
         assert_eq!(
-            field.generate_default(&gen).to_string(),
+            field.generate_default(&gen).unwrap().to_string(),
             quote! { false as _ }.to_string()
         );
 
@@ -942,7 +943,7 @@ mod tests {
         );
         field.default = Some("false");
         assert_eq!(
-            field.generate_default(&gen).to_string(),
+            field.generate_default(&gen).unwrap().to_string(),
             quote! { ::alloc::boxed::Box::new(false as _) }.to_string()
         );
 
@@ -954,7 +955,7 @@ mod tests {
         );
         field.default = Some("false");
         assert_eq!(
-            field.generate_default(&gen).to_string(),
+            field.generate_default(&gen).unwrap().to_string(),
             quote! { ::core::option::Option::None }.to_string()
         );
 
@@ -966,7 +967,7 @@ mod tests {
         );
         field.default = Some("false");
         assert_eq!(
-            field.generate_default(&gen).to_string(),
+            field.generate_default(&gen).unwrap().to_string(),
             quote! { ::core::default::Default::default() }.to_string()
         );
 
@@ -982,7 +983,7 @@ mod tests {
             },
         );
         assert_eq!(
-            field.generate_default(&gen).to_string(),
+            field.generate_default(&gen).unwrap().to_string(),
             quote! { ::core::default::Default::default() }.to_string()
         );
     }

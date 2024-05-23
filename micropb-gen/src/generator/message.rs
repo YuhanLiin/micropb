@@ -248,17 +248,23 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub(crate) fn generate_default_impl(&self, gen: &Generator, use_hazzer: bool) -> TokenStream {
-        // Skip delegate fields when generating defaults
-        let field_defaults = self.fields.iter().map(|f| {
-            if let FieldType::Custom(CustomField::Delegate(_)) = f.ftype {
-                None
-            } else {
+    pub(crate) fn generate_default_impl(
+        &self,
+        gen: &Generator,
+        use_hazzer: bool,
+    ) -> io::Result<TokenStream> {
+        let mut field_defaults = TokenStream::new();
+        for f in &self.fields {
+            // Skip delegate fields when generating defaults
+            if !matches!(f.ftype, FieldType::Custom(CustomField::Delegate(_))) {
                 let name = &f.rust_name;
-                let default = f.generate_default(gen);
-                Some(quote! { #name: #default, })
+                let default = f
+                    .generate_default(gen)
+                    .map_err(|e| field_error(self.name, f.name, &e))?;
+                field_defaults.extend(quote! { #name: #default, });
             }
-        });
+        }
+
         let oneof_names = self.oneofs.iter().filter_map(|o| {
             if let OneofType::Custom {
                 field: CustomField::Delegate(_),
@@ -278,18 +284,18 @@ impl<'a> Message<'a> {
             .map(|_| quote! { _unknown: ::core::default::Default::default(), });
         let rust_name = &self.rust_name;
 
-        quote! {
+        Ok(quote! {
             impl ::core::default::Default for #rust_name {
                 fn default() -> Self {
                     Self {
-                        #(#field_defaults)*
+                        #field_defaults
                         #(#oneof_names: ::core::default::Default::default(),)*
                         #hazzer_default
                         #unknown_default
                     }
                 }
             }
-        }
+        })
     }
 
     pub(crate) fn generate_impl(&self, gen: &Generator) -> TokenStream {
@@ -912,7 +918,7 @@ mod tests {
         };
 
         let gen = Generator::default();
-        let out = msg.generate_default_impl(&gen, true);
+        let out = msg.generate_default_impl(&gen, true).unwrap();
         let expected = quote! {
             impl ::core::default::Default for Msg {
                 fn default() -> Self {
