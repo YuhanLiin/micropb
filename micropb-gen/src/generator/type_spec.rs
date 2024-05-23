@@ -213,11 +213,11 @@ impl TypeSpec {
     pub(crate) fn generate_default(&self, default: &str, gen: &Generator) -> TokenStream {
         match self {
             TypeSpec::String { .. } => {
-                quote! { ::micropb::PbString::pb_from_str(#default).expect("default string too long") }
+                quote! { ::micropb::PbString::pb_from_str(#default).unwrap_or_default() }
             }
             TypeSpec::Bytes { .. } => {
                 let bytes = Literal::byte_string(&unescape_c_escape_string(default));
-                quote! { ::micropb::PbVec::pb_from_slice(#bytes).expect("default bytes too long") }
+                quote! { ::micropb::PbVec::pb_from_slice(#bytes).unwrap_or_default() }
             }
             TypeSpec::Message(_) => {
                 unreachable!("message fields shouldn't have custom defaults")
@@ -609,7 +609,8 @@ mod tests {
             }
             .generate_default("abc\n\tddd", &gen)
             .to_string(),
-            quote! { ::micropb::PbString::pb_from_str("abc\n\tddd").expect("default string too long") }.to_string()
+            quote! { ::micropb::PbString::pb_from_str("abc\n\tddd").unwrap_or_default() }
+                .to_string()
         );
         assert_eq!(
             TypeSpec::Bytes {
@@ -618,7 +619,8 @@ mod tests {
             }
             .generate_default("abc\\n\\t\\a\\xA0ddd", &gen)
             .to_string(),
-            quote! { ::micropb::PbVec::pb_from_slice(b"abc\n\t\x07\xA0ddd").expect("default bytes too long") }.to_string()
+            quote! { ::micropb::PbVec::pb_from_slice(b"abc\n\t\x07\xA0ddd").unwrap_or_default() }
+                .to_string()
         );
     }
 }
