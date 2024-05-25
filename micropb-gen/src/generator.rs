@@ -67,7 +67,7 @@ impl<'a> CurrentConfig<'a> {
 fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
     let code = mod_node.value_mut().take().unwrap_or_default();
     let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
-        let submod_name = Ident::new(submod_name, Span::call_site());
+        let submod_name = Ident::new_raw(submod_name, Span::call_site());
         let inner = generate_mod_tree(inner_node);
         quote! { pub mod #submod_name { #inner } }
     });
@@ -606,12 +606,12 @@ mod tests {
         let expected = quote! {
             Root
 
-            pub mod foo {
-                pub mod bar { Bar }
-                pub mod baz { Baz }
+            pub mod r#foo {
+                pub mod r#bar { Bar }
+                pub mod r#baz { Baz }
             }
 
-            pub mod bow { Bow }
+            pub mod r#bow { Bow }
         };
         assert_eq!(out.to_string(), expected.to_string());
     }

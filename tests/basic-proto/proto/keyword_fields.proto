@@ -1,7 +1,13 @@
 syntax = "proto2";
 
+package async;
+
 message Msg {
     optional bool super = 1;
     optional bool i32 = 2;
     optional bool type = 3;
+
+    oneof try {
+        int32 as = 4;
+    }
 }

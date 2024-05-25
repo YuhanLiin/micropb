@@ -130,9 +130,8 @@ fn skip() {
 
 fn keyword_fields() {
     let mut generator = Generator::new();
-    generator.configure(".Msg.super", Config::new().rename_field("super_"));
-    generator.configure(".Msg.i32", Config::new().rename_field("i32_"));
-    generator.configure(".Msg.type", Config::new().rename_field("typ"));
+    // Only the `super` field was renamed, every other field are raw identifiers
+    generator.configure(".async.Msg.super", Config::new().rename_field("super_"));
 
     generator
         .compile_protos(

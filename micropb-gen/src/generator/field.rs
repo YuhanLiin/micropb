@@ -43,7 +43,8 @@ pub(crate) struct Field<'a> {
     pub(crate) num: u32,
     pub(crate) ftype: FieldType,
     pub(crate) name: &'a str,
-    pub(crate) rust_name: Ident,
+    pub(crate) rust_name: String,
+    pub(crate) raw_rust_name: Ident,
     pub(crate) default: Option<&'a str>,
     pub(crate) boxed: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
@@ -66,7 +67,7 @@ impl<'a> Field<'a> {
         }
     }
 
-    pub(crate) fn custom_type_field(&self) -> Option<&Ident> {
+    pub(crate) fn custom_type_field(&self) -> Option<&str> {
         if let FieldType::Custom(CustomField::Type(_)) = &self.ftype {
             Some(&self.rust_name)
         } else {
@@ -86,7 +87,7 @@ impl<'a> Field<'a> {
 
         let num = proto.number() as u32;
         let name = proto.name();
-        let rust_name = field_conf.config.rust_field_name(name)?;
+        let (rust_name, raw_rust_name) = field_conf.config.rust_field_name(name)?;
         let boxed = field_conf.config.boxed.unwrap_or(false);
 
         let ftype = match (
@@ -145,6 +146,7 @@ impl<'a> Field<'a> {
             ftype,
             name,
             rust_name,
+            raw_rust_name,
             default: proto.default_value.as_deref(),
             boxed,
             attrs,
@@ -192,7 +194,7 @@ impl<'a> Field<'a> {
             return quote! {};
         }
         let typ = self.generate_rust_type(gen);
-        let name = &self.rust_name;
+        let name = &self.raw_rust_name;
         let attrs = &self.attrs;
         quote! { #(#attrs)* pub #name : #typ, }
     }
@@ -224,7 +226,7 @@ impl<'a> Field<'a> {
         decoder: &Ident,
     ) -> TokenStream {
         let fnum = self.num;
-        let fname = &self.rust_name;
+        let fname = &self.raw_rust_name;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
         let extra_deref = self.boxed.then(|| quote! { * });
 
@@ -257,7 +259,7 @@ impl<'a> Field<'a> {
 
             FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
                 let decode_expr = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
-                let setter = format_ident!("set_{fname}");
+                let setter = format_ident!("set_{}", self.rust_name);
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_expr };
@@ -332,7 +334,7 @@ impl<'a> Field<'a> {
     }
 
     pub(crate) fn generate_encode(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
-        let fname = &self.rust_name;
+        let fname = &self.raw_rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
         let extra_deref = self.boxed.then(|| quote! { * });
         let wire_type = self.wire_type();
@@ -477,7 +479,8 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         num,
         ftype,
         name,
-        rust_name: Ident::new(name, proc_macro2::Span::call_site()),
+        rust_name: name.to_owned(),
+        raw_rust_name: Ident::new_raw(name, proc_macro2::Span::call_site()),
         default: None,
         boxed,
         attrs: vec![],
@@ -543,7 +546,8 @@ mod tests {
                 num: 2,
                 ftype: FieldType::Single(TypeSpec::Bool),
                 name: "field",
-                rust_name: Ident::new("field", Span::call_site()),
+                rust_name: "field".to_owned(),
+                raw_rust_name: Ident::new_raw("field", Span::call_site()),
                 default: None,
                 boxed: false,
                 attrs: vec![],
@@ -571,7 +575,8 @@ mod tests {
                 num: 2,
                 ftype: FieldType::Single(TypeSpec::Bool),
                 name: "field",
-                rust_name: Ident::new("renamed", Span::call_site()),
+                rust_name: "renamed".to_owned(),
+                raw_rust_name: Ident::new_raw("renamed", Span::call_site()),
                 default: Some("true"),
                 boxed: true,
                 attrs: parse_attributes("#[attr]").unwrap(),

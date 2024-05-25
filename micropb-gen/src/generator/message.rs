@@ -153,7 +153,8 @@ impl<'a> Message<'a> {
             .iter()
             .filter_map(|f| f.delegate().map(|d| (d, f.name)));
         for (delegate, fname) in odelegates.chain(fdelegates) {
-            if !customs.contains(delegate) {
+            let delegate = delegate.to_string();
+            if !customs.contains(delegate.as_str()) {
                 return Err(field_error(
                     self.name,
                     fname,
@@ -181,7 +182,7 @@ impl<'a> Message<'a> {
         }
 
         let methods = hazzers.enumerate().map(|(i, f)| {
-            let fname = &f.rust_name;
+            let fname = &f.raw_rust_name;
             let setter = format_ident!("set_{}", f.rust_name);
             let i = Literal::usize_unsuffixed(i);
 
@@ -257,7 +258,7 @@ impl<'a> Message<'a> {
         for f in &self.fields {
             // Skip delegate fields when generating defaults
             if !matches!(f.ftype, FieldType::Custom(CustomField::Delegate(_))) {
-                let name = &f.rust_name;
+                let name = &f.raw_rust_name;
                 let default = f
                     .generate_default(gen)
                     .map_err(|e| field_error(self.name, f.name, &e))?;
@@ -273,7 +274,7 @@ impl<'a> Message<'a> {
             {
                 None
             } else {
-                Some(&o.rust_name)
+                Some(&o.raw_rust_name)
             }
         });
         let hazzer_default =
@@ -305,7 +306,7 @@ impl<'a> Message<'a> {
                 let setter_name = format_ident!("set_{}", f.rust_name);
                 let muter_name = format_ident!("mut_{}", f.rust_name);
                 let clearer_name = format_ident!("clear_{}", f.rust_name);
-                let fname = &f.rust_name;
+                let fname = &f.raw_rust_name;
 
                 // use value.into() to handle conversion into boxed and non-boxed fields
                 if let OptionalRepr::Hazzer = opt {
@@ -666,7 +667,8 @@ mod tests {
                 rust_name: Ident::new("Message", Span::call_site()),
                 oneofs: vec![Oneof {
                     name: "oneof",
-                    rust_name: Ident::new("oneof", Span::call_site()),
+                    rust_name: "oneof".to_owned(),
+                    raw_rust_name: Ident::new_raw("oneof", Span::call_site()),
                     otype: OneofType::Enum {
                         type_name: Ident::new("Oneof", Span::call_site()),
                         fields: vec![
@@ -799,7 +801,7 @@ mod tests {
 
             impl _Hazzer {
                 #[inline]
-                pub fn field1(&self) -> bool {
+                pub fn r#field1(&self) -> bool {
                     self.0[0]
                 }
 
@@ -809,7 +811,7 @@ mod tests {
                 }
 
                 #[inline]
-                pub fn field3(&self) -> bool {
+                pub fn r#field3(&self) -> bool {
                     self.0[1]
                 }
 
@@ -923,12 +925,12 @@ mod tests {
             impl ::core::default::Default for Msg {
                 fn default() -> Self {
                     Self {
-                        a: true as _,
-                        b: ::core::option::Option::None,
-                        c: ::alloc::boxed::Box::new(-3.45 as _),
-                        d: ::core::default::Default::default(),
-                        oneof: ::core::default::Default::default(),
-                        oneof_custom: ::core::default::Default::default(),
+                        r#a: true as _,
+                        r#b: ::core::option::Option::None,
+                        r#c: ::alloc::boxed::Box::new(-3.45 as _),
+                        r#d: ::core::default::Default::default(),
+                        r#oneof: ::core::default::Default::default(),
+                        r#oneof_custom: ::core::default::Default::default(),
                         _has: ::core::default::Default::default(),
                         _unknown: ::core::default::Default::default(),
                     }
@@ -1034,16 +1036,16 @@ mod tests {
             #[derive(Eq)]
             pub struct Msg {
                 #[default]
-                pub single: bool,
+                pub r#single: bool,
                 #[attr]
-                pub opt: ::core::option::Option<bool>,
-                pub optbox: ::core::option::Option< ::alloc::boxed::Box<bool> >,
-                pub boxed: ::alloc::boxed::Box<bool>,
-                pub string: ::core::option::Option< ::alloc::boxed::Box< String<2> > >,
-                pub custom: Custom,
-                pub oneof: ::core::option::Option<mod_Msg::Oneof>,
+                pub r#opt: ::core::option::Option<bool>,
+                pub r#optbox: ::core::option::Option< ::alloc::boxed::Box<bool> >,
+                pub r#boxed: ::alloc::boxed::Box<bool>,
+                pub r#string: ::core::option::Option< ::alloc::boxed::Box< String<2> > >,
+                pub r#custom: Custom,
+                pub r#oneof: ::core::option::Option<mod_Msg::Oneof>,
                 #[attr]
-                pub oneof_custom: Custom,
+                pub r#oneof_custom: Custom,
                 #[attr1]
                 #[attr2]
                 pub _has: mod_Msg::_Hazzer,
@@ -1084,37 +1086,37 @@ mod tests {
 
         let expected = quote! {
             impl Msg {
-                pub fn haz(&self) -> ::core::option::Option<&bool> {
-                    self._has.haz().then_some(&self.haz)
+                pub fn r#haz(&self) -> ::core::option::Option<&bool> {
+                    self._has.r#haz().then_some(&self.r#haz)
                 }
 
                 pub fn mut_haz(&mut self) -> ::core::option::Option<&mut bool> {
-                    self._has.haz().then_some(&mut self.haz)
+                    self._has.r#haz().then_some(&mut self.r#haz)
                 }
 
                 pub fn set_haz(&mut self, value: bool) {
                     self._has.set_haz(true);
-                    self.haz = value.into();
+                    self.r#haz = value.into();
                 }
 
                 pub fn clear_haz(&mut self) {
                     self._has.set_haz(false);
                 }
 
-                pub fn opt(&self) -> ::core::option::Option<&bool> {
-                    self.opt.as_ref()
+                pub fn r#opt(&self) -> ::core::option::Option<&bool> {
+                    self.r#opt.as_ref()
                 }
 
                 pub fn mut_opt(&mut self) -> ::core::option::Option<&mut bool> {
-                    self.opt.as_mut()
+                    self.r#opt.as_mut()
                 }
 
                 pub fn set_opt(&mut self, value: bool) {
-                    self.opt = ::core::option::Option::Some(value.into());
+                    self.r#opt = ::core::option::Option::Some(value.into());
                 }
 
                 pub fn clear_opt(&mut self) {
-                    self.opt = ::core::option::Option::None;
+                    self.r#opt = ::core::option::Option::None;
                 }
             }
         };

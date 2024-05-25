@@ -33,7 +33,7 @@ impl<'a> OneofField<'a> {
             &field_conf
                 .config
                 .rust_field_name(name)?
-                .to_string()
+                .0
                 .to_case(Case::Pascal),
             Span::call_site(),
         );
@@ -138,7 +138,8 @@ pub(crate) enum OneofType<'a> {
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Oneof<'a> {
     pub(crate) name: &'a str,
-    pub(crate) rust_name: Ident,
+    pub(crate) rust_name: String,
+    pub(crate) raw_rust_name: Ident,
     pub(crate) otype: OneofType<'a>,
     pub(crate) field_attrs: Vec<syn::Attribute>,
     pub(crate) type_attrs: Vec<syn::Attribute>,
@@ -159,7 +160,7 @@ impl<'a> Oneof<'a> {
         }
     }
 
-    pub(crate) fn custom_type_field(&self) -> Option<&Ident> {
+    pub(crate) fn custom_type_field(&self) -> Option<&str> {
         if let OneofType::Custom {
             field: CustomField::Type(_),
             ..
@@ -181,17 +182,14 @@ impl<'a> Oneof<'a> {
         }
 
         let name = proto.name();
-        let rust_name = oneof_conf.config.rust_field_name(name)?;
+        let (rust_name, raw_rust_name) = oneof_conf.config.rust_field_name(name)?;
         let otype = match oneof_conf.config.custom_field_parsed()? {
             Some(custom) => OneofType::Custom {
                 field: custom,
                 nums: vec![],
             },
             None => OneofType::Enum {
-                type_name: Ident::new(
-                    &rust_name.to_string().to_case(Case::Pascal),
-                    Span::call_site(),
-                ),
+                type_name: Ident::new(&rust_name.to_case(Case::Pascal), Span::call_site()),
                 fields: vec![],
             },
         };
@@ -201,6 +199,7 @@ impl<'a> Oneof<'a> {
         Ok(Some(Oneof {
             name,
             rust_name,
+            raw_rust_name,
             idx,
             otype,
             derive_dbg: oneof_conf.derive_dbg(),
@@ -229,7 +228,7 @@ impl<'a> Oneof<'a> {
     }
 
     pub(crate) fn generate_field(&self, gen: &Generator, msg_mod_name: &Ident) -> TokenStream {
-        let name = &self.rust_name;
+        let name = &self.raw_rust_name;
         let oneof_type = match &self.otype {
             OneofType::Enum { type_name, .. } => {
                 gen.wrapped_type(quote! { #msg_mod_name::#type_name }, false, true)
@@ -254,7 +253,7 @@ impl<'a> Oneof<'a> {
         tag: &Ident,
         decoder: &Ident,
     ) -> TokenStream {
-        let name = &self.rust_name;
+        let name = &self.raw_rust_name;
         match &self.otype {
             OneofType::Enum { fields, type_name } => {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
@@ -292,7 +291,7 @@ impl<'a> Oneof<'a> {
         msg_mod_name: &Ident,
         func_type: &EncodeFunc,
     ) -> TokenStream {
-        let name = &self.rust_name;
+        let name = &self.raw_rust_name;
         match &self.otype {
             OneofType::Enum { type_name, fields } => {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
@@ -345,7 +344,8 @@ pub(crate) fn make_test_oneof_field(
 pub(crate) fn make_test_oneof<'a>(name: &'a str, otype: OneofType<'a>) -> Oneof<'a> {
     Oneof {
         name,
-        rust_name: Ident::new(name, Span::call_site()),
+        rust_name: name.to_owned(),
+        raw_rust_name: Ident::new_raw(name, Span::call_site()),
         otype,
         field_attrs: vec![],
         type_attrs: vec![],
@@ -447,7 +447,8 @@ mod tests {
             Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
             Oneof {
                 name: "oneof",
-                rust_name: Ident::new("oneof", Span::call_site()),
+                rust_name: "oneof".to_owned(),
+                raw_rust_name: Ident::new_raw("oneof", Span::call_site()),
                 otype: OneofType::Enum {
                     type_name: Ident::new("Oneof", Span::call_site()),
                     fields: vec![]
@@ -471,7 +472,8 @@ mod tests {
             Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
             Oneof {
                 name: "oneof",
-                rust_name: Ident::new("renamed_oneof", Span::call_site()),
+                rust_name: "renamed_oneof".to_owned(),
+                raw_rust_name: Ident::new_raw("renamed_oneof", Span::call_site()),
                 otype: OneofType::Enum {
                     type_name: Ident::new("RenamedOneof", Span::call_site()),
                     fields: vec![]
@@ -489,7 +491,8 @@ mod tests {
         let gen = Generator::default();
         let oneof = Oneof {
             name: "oneof",
-            rust_name: Ident::new("oneof", Span::call_site()),
+            rust_name: "oneof".to_owned(),
+            raw_rust_name: Ident::new_raw("oneof", Span::call_site()),
             otype: OneofType::Enum {
                 type_name: Ident::new("Oneof", Span::call_site()),
                 fields: vec![
@@ -518,7 +521,7 @@ mod tests {
             oneof
                 .generate_field(&gen, &Ident::new("Msg", Span::call_site()))
                 .to_string(),
-            quote! { #[default] pub oneof: ::core::option::Option<Msg::Oneof>, }.to_string()
+            quote! { #[default] pub r#oneof: ::core::option::Option<Msg::Oneof>, }.to_string()
         );
     }
 
@@ -527,7 +530,8 @@ mod tests {
         let gen = Generator::default();
         let oneof = Oneof {
             name: "oneof",
-            rust_name: Ident::new("oneof", Span::call_site()),
+            rust_name: "oneof".to_owned(),
+            raw_rust_name: Ident::new_raw("oneof", Span::call_site()),
             otype: OneofType::Custom {
                 field: CustomField::Type(syn::parse_str("Custom<f32>").unwrap()),
                 nums: vec![1],
@@ -542,12 +546,13 @@ mod tests {
             oneof
                 .generate_field(&gen, &Ident::new("Msg", Span::call_site()))
                 .to_string(),
-            quote! { pub oneof: Custom<f32>, }.to_string()
+            quote! { pub r#oneof: Custom<f32>, }.to_string()
         );
 
         let oneof = Oneof {
             name: "oneof",
-            rust_name: Ident::new("oneof", Span::call_site()),
+            rust_name: "oneof".to_owned(),
+            raw_rust_name: Ident::new_raw("oneof", Span::call_site()),
             otype: OneofType::Custom {
                 field: CustomField::Delegate(syn::parse_str("delegate").unwrap()),
                 nums: vec![1],

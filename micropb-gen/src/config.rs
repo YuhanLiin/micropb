@@ -136,10 +136,14 @@ impl Config {
             .map_err(|e| format!("Failed to parse type_attributes \"{s}\" as Rust attributes: {e}"))
     }
 
-    pub(crate) fn rust_field_name(&self, name: &str) -> Result<Ident, String> {
-        let s = self.rename_field.as_deref().unwrap_or(name);
-        syn::parse_str(s)
-            .map_err(|e| format!("Failed to parse rename_field \"{s}\" as identifier: {e}"))
+    pub(crate) fn rust_field_name(&self, name: &str) -> Result<(String, Ident), String> {
+        if let Some(s) = &self.rename_field {
+            let raw_rust_name = syn::parse_str(&format!("r#{s}"))
+                .map_err(|e| format!("Failed to parse rename_field \"{s}\" as identifier: {e}"))?;
+            Ok((s.to_owned(), raw_rust_name))
+        } else {
+            Ok((name.to_owned(), Ident::new_raw(name, Span::call_site())))
+        }
     }
 
     pub(crate) fn vec_type_parsed(&self) -> Result<Option<syn::Path>, String> {
@@ -277,12 +281,12 @@ mod tests {
 
         assert_eq!(
             config.rust_field_name("name").unwrap(),
-            format_ident!("name")
+            ("name".to_owned(), format_ident!("r#name"))
         );
         config.rename_field = Some("rename".to_string());
         assert_eq!(
             config.rust_field_name("name").unwrap(),
-            format_ident!("rename")
+            ("rename".to_owned(), format_ident!("r#rename"))
         );
 
         config.custom_field = Some(CustomField::Type("Vec<u16, 4>".to_owned()));
