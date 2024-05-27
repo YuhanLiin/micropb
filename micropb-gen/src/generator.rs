@@ -78,17 +78,17 @@ fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
     }
 }
 
-fn field_error(msg_name: &str, field_name: &str, err_text: &str) -> io::Error {
+fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: &str) -> io::Error {
     io::Error::new(
         io::ErrorKind::InvalidInput,
-        format!("({msg_name}.{field_name}) {err_text}"),
+        format!("(.{pkg}.{msg_name}.{field_name}) {err_text}"),
     )
 }
 
-fn msg_error(msg_name: &str, err_text: &str) -> io::Error {
+fn msg_error(pkg: &str, msg_name: &str, err_text: &str) -> io::Error {
     io::Error::new(
         io::ErrorKind::InvalidInput,
-        format!("({msg_name}) {err_text}"),
+        format!("(.{pkg}.{msg_name}) {err_text}"),
     )
 }
 
@@ -101,6 +101,7 @@ enum EncodeFunc {
 pub struct Generator {
     syntax: Syntax,
     pkg_path: Vec<String>,
+    pkg: String,
     type_path: RefCell<Vec<String>>,
 
     pub(crate) encode_decode: EncodeDecode,
@@ -120,6 +121,7 @@ impl Default for Generator {
         Self {
             syntax: Default::default(),
             pkg_path: Default::default(),
+            pkg: Default::default(),
             type_path: Default::default(),
 
             encode_decode: Default::default(),
@@ -177,6 +179,7 @@ impl Generator {
             .as_ref()
             .map(|s| split_pkg_name(s).map(ToOwned::to_owned).collect())
             .unwrap_or_default();
+        self.pkg = fdproto.package.clone().unwrap_or_default();
 
         let root_node = &self.config_tree.root;
         let mut conf = root_node
@@ -258,7 +261,7 @@ impl Generator {
         let attrs = &enum_conf
             .config
             .type_attr_parsed()
-            .map_err(|e| msg_error(enum_type.name(), &e))?;
+            .map_err(|e| msg_error(&self.pkg, enum_type.name(), &e))?;
         let out = self.generate_enum_decl(
             &name,
             &enum_type.value,
@@ -295,7 +298,7 @@ impl Generator {
 
         let (hazzer_decl, hazzer_field_attr) = match msg
             .generate_hazzer_decl(msg_conf.next_conf("_has"))
-            .map_err(|e| field_error(msg.name, "_has", &e))?
+            .map_err(|e| field_error(&self.pkg, msg.name, "_has", &e))?
         {
             Some((d, a)) => (Some(d), Some(a)),
             None => (None, None),
@@ -314,19 +317,15 @@ impl Generator {
         proto: &DescriptorProto,
         msg_conf: CurrentConfig,
     ) -> io::Result<TokenStream> {
-        let Some(msg) = Message::from_proto(proto, self.syntax, &msg_conf)? else {
+        let Some(msg) = Message::from_proto(proto, self, &msg_conf)? else {
             return Ok(quote! {});
         };
-        msg.check_delegates()?;
+        msg.check_delegates(self)?;
         let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf)?;
-        let unknown_field_attr = msg_conf
-            .next_conf("_unknown")
-            .config
-            .field_attr_parsed()
-            .map_err(|e| field_error(proto.name(), "_unknown", &e))?;
+        let unknown_conf = msg_conf.next_conf("_unknown");
 
         let default = msg.generate_default_impl(self, hazzer_field_attr.is_some())?;
-        let decl = msg.generate_decl(self, hazzer_field_attr, unknown_field_attr);
+        let decl = msg.generate_decl(self, hazzer_field_attr, &unknown_conf)?;
         let msg_impl = msg.generate_impl(self);
         let decode = self
             .encode_decode

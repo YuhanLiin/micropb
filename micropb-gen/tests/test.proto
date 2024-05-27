@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package test;
+
+message Msg {
+    optional string st = 1 [default = "123"];
+    optional bytes bt = 2 [default = "123"];
+    map<bool, float> kv = 3;
+    repeated bool list = 4;
+
+    oneof of {
+        int32 int = 5;
+    }
+}
+
+enum Enum {
+    VALUE = 0;
+}

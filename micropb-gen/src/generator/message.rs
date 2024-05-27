@@ -4,7 +4,7 @@ use std::{
 };
 
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{DescriptorProto, Syntax};
+use prost_types::DescriptorProto;
 use quote::{format_ident, quote};
 use syn::Ident;
 
@@ -38,7 +38,7 @@ pub(crate) struct Message<'a> {
 impl<'a> Message<'a> {
     pub(crate) fn from_proto(
         proto: &'a DescriptorProto,
-        syntax: Syntax,
+        gen: &Generator,
         msg_conf: &CurrentConfig,
     ) -> io::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
@@ -49,7 +49,7 @@ impl<'a> Message<'a> {
         let mut oneofs = vec![];
         for (idx, oneof) in proto.oneof_decl.iter().enumerate() {
             let oneof = Oneof::from_proto(oneof, msg_conf.next_conf(oneof.name()), idx)
-                .map_err(|e| field_error(msg_name, oneof.name(), &e))?;
+                .map_err(|e| field_error(&gen.pkg, msg_name, oneof.name(), &e))?;
             if let Some(oneof) = oneof {
                 oneofs.push(oneof);
             }
@@ -73,8 +73,8 @@ impl<'a> Message<'a> {
                 .map(|(_, r)| r)
                 .unwrap_or(f.type_name());
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, syntax, Some(map_msg))
-                    .map_err(|e| field_error(msg_name, f.name(), &e))?
+                Field::from_proto(f, &field_conf, gen.syntax, Some(map_msg))
+                    .map_err(|e| field_error(&gen.pkg, msg_name, f.name(), &e))?
             } else {
                 if let Some(idx) = f.oneof_index {
                     if f.proto3_optional() {
@@ -88,7 +88,7 @@ impl<'a> Message<'a> {
                             Some(OneofType::Enum { fields, .. }) => {
                                 // Oneof field
                                 if let Some(field) = OneofField::from_proto(f, &field_conf)
-                                    .map_err(|e| field_error(msg_name, f.name(), &e))?
+                                    .map_err(|e| field_error(&gen.pkg, msg_name, f.name(), &e))?
                                 {
                                     fields.push(field);
                                 }
@@ -104,8 +104,8 @@ impl<'a> Message<'a> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, syntax, None)
-                    .map_err(|e| field_error(msg_name, f.name(), &e))?
+                Field::from_proto(f, &field_conf, gen.syntax, None)
+                    .map_err(|e| field_error(&gen.pkg, msg_name, f.name(), &e))?
             };
             if let Some(field) = field {
                 fields.push(field);
@@ -122,11 +122,11 @@ impl<'a> Message<'a> {
         let attrs = msg_conf
             .config
             .type_attr_parsed()
-            .map_err(|e| msg_error(msg_name, &e))?;
+            .map_err(|e| msg_error(&gen.pkg, msg_name, &e))?;
         let unknown_handler = msg_conf
             .config
             .unknown_handler_parsed()
-            .map_err(|e| msg_error(msg_name, &e))?;
+            .map_err(|e| msg_error(&gen.pkg, msg_name, &e))?;
 
         Ok(Some(Self {
             name: msg_name,
@@ -139,7 +139,7 @@ impl<'a> Message<'a> {
         }))
     }
 
-    pub(crate) fn check_delegates(&self) -> io::Result<()> {
+    pub(crate) fn check_delegates(&self, gen: &Generator) -> io::Result<()> {
         let ocustoms = self.oneofs.iter().filter_map(|o| o.custom_type_field());
         let fcustoms = self.fields.iter().filter_map(|f| f.custom_type_field());
         let customs: HashSet<_> = ocustoms.chain(fcustoms).collect();
@@ -156,6 +156,7 @@ impl<'a> Message<'a> {
             let delegate = delegate.to_string();
             if !customs.contains(delegate.as_str()) {
                 return Err(field_error(
+                    &gen.pkg,
                     self.name,
                     fname,
                     &format!(
@@ -216,8 +217,8 @@ impl<'a> Message<'a> {
         &self,
         gen: &Generator,
         hazzer_field_attr: Option<Vec<syn::Attribute>>,
-        unknown_field_attr: Vec<syn::Attribute>,
-    ) -> TokenStream {
+        unknown_conf: &CurrentConfig,
+    ) -> io::Result<TokenStream> {
         let msg_mod_name = gen.resolve_path_elem(self.name);
         let rust_name = &self.rust_name;
         let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
@@ -227,26 +228,29 @@ impl<'a> Message<'a> {
             .iter()
             .map(|oneof| oneof.generate_field(gen, &msg_mod_name));
 
-        let unknown_field_attr = self
-            .unknown_handler
-            .as_ref()
-            .map(|_| unknown_field_attr)
-            .into_iter();
-        let unknown_field_type = self.unknown_handler.iter();
+        let unknown_field = if let Some(handler) = &self.unknown_handler {
+            let unknown_field_attr = unknown_conf
+                .config
+                .field_attr_parsed()
+                .map_err(|e| field_error(&gen.pkg, self.name, "_unknown", &e))?;
+            quote! { #(#unknown_field_attr)* pub _unknown: #handler, }
+        } else {
+            quote! {}
+        };
 
         let derive_msg = derive_msg_attr(self.derive_dbg, false);
         let attrs = &self.attrs;
 
-        quote! {
+        Ok(quote! {
             #derive_msg
             #(#attrs)*
             pub struct #rust_name {
                 #(#msg_fields)*
                 #(#oneof_fields)*
                 #(#(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
-                #(#(#unknown_field_attr)* pub _unknown: #unknown_field_type,)*
+                #unknown_field
             }
-        }
+        })
     }
 
     pub(crate) fn generate_default_impl(
@@ -261,7 +265,7 @@ impl<'a> Message<'a> {
                 let name = &f.raw_rust_name;
                 let default = f
                     .generate_default(gen)
-                    .map_err(|e| field_error(self.name, f.name, &e))?;
+                    .map_err(|e| field_error(&gen.pkg, self.name, f.name, &e))?;
                 field_defaults.extend(quote! { #name: #default, });
             }
         }
@@ -489,6 +493,7 @@ mod tests {
             field::{make_test_field, CustomField, FieldType},
             oneof::{make_test_oneof, make_test_oneof_field},
             type_spec::{PbInt, TypeSpec},
+            Syntax,
         },
         pathtree::Node,
     };
@@ -572,13 +577,15 @@ mod tests {
             node: None,
             config: Cow::Borrowed(&config),
         };
-        assert!(Message::from_proto(&proto, Syntax::Proto2, &msg_conf)
+        let gen = Generator::new();
+        assert!(Message::from_proto(&proto, &gen, &msg_conf)
             .unwrap()
             .is_none());
     }
 
     #[test]
     fn from_proto_skip_fields() {
+        let gen = Generator::new();
         let proto = test_msg_proto();
         let empty_msg = Message {
             name: "Message",
@@ -604,7 +611,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, Syntax::Proto2, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -622,7 +629,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, Syntax::Proto2, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -631,6 +638,7 @@ mod tests {
 
     #[test]
     fn from_proto() {
+        let gen = Generator::new();
         let proto = test_msg_proto();
         let config = Box::new(
             Config::new()
@@ -659,7 +667,7 @@ mod tests {
         };
 
         assert_eq!(
-            Message::from_proto(&proto, Syntax::Proto2, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf)
                 .unwrap()
                 .unwrap(),
             Message {
@@ -716,6 +724,9 @@ mod tests {
 
     #[test]
     fn synthetic_oneof() {
+        let mut gen = Generator::new();
+        gen.syntax = Syntax::Proto3;
+
         let proto = DescriptorProto {
             name: Some("Msg".to_owned()),
             field: vec![FieldDescriptorProto {
@@ -738,7 +749,7 @@ mod tests {
         };
 
         assert_eq!(
-            Message::from_proto(&proto, Syntax::Proto3, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf)
                 .unwrap()
                 .unwrap(),
             Message {
@@ -1025,11 +1036,19 @@ mod tests {
             unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
         };
         let gen = Generator::default();
-        let out = msg.generate_decl(
-            &gen,
-            Some(parse_attributes("#[attr1] #[attr2]").unwrap()),
-            parse_attributes("#[attr3] #[attr4]").unwrap(),
-        );
+        let config = CurrentConfig {
+            node: None,
+            config: Cow::Owned(Box::new(
+                Config::new().field_attributes("#[attr3] #[attr4]"),
+            )),
+        };
+        let out = msg
+            .generate_decl(
+                &gen,
+                Some(parse_attributes("#[attr1] #[attr2]").unwrap()),
+                &config,
+            )
+            .unwrap();
 
         let expected = quote! {
             #[derive(Debug, Clone, PartialEq)]
