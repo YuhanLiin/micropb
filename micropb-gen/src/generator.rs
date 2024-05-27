@@ -79,17 +79,11 @@ fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
 }
 
 fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: &str) -> io::Error {
-    io::Error::new(
-        io::ErrorKind::InvalidInput,
-        format!("(.{pkg}.{msg_name}.{field_name}) {err_text}"),
-    )
+    io::Error::other(format!("(.{pkg}.{msg_name}.{field_name}) {err_text}"))
 }
 
 fn msg_error(pkg: &str, msg_name: &str, err_text: &str) -> io::Error {
-    io::Error::new(
-        io::ErrorKind::InvalidInput,
-        format!("(.{pkg}.{msg_name}) {err_text}"),
-    )
+    io::Error::other(format!("(.{pkg}.{msg_name}) {err_text}"))
 }
 
 enum EncodeFunc {
