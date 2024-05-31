@@ -101,7 +101,6 @@ pub struct Generator {
     pub(crate) encode_decode: EncodeDecode,
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
-    pub(crate) use_std: bool,
     pub(crate) fdset_path: Option<PathBuf>,
     pub(crate) protoc_args: Vec<OsString>,
 
@@ -121,7 +120,6 @@ impl Default for Generator {
             encode_decode: Default::default(),
             retain_enum_prefix: Default::default(),
             format: true,
-            use_std: Default::default(),
             fdset_path: Default::default(),
             protoc_args: Default::default(),
 
@@ -394,11 +392,7 @@ impl Generator {
 
     fn wrapped_type(&self, typ: TokenStream, boxed: bool, optional: bool) -> TokenStream {
         let boxed_type = if boxed {
-            if self.use_std {
-                quote! { ::std::boxed::Box<#typ> }
-            } else {
-                quote! { ::alloc::boxed::Box<#typ> }
-            }
+            quote! { ::alloc::boxed::Box<#typ> }
         } else {
             typ
         };
@@ -411,11 +405,7 @@ impl Generator {
 
     fn wrapped_value(&self, val: TokenStream, boxed: bool, optional: bool) -> TokenStream {
         let boxed_type = if boxed {
-            if self.use_std {
-                quote! { ::std::boxed::Box::new(#val) }
-            } else {
-                quote! { ::alloc::boxed::Box::new(#val) }
-            }
+            quote! { ::alloc::boxed::Box::new(#val) }
         } else {
             val
         };

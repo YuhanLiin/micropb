@@ -159,11 +159,6 @@ impl Generator {
         self
     }
 
-    pub fn use_std(&mut self, use_std: bool) -> &mut Self {
-        self.use_std = use_std;
-        self
-    }
-
     pub fn encode_decode(&mut self, encode_decode: EncodeDecode) -> &mut Self {
         self.encode_decode = encode_decode;
         self
