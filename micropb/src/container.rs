@@ -181,16 +181,6 @@ mod impl_arrayvec {
             Self::try_from(s).map_err(drop)
         }
     }
-
-    #[cfg(feature = "encode")]
-    impl<const N: usize> crate::encode::PbWrite for ArrayVec<u8, N> {
-        type Error = arrayvec::CapacityError;
-
-        #[inline]
-        fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
-            self.try_extend_from_slice(data)
-        }
-    }
 }
 
 #[cfg(feature = "container-heapless")]
@@ -285,16 +275,6 @@ mod impl_heapless {
         #[inline]
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
-        }
-    }
-
-    #[cfg(feature = "encode")]
-    impl<const N: usize> crate::encode::PbWrite for Vec<u8, N> {
-        type Error = ();
-
-        #[inline]
-        fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
-            self.extend_from_slice(data)
         }
     }
 }
@@ -458,17 +438,6 @@ mod impl_alloc {
         #[inline]
         fn pb_iter(&self) -> Self::Iter<'_> {
             self.iter()
-        }
-    }
-
-    #[cfg(feature = "encode")]
-    impl crate::encode::PbWrite for Vec<u8> {
-        type Error = never::Never;
-
-        #[inline]
-        fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
-            self.extend_from_slice(data);
-            Ok(())
         }
     }
 }

@@ -5,6 +5,9 @@ use crate::{Tag, VarInt};
 /// A writer to which Protobuf data is written, similar to [`std::io::Write`].
 ///
 /// [`PbEncoder`] uses this trait as the interface for writing encoded Protobuf messages.
+///
+/// This trait is implemented for common byte vector types such as [`heapless::Vec`] and
+/// [`alloc::Vec`]. The implementations are feature-gated.
 pub trait PbWrite {
     /// I/O error returned on write failure.
     type Error;
@@ -21,6 +24,37 @@ impl<W: PbWrite> PbWrite for &mut W {
     #[inline]
     fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
         (*self).pb_write(data)
+    }
+}
+
+#[cfg(feature = "container-arrayvec")]
+impl<const N: usize> PbWrite for arrayvec::ArrayVec<u8, N> {
+    type Error = arrayvec::CapacityError;
+
+    #[inline]
+    fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+        self.try_extend_from_slice(data)
+    }
+}
+
+#[cfg(feature = "container-heapless")]
+impl<const N: usize> PbWrite for heapless::Vec<u8, N> {
+    type Error = ();
+
+    #[inline]
+    fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+        self.extend_from_slice(data)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl PbWrite for Vec<u8> {
+    type Error = never::Never;
+
+    #[inline]
+    fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+        self.extend_from_slice(data);
+        Ok(())
     }
 }
 
