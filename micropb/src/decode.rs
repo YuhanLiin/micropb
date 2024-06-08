@@ -15,15 +15,28 @@ use crate::{
 use never::Never;
 
 #[derive(Debug, PartialEq, Eq)]
+/// Protobuf [decoder](PbDecoder) error.
+///
+/// The error is parametrized by the underlying reader's error type `E`. Most of the error variants
+/// use simple enums to minimize the memory footprint.
 pub enum DecodeError<E> {
+    /// Varint exceeded max length of 10 bytes
     VarIntLimit,
+    /// Reader encountered EOF in the middle of decoding
     UnexpectedEof,
+    /// Encountered deprecated wire type
     Deprecation,
+    /// Unknown Protobuf wire type encountered
     UnknownWireType,
+    /// Field number of 0, which is not allowed
     ZeroField,
+    /// Decoded string is not valid UTF8
     Utf8,
+    /// Exceeded capcity of fixed container for `string`, `bytes`, repeated, or `map` field
     Capacity,
+    /// Actual length of LEN record differs from value of length prefix
     WrongLen,
+    /// Error returned from reader
     Reader(E),
 }
 
@@ -33,18 +46,39 @@ impl<E> From<Utf8Error> for DecodeError<E> {
     }
 }
 
+/// A reader from which Protobuf data is read, similar to [`std::io::BufRead`].
+///
+/// Like [`std::io::BufRead`], this trait assumes that the reader uses an underlying buffer.
+/// [`PbDecoder`] uses this trait as the interface to decode incoming Protobuf message.
 pub trait PbRead {
+    /// I/O error returned on read failure
     type Error;
 
+    /// Returns the internal buffer, filling it with more data if necessary.
+    ///
+    /// This call does not consume the underlying buffer, so calling it consecutively may yield the
+    /// same contents. As such, this call must be followed by a [`Self::pb_advance`] call with
+    /// the number of bytes that are "consumed" from the returned buffer, to ensure that consumed
+    /// bytes won't be returned again.
+    ///
+    /// Empty buffer is returned if and only if the underlying reader has reached EOF.
     fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error>;
 
+    /// Consumes `bytes` from the underlying buffer.
+    ///
+    /// This function should be called after [`Self::pb_read_chunk`]. It advances the internal
+    /// buffer by `bytes` so that those bytes won't be returned from future calls to
+    /// [`Self::pb_read_chunk`]. This function doesn't perform I/O, so it's infallible.
+    ///
+    /// The `bytes` should not exceed the length of the buffer returned from
+    /// [`Self::pb_read_chunk`]. Otherwise, the behaviour is implementation-defined.
     fn pb_advance(&mut self, bytes: usize);
 
     /// Try to read exactly the number of bytes needed to fill `buf`.
     ///
     /// Returns the number of bytes read, which will be at most the size of `buf`. If the return is
-    /// less than `buf`, then the reader reached EoF before filling `buf`. Unlike `pb_read_chunk`,
-    /// this function will advance the reader by the amount of bytes read.
+    /// less than `buf`, then the reader reached EOF before filling `buf`. This function will
+    /// advance the reader by the amount of bytes read, so no need to call [`Self::pb_advance`].
     fn pb_read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<usize, Self::Error> {
         if buf.is_empty() {
             return Ok(0);
@@ -112,6 +146,8 @@ impl PbRead for &[u8] {
 
 #[cfg(feature = "std")]
 #[derive(Debug, Clone)]
+/// Adapter that implements [`PbRead`] for all implementers of [`std::io::BufRead`], allowing the
+/// decoder to read from `std` readers.
 pub struct StdReader<R>(pub R);
 
 #[cfg(feature = "std")]
@@ -130,14 +166,42 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 }
 
 #[derive(Debug)]
+/// Decoder for Protobuf data types and messages.
+///
+/// Main interface for decoding Protobuf messages, reading bytes from an underlying [`PbRead`]
+/// instance.
+///
+/// Decoding a Protobuf message:
+/// ```no_run
+/// use micropb::{PbRead, PbDecoder};
+///
+/// # #[derive(Default)]
+/// # struct ProtoMessage;
+/// # impl micropb::MessageDecode for ProtoMessage {
+/// #   fn decode<R: PbRead>(&mut self, decoder: &mut PbDecoder<R>, len: usize) -> Result<(), micropb::DecodeError<R::Error>> { todo!() }
+/// # }
+///
+/// let data = &[0x08, 0x96, 0x01];
+/// // Slices implement `PbRead` out of the box
+/// let mut decoder = PbDecoder::new(data);
+///
+/// let mut message = ProtoMessage::default();
+/// // Reading from a slice will never fail, so unwrapping here is OK
+/// message.decode(&mut decoder, data.len()).unwrap();
+/// ```
 pub struct PbDecoder<R: PbRead> {
     reader: R,
     idx: usize,
+    /// If this flag is set, then the decoder will never report a capacity error when decoding
+    /// repeated fields. When the container is filled, the decoder will instead ignore excess
+    /// elements on the wire. The decoder will still report capacity errors when decoding `bytes`
+    /// and `string` values that exceed their fixed containers.
     pub ignore_repeated_cap_err: bool,
 }
 
 impl<R: PbRead> PbDecoder<R> {
     #[inline]
+    /// Constructs a new decoder from a [`PbRead`].
     pub fn new(reader: R) -> Self {
         Self {
             reader,
@@ -147,16 +211,19 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Transform the decoder into the underlying reader.
     pub fn into_reader(self) -> R {
         self.reader
     }
 
     #[inline]
+    /// Get reference to underlying reader.
     pub fn as_reader(&self) -> &R {
         &self.reader
     }
 
     #[inline]
+    /// Get the number of bytes that the decoder has consumed from the reader.
     pub fn bytes_read(&self) -> usize {
         self.idx
     }
@@ -176,6 +243,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Decode an `uint32`.
     pub fn decode_varint32(&mut self) -> Result<u32, DecodeError<R::Error>> {
         let b = self.get_byte()?;
         // Single byte case
@@ -202,6 +270,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Decode an `uint64`.
     pub fn decode_varint64(&mut self) -> Result<u64, DecodeError<R::Error>> {
         let b = self.get_byte()?;
         // Single byte case
@@ -224,28 +293,33 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Decode an `int64`.
     pub fn decode_int64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_varint64().map(|u| u as i64)
     }
 
     #[inline]
+    /// Decode an `int32`.
     pub fn decode_int32(&mut self) -> Result<i32, DecodeError<R::Error>> {
         self.decode_varint32().map(|u| u as i32)
     }
 
     #[inline]
+    /// Decode an `sint32`.
     pub fn decode_sint32(&mut self) -> Result<i32, DecodeError<R::Error>> {
         self.decode_varint32()
             .map(|u| ((u >> 1) as i32) ^ -((u & 1) as i32))
     }
 
     #[inline]
+    /// Decode an `sint64`.
     pub fn decode_sint64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_varint64()
             .map(|u| ((u >> 1) as i64) ^ -((u & 1) as i64))
     }
 
     #[inline]
+    /// Decode a `bool`.
     pub fn decode_bool(&mut self) -> Result<bool, DecodeError<R::Error>> {
         Ok(self.decode_varint32()? != 0)
     }
@@ -265,6 +339,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Decode a `fixed32`.
     pub fn decode_fixed32(&mut self) -> Result<u32, DecodeError<R::Error>> {
         let mut data = [MaybeUninit::uninit(); 4];
         self.read_exact(&mut data)?;
@@ -274,6 +349,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Decode a `fixed64`.
     pub fn decode_fixed64(&mut self) -> Result<u64, DecodeError<R::Error>> {
         let mut data = [MaybeUninit::uninit(); 8];
         self.read_exact(&mut data)?;
@@ -283,6 +359,10 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Decode a `fixed64` but keep only the lower 32 bits.
+    ///
+    /// Avoids 64-bit operations for `fixed64` if only the lower bits are needed. This can have
+    /// performance benefits on 32-bit architectures.
     pub fn decode_fixed64_as_32(&mut self) -> Result<u32, DecodeError<R::Error>> {
         let n = self.decode_fixed32()?;
         self.skip_bytes(4)?;
@@ -290,16 +370,22 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Decode a `sfixed32`.
     pub fn decode_sfixed32(&mut self) -> Result<i32, DecodeError<R::Error>> {
         self.decode_fixed32().map(|u| u as i32)
     }
 
     #[inline]
+    /// Decode a `sfixed64`.
     pub fn decode_sfixed64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_fixed64().map(|u| u as i64)
     }
 
     #[inline]
+    /// Decode a `sfixed64` but keep only the lower 32 bits.
+    ///
+    /// Avoids 64-bit operations for `sfixed64` if only the lower bits are needed. This can have
+    /// performance benefits on 32-bit architectures.
     pub fn decode_sfixed64_as_32(&mut self) -> Result<i32, DecodeError<R::Error>> {
         let n = self.decode_sfixed32()?;
         self.skip_bytes(4)?;
@@ -307,20 +393,34 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    /// Decode a `float`.
     pub fn decode_float(&mut self) -> Result<f32, DecodeError<R::Error>> {
         self.decode_fixed32().map(f32::from_bits)
     }
 
     #[inline]
+    /// Decode a `double`.
     pub fn decode_double(&mut self) -> Result<f64, DecodeError<R::Error>> {
         self.decode_fixed64().map(f64::from_bits)
     }
 
     #[inline(always)]
+    /// Decode a Protobuf tag.
     pub fn decode_tag(&mut self) -> Result<Tag, DecodeError<R::Error>> {
         self.decode_varint32().map(Tag)
     }
 
+    /// Decode a `string` into a [`micropb::PbString`] container.
+    ///
+    /// The string container's existing contents will be replaced by the string decoded from the
+    /// wire. However, if `presence` is implicit and the new string is empty, the existing string
+    /// will remain unchanged.
+    ///
+    /// # Errors
+    ///
+    /// If the length of the string on the wire exceeds the fixed capacity of the string container,
+    /// return [`DecodeError::Capacity`]. If the string on the wire if not UTF-8, return
+    /// [`DecodeError::Utf8`].
     pub fn decode_string<S: PbString>(
         &mut self,
         string: &mut S,
@@ -349,6 +449,16 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(())
     }
 
+    /// Decode a `bytes` into a [`micropb::PbVec<u8>`] container.
+    ///
+    /// The byte container's existing contents will be replaced by the bytes decoded from the
+    /// wire. However, if `presence` is implicit and the new bytes is empty, the existing container
+    /// will remain unchanged.
+    ///
+    /// # Errors
+    ///
+    /// If the length of the bytes on the wire exceeds the fixed capacity of the byte container,
+    /// return [`DecodeError::Capacity`].
     pub fn decode_bytes<S: PbVec<u8>>(
         &mut self,
         bytes: &mut S,
@@ -390,6 +500,11 @@ impl<R: PbRead> PbDecoder<R> {
         }
     }
 
+    /// Decode a repeated packed field and append the elements to a [`micropb::PbVec`] container.
+    ///
+    /// The `decoder` callback determines how each element is decoded from the wire. If the number
+    /// of elements on the wire exceeds the remaining fixed capacity of the container and the
+    /// `ignore_repeated_cap_err` flag is not set, return [`DecodeError::Capacity`].
     pub fn decode_packed<
         T: Copy,
         S: PbVec<T>,
@@ -446,6 +561,11 @@ impl<R: PbRead> PbDecoder<R> {
     //Ok(())
     //}
 
+    /// Decode a Protobuf map key-value pair from the decoder.
+    ///
+    /// According the the Protobuf spec, the key-value pair is formatted as a Protobuf message with
+    /// the key in field 1 and the value in field 2. Other field numbers are ignored. If the key or
+    /// value field is not found, default values will be used.
     pub fn decode_map_elem<
         K: Default,
         V: Default,
@@ -487,6 +607,10 @@ impl<R: PbRead> PbDecoder<R> {
         Err(DecodeError::VarIntLimit)
     }
 
+    /// Consume some bytes from the reader.
+    ///
+    /// If reader reached EOF before the specified number of bytes are skipped, return
+    /// [`DecodeError::UnexpectedEof`].
     pub fn skip_bytes(&mut self, bytes: usize) -> Result<(), DecodeError<R::Error>> {
         let mut total = 0;
         while total < bytes {
@@ -502,6 +626,10 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(())
     }
 
+    /// Skip the next Protobuf value/payload on the wire.
+    ///
+    /// The type of the Protobuf payload is determined by `wire_type`, which must be a valid
+    /// Protobuf wire type. This is mainly used to skip unknown fields.
     pub fn skip_wire_value(&mut self, wire_type: u8) -> Result<(), DecodeError<R::Error>> {
         match wire_type {
             WIRE_TYPE_VARINT => self.skip_varint()?,
