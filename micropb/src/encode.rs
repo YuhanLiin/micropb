@@ -1,8 +1,17 @@
+//! Encode Rust types into Protobuf messages and values.
+
 use crate::{Tag, VarInt};
 
+/// A writer to which Protobuf data is written, similar to [`std::io::Write`].
+///
+/// [`PbEncoder`] uses this trait as the interface for writing encoded Protobuf messages.
 pub trait PbWrite {
+    /// I/O error returned on write failure.
     type Error;
 
+    /// Writes all bytes in `data`.
+    ///
+    /// This is analogous to [`std::io::Write::write_all`].
     fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error>;
 }
 
@@ -17,6 +26,8 @@ impl<W: PbWrite> PbWrite for &mut W {
 
 #[cfg(feature = "std")]
 #[derive(Debug, Clone)]
+/// Adapter that implements [`PbWrite`] for all implementers of [`std::io::Write`], allowing the
+/// encoder to write to `std` writers.
 pub struct StdWriter<W>(pub W);
 
 #[cfg(feature = "std")]
@@ -29,6 +40,32 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
     }
 }
 
+#[derive(Debug)]
+/// Encoder that encodes Rust types into Protobuf messages and values.
+///
+/// Main interface for encoding Protobuf messages. Writes bytes to an underlying [`PbWrite`]
+/// instance.
+///
+/// Encoding a Protobuf message:
+/// ``` no_run
+/// use micropb::{PbEncoder, PbWrite};
+/// use micropb::heapless::Vec;
+///
+/// # #[derive(Default)]
+/// # struct ProtoMessage;
+/// # impl micropb::MessageEncode for ProtoMessage {
+/// #   fn encode<W: PbWrite>(&mut self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> { todo!() }
+/// #   fn compute_size(&self) -> usize { 0 }
+/// # }
+///
+/// let mut message = ProtoMessage::default();
+/// // Set some fields in the message
+///
+/// // If `heapless` feature is enabled, then `PbWrite` will be implemented on `heapless::Vec`,
+/// // allowing the encoder to write into it. Same applies to `arrayvec` and `alloc`.
+/// let mut encoder = PbEncoder::new(Vec::<u8, 10>::new());
+/// message.encode(&mut encoder)?;
+/// ```
 pub struct PbEncoder<W: PbWrite> {
     writer: W,
     bytes_written: usize,
@@ -36,6 +73,7 @@ pub struct PbEncoder<W: PbWrite> {
 
 impl<W: PbWrite> PbEncoder<W> {
     #[inline]
+    /// Construct a new encoder from a [`PbWrite`].
     pub fn new(writer: W) -> Self {
         Self {
             writer,
@@ -44,13 +82,21 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    /// Transform the encoder into the underlying writer.
     pub fn into_writer(self) -> W {
         self.writer
     }
 
     #[inline]
+    /// Get reference to underlying writer.
     pub fn as_writer(&self) -> &W {
         &self.writer
+    }
+
+    #[inline]
+    /// Get the number of bytes that the encoder has written to the writer
+    pub fn bytes_written(&self) -> usize {
+        self.bytes_written
     }
 
     #[inline]
@@ -99,51 +145,63 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    /// Encode an `uint32`.
     pub fn encode_varint32(&mut self, u: u32) -> Result<(), W::Error> {
         self.encode_varint(u, false)
     }
 
     #[inline]
+    /// Encode an `uint64`.
     pub fn encode_varint64(&mut self, u: u64) -> Result<(), W::Error> {
         self.encode_varint(u, false)
     }
 
     #[inline]
+    /// Encode an `int32`.
     pub fn encode_int32(&mut self, i: i32) -> Result<(), W::Error> {
         self.encode_varint(i as u32, i < 0)
     }
 
     #[inline]
+    /// Encode an `int64`.
     pub fn encode_int64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_varint64(i as u64)
     }
 
     #[inline]
+    /// Encode an `sint32`.
     pub fn encode_sint32(&mut self, i: i32) -> Result<(), W::Error> {
         self.encode_varint32(((i << 1) ^ (i >> 31)) as u32)
     }
 
     #[inline]
+    /// Encode an `sint64`.
     pub fn encode_sint64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_varint64(((i << 1) ^ (i >> 63)) as u64)
     }
 
     #[inline]
+    /// Encode a `bool`.
     pub fn encode_bool(&mut self, b: bool) -> Result<(), W::Error> {
         self.encode_byte(b as u8)
     }
 
     #[inline]
+    /// Encode a `fixed32`.
     pub fn encode_fixed32(&mut self, u: u32) -> Result<(), W::Error> {
         self.write(&u.to_le_bytes())
     }
 
     #[inline]
+    /// Encode a `fixed64`.
     pub fn encode_fixed64(&mut self, u: u64) -> Result<(), W::Error> {
         self.write(&u.to_le_bytes())
     }
 
     #[inline]
+    /// Encode a 32-bit number as `fixed64`.
+    ///
+    /// Avoids 64-bit operations, which can have benefits on 32-bit architectures.
     pub fn encode_fixed64_as_32(&mut self, u: u32) -> Result<(), W::Error> {
         let mut bytes = [0; 8];
         bytes[..4].copy_from_slice(&u.to_le_bytes());
@@ -151,16 +209,21 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    /// Encode a `sfixed32`.
     pub fn encode_sfixed32(&mut self, i: i32) -> Result<(), W::Error> {
         self.encode_fixed32(i as u32)
     }
 
     #[inline]
+    /// Encode a `sfixed64`.
     pub fn encode_sfixed64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_fixed64(i as u64)
     }
 
     #[inline]
+    /// Encode a 32-bit number as `sfixed64`.
+    ///
+    /// Avoids 64-bit operations, which can have benefits on 32-bit architectures.
     pub fn encode_sfixed64_as_32(&mut self, i: i32) -> Result<(), W::Error> {
         let mut bytes = [0; 8];
         bytes[..4].copy_from_slice(&i.to_le_bytes());
@@ -168,26 +231,31 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    /// Encode a `float`.
     pub fn encode_float(&mut self, f: f32) -> Result<(), W::Error> {
         self.encode_fixed32(f.to_bits())
     }
 
     #[inline]
+    /// Encode a `double`.
     pub fn encode_double(&mut self, f: f64) -> Result<(), W::Error> {
         self.encode_fixed64(f.to_bits())
     }
 
     #[inline(always)]
+    /// Encode a Protobuf tag.
     pub fn encode_tag(&mut self, tag: Tag) -> Result<(), W::Error> {
         self.encode_varint32(tag.varint())
     }
 
+    /// Encode a `bytes` field.
     pub fn encode_bytes(&mut self, bytes: &[u8]) -> Result<(), W::Error> {
         self.encode_varint32(bytes.len() as u32)?;
         self.write(bytes)
     }
 
     #[inline]
+    /// Encode a `string` field.
     pub fn encode_string(&mut self, string: &str) -> Result<(), W::Error> {
         self.encode_bytes(string.as_bytes())
     }
@@ -199,6 +267,10 @@ impl<W: PbWrite> PbEncoder<W> {
     //self.encode_bytes(bytes)
     //}
 
+    /// Encode a repeated packed field from a slice of elements.
+    ///
+    /// The `encoder` callback determines how each element is encoded onto the wire, and `len` is
+    /// the length of the packed record on the wire.
     pub fn encode_packed<T: Copy, F: FnMut(&mut Self, T) -> Result<(), W::Error>>(
         &mut self,
         len: usize,
@@ -213,6 +285,11 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[allow(clippy::too_many_arguments)]
+    /// Encode a Protobuf map key-value pair onto the wire.
+    ///
+    /// The key-value pair is encoded as a Protobuf message with the key in field 1 and value in
+    /// field 2. The wire types of the key and value need to be provided, as well as the length of
+    /// the key-value pair on the wire.
     pub fn encode_map_elem<
         K: ?Sized,
         V: ?Sized,

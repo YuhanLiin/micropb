@@ -40,32 +40,41 @@ pub use message::MessageDecode;
 #[cfg(feature = "encode")]
 pub use message::MessageEncode;
 
+/// Protobuf wire type for varints.
 pub const WIRE_TYPE_VARINT: u8 = 0;
+/// Protobuf wire type for fixed 64-bit values.
 pub const WIRE_TYPE_I64: u8 = 1;
+/// Protobuf wire type for LEN records.
 pub const WIRE_TYPE_LEN: u8 = 2;
+/// Protobuf wire type for fixed 32-bit values.
 pub const WIRE_TYPE_I32: u8 = 5;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
+/// Protobuf tag, consisting of the field number and wire type.
 pub struct Tag(u32);
 
 impl Tag {
     #[inline]
+    /// Create a tag from a field number and wire type.
     pub const fn from_parts(field_num: u32, wire_type: u8) -> Self {
         debug_assert!(wire_type <= 7);
         Self((field_num << 3) | (wire_type as u32))
     }
 
     #[inline]
+    /// Get the wire type of the tag.
     pub const fn wire_type(&self) -> u8 {
         (self.0 & 0b111) as u8
     }
 
     #[inline]
+    /// Get the field number of the tag.
     pub const fn field_num(&self) -> u32 {
         self.0 >> 3
     }
 
     #[inline]
+    /// Return the integer representation of the tag.
     pub const fn varint(&self) -> u32 {
         self.0
     }
@@ -84,8 +93,16 @@ impl VarInt for u64 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Field presence discipline
 pub enum Presence {
+    /// Implicit presence. Fields don't have flag to track presence, and default values are treated
+    /// as not present.
+    ///
+    /// Used for Proto3 fields.
     Implicit,
+    /// Explicit presence. Fields have flags to track presense.
+    ///
+    /// Use for optional fields.
     Explicit,
 }
 

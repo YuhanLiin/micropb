@@ -1,3 +1,5 @@
+//! Decode Protobuf messages and values from the wire into Rust types.
+
 use core::{
     mem::MaybeUninit,
     str::{from_utf8, Utf8Error},
@@ -49,9 +51,9 @@ impl<E> From<Utf8Error> for DecodeError<E> {
 /// A reader from which Protobuf data is read, similar to [`std::io::BufRead`].
 ///
 /// Like [`std::io::BufRead`], this trait assumes that the reader uses an underlying buffer.
-/// [`PbDecoder`] uses this trait as the interface to decode incoming Protobuf message.
+/// [`PbDecoder`] uses this trait as the interface to decode incoming Protobuf messages.
 pub trait PbRead {
-    /// I/O error returned on read failure
+    /// I/O error returned on read failure.
     type Error;
 
     /// Returns the internal buffer, filling it with more data if necessary.
@@ -166,9 +168,9 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 }
 
 #[derive(Debug)]
-/// Decoder for Protobuf data types and messages.
+/// Decoder that decodes Protobuf messages and values into Rust types.
 ///
-/// Main interface for decoding Protobuf messages, reading bytes from an underlying [`PbRead`]
+/// Main interface for decoding Protobuf messages. Reads bytes from an underlying [`PbRead`]
 /// instance.
 ///
 /// Decoding a Protobuf message:
@@ -201,7 +203,7 @@ pub struct PbDecoder<R: PbRead> {
 
 impl<R: PbRead> PbDecoder<R> {
     #[inline]
-    /// Constructs a new decoder from a [`PbRead`].
+    /// Construct a new decoder from a [`PbRead`].
     pub fn new(reader: R) -> Self {
         Self {
             reader,
