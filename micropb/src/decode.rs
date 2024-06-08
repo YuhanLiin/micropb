@@ -36,7 +36,7 @@ pub enum DecodeError<E> {
     Utf8,
     /// Exceeded capcity of fixed container for `string`, `bytes`, repeated, or `map` field
     Capacity,
-    /// Actual length of LEN record differs from value of length prefix
+    /// Actual length of length-delimited record differs from value of length prefix
     WrongLen,
     /// Error returned from reader
     Reader(E),

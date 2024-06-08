@@ -68,7 +68,7 @@ pub const fn sizeof_tag(tag: Tag) -> usize {
 /// ```
 /// use micropb::size::*;
 ///
-/// // Calculate size of a LEN record for a repeated packed field
+/// // Calculate size of a length-delimited record for a repeated packed field
 /// let packed = &[1, 2, 150];
 /// let size = sizeof_len_record(sizeof_packed(packed, |v| sizeof_int32(*v)));
 /// assert_eq!(size, 4);
@@ -78,7 +78,7 @@ pub fn sizeof_packed<T: Copy, F: Fn(&T) -> usize>(elems: &[T], sizer: F) -> usiz
 }
 
 #[inline]
-/// Calculate size of LEN record on the wire, including the length prefix.
+/// Calculate size of length-delimited record on the wire, including the length prefix.
 pub const fn sizeof_len_record(len: usize) -> usize {
     len + sizeof_varint32(len as u32)
 }

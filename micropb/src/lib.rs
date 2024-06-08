@@ -44,7 +44,7 @@ pub use message::MessageEncode;
 pub const WIRE_TYPE_VARINT: u8 = 0;
 /// Protobuf wire type for fixed 64-bit values.
 pub const WIRE_TYPE_I64: u8 = 1;
-/// Protobuf wire type for LEN records.
+/// Protobuf wire type for length-delimited records.
 pub const WIRE_TYPE_LEN: u8 = 2;
 /// Protobuf wire type for fixed 32-bit values.
 pub const WIRE_TYPE_I32: u8 = 5;
