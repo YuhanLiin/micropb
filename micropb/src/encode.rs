@@ -1,5 +1,3 @@
-//! Encode Rust types into Protobuf messages and values.
-
 use crate::{Tag, VarInt};
 
 /// A writer to which Protobuf data is written, similar to [`std::io::Write`].

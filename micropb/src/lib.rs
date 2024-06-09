@@ -10,11 +10,11 @@ use num_traits::{AsPrimitive, PrimInt};
 
 pub mod container;
 #[cfg(feature = "decode")]
-pub mod decode;
+mod decode;
 #[cfg(feature = "encode")]
-pub mod encode;
+mod encode;
 pub mod field;
-pub mod message;
+mod message;
 mod misc;
 #[cfg(feature = "encode")]
 pub mod size;

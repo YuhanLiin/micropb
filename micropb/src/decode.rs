@@ -1,5 +1,3 @@
-//! Decode Protobuf messages and values from the wire into Rust types.
-
 use core::{
     mem::MaybeUninit,
     str::{from_utf8, Utf8Error},
