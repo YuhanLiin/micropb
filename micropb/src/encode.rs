@@ -6,8 +6,8 @@ use crate::{Tag, VarInt};
 ///
 /// [`PbEncoder`] uses this trait as the interface for writing encoded Protobuf messages.
 ///
-/// This trait is implemented for common byte vector types such as [`heapless::Vec`] and
-/// [`alloc::Vec`]. The implementations are feature-gated.
+/// This trait is implemented for common byte vector types such as `heapless::Vec` and
+/// [`Vec`]. The implementations are feature-gated.
 pub trait PbWrite {
     /// I/O error returned on write failure.
     type Error;
@@ -75,20 +75,20 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
 }
 
 #[derive(Debug)]
-/// Encoder that encodes Rust types into Protobuf messages and values.
+/// Encoder that serializes Rust types into Protobuf messages and values.
 ///
 /// Main interface for encoding Protobuf messages. Writes bytes to an underlying [`PbWrite`]
 /// instance.
 ///
 /// Encoding a Protobuf message:
 /// ``` no_run
-/// use micropb::{PbEncoder, PbWrite};
+/// use micropb::{PbEncoder, PbWrite, MessageEncode};
 /// use micropb::heapless::Vec;
 ///
 /// # #[derive(Default)]
 /// # struct ProtoMessage;
 /// # impl micropb::MessageEncode for ProtoMessage {
-/// #   fn encode<W: PbWrite>(&mut self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> { todo!() }
+/// #   fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> { todo!() }
 /// #   fn compute_size(&self) -> usize { 0 }
 /// # }
 ///
@@ -99,6 +99,7 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
 /// // allowing the encoder to write into it. Same applies to `arrayvec` and `alloc`.
 /// let mut encoder = PbEncoder::new(Vec::<u8, 10>::new());
 /// message.encode(&mut encoder)?;
+/// # Ok::<(), ()>(())
 /// ```
 pub struct PbEncoder<W: PbWrite> {
     writer: W,

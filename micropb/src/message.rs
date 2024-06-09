@@ -15,7 +15,7 @@ use crate::encode::{PbEncoder, PbWrite};
 pub trait MessageDecode {
     /// Decode an instance of the message from the decoder and merge it into `self`.
     ///
-    /// Length of the message need to be known beforehand.
+    /// Length of the message needs to be known beforehand.
     fn decode<R: PbRead>(
         &mut self,
         decoder: &mut PbDecoder<R>,

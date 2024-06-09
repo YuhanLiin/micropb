@@ -1,7 +1,7 @@
 //! Placeholder
 
 #![warn(missing_docs)]
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(any(feature = "std", doc)), no_std)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

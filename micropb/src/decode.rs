@@ -61,28 +61,30 @@ pub trait PbRead {
     /// Returns the internal buffer, filling it with more data if necessary.
     ///
     /// This call does not consume the underlying buffer, so calling it consecutively may yield the
-    /// same contents. As such, this call must be followed by a [`Self::pb_advance`] call with
-    /// the number of bytes that are "consumed" from the returned buffer, to ensure that consumed
-    /// bytes won't be returned again.
+    /// same contents. As such, this call must be followed by a [`pb_advance`](Self::pb_advance)
+    /// call with the number of bytes that are "consumed" from the returned buffer, to ensure that
+    /// consumed bytes won't be returned again.
     ///
     /// Empty buffer is returned if and only if the underlying reader has reached EOF.
     fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error>;
 
     /// Consumes `bytes` from the underlying buffer.
     ///
-    /// This function should be called after [`Self::pb_read_chunk`]. It advances the internal
-    /// buffer by `bytes` so that those bytes won't be returned from future calls to
-    /// [`Self::pb_read_chunk`]. This function doesn't perform I/O, so it's infallible.
+    /// This function should be called after [`pb_read_chunk`](Self::pb_read_chunk). It advances
+    /// the internal buffer by `bytes` so that those bytes won't be returned from future calls to
+    /// [`pb_read_chunk`](Self::pb_read_chunk). This function doesn't perform I/O, so it's
+    /// infallible.
     ///
     /// The `bytes` should not exceed the length of the buffer returned from
-    /// [`Self::pb_read_chunk`]. Otherwise, the behaviour is implementation-defined.
+    /// [`pb_read_chunk`](Self::pb_read_chunk). Otherwise, the behaviour is implementation-defined.
     fn pb_advance(&mut self, bytes: usize);
 
     /// Try to read exactly the number of bytes needed to fill `buf`.
     ///
     /// Returns the number of bytes read, which will be at most the size of `buf`. If the return is
     /// less than `buf`, then the reader reached EOF before filling `buf`. This function will
-    /// advance the reader by the amount of bytes read, so no need to call [`Self::pb_advance`].
+    /// advance the reader by the amount of bytes read, so no need to call
+    /// [`pb_advance`](Self::pb_advance).
     fn pb_read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<usize, Self::Error> {
         if buf.is_empty() {
             return Ok(0);
@@ -170,14 +172,14 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 }
 
 #[derive(Debug)]
-/// Decoder that decodes Protobuf messages and values into Rust types.
+/// Decoder that reads Protobuf bytes and decodes them into Rust types.
 ///
 /// Main interface for decoding Protobuf messages. Reads bytes from an underlying [`PbRead`]
 /// instance.
 ///
 /// Decoding a Protobuf message:
 /// ```no_run
-/// use micropb::{PbRead, PbDecoder};
+/// use micropb::{PbRead, PbDecoder, MessageDecode};
 ///
 /// # #[derive(Default)]
 /// # struct ProtoMessage;
@@ -185,9 +187,9 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 /// #   fn decode<R: PbRead>(&mut self, decoder: &mut PbDecoder<R>, len: usize) -> Result<(), micropb::DecodeError<R::Error>> { todo!() }
 /// # }
 ///
-/// let data = &[0x08, 0x96, 0x01];
+/// let data = [0x08, 0x96, 0x01];
 /// // Slices implement `PbRead` out of the box
-/// let mut decoder = PbDecoder::new(data);
+/// let mut decoder = PbDecoder::new(data.as_slice());
 ///
 /// let mut message = ProtoMessage::default();
 /// // Reading from a slice will never fail, so unwrapping here is OK
@@ -414,7 +416,7 @@ impl<R: PbRead> PbDecoder<R> {
         self.decode_varint32().map(Tag)
     }
 
-    /// Decode a `string` into a [`micropb::PbString`] container.
+    /// Decode a `string` into a [`PbString`] container.
     ///
     /// The string container's existing contents will be replaced by the string decoded from the
     /// wire. However, if `presence` is implicit and the new string is empty, the existing string
@@ -453,7 +455,7 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(())
     }
 
-    /// Decode a `bytes` into a [`micropb::PbVec<u8>`] container.
+    /// Decode a `bytes` into a [`PbVec<u8>`](crate::PbVec<u8>) container.
     ///
     /// The byte container's existing contents will be replaced by the bytes decoded from the
     /// wire. However, if `presence` is implicit and the new bytes is empty, the existing container
@@ -504,7 +506,7 @@ impl<R: PbRead> PbDecoder<R> {
         }
     }
 
-    /// Decode a repeated packed field and append the elements to a [`micropb::PbVec`] container.
+    /// Decode a repeated packed field and append the elements to a [`PbVec`] container.
     ///
     /// The `decoder` callback determines how each element is decoded from the wire. If the number
     /// of elements on the wire exceeds the remaining fixed capacity of the container and the
@@ -568,8 +570,10 @@ impl<R: PbRead> PbDecoder<R> {
     /// Decode a Protobuf map key-value pair from the decoder.
     ///
     /// According the the Protobuf spec, the key-value pair is formatted as a Protobuf message with
-    /// the key in field 1 and the value in field 2. Other field numbers are ignored. If the key or
-    /// value field is not found, default values will be used.
+    /// the key in field 1 and the value in field 2. Other field numbers are ignored.
+    ///
+    /// The `key_update` and `val_update` callbacks are expected to decode the key and value
+    /// respectively. If either key or value field is not found, return `None`.
     pub fn decode_map_elem<
         K: Default,
         V: Default,

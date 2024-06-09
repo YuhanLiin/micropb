@@ -10,14 +10,14 @@
 //! For convenience, container trait implementations on existing types are provided in this module,
 //! gated by feature flags.
 //!
-//! - For [`heapless`], [`PbVec`], [`PbString`], and [`PbMap`] are
-//! implemented on [`heapless::Vec`], [`heapless::String`], and [`heapless::IndexMap`]
+//! - For `heapless`, [`PbVec`], [`PbString`], and [`PbMap`] are
+//! implemented on `heapless::Vec`, `heapless::String`, and `heapless::IndexMap`
 //! respectively.
-//! - For [`arrayvec`], [`PbVec`] and [`PbString`] are implemented on [`arrayvec::ArrayVec`] and
-//! [`arrayvec::ArrayString`] respectively.
-//! - For [`alloc`], [`PbVec`], [`PbString`], and [`PbMap`] are implemented on [`Vec`], [`String`],
-//! and [`BTreeMap`] respectively. If [`std`] is enabled, [`PbMap`] is also implemented for
-//! [`HashMap`].
+//! - For `arrayvec`, [`PbVec`] and [`PbString`] are implemented on `arrayvec::ArrayVec` and
+//! `arrayvec::ArrayString` respectively.
+//! - For `alloc`, [`PbVec`], [`PbString`], and [`PbMap`] are implemented on `Vec`, `String`,
+//! and `BTreeMap` respectively. If `std` is enabled, [`PbMap`] is also implemented for
+//! `HashMap`.
 //!
 //! It is also possible to use other types as containers if the container traits are implemented.
 
@@ -54,7 +54,7 @@ pub trait PbVec<T>: PbContainer + Deref<Target = [T]> {
     /// Returns the remaining spare capacity of the vector as a slice of `MaybeUninit<T>`.
     ///
     /// The returned slice can be filled with data before marking the data as initialized using
-    /// [`PbContainer::pb_set_len`].
+    /// [`pb_set_len`](PbContainer::pb_set_len).
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>];
 
     /// Construct a vector from a slice.
@@ -72,11 +72,11 @@ pub trait PbString: PbContainer + Deref<Target = str> {
     /// Returns the remaining spare capacity of the string as a slice of `MaybeUninit<u8>`.
     ///
     /// The returned slice can be filled with bytes before marking the data as initialized using
-    /// [`PbContainer::pb_set_len`].
+    /// [`pb_set_len`](PbContainer::pb_set_len).
     ///
     /// # Safety
-    /// When calling [`PbContainer::pb_set_len`] after filling the spare capacity with bytes, the
-    /// entirety of the new string must be valid UTF-8.
+    /// When calling [`pb_set_len`](PbContainer::pb_set_len) after filling the spare capacity with
+    /// bytes, the entirety of the new string must be valid UTF-8.
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
 
     /// Constructs a string from a string slice.

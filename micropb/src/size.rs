@@ -71,7 +71,8 @@ pub const fn sizeof_tag(tag: Tag) -> usize {
 /// // Calculate size of a length-delimited record for a repeated packed field
 /// let packed = &[1, 2, 150];
 /// let size = sizeof_len_record(sizeof_packed(packed, |v| sizeof_int32(*v)));
-/// assert_eq!(size, 4);
+/// // 1 and 2 are 1 byte each, 150 is 2 bytes, and length prefix is 1 more byte, so total is 5
+/// assert_eq!(size, 5);
 /// ```
 pub fn sizeof_packed<T: Copy, F: Fn(&T) -> usize>(elems: &[T], sizer: F) -> usize {
     elems.iter().map(sizer).sum()
