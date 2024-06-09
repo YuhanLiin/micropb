@@ -102,17 +102,13 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
 /// ```
 pub struct PbEncoder<W: PbWrite> {
     writer: W,
-    bytes_written: usize,
 }
 
 impl<W: PbWrite> PbEncoder<W> {
     #[inline]
     /// Construct a new encoder from a [`PbWrite`].
     pub fn new(writer: W) -> Self {
-        Self {
-            writer,
-            bytes_written: 0,
-        }
+        Self { writer }
     }
 
     #[inline]
@@ -128,15 +124,8 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
-    /// Get the number of bytes that the encoder has written to the writer
-    pub fn bytes_written(&self) -> usize {
-        self.bytes_written
-    }
-
-    #[inline]
     fn write(&mut self, bytes: &[u8]) -> Result<(), W::Error> {
         self.writer.pb_write(bytes)?;
-        self.bytes_written += bytes.len();
         Ok(())
     }
 
@@ -364,7 +353,6 @@ mod tests {
             let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
             encoder.$encode($($arg),+).unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
-            assert_eq!(encoder.bytes_written, encoder.writer.len());
             assert_eq!(encoder.writer.len(), $sizeof($($arg),+));
         }
     }
@@ -373,7 +361,6 @@ mod tests {
         ($expected:expr, $encode:ident( $($arg:expr),+ )) => {
             let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
             encoder.$encode($($arg),+).unwrap();
-            assert_eq!(encoder.bytes_written, encoder.writer.len());
             assert_eq!($expected, encoder.writer.as_slice());
         }
     }
@@ -563,7 +550,6 @@ mod tests {
             .encode_packed(len, &[0u32; 0], PbEncoder::encode_varint32)
             .unwrap();
         assert_eq!([0], encoder.writer.as_slice());
-        assert_eq!(encoder.bytes_written, encoder.writer.len());
         assert_eq!(1, sizeof_len_record(len));
 
         let mut encoder = PbEncoder::new(ArrayVec::<_, 20>::new());
@@ -572,7 +558,6 @@ mod tests {
             .encode_packed(len, &[1, 156], PbEncoder::encode_varint32)
             .unwrap();
         assert_eq!([3, 0x01, 0x9C, 0x01], encoder.writer.as_slice());
-        assert_eq!(encoder.bytes_written, encoder.writer.len());
         assert_eq!(4, sizeof_len_record(len));
     }
 
@@ -597,7 +582,6 @@ mod tests {
                 )
                 .unwrap();
             assert_eq!($expected, encoder.writer.as_slice());
-            assert_eq!(encoder.bytes_written, encoder.writer.len());
             assert_eq!($expected.len(), sizeof_len_record(len));
         };
     }
