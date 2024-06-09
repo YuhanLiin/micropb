@@ -92,6 +92,14 @@ pub(crate) enum EncodeFunc {
 }
 
 #[derive(Debug)]
+/// Protobuf code generator
+///
+/// # Note
+/// It's recommended to call [`use_container_alloc`](Self::use_container_alloc),
+/// [`use_container_heapless`](Self::use_container_heapless), or
+/// [`use_container_alloc`](Self::use_container_alloc) to ensure that containers are configured
+/// `string`, `bytes`, repeated, and `map` fields. The generator will return an error if it reaches
+/// these fields without the corresponding container being configured.
 pub struct Generator {
     syntax: Syntax,
     pkg_path: Vec<String>,

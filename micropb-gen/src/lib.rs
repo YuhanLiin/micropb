@@ -1,5 +1,9 @@
+//! Placeholder
+
+#![warn(missing_docs)]
+
 pub mod config;
-pub mod generator;
+mod generator;
 mod pathtree;
 mod utils;
 
@@ -18,10 +22,14 @@ use prost::Message;
 use prost_types::FileDescriptorSet;
 
 #[derive(Debug, Clone, Copy, Default)]
+/// Whether to include encode and decode logic
 pub enum EncodeDecode {
+    /// Only include encode logic
     EncodeOnly,
+    /// Only include decode logic
     DecodeOnly,
     #[default]
+    /// Include both encode and decode logic
     Both,
 }
 
@@ -36,6 +44,7 @@ impl EncodeDecode {
 }
 
 impl Generator {
+    /// Create new generator with default settings
     pub fn new() -> Self {
         Self::default()
     }
@@ -57,6 +66,17 @@ impl Generator {
         self
     }
 
+    /// Configure the generator to generate `heapless` containers for Protobuf `string`, `bytes`,
+    /// repeated, and `map` fields.
+    ///
+    /// Specifically, `heapless::String` is generated for `string` fields, `heapless::Vec` is
+    /// generated for `bytes` and repeated fields, and `heapless::FnvIndexMap` is generated for
+    /// `map` fields. This uses [`configure`](Self::configure) under the hood, so configurations
+    /// set by this call can all be overriden by future configurations.
+    ///
+    /// # Note
+    /// Since `heapless` containers are fixed size, [`max_len`] or [`max_bytes`] must be set for
+    /// all fields that generate these containers.
     pub fn use_container_heapless(&mut self) -> &mut Self {
         self.configure(
             ".",
@@ -68,6 +88,21 @@ impl Generator {
         self
     }
 
+    /// Configure the generator to generate `arrayvec` containers for Protobuf `string`, `bytes`,
+    /// and repeated fields.
+    ///
+    /// Specifically, `arrayvec::ArrayString` is generated for `string` fields, and
+    /// `arrayvec::ArrayVec` is generated for `bytes` and repeated fields. This uses
+    /// [`configure`](Self::configure) under the hood, so configurations set by this call can all
+    /// be overriden by future configurations.
+    ///
+    /// # Note
+    /// No container is configured for `map` fields, since `arrayvec` doesn't have a suitable map
+    /// type. If the .proto files contain `map` fields, [`map_type`] needs to be configured
+    /// separately.
+    ///
+    /// Since `arrayvec` containers are fixed size, [`max_len`] or [`max_bytes`] must be set for
+    /// all fields that generate these containers.
     pub fn use_container_arrayvec(&mut self) -> &mut Self {
         self.configure(
             ".",
@@ -78,6 +113,17 @@ impl Generator {
         self
     }
 
+    /// Configure the generator to generate `alloc` containers for Protobuf `string`, `bytes`,
+    /// repeated, and `map` fields.
+    ///
+    /// Specifically, `alloc::string::String` is generated for `string` fields, `alloc::vec::Vec`
+    /// is generated for `bytes` and repeated fields, and `alloc::collections::BTreeMap` is
+    /// generated for `map` fields. This uses [`configure`](Self::configure) under the hood, so
+    /// configurations set by this call can all be overriden by future configurations.
+    ///
+    /// # Note
+    /// Since `alloc` containers are dynamic size, [`max_len`] and [`max_bytes`] must NOT be set for
+    /// all fields that generate these containers.
     pub fn use_container_alloc(&mut self) -> &mut Self {
         self.configure(
             ".",
@@ -89,6 +135,15 @@ impl Generator {
         self
     }
 
+    /// Compile `.proto` files into a single Rust file.
+    ///
+    /// # Example
+    /// ```
+    /// // build.rs
+    /// let mut gen = micropb_gen::Generator::new();
+    /// gen.compile_protos(&["server.proto", "client.proto"],
+    ///                     std::env::var("OUT_DIR").unwrap() + "/output.rs").unwrap();
+    /// ```
     pub fn compile_protos(
         &mut self,
         protos: &[impl AsRef<Path>],
@@ -122,6 +177,10 @@ impl Generator {
         self.compile_fdset_file(fdset_file, out_filename)
     }
 
+    /// Compile a Protobuf file descriptor set into a Rust file.
+    ///
+    /// Similar to [`compile_protos`](Self::compile_protos), but it does not invoke `protoc` and
+    /// instead takes a file descriptor set.
     pub fn compile_fdset_file(
         &mut self,
         fdset_file: impl AsRef<Path>,
@@ -149,26 +208,44 @@ impl Generator {
         Ok(())
     }
 
+    /// Determine whether the generator strips enum names from variant names.
+    ///
+    /// Protobuf enums commonly include the enum name as a prefix of variant names. `micropb`
+    /// strips this enum name prefix by default. Setting this to `true` prevents the prefix from
+    /// being stripped.
     pub fn retain_enum_prefix(&mut self, retain_enum_prefix: bool) -> &mut Self {
         self.retain_enum_prefix = retain_enum_prefix;
         self
     }
 
+    /// Determine whether the generator formats the output code.
+    ///
+    /// If the `format` feature isn't enabled, this does nothing.
     pub fn format(&mut self, format: bool) -> &mut Self {
         self.format = format;
         self
     }
 
+    /// Determine whether to generate logic for encoding and decoding Protobuf messages.
+    ///
+    /// Some applications don't need to support both encoding and decoding. This setting allows
+    /// either the encoding or decoding logic to be omitted from the output. By default, both
+    /// encoding and decoding are included.
+    ///
+    /// This setting allows omitting the `encode` or `decode` feature flag from `micropb`.
     pub fn encode_decode(&mut self, encode_decode: EncodeDecode) -> &mut Self {
         self.encode_decode = encode_decode;
         self
     }
 
+    /// When set, the file descriptor set generated by `protoc` is written to the provided path,
+    /// instead of a temporary directory.
     pub fn file_descriptor_set_path<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
         self.fdset_path = Some(path.into());
         self
     }
 
+    /// Add an argument to the `protoc` invocation when compiling Protobuf files.
     pub fn add_protoc_arg<S: AsRef<OsStr>>(&mut self, arg: S) -> &mut Self {
         self.protoc_args.push(arg.as_ref().to_owned());
         self
