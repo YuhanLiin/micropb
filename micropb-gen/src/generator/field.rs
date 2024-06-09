@@ -460,8 +460,8 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Custom(CustomField::Type(_)) => match &func_type {
-                EncodeFunc::Sizeof(size) => quote! { #size += self.#fname.compute_field_size(); },
-                EncodeFunc::Encode(encoder) => quote! { self.#fname.encode_field(#encoder)?; },
+                EncodeFunc::Sizeof(size) => quote! { #size += self.#fname.compute_fields_size(); },
+                EncodeFunc::Encode(encoder) => quote! { self.#fname.encode_fields(#encoder)?; },
             },
 
             FieldType::Custom(CustomField::Delegate(_)) => quote! {},

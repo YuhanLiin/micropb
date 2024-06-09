@@ -47,19 +47,19 @@ pub trait FieldEncode {
     /// Unlike [`FieldDecode::decode_field`], this call is expected to write out complete fields,
     /// including the tags. It should also write out all fields as once, since it will only be
     /// called once. For non-packed repeated fields, each element is written out as its own field.
-    fn encode_field<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
+    fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
 
     /// Compute size of all fields, including the tags.
-    fn compute_field_size(&self) -> usize;
+    fn compute_fields_size(&self) -> usize;
 }
 
 #[cfg(feature = "encode")]
 impl<T: FieldEncode> FieldEncode for &T {
-    fn encode_field<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
-        (*self).encode_field(encoder)
+    fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
+        (*self).encode_fields(encoder)
     }
 
-    fn compute_field_size(&self) -> usize {
-        (*self).compute_field_size()
+    fn compute_fields_size(&self) -> usize {
+        (*self).compute_fields_size()
     }
 }

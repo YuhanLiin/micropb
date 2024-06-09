@@ -311,8 +311,8 @@ impl<'a> Oneof<'a> {
                 field: CustomField::Type(_),
                 ..
             } => match &func_type {
-                EncodeFunc::Sizeof(size) => quote! { #size += self.#name.compute_field_size(); },
-                EncodeFunc::Encode(encoder) => quote! { self.#name.encode_field(#encoder)?; },
+                EncodeFunc::Sizeof(size) => quote! { #size += self.#name.compute_fields_size(); },
+                EncodeFunc::Encode(encoder) => quote! { self.#name.encode_fields(#encoder)?; },
             },
 
             OneofType::Custom {

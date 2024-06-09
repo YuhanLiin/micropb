@@ -30,7 +30,7 @@ impl FieldDecode for MockField {
 
 // All this impl does is write out all the tags as varints
 impl FieldEncode for MockField {
-    fn encode_field<W: micropb::PbWrite>(
+    fn encode_fields<W: micropb::PbWrite>(
         &self,
         encoder: &mut micropb::PbEncoder<W>,
     ) -> Result<(), W::Error> {
@@ -40,7 +40,7 @@ impl FieldEncode for MockField {
         Ok(())
     }
 
-    fn compute_field_size(&self) -> usize {
+    fn compute_fields_size(&self) -> usize {
         self.tags.iter().copied().map(sizeof_tag).sum()
     }
 }

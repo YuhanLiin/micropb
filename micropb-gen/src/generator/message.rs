@@ -430,8 +430,10 @@ impl<'a> Message<'a> {
 
         let unknown_logic = if self.unknown_handler.is_some() {
             match func_type {
-                EncodeFunc::Sizeof(size) => quote! { #size += self._unknown.compute_field_size(); },
-                EncodeFunc::Encode(encoder) => quote! { self._unknown.encode_field(#encoder)?; },
+                EncodeFunc::Sizeof(size) => {
+                    quote! { #size += self._unknown.compute_fields_size(); }
+                }
+                EncodeFunc::Encode(encoder) => quote! { self._unknown.encode_fields(#encoder)?; },
             }
         } else {
             quote! {}
