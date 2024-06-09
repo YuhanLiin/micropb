@@ -48,7 +48,7 @@ impl<const N: usize> PbWrite for heapless::Vec<u8, N> {
 }
 
 #[cfg(feature = "alloc")]
-impl PbWrite for Vec<u8> {
+impl PbWrite for alloc::vec::Vec<u8> {
     type Error = never::Never;
 
     #[inline]

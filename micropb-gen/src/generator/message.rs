@@ -385,7 +385,7 @@ impl<'a> Message<'a> {
             .map(|o| o.generate_decode_branches(gen, &mod_name, &tag, &decoder));
 
         let unknown_branch = if self.unknown_handler.is_some() {
-            quote! { self._unknown.decode_field(#tag, #decoder)?; }
+            quote! { if !self._unknown.decode_field(#tag, #decoder)? { return Err(::micropb::DecodeError::CustomField) } }
         } else {
             quote! { #decoder.skip_wire_value(#tag.wire_type())?; }
         };

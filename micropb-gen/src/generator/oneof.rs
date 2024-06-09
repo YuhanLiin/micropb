@@ -270,7 +270,7 @@ impl<'a> Oneof<'a> {
             } => {
                 let nums = nums.iter().map(|n| Literal::i32_unsuffixed(*n));
                 quote! {
-                    #(#nums)|* => { self.#name.decode_field(#tag, #decoder)?; }
+                    #(#nums)|* => { if !self.#name.decode_field(#tag, #decoder)? { return Err(::micropb::DecodeError::CustomField) } }
                 }
             }
             OneofType::Custom {
@@ -279,7 +279,7 @@ impl<'a> Oneof<'a> {
             } => {
                 let nums = nums.iter().map(|n| Literal::i32_unsuffixed(*n));
                 quote! {
-                    #(#nums)|* => { self.#field.decode_field(#tag, #decoder)?; }
+                    #(#nums)|* => { if !self.#field.decode_field(#tag, #decoder)? { return Err(::micropb::DecodeError::CustomField) } }
                 }
             }
         }

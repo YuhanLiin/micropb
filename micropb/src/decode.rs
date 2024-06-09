@@ -32,6 +32,8 @@ pub enum DecodeError<E> {
     UnknownWireType,
     /// Field number of 0, which is not allowed
     ZeroField,
+    /// Custom field decoding returned false for field number that should be recognized
+    CustomField,
     /// Decoded string is not valid UTF8
     Utf8,
     /// Exceeded capcity of fixed container for `string`, `bytes`, repeated, or `map` field

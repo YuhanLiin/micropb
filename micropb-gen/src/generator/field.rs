@@ -303,11 +303,11 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Custom(CustomField::Type(_)) => {
-                quote! { self.#fname.decode_field(#tag, #decoder)?; }
+                quote! { if !self.#fname.decode_field(#tag, #decoder)? { return Err(::micropb::DecodeError::CustomField) } }
             }
 
             FieldType::Custom(CustomField::Delegate(field)) => {
-                quote! { self.#field.decode_field(#tag, #decoder)?; }
+                quote! { if !self.#field.decode_field(#tag, #decoder)? { return Err(::micropb::DecodeError::CustomField) } }
             }
         };
 
