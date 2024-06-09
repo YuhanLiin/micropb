@@ -177,6 +177,7 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Encode an `uint64`.
     pub fn encode_varint64(&mut self, u: u64) -> Result<(), W::Error> {
         self.encode_varint(u, false)
@@ -189,6 +190,7 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Encode an `int64`.
     pub fn encode_int64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_varint64(i as u64)
@@ -201,6 +203,7 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Encode an `sint64`.
     pub fn encode_sint64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_varint64(((i << 1) ^ (i >> 63)) as u64)
@@ -219,6 +222,7 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Encode a `fixed64`.
     pub fn encode_fixed64(&mut self, u: u64) -> Result<(), W::Error> {
         self.write(&u.to_le_bytes())
@@ -241,6 +245,7 @@ impl<W: PbWrite> PbEncoder<W> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Encode a `sfixed64`.
     pub fn encode_sfixed64(&mut self, i: i64) -> Result<(), W::Error> {
         self.encode_fixed64(i as u64)

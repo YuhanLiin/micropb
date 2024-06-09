@@ -14,6 +14,7 @@ pub const fn sizeof_varint32(v: u32) -> usize {
     }
 }
 
+#[cfg(feature = "enable-64bit")]
 /// Calculate size of `uint64` on the wire.
 pub const fn sizeof_varint64(v: u64) -> usize {
     const U32_MAX: u64 = u32::MAX as u64;
@@ -40,6 +41,7 @@ pub const fn sizeof_int32(i: i32) -> usize {
 }
 
 #[inline]
+#[cfg(feature = "enable-64bit")]
 /// Calculate size of `int64` on the wire.
 pub const fn sizeof_int64(i: i64) -> usize {
     sizeof_varint64(i as u64)
@@ -52,6 +54,7 @@ pub const fn sizeof_sint32(i: i32) -> usize {
 }
 
 #[inline]
+#[cfg(feature = "enable-64bit")]
 /// Calculate size of `sint64` on the wire.
 pub const fn sizeof_sint64(i: i64) -> usize {
     sizeof_varint64(((i << 1) ^ (i >> 63)) as u64)

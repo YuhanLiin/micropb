@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["encode", "decode"]
+default = ["encode", "decode", "enable-64bit"]
 encode = []
 decode = []
+enable-64bit = []
 alloc = []
 std = ["alloc"]
 container-arrayvec = ["dep:arrayvec"]

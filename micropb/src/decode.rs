@@ -279,6 +279,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Decode an `uint64`.
     pub fn decode_varint64(&mut self) -> Result<u64, DecodeError<R::Error>> {
         let b = self.get_byte()?;
@@ -302,6 +303,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Decode an `int64`.
     pub fn decode_int64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_varint64().map(|u| u as i64)
@@ -321,6 +323,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Decode an `sint64`.
     pub fn decode_sint64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_varint64()
@@ -358,6 +361,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Decode a `fixed64`.
     pub fn decode_fixed64(&mut self) -> Result<u64, DecodeError<R::Error>> {
         let mut data = [MaybeUninit::uninit(); 8];
@@ -385,6 +389,7 @@ impl<R: PbRead> PbDecoder<R> {
     }
 
     #[inline]
+    #[cfg(feature = "enable-64bit")]
     /// Decode a `sfixed64`.
     pub fn decode_sfixed64(&mut self) -> Result<i64, DecodeError<R::Error>> {
         self.decode_fixed64().map(|u| u as i64)
