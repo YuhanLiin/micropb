@@ -12,6 +12,7 @@ use super::{
 pub(crate) struct OneofField<'a> {
     pub(crate) num: u32,
     pub(crate) tspec: TypeSpec,
+    #[allow(unused)]
     pub(crate) name: &'a str,
     pub(crate) rust_name: Ident,
     pub(crate) boxed: bool,

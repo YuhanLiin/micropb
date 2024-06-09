@@ -359,7 +359,7 @@ impl TypeSpec {
         }
     }
 
-    pub(crate) fn generate_sizeof(&self, gen: &Generator, val_ref: &Ident) -> TokenStream {
+    pub(crate) fn generate_sizeof(&self, _gen: &Generator, val_ref: &Ident) -> TokenStream {
         match self {
             TypeSpec::Message(_) => {
                 quote! { ::micropb::size::sizeof_len_record(#val_ref.compute_size()) }
@@ -378,7 +378,7 @@ impl TypeSpec {
 
     pub(crate) fn generate_encode_expr(
         &self,
-        gen: &Generator,
+        _gen: &Generator,
         encoder: &Ident,
         val_ref: &Ident,
     ) -> TokenStream {

@@ -40,7 +40,7 @@ fn derive_enum_attr(debug: bool) -> TokenStream {
     quote! { #[derive(#debug Clone, Copy, PartialEq, Eq, Hash)] }
 }
 
-struct CurrentConfig<'a> {
+pub(crate) struct CurrentConfig<'a> {
     node: Option<&'a Node<Box<Config>>>,
     config: Cow<'a, Box<Config>>,
 }
@@ -86,7 +86,7 @@ fn msg_error(pkg: &str, msg_name: &str, err_text: &str) -> io::Error {
     io::Error::other(format!("(.{pkg}.{msg_name}) {err_text}"))
 }
 
-enum EncodeFunc {
+pub(crate) enum EncodeFunc {
     Sizeof(Ident),
     Encode(Ident),
 }

@@ -47,7 +47,7 @@ fn boxed_collections() {
     assert_eq!(data.b(), None);
     data.set_b(vec![]);
     assert_eq!(data.b(), Some(&vec![]));
-    assert_eq!(data.b, Box::new(vec![]));
+    assert_eq!(data.b, Box::default());
 
     let list = proto::List::default();
     let _: Box<Vec<proto::Data>> = list.list;

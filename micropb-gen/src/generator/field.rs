@@ -322,7 +322,7 @@ impl<'a> Field<'a> {
             | FieldType::Optional(typ, _)
             | FieldType::Repeated {
                 typ, packed: false, ..
-            } => return typ.wire_type(),
+            } => typ.wire_type(),
 
             FieldType::Map { .. } | FieldType::Repeated { packed: true, .. } => {
                 micropb::WIRE_TYPE_LEN
