@@ -16,6 +16,7 @@ use crate::{
 
 use never::Never;
 
+#[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
 /// Protobuf [decoder](PbDecoder) error.
 ///
