@@ -80,6 +80,8 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
 /// Main interface for encoding Protobuf messages. Writes bytes to an underlying [`PbWrite`]
 /// instance.
 ///
+/// # Example
+///
 /// Encoding a Protobuf message:
 /// ``` no_run
 /// use micropb::{PbEncoder, PbWrite, MessageEncode};

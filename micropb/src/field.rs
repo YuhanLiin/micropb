@@ -14,11 +14,48 @@ use crate::Tag;
 /// One or more Protobuf fields that can be decoded from the wire.
 ///
 /// If multiple fields are included, then the fields will be decoded one at a time.
+///
+/// # Example
+///
+/// Example implementation on custom key-value pair:
+/// ```no_run
+/// use micropb::{PbRead, PbDecoder, Tag, DecodeError};
+/// use micropb::field::FieldDecode;
+///
+/// // Custom field type consisting of 2 fields
+/// struct KeyValuePair {
+///     // Field 1 (int32)
+///     key: i32,
+///     // Field 2 (float)
+///     val: f32,
+/// }
+///
+/// impl FieldDecode for KeyValuePair {
+///     fn decode_field<R: PbRead>(
+///         &mut self,
+///         tag: Tag,
+///         decoder: &mut PbDecoder<R>,
+///     ) -> Result<bool, DecodeError<R::Error>> {
+///         // Use field number to determine which field to decode
+///         match tag.field_num() {
+///             1 => self.key = decoder.decode_int32()?,
+///             2 => self.val = decoder.decode_float()?,
+///             // Return false if field number is unrecognized
+///             _ => return Ok(false),
+///         }
+///         Ok(true)
+///     }
+/// }
+/// ```
 pub trait FieldDecode {
     /// Decode one single field.
     ///
     /// The field being decoded is denoted by `tag`. If the field number of `tag` is unrecognized,
     /// return `false`. Otherwise, decode the field from the decoder and return `true`.
+    ///
+    /// This function can be called multiple times during decoding, once for each matching field on
+    /// the wire. This is true even if the implementer only consists of one field, because the same
+    /// field number can repeat on the wire.
     fn decode_field<R: PbRead>(
         &mut self,
         tag: Tag,
@@ -41,6 +78,33 @@ impl<T: FieldDecode> FieldDecode for &mut T {
 /// One or more Protobuf fields that can be encoded onto the wire.
 ///
 /// If multiple fields are included, then all fields will be encoded at once.
+///
+/// # Example
+///
+/// Example implementation on custom bitfield:
+/// ```no_run
+/// use micropb::{PbWrite, PbEncoder, Tag, WIRE_TYPE_VARINT};
+/// use micropb::field::FieldEncode;
+///
+/// // Custom field type consisting of 8 bools, stored as a bitfield
+/// struct Bits(u8);
+///
+/// impl FieldEncode for Bits {
+///     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
+///         // Encode each of the 8 bits using field numbers 1 to 8
+///         for i in 0..8 {
+///             let b = (self.0 & (1 << i)) != 0;
+///             encoder.encode_tag(Tag::from_parts(i + 1, WIRE_TYPE_VARINT))?;
+///             encoder.encode_bool(b)?;
+///         }
+///         Ok(())
+///     }
+///
+///     fn compute_fields_size(&self) -> usize {
+///         2 * 8 // 8 fields, each one consisting of a tag and a bool
+///     }
+/// }
+/// ```
 pub trait FieldEncode {
     /// Encode all fields, including the tags.
     ///

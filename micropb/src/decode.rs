@@ -178,6 +178,8 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 /// Main interface for decoding Protobuf messages. Reads bytes from an underlying [`PbRead`]
 /// instance.
 ///
+/// # Example
+///
 /// Decoding a Protobuf message:
 /// ```no_run
 /// use micropb::{PbRead, PbDecoder, MessageDecode};
