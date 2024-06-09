@@ -265,9 +265,9 @@ fn extern_import() {
 
     let mut gen2 = Generator::new();
     // Replace `BasicTypes` with an empty message
-    gen2.extern_path(".basic.BasicTypes", "crate::extern_import::Empty")
+    gen2.extern_type_path(".basic.BasicTypes", "crate::extern_import::Empty")
         // Replace `Enum` with the generated enum type
-        .extern_path(".basic.Enum", "crate::extern_import::proto::basic::Enum")
+        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic::Enum")
         .compile_protos(
             &["proto/nested.proto"],
             std::env::var("OUT_DIR").unwrap() + "/import_nested.rs",
