@@ -49,6 +49,61 @@ impl Generator {
         Self::default()
     }
 
+    /// Apply code generator configurations to Protobuf types and fields. See
+    /// [`Config`](crate::Config) for possible configuration options.
+    ///
+    /// The `proto_path` argument is a fully-qualified Protobuf path that points to a package,
+    /// type, or field in the compiled `.proto` files. The configurations are applied to the
+    /// element specified by `proto_path`, as well as its children.
+    ///
+    /// # Example
+    /// ```
+    /// # use micropb_gen::{Generator, Config, config::IntSize};
+    /// # let mut gen = micropb_gen::Generator::new();
+    /// // Configure field attributes on a specific field of a message type
+    /// gen.configure(".pkg.Message.int_field", Config::new().field_attributes("#[serde(skip)]"));
+    ///
+    /// // Configure field attributes on all fields of a message type
+    /// gen.configure(".pkg.Message", Config::new().field_attributes("#[serde(skip)]"));
+    ///
+    /// // Configure field attributes on all fields in a package
+    /// gen.configure(".pkg", Config::new().field_attributes("#[serde(skip)]"));
+    ///
+    /// // Configure field attributes on all fields
+    /// gen.configure(".", Config::new().field_attributes("#[serde(skip)]"));
+    ///
+    /// // Configure types attributes on a specific message type
+    /// gen.configure(".pkg.Message", Config::new().type_attributes("#[derive(Serialize)]"));
+    ///
+    /// // Configure boxing behaviour on an oneof in a message type
+    /// gen.configure(".pkg.Message.my_oneof", Config::new().boxed(true));
+    ///
+    /// // Configure the int size on a variant of an oneof
+    /// gen.configure(".pkg.Message.my_oneof_variant", Config::new().int_size(IntSize::S8));
+    /// ```
+    ///
+    /// # Special paths
+    /// `configure` also supports special path suffixes for configuring fields in the generated
+    /// code that don't have a corresponding Protobuf path.
+    /// ```no_run
+    /// # use micropb_gen::{Generator, Config, config::IntSize};
+    /// # let mut gen = micropb_gen::Generator::new();
+    /// // Configure the int size of the elements in a repeated field via ".elem"
+    /// gen.configure(".pkg.Message.repeated_field.elem", Config::new().int_size(IntSize::S8));
+    ///
+    /// // Configure the int size of the keys in a map field via ".key"
+    /// gen.configure(".pkg.Message.map_field.key", Config::new().int_size(IntSize::S8));
+    /// // Configure the int size of the values in a map field via ".value"
+    /// gen.configure(".pkg.Message.map_field.value", Config::new().int_size(IntSize::S16));
+    ///
+    /// // Configure the field attributes of hazzer field and the type attributes of
+    /// // the hazzer struct in the message via ".has"
+    /// gen.configure(".pkg.Message._has",
+    ///     Config::new().field_attributes("#[serde(skip)]").type_attributes("#[derive(Serialize)]"));
+    ///
+    /// // Configure the field attributes for the unknown handler field of the message via "._unknown"
+    /// gen.configure(".pkg.Message._unknown", Config::new().field_attributes("#[serde(skip)]"));
+    /// ```
     pub fn configure(&mut self, mut proto_path: &str, config: Config) -> &mut Self {
         if proto_path.starts_with('.') {
             proto_path = &proto_path[1..];
@@ -315,6 +370,10 @@ impl Generator {
         proto_path: P1,
         rust_path: P2,
     ) -> &mut Self {
+        assert!(
+            proto_path.as_ref().starts_with('.'),
+            "Fully-qualified Proto path must start with '.'"
+        );
         self.extern_paths.insert(
             proto_path.as_ref().to_owned(),
             syn::parse_str(rust_path.as_ref()).expect("failed to tokenize extern path"),
