@@ -185,26 +185,32 @@ impl<'a> Message<'a> {
         let methods = hazzers.enumerate().map(|(i, f)| {
             let fname = &f.raw_rust_name;
             let setter = format_ident!("set_{}", f.rust_name);
-            let i = Literal::usize_unsuffixed(i);
+            let idx = Literal::usize_unsuffixed(i / 8);
+            let mask = Literal::u8_unsuffixed(1 << (i % 8));
 
             quote! {
                 #[inline]
                 pub fn #fname(&self) -> bool {
-                    self.0[#i]
+                    (self.0[#idx] & #mask) != 0
                 }
 
                 #[inline]
                 pub fn #setter(&mut self, val: bool) {
-                    self.0.set(#i, val);
+                    let elem = &mut self.0[#idx];
+                    if val {
+                        *elem |= #mask;
+                    } else {
+                        *elem &= !#mask;
+                    }
                 }
             }
         });
 
-        let count = Literal::usize_unsuffixed(count);
+        let bytes = Literal::usize_unsuffixed(count.div_ceil(8));
         let decl = quote! {
             #derive_msg
             #(#attrs)*
-            pub struct #hazzer_name(::micropb::BitArr!(for #count, in u8));
+            pub struct #hazzer_name([u8; #bytes]);
 
             impl #hazzer_name {
                 #(#methods)*

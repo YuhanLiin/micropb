@@ -24,8 +24,6 @@ pub use ::arrayvec;
 #[cfg(feature = "container-heapless")]
 pub use ::heapless;
 
-pub use ::bitvec::BitArr;
-
 pub use container::{PbContainer, PbMap, PbString, PbVec};
 #[cfg(feature = "decode")]
 pub use decode::{DecodeError, PbDecoder, PbRead};
