@@ -2,7 +2,7 @@ use std::mem::size_of;
 
 use micropb::{
     size::sizeof_tag, FieldDecode, FieldEncode, MessageDecode, MessageEncode, PbDecoder, PbEncoder,
-    Tag,
+    Tag, WIRE_TYPE_I32,
 };
 
 mod proto {
@@ -22,6 +22,10 @@ impl FieldDecode for MockField {
         tag: Tag,
         decoder: &mut micropb::PbDecoder<R>,
     ) -> Result<bool, micropb::DecodeError<R::Error>> {
+        if tag.wire_type() >= WIRE_TYPE_I32 {
+            // Case where `decode_field` returns false
+            return Ok(false);
+        }
         decoder.skip_wire_value(tag.wire_type())?;
         self.tags.push(tag);
         Ok(true)
@@ -107,6 +111,7 @@ fn decode_unknown() {
         [
             0x30, 0x00, // Field 6
             0x38, 0x00, // Field 7
+            0x45, 0x00, 0x00, 0x00, 0x00, // Field 8 with I32, which should be skipped
         ]
         .as_slice(),
     );
@@ -136,4 +141,16 @@ fn decode_custom_repeated() {
     assert_eq!(list.list.tags[0], Tag::from_parts(1, 0));
     assert_eq!(list.list.tags[1], Tag::from_parts(1, 0));
     assert_eq!(list.list.tags[2], Tag::from_parts(1, 0));
+}
+
+#[test]
+fn decode_custom_error() {
+    let mut list = proto::List::default();
+    // Field 1 with I32 wire type, which should trigger a custom handler error
+    let mut decoder = PbDecoder::new([0x0D, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        list.decode(&mut decoder, len),
+        Err(micropb::DecodeError::CustomField)
+    );
 }
