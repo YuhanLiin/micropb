@@ -198,7 +198,7 @@ impl Generator {
     /// Compile `.proto` files into a single Rust file.
     ///
     /// # Example
-    /// ```
+    /// ```no_run
     /// // build.rs
     /// let mut gen = micropb_gen::Generator::new();
     /// gen.compile_protos(&["server.proto", "client.proto"],

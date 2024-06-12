@@ -69,7 +69,7 @@ macro_rules! config_decl {
         /// Configuration fields are set by chaining builder methods:
         /// ```no_run
         /// # use micropb_gen::Config;
-        /// Config::new().boxed(true).max_len(12).vec_type("MyVec")
+        /// Config::new().boxed(true).max_len(12).vec_type("MyVec");
         /// ```
         pub struct Config {
             $(pub(crate) $field: Option<$type>,)+
@@ -310,9 +310,15 @@ config_decl! {
     /// # use micropb_gen::{Generator, Config, config::CustomField};
     /// # let mut gen = micropb_gen::Generator::new();
     /// // Make the generator generate `foo: crate::CustomHandler` for field `foo`
-    /// gen.configure(".Message.foo", Config::new().custom_field(CustomField::Type("crate::CustomHandler")));
+    /// gen.configure(
+    ///     ".Message.foo",
+    ///     Config::new().custom_field(CustomField::Type("crate::CustomHandler".to_owned()))
+    /// );
     /// // Decoding and encoding of `bar` will also be handled by the `CustomHandler` assigned to `foo`
-    /// gen.configure(".Message.bar", Config::new().custom_field(CustomField::Delegate("foo")));
+    /// gen.configure(
+    ///     ".Message.bar",
+    ///     Config::new().custom_field(CustomField::Delegate("foo".to_owned()))
+    /// );
     /// ```
     custom_field: Option<CustomField>,
 
@@ -326,9 +332,9 @@ config_decl! {
     /// # use micropb_gen::{Generator, Config};
     /// # let mut gen = micropb_gen::Generator::new();
     /// // `super` can't be a field identifier, so we need to rename it
-    /// gen.configure(".Message.super", Config::new().rename("super_"));
+    /// gen.configure(".Message.super", Config::new().rename_field("super_"));
     /// // The oneof field will be renamed to `oneof`, and the oneof type will be `Oneof`
-    /// gen.configure(".Message.my_oneof", Config::new().rename("oneof"));
+    /// gen.configure(".Message.my_oneof", Config::new().rename_field("oneof"));
     /// ```
     ///
     /// # Note
