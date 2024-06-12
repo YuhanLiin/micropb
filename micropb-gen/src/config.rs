@@ -314,11 +314,7 @@ config_decl! {
     /// // Decoding and encoding of `bar` will also be handled by the `CustomHandler` assigned to `foo`
     /// gen.configure(".Message.bar", Config::new().custom_field(CustomField::Delegate("foo")));
     /// ```
-    ///
-    /// # Note
-    /// This configuration is only applied to the path passed to [`Generator::configure`]. It is
-    /// not propagated to "children" paths.
-    [no_inherit] custom_field: Option<CustomField>,
+    custom_field: Option<CustomField>,
 
     /// Rename a field.
     ///
