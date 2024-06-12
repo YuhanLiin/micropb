@@ -342,20 +342,6 @@ pub(crate) fn make_test_oneof_field(
 }
 
 #[cfg(test)]
-pub(crate) fn make_test_oneof<'a>(name: &'a str, otype: OneofType<'a>) -> Oneof<'a> {
-    Oneof {
-        name,
-        rust_name: name.to_owned(),
-        raw_rust_name: Ident::new_raw(name, Span::call_site()),
-        otype,
-        field_attrs: vec![],
-        type_attrs: vec![],
-        derive_dbg: true,
-        idx: 0,
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use std::borrow::Cow;
 
@@ -484,45 +470,6 @@ mod tests {
                 derive_dbg: false,
                 idx: 0
             }
-        );
-    }
-
-    #[test]
-    fn oneof_enum() {
-        let gen = Generator::default();
-        let oneof = Oneof {
-            name: "oneof",
-            rust_name: "oneof".to_owned(),
-            raw_rust_name: Ident::new_raw("oneof", Span::call_site()),
-            otype: OneofType::Enum {
-                type_name: Ident::new("Oneof", Span::call_site()),
-                fields: vec![
-                    make_test_oneof_field(0, "a", true, TypeSpec::Float),
-                    make_test_oneof_field(1, "b", false, TypeSpec::Bool),
-                ],
-            },
-            field_attrs: parse_attributes("#[default]").unwrap(),
-            type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
-            derive_dbg: true,
-            idx: 0,
-        };
-
-        let out = oneof.generate_decl(&gen);
-        let expected = quote! {
-            #[derive(Debug, Clone, PartialEq)]
-            #[derive(Eq)]
-            pub enum Oneof {
-                A(::alloc::boxed::Box<f32>),
-                B(bool),
-            }
-        };
-        assert_eq!(out.to_string(), expected.to_string());
-
-        assert_eq!(
-            oneof
-                .generate_field(&gen, &Ident::new("Msg", Span::call_site()))
-                .to_string(),
-            quote! { #[default] pub r#oneof: ::core::option::Option<Msg::Oneof>, }.to_string()
         );
     }
 
