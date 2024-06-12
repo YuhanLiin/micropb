@@ -8,7 +8,6 @@
 use crate::decode::{DecodeError, PbDecoder, PbRead};
 #[cfg(feature = "encode")]
 use crate::encode::{PbEncoder, PbWrite};
-use crate::Tag;
 
 #[cfg(feature = "decode")]
 /// One or more Protobuf fields that can be decoded from the wire.
@@ -58,7 +57,7 @@ pub trait FieldDecode {
     /// field number can repeat on the wire.
     fn decode_field<R: PbRead>(
         &mut self,
-        tag: Tag,
+        tag: crate::Tag,
         decoder: &mut PbDecoder<R>,
     ) -> Result<bool, DecodeError<R::Error>>;
 }
@@ -67,7 +66,7 @@ pub trait FieldDecode {
 impl<T: FieldDecode> FieldDecode for &mut T {
     fn decode_field<R: PbRead>(
         &mut self,
-        tag: Tag,
+        tag: crate::Tag,
         decoder: &mut PbDecoder<R>,
     ) -> Result<bool, DecodeError<R::Error>> {
         (*self).decode_field(tag, decoder)

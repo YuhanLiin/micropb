@@ -413,7 +413,11 @@ impl<R: PbRead> PbDecoder<R> {
     #[inline]
     /// Decode a `double`.
     pub fn decode_double(&mut self) -> Result<f64, DecodeError<R::Error>> {
-        self.decode_fixed64().map(f64::from_bits)
+        let mut data = [MaybeUninit::uninit(); 8];
+        self.read_exact(&mut data)?;
+        // SAFETY: read_exact is guaranteed to write to the whole buffer
+        let data = unsafe { maybe_ununit_array_assume_init(data) };
+        Ok(f64::from_le_bytes(data))
     }
 
     #[inline(always)]

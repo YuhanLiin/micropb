@@ -262,13 +262,13 @@ impl<W: PbWrite> PbEncoder<W> {
     #[inline]
     /// Encode a `float`.
     pub fn encode_float(&mut self, f: f32) -> Result<(), W::Error> {
-        self.encode_fixed32(f.to_bits())
+        self.write(&f.to_le_bytes())
     }
 
     #[inline]
     /// Encode a `double`.
     pub fn encode_double(&mut self, f: f64) -> Result<(), W::Error> {
-        self.encode_fixed64(f.to_bits())
+        self.write(&f.to_le_bytes())
     }
 
     #[inline(always)]
