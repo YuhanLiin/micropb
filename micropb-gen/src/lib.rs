@@ -80,6 +80,10 @@ impl Generator {
     ///
     /// // Configure the int size on a variant of an oneof
     /// gen.configure(".pkg.Message.my_oneof_variant", Config::new().int_size(IntSize::S8));
+    ///
+    /// // Configure the int size of an enum
+    /// // Note that enum variants cannot be configured
+    /// gen.configure(".pkg.Enum", Config::new().enum_int_size(IntSize::S8));
     /// ```
     ///
     /// # Special paths
@@ -97,12 +101,13 @@ impl Generator {
     /// gen.configure(".pkg.Message.map_field.value", Config::new().int_size(IntSize::S16));
     ///
     /// // Configure the field attributes of hazzer field and the type attributes of
-    /// // the hazzer struct in the message via ".has"
+    /// // the hazzer struct in the message via "._has"
     /// gen.configure(".pkg.Message._has",
     ///     Config::new().field_attributes("#[serde(skip)]").type_attributes("#[derive(Serialize)]"));
     ///
     /// // Configure the field attributes for the unknown handler field of the message via "._unknown"
     /// gen.configure(".pkg.Message._unknown", Config::new().field_attributes("#[serde(skip)]"));
+    ///
     /// ```
     pub fn configure(&mut self, mut proto_path: &str, config: Config) -> &mut Self {
         if proto_path.starts_with('.') {
