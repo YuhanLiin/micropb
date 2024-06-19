@@ -107,7 +107,7 @@ impl<T: FieldDecode> FieldDecode for &mut T {
 pub trait FieldEncode {
     /// Encode all fields, including the tags.
     ///
-    /// Unlike [`FieldDecode::decode_field`], this call is expected to write out complete fields,
+    /// Unlike `FieldDecode::decode_field`, this call is expected to write out complete fields,
     /// including the tags. It should also write out all fields as once, since it will only be
     /// called once. For non-packed repeated fields, each element is written out as its own field.
     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
