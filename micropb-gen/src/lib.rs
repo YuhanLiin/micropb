@@ -129,14 +129,16 @@ impl Generator {
     /// Configure the generator to generate `heapless` containers for Protobuf `string`, `bytes`,
     /// repeated, and `map` fields.
     ///
+    /// If using this option, `micropb` should have the `container-heapless` feature enabled.
+    ///
     /// Specifically, `heapless::String` is generated for `string` fields, `heapless::Vec` is
     /// generated for `bytes` and repeated fields, and `heapless::FnvIndexMap` is generated for
     /// `map` fields. This uses [`configure`](Self::configure) under the hood, so configurations
     /// set by this call can all be overriden by future configurations.
     ///
     /// # Note
-    /// Since `heapless` containers are fixed size, [`max_len`] or [`max_bytes`] must be set for
-    /// all fields that generate these containers.
+    /// Since `heapless` containers are fixed size, [`max_len`](Config::max_len) or
+    /// [`max_bytes`](Config::max_bytes) must be set for all fields that generate these containers.
     pub fn use_container_heapless(&mut self) -> &mut Self {
         self.configure(
             ".",
@@ -151,6 +153,8 @@ impl Generator {
     /// Configure the generator to generate `arrayvec` containers for Protobuf `string`, `bytes`,
     /// and repeated fields.
     ///
+    /// If using this option, `micropb` should have the `container-arrayvec` feature enabled.
+    ///
     /// Specifically, `arrayvec::ArrayString` is generated for `string` fields, and
     /// `arrayvec::ArrayVec` is generated for `bytes` and repeated fields. This uses
     /// [`configure`](Self::configure) under the hood, so configurations set by this call can all
@@ -158,11 +162,11 @@ impl Generator {
     ///
     /// # Note
     /// No container is configured for `map` fields, since `arrayvec` doesn't have a suitable map
-    /// type. If the .proto files contain `map` fields, [`map_type`] needs to be configured
-    /// separately.
+    /// type. If the .proto files contain `map` fields, [`map_type`](Config::map_type) needs to be
+    /// configured separately.
     ///
-    /// Since `arrayvec` containers are fixed size, [`max_len`] or [`max_bytes`] must be set for
-    /// all fields that generate these containers.
+    /// Since `arrayvec` containers are fixed size, [`max_len`](Config::max_len) or
+    /// [`max_bytes`](Config::max_bytes) must be set for all fields that generate these containers.
     pub fn use_container_arrayvec(&mut self) -> &mut Self {
         self.configure(
             ".",
@@ -176,14 +180,17 @@ impl Generator {
     /// Configure the generator to generate `alloc` containers for Protobuf `string`, `bytes`,
     /// repeated, and `map` fields.
     ///
+    /// If using this option, `micropb` should have the `container-alloc` feature enabled.
+    ///
     /// Specifically, `alloc::string::String` is generated for `string` fields, `alloc::vec::Vec`
     /// is generated for `bytes` and repeated fields, and `alloc::collections::BTreeMap` is
     /// generated for `map` fields. This uses [`configure`](Self::configure) under the hood, so
     /// configurations set by this call can all be overriden by future configurations.
     ///
     /// # Note
-    /// Since `alloc` containers are dynamic size, [`max_len`] and [`max_bytes`] must NOT be set for
-    /// all fields that generate these containers.
+    /// Since `alloc` containers are dynamic size, [`max_len`](Config::max_bytes) and
+    /// [`max_bytes`](Config::max_bytes) must NOT be set for all fields that generate these
+    /// containers.
     pub fn use_container_alloc(&mut self) -> &mut Self {
         self.configure(
             ".",
@@ -322,7 +329,21 @@ impl Generator {
     ///
     /// # Example
     ///
-    /// For example, let's say we have `app.proto`, which imports from `time.proto`.
+    /// For example, let's say we have `app.proto`:
+    /// ```proto
+    /// // app.proto
+    ///
+    /// syntax = "proto3";
+    /// package app;
+    ///
+    /// message App {
+    ///     time.Timestamp timestamp = 1;
+    ///     time.TZ timezone = 2;
+    /// }
+    /// ```
+    ///
+    /// `app.proto` imports from `time.proto`, which has already been compiled into the
+    /// `time` crate:
     /// ```proto
     /// // time.proto
     ///
@@ -339,29 +360,17 @@ impl Generator {
     /// }
     /// ```
     ///
-    /// ```proto
-    /// // app.proto
-    ///
-    /// syntax = "proto3";
-    /// package app;
-    ///
-    /// message App {
-    ///     time.Timestamp timestamp = 1;
-    ///     time.TZ timezone = 2;
-    /// }
-    /// ```
-    ///
     /// For our application, we're only interested in compiling `app.proto`, since `time.proto` has
-    /// already been compiled by the `time_proto` crate. As such, `extern_type_path` is needed to
-    /// substitute the imported Protobuf types with `time_proto` definitions.
+    /// already been compiled by another crate. As such, we need to substitute Protobuf types
+    /// imported from `time.proto` with Rust definitions from the `time` crate.
     /// ```no_run
     /// // build.rs of app
     ///
     /// let mut gen = micropb_gen::Generator::new();
     /// // Substitute Timestamp message
-    /// gen.extern_type_path(".time.Timestamp", "time_proto::Timestamp");
+    /// gen.extern_type_path(".time.Timestamp", "time::Timestamp");
     /// // Substitute TZ enum
-    /// gen.extern_type_path(".time.TZ", "time_proto::Tz");
+    /// gen.extern_type_path(".time.TZ", "time::Tz");
     /// // Compile only app.proto, not time.proto
     /// gen.compile_protos(&["app.proto"], std::env::var("OUT_DIR").unwrap() + "/output.rs").unwrap();
     /// ```

@@ -1,3 +1,5 @@
+//! Configuration options for Protobuf types and fields.
+
 use proc_macro2::Span;
 use syn::Ident;
 
@@ -64,7 +66,7 @@ macro_rules! config_decl {
         #[non_exhaustive]
         #[derive(Debug, Clone, Default)]
         /// Configuration that changes how the code generator handles Protobuf types and fields.
-        /// See [`Generator::configure`] for how configurations are applied.
+        /// See [`configure`](crate::Generator::configure) for how configurations are applied.
         ///
         /// Configuration fields are set by chaining builder methods:
         /// ```no_run
@@ -131,7 +133,7 @@ config_decl! {
 
     /// Max number of bytes for fixed-capacity `string` and `bytes` fields.
     ///
-    /// Like with [`max_len`](Config::max_len) should only be set if
+    /// Like with [`max_len`](Config::max_len), this should only be set if
     /// [`string_type`](Config::string_type) or [`vec_type`](Config::vec_type) is a fix-capacity
     /// container, because `max_bytes` will be used as the 2nd type parameter of the container in
     /// the generated code.
@@ -189,13 +191,14 @@ config_decl! {
     /// Wrap the field in a `Box`.
     ///
     /// Applies to normal fields and oneof fields, but not oneof variants and elements of repeated
-    /// and `map` fields. If the field is already wrapped in `Option`, then the field will be of
-    /// type `Option<Box<_>>`.
+    /// and `map` fields.
+    ///
+    /// If the field is already wrapped in `Option`, then the field will be of type
+    /// `Option<Box<_>>`.
     boxed: Option<bool>,
 
-    /// Container type that's generated for `bytes` and repeated fields.
-    ///
-    /// The provided type must implement `PbVec`.
+    /// Container type that's generated for `bytes` and repeated fields. The provided type must
+    /// implement `PbVec`.
     ///
     /// If the provided type is fixed-capacity, such as `ArrayVec`, then it should have type
     /// parameters `<T, N: usize>`, where `T` is the element type and `N` is the capacity. If the
@@ -217,9 +220,8 @@ config_decl! {
     /// ```
     vec_type: [deref] Option<String>,
 
-    /// Container type that's generated for `string` fields.
-    ///
-    /// The provided type must implement `PbString`.
+    /// Container type that's generated for `string` fields. The provided type must implement
+    /// `PbString`.
     ///
     /// If the provided type is fixed-capacity, such as `ArrayString`, then it should have type
     /// parameter `<N: usize>`, where `N` is the capacity. If the type is dynamic-capacity, such as
@@ -240,12 +242,10 @@ config_decl! {
     /// ```
     string_type: [deref] Option<String>,
 
-    /// Container type that's generated for `map` fields.
-    ///
-    /// The provided type must implement `PbMap`.
+    /// Container type that's generated for `map` fields. The provided type must implement `PbMap`.
     ///
     /// If the provided type is fixed-capacity, such as `IndexMap`, then it should have type
-    /// parameters `<K, V, N: usize>`, where `K` is the key type, 'V' is the value type, and `N` is
+    /// parameters `<K, V, N: usize>`, where `K` is the key type, `V` is the value type, and `N` is
     /// the capacity. If the type is dynamic-capacity, such as `BTreeMap`, it should have a type
     /// parameters `<K, V>`.
     ///
@@ -268,7 +268,7 @@ config_decl! {
     ///
     /// Presence of optional fields is tracked by either a bitfield in the message struct called a
     /// hazzer, or by the `Option` type. By default, non-boxed fields use hazzers and boxed fields
-    /// use `Option`. This behaviour can be modified by setting `optional_repr`.
+    /// use `Option`. This behaviour can be customized by setting this option.
     ///
     /// # Example
     /// ```no_run
@@ -279,14 +279,16 @@ config_decl! {
     /// // `optional2: Option<T>`
     /// gen.configure(".Message.optional2", Config::new().optional_repr(OptionalRepr::Option));
     /// // `optional3: Box<T>` with bitfield entry
-    /// gen.configure(".Message.optional3", Config::new().boxed(true).optional_repr(OptionalRepr::Hazzer));
+    /// gen.configure(".Message.optional3", Config::new().boxed(true)
+    ///                                         .optional_repr(OptionalRepr::Hazzer));
     /// // `optional4: Option<Box<T>>` (default boxed behaviour)
-    /// gen.configure(".Message.optional4", Config::new().boxed(true).optional_repr(OptionalRepr::Option));
+    /// gen.configure(".Message.optional4", Config::new().boxed(true)
+    ///                                         .optional_repr(OptionalRepr::Option));
     /// ```
     optional_repr: Option<OptionalRepr>,
 
-    /// Replace generated field with an user-provided type. See [`config::CustomField`] for more
-    /// info.
+    /// Replace generated field with an user-provided type. See
+    /// [`CustomField`](crate::config::CustomField) for more info.
     ///
     /// Substitute a user-provided type as the type of the field. The encoding and decoding
     /// behaviour will also be user-provided, so the custom type must implement `FieldEncode` and
@@ -322,7 +324,7 @@ config_decl! {
     /// ```
     custom_field: Option<CustomField>,
 
-    /// Rename a field.
+    /// Rename a field in the generated Rust struct.
     ///
     /// Instead of the protobuf field name, use a different name for the generated field and its
     /// accessors. Applies to normal fields as well as oneofs and oneof variants.
@@ -338,7 +340,7 @@ config_decl! {
     /// ```
     ///
     /// # Note
-    /// This configuration is only applied to the path passed to [`Generator::configure`]. It is
+    /// This configuration is only applied to the path passed to `configure`. It is
     /// not propagated to "children" paths.
     [no_inherit] rename_field: [deref] Option<String>,
 

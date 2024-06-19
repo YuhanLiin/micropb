@@ -94,12 +94,33 @@ pub(crate) enum EncodeFunc {
 #[derive(Debug)]
 /// Protobuf code generator
 ///
+/// Use this in `build.rs` to compile `.proto` files into a Rust module.
+///
+/// The main way to control the compilation process is to call [`configure`](Generator::configure),
+/// which allows the user to customize how code is generated from Protobuf types and fields of
+/// their choosing.
+///
 /// # Note
-/// It's recommended to call [`use_container_alloc`](Self::use_container_alloc),
+/// It's recommended to call one of [`use_container_alloc`](Self::use_container_alloc),
 /// [`use_container_heapless`](Self::use_container_heapless), or
-/// [`use_container_alloc`](Self::use_container_alloc) to ensure that containers are configured
-/// `string`, `bytes`, repeated, and `map` fields. The generator will return an error if it reaches
-/// these fields without the corresponding container being configured.
+/// [`use_container_alloc`](Self::use_container_alloc) to ensure that container types are
+/// configured for `string`, `bytes`, repeated, and `map` fields. The generator will throw an
+/// error if it reaches any such field that doesn't have a container configured.
+///
+/// # Example
+/// ```no_run
+/// use micropb_gen::{Generator, Config};
+///
+/// let mut gen = Generator::new();
+/// gen.use_container_heapless()
+///     .configure(".test.Data", Config::new().max_len(5))
+///     .configure(".test.Data.value", Config::new().boxed(true))
+///     .compile_protos(
+///         &["test.proto"],
+///         std::env::var("OUT_DIR").unwrap() + "/test_proto.rs",
+///     )
+///     .unwrap();
+/// ```
 pub struct Generator {
     syntax: Syntax,
     pkg_path: Vec<String>,
