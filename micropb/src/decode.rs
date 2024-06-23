@@ -1028,7 +1028,7 @@ mod tests {
         };
     }
 
-    fn string<S: PbString>(fixed_cap: bool) {
+    fn string<S: PbString + Default>(fixed_cap: bool) {
         let mut string = S::default();
         assert_decode_vec!(Ok(""), [0], decode_string(string, Presence::Explicit));
         assert_decode_vec!(
@@ -1076,7 +1076,7 @@ mod tests {
     container_test!(string, string_heapless, heapless::String::<4>, true);
     container_test!(string, string_alloc, String, false);
 
-    fn bytes<S: PbVec<u8>>(fixed_cap: bool) {
+    fn bytes<S: PbVec<u8> + Default>(fixed_cap: bool) {
         let mut bytes = S::default();
         assert_decode_vec!(Ok(&[]), [0], decode_bytes(bytes, Presence::Explicit));
         assert_decode_vec!(Ok(b"a"), [1, b'a'], decode_bytes(bytes, Presence::Implicit));
@@ -1114,7 +1114,7 @@ mod tests {
     container_test!(bytes, bytes_heapless, heapless::Vec::<_, 3>, true);
     container_test!(bytes, bytes_alloc, Vec<_>, false);
 
-    fn packed<S: PbVec<u32>>(fixed_cap: bool) {
+    fn packed<S: PbVec<u32> + Default>(fixed_cap: bool) {
         let mut vec1 = S::default();
         let mut vec2 = S::default();
         assert_decode_vec!(

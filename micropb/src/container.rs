@@ -26,7 +26,7 @@
 use core::{mem::MaybeUninit, ops::Deref};
 
 /// Basic container trait required for all multi-element containers, except for maps.
-pub trait PbContainer: Default {
+pub trait PbContainer: Sized {
     /// Sets length of container (number of elements).
     ///
     /// # Safety
@@ -88,7 +88,7 @@ pub trait PbString: PbContainer + Deref<Target = str> {
 /// Map that stores key-value pairs.
 ///
 /// Represents Protobuf `map` field.
-pub trait PbMap<K, V>: Default {
+pub trait PbMap<K, V> {
     /// Iterator for looping through each key-value pair in the map
     type Iter<'a>: Iterator<Item = (&'a K, &'a V)>
     where
@@ -261,9 +261,7 @@ mod impl_heapless {
         }
     }
 
-    impl<K: Eq + Hash, V, S: Default + BuildHasher, const N: usize> PbMap<K, V>
-        for IndexMap<K, V, S, N>
-    {
+    impl<K: Eq + Hash, V, S: BuildHasher, const N: usize> PbMap<K, V> for IndexMap<K, V, S, N> {
         type Iter<'a> = IndexMapIter<'a, K, V> where S: 'a, K: 'a, V: 'a;
 
         #[inline]
