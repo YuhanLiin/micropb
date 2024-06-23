@@ -2,7 +2,7 @@ use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{field_descriptor_proto::Type, FieldDescriptorProto};
 use quote::quote;
-use syn::Ident;
+use syn::{Ident, Lifetime};
 
 use crate::{
     config::IntSize,
@@ -104,6 +104,32 @@ impl PbInt {
             PbInt::Fixed64 => "encode_fixed64_as_32",
         };
         Ident::new(func, Span::call_site())
+    }
+}
+
+/// Find the first lifetime embedded in a type
+pub(crate) fn find_lifetime_from_type(ty: &syn::Type) -> Option<&Lifetime> {
+    match ty {
+        syn::Type::Array(tarr) => find_lifetime_from_type(&tarr.elem),
+        syn::Type::Group(t) => find_lifetime_from_type(&t.elem),
+        syn::Type::Paren(t) => find_lifetime_from_type(&t.elem),
+        syn::Type::Reference(tref) => tref.lifetime.as_ref(),
+        syn::Type::Path(tpath) => find_lifetime_from_path(&tpath.path),
+        _ => None,
+    }
+}
+
+/// Find the first lifetime embedded in a type path
+pub(crate) fn find_lifetime_from_path(tpath: &syn::Path) -> Option<&Lifetime> {
+    match &tpath.segments.last().expect("empty type path").arguments {
+        syn::PathArguments::AngleBracketed(args) => args.args.first().as_ref().and_then(|arg| {
+            if let syn::GenericArgument::Lifetime(lt) = arg {
+                Some(lt)
+            } else {
+                None
+            }
+        }),
+        _ => None,
     }
 }
 
@@ -231,7 +257,7 @@ impl TypeSpec {
             TypeSpec::Message(_) => {
                 unreachable!("message fields shouldn't have custom defaults")
             }
-            
+
             TypeSpec::Enum(tpath) => {
                 let enum_path = gen.resolve_type_name(tpath);
                 let enum_name =
@@ -406,6 +432,22 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn find_type() {
+        let ty: syn::Type = syn::parse_str("Vec").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("Vec<u8>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("std::Vec<'a>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("&'a [u8]").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("[&'a u8; 10]").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("([&'a u8; 10])").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+    }
+
     fn field_proto(typ: Type, type_name: &str) -> FieldDescriptorProto {
         FieldDescriptorProto {
             name: Some("name".to_owned()),
@@ -528,25 +570,38 @@ mod tests {
     fn tspec_default() {
         let gen = Generator::default();
         assert_eq!(
-            TypeSpec::Bool.generate_default("true", &gen).unwrap().to_string(),
+            TypeSpec::Bool
+                .generate_default("true", &gen)
+                .unwrap()
+                .to_string(),
             quote! { true as _ }.to_string()
         );
         assert_eq!(
-            TypeSpec::Bool.generate_default("false", &gen).unwrap().to_string(),
+            TypeSpec::Bool
+                .generate_default("false", &gen)
+                .unwrap()
+                .to_string(),
             quote! { false as _ }.to_string()
         );
         assert_eq!(
-            TypeSpec::Float.generate_default("0.1", &gen).unwrap().to_string(),
+            TypeSpec::Float
+                .generate_default("0.1", &gen)
+                .unwrap()
+                .to_string(),
             quote! { 0.1 as _ }.to_string()
         );
         assert_eq!(
-            TypeSpec::Double.generate_default("-4.1", &gen).unwrap().to_string(),
+            TypeSpec::Double
+                .generate_default("-4.1", &gen)
+                .unwrap()
+                .to_string(),
             quote! { -4.1 as _ }.to_string()
         );
         assert_eq!(
             TypeSpec::Int(PbInt::Int32, IntSize::S8)
                 .generate_default("-99", &gen)
-                .unwrap().to_string(),
+                .unwrap()
+                .to_string(),
             quote! { -99 as _ }.to_string()
         );
         assert_eq!(
@@ -555,7 +610,8 @@ mod tests {
                 max_bytes: None
             }
             .generate_default("abc\n\tddd", &gen)
-            .unwrap().to_string(),
+            .unwrap()
+            .to_string(),
             quote! { ::micropb::PbString::pb_from_str("abc\n\tddd").unwrap_or_default() }
                 .to_string()
         );
@@ -565,7 +621,8 @@ mod tests {
                 max_bytes: None
             }
             .generate_default("abc\\n\\t\\a\\xA0ddd", &gen)
-            .unwrap().to_string(),
+            .unwrap()
+            .to_string(),
             quote! { ::micropb::PbVec::pb_from_slice(b"abc\n\t\x07\xA0ddd").unwrap_or_default() }
                 .to_string()
         );

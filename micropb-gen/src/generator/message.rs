@@ -21,6 +21,7 @@ use super::{
     field::Field,
     field_error, msg_error,
     oneof::{Oneof, OneofField, OneofType},
+    type_spec::find_lifetime_from_type,
     CurrentConfig, Generator,
 };
 
@@ -31,8 +32,10 @@ pub(crate) struct Message<'a> {
     pub(crate) oneofs: Vec<Oneof<'a>>,
     pub(crate) fields: Vec<Field<'a>>,
     pub(crate) derive_dbg: bool,
+    pub(crate) derive_default: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
     pub(crate) unknown_handler: Option<syn::Type>,
+    pub(crate) lifetime: Option<syn::Lifetime>,
 }
 
 impl<'a> Message<'a> {
@@ -128,14 +131,24 @@ impl<'a> Message<'a> {
             .unknown_handler_parsed()
             .map_err(|e| msg_error(&gen.pkg, msg_name, &e))?;
 
+        // Find any lifetime in the message definition (we only need one)
+        let lifetime = fields
+            .iter()
+            .find_map(|f| f.find_lifetime())
+            .or_else(|| oneofs.iter().find_map(|o| o.find_lifetime()))
+            .or_else(|| unknown_handler.as_ref().and_then(find_lifetime_from_type))
+            .cloned();
+
         Ok(Some(Self {
             name: msg_name,
             rust_name: Ident::new(msg_name, Span::call_site()),
             oneofs,
             fields,
-            derive_dbg: !msg_conf.config.no_debug_derive.unwrap_or(false),
+            derive_dbg: !msg_conf.config.no_debug_impl.unwrap_or(false),
+            derive_default: !msg_conf.config.no_default_impl.unwrap_or(false),
             attrs,
             unknown_handler,
+            lifetime,
         }))
     }
 
@@ -174,7 +187,7 @@ impl<'a> Message<'a> {
     ) -> Result<Option<(TokenStream, Vec<syn::Attribute>)>, String> {
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
         let attrs = &conf.config.type_attr_parsed()?;
-        let derive_msg = derive_msg_attr(!conf.config.no_debug_derive.unwrap_or(false), true);
+        let derive_msg = derive_msg_attr(!conf.config.no_debug_impl.unwrap_or(false), true);
 
         let hazzers = self.fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
@@ -227,6 +240,7 @@ impl<'a> Message<'a> {
     ) -> io::Result<TokenStream> {
         let msg_mod_name = gen.resolve_path_elem(self.name);
         let rust_name = &self.rust_name;
+        let lifetime = &self.lifetime;
         let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
         let hazzer_field_attr = hazzer_field_attr.iter();
         let oneof_fields = self
@@ -250,7 +264,7 @@ impl<'a> Message<'a> {
         Ok(quote! {
             #derive_msg
             #(#attrs)*
-            pub struct #rust_name {
+            pub struct #rust_name<#lifetime> {
                 #(#msg_fields)*
                 #(#oneof_fields)*
                 #(#(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
@@ -264,6 +278,10 @@ impl<'a> Message<'a> {
         gen: &Generator,
         use_hazzer: bool,
     ) -> io::Result<TokenStream> {
+        if !self.derive_default {
+            return Ok(quote! {});
+        }
+
         let mut field_defaults = TokenStream::new();
         for f in &self.fields {
             // Skip delegate fields when generating defaults
@@ -294,9 +312,10 @@ impl<'a> Message<'a> {
             .as_ref()
             .map(|_| quote! { _unknown: ::core::default::Default::default(), });
         let rust_name = &self.rust_name;
+        let lifetime = &self.lifetime;
 
         Ok(quote! {
-            impl ::core::default::Default for #rust_name {
+            impl<#lifetime> ::core::default::Default for #rust_name<#lifetime> {
                 fn default() -> Self {
                     Self {
                         #field_defaults
@@ -368,8 +387,9 @@ impl<'a> Message<'a> {
         });
 
         let name = &self.rust_name;
+        let lifetime = &self.lifetime;
         quote! {
-            impl #name {
+            impl<#lifetime> #name<#lifetime> {
                 #(#accessors)*
             }
         }
@@ -377,6 +397,7 @@ impl<'a> Message<'a> {
 
     pub(crate) fn generate_decode_trait(&self, gen: &Generator) -> TokenStream {
         let name = &self.rust_name;
+        let lifetime = &self.lifetime;
         let tag = Ident::new("tag", Span::call_site());
         let decoder = Ident::new("decoder", Span::call_site());
         let mod_name = gen.resolve_path_elem(self.name);
@@ -398,7 +419,7 @@ impl<'a> Message<'a> {
         };
 
         quote! {
-            impl ::micropb::MessageDecode for #name {
+            impl<#lifetime> ::micropb::MessageDecode for #name<#lifetime> {
                 fn decode<R: ::micropb::PbRead>(
                     &mut self,
                     #decoder: &mut ::micropb::PbDecoder<R>,
@@ -455,6 +476,7 @@ impl<'a> Message<'a> {
 
     pub(crate) fn generate_encode_trait(&self, gen: &Generator) -> TokenStream {
         let name = &self.rust_name;
+        let lifetime = &self.lifetime;
         let sizeof = self.generate_encode_func(
             gen,
             &EncodeFunc::Sizeof(Ident::new("size", Span::call_site())),
@@ -465,7 +487,7 @@ impl<'a> Message<'a> {
         );
 
         quote! {
-            impl ::micropb::MessageEncode for #name {
+            impl<#lifetime> ::micropb::MessageEncode for #name<#lifetime> {
                 fn encode<W: ::micropb::PbWrite>(
                     &self,
                     encoder: &mut ::micropb::PbEncoder<W>,
@@ -602,8 +624,10 @@ mod tests {
             oneofs: vec![],
             fields: vec![],
             derive_dbg: true,
+            derive_default: true,
             attrs: vec![],
             unknown_handler: None,
+            lifetime: None,
         };
         let config = Box::new(Config::new());
         let mut node = Node::default();
@@ -653,7 +677,8 @@ mod tests {
             Config::new()
                 .map_type("Map")
                 .type_attributes("#[derive(Self)]")
-                .no_debug_derive(true)
+                .no_debug_impl(true)
+                .no_default_impl(true)
                 .unknown_handler("UnknownType"),
         );
         let mut node = Node::default();
@@ -725,8 +750,10 @@ mod tests {
                     ),
                 ],
                 derive_dbg: false,
+                derive_default: false,
                 attrs: parse_attributes("#[derive(Self)]").unwrap(),
-                unknown_handler: Some(syn::parse_str("UnknownType").unwrap())
+                unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
+                lifetime: None
             }
         )
     }
@@ -772,8 +799,10 @@ mod tests {
                     FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
                 )],
                 derive_dbg: true,
+                derive_default: true,
                 attrs: vec![],
-                unknown_handler: None
+                unknown_handler: None,
+                lifetime: None
             }
         )
     }
@@ -798,8 +827,10 @@ mod tests {
                 ),
             ],
             derive_dbg: true,
+            derive_default: true,
             attrs: vec![],
             unknown_handler: None,
+            lifetime: None,
         };
         assert!(msg.generate_hazzer_decl(config).unwrap().is_none());
     }

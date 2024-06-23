@@ -60,7 +60,7 @@ impl<'a> CurrentConfig<'a> {
     }
 
     fn derive_dbg(&self) -> bool {
-        !self.config.no_debug_derive.unwrap_or(false)
+        !self.config.no_debug_impl.unwrap_or(false)
     }
 }
 
@@ -288,7 +288,7 @@ impl Generator {
             &enum_type.value,
             enum_int_type,
             attrs,
-            !enum_conf.config.no_debug_derive.unwrap_or(false),
+            !enum_conf.config.no_debug_impl.unwrap_or(false),
         );
         Ok(out)
     }

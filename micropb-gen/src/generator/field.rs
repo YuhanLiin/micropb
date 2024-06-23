@@ -4,11 +4,14 @@ use prost_types::{
     DescriptorProto, FieldDescriptorProto, Syntax,
 };
 use quote::{format_ident, quote};
-use syn::Ident;
+use syn::{Ident, Lifetime};
 
 use crate::config::OptionalRepr;
 
-use super::{type_spec::TypeSpec, CurrentConfig, EncodeFunc, Generator};
+use super::{
+    type_spec::{find_lifetime_from_type, TypeSpec},
+    CurrentConfig, EncodeFunc, Generator,
+};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum CustomField {
@@ -72,6 +75,13 @@ impl<'a> Field<'a> {
             Some(&self.rust_name)
         } else {
             None
+        }
+    }
+
+    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
+        match &self.ftype {
+            FieldType::Custom(CustomField::Type(ty)) => find_lifetime_from_type(ty),
+            _ => None,
         }
     }
 

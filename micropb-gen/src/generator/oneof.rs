@@ -2,10 +2,13 @@ use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
 use prost_types::{FieldDescriptorProto, OneofDescriptorProto};
 use quote::quote;
-use syn::Ident;
+use syn::{Ident, Lifetime};
 
 use super::{
-    derive_msg_attr, field::CustomField, type_spec::TypeSpec, CurrentConfig, EncodeFunc, Generator,
+    derive_msg_attr,
+    field::CustomField,
+    type_spec::{find_lifetime_from_type, TypeSpec},
+    CurrentConfig, EncodeFunc, Generator,
 };
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -170,6 +173,16 @@ impl<'a> Oneof<'a> {
             Some(&self.rust_name)
         } else {
             None
+        }
+    }
+
+    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
+        match &self.otype {
+            OneofType::Custom {
+                field: CustomField::Type(ty),
+                ..
+            } => find_lifetime_from_type(ty),
+            _ => None,
         }
     }
 
@@ -449,7 +462,7 @@ mod tests {
 
         config.field_attributes = Some("#[attr]".to_owned());
         config.type_attributes = Some("#[derive(Eq)]".to_owned());
-        config.no_debug_derive = Some(true);
+        config.no_debug_impl = Some(true);
         config.rename_field = Some("renamed_oneof".to_owned());
         let oneof_conf = CurrentConfig {
             node: None,

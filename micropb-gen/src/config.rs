@@ -375,7 +375,14 @@ config_decl! {
     type_attributes: [deref] Option<String>,
 
     /// Disable generating `Debug` trait derives for types.
-    no_debug_derive: Option<bool>,
+    no_debug_impl: Option<bool>,
+
+    /// Disable generating `Default` trait impl for message types.
+    ///
+    /// Useful when there are custom fields that don't implement `Default`. This can cause compile
+    /// errors if decoding logic is being generated, because decoding repeated and `map` fields
+    /// requires the elements to implement `Default`.
+    no_default_impl: Option<bool>,
 
     /// Add a custom handler on a message struct for handling unknown fields.
     ///
