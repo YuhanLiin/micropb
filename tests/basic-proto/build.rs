@@ -1,6 +1,6 @@
 use micropb_gen::{
     config::{CustomField, IntSize, OptionalRepr},
-    Config, Generator,
+    Config, EncodeDecode, Generator,
 };
 
 fn no_config() {
@@ -275,6 +275,38 @@ fn extern_import() {
         .unwrap();
 }
 
+fn lifetime_fields() {
+    let mut generator = Generator::new();
+    generator.encode_decode(EncodeDecode::EncodeOnly);
+    generator.configure(".", Config::new().no_debug_impl(true).no_default_impl(true));
+    generator.configure(
+        ".nested.Nested.inner",
+        Config::new().custom_field(CustomField::Type(
+            "crate::lifetime_fields::RefField<'a>".to_owned(),
+        )),
+    );
+    generator.configure(
+        ".nested.Nested.basic",
+        Config::new().custom_field(CustomField::Delegate("inner".to_owned())),
+    );
+    generator.configure(
+        ".nested.Nested.InnerMsg",
+        Config::new().unknown_handler("crate::lifetime_fields::RefField<'a>"),
+    );
+    generator.configure(
+        ".basic.BasicTypes.int32_num",
+        Config::new().custom_field(CustomField::Type(
+            "crate::lifetime_fields::RefField<'a>".to_owned(),
+        )),
+    );
+    generator
+        .compile_protos(
+            &["proto/basic.proto", "proto/nested.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/lifetime_fields.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -287,4 +319,5 @@ fn main() {
     custom_field();
     implicit_presence();
     extern_import();
+    lifetime_fields();
 }
