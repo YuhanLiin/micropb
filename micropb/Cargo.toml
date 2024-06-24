@@ -12,7 +12,6 @@ alloc = []
 std = ["alloc"]
 container-arrayvec = ["dep:arrayvec"]
 container-heapless = ["dep:heapless"]
-serde = ["arrayvec?/serde", "heapless?/serde"]
 
 [dependencies]
 arrayvec = { version = "0.7", optional = true, default-features = false }

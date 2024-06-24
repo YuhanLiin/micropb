@@ -3,12 +3,12 @@ name = "serde-proto"
 version = "0.0.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-micropb = { path = "../../micropb/", features = ["container-heapless", "container-arrayvec", "alloc", "serde"]}
+micropb = { path = "../../micropb/", features = ["container-heapless", "container-arrayvec", "alloc"]}
 serde = { version = "1", default-features = false, features = ["derive"] }
 serde-json-core = "0.5"
+arrayvec = { version = "0.7", default-features = false, features = ["serde"] }
+heapless = { version = "0.8", features = ["serde"] }
 
 [build-dependencies]
 micropb-gen = { path = "../../micropb-gen/" }
