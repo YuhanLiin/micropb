@@ -180,7 +180,7 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 ///
 /// Decoding a Protobuf message:
 /// ```no_run
-/// use micropb::{PbRead, PbDecoder, MessageDecode};
+/// use micropb::{PbRead, PbDecoder, MessageDecode, DecodeError};
 ///
 /// # #[derive(Default)]
 /// # struct ProtoMessage;
@@ -193,8 +193,8 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 /// let mut decoder = PbDecoder::new(data.as_slice());
 ///
 /// let mut message = ProtoMessage::default();
-/// // Reading from a slice will never fail, so unwrapping here is OK
-/// message.decode(&mut decoder, data.len()).unwrap();
+/// message.decode(&mut decoder, data.len())?;
+/// # Ok::<(), DecodeError<never::Never>>(())
 /// ```
 pub struct PbDecoder<R: PbRead> {
     reader: R,

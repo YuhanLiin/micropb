@@ -86,17 +86,17 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
 /// use micropb::heapless::Vec;
 ///
 /// # #[derive(Default)]
-/// # struct ProtoMessage;
+/// # struct ProtoMessage(u32);
 /// # impl micropb::MessageEncode for ProtoMessage {
 /// #   fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> { todo!() }
 /// #   fn compute_size(&self) -> usize { 0 }
 /// # }
 ///
 /// let mut message = ProtoMessage::default();
-/// // Set some fields in the message
+/// message.0 = 12;
 ///
-/// // If `heapless` feature is enabled, then `PbWrite` will be implemented on `heapless::Vec`,
-/// // allowing the encoder to write into it. Same applies to `arrayvec` and `alloc`.
+/// // If `container-heapless` feature is enabled, then `PbWrite` will be implemented on `heapless::Vec`,
+/// // allowing the encoder to write into it. Same applies to `container-arrayvec` and `alloc`.
 /// let mut encoder = PbEncoder::new(Vec::<u8, 10>::new());
 /// message.encode(&mut encoder)?;
 /// # Ok::<(), ()>(())
