@@ -180,7 +180,7 @@ impl Generator {
     /// Configure the generator to generate `alloc` containers for Protobuf `string`, `bytes`,
     /// repeated, and `map` fields.
     ///
-    /// If using this option, `micropb` should have the `container-alloc` feature enabled.
+    /// If using this option, `micropb` should have the `alloc` feature enabled.
     ///
     /// Specifically, `alloc::string::String` is generated for `string` fields, `alloc::vec::Vec`
     /// is generated for `bytes` and repeated fields, and `alloc::collections::BTreeMap` is

@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package async;
+package crate.self.async;
 
 message Msg {
     optional bool super = 1;

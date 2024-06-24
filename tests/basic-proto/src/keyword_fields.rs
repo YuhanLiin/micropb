@@ -7,7 +7,7 @@ mod proto {
 #[test]
 fn renamed_fields() {
     // Only the `super` field was renamed, every other field are raw identifiers
-    let msg = proto::r#async::Msg::default();
+    let msg = proto::_crate::_self::r#async::Msg::default();
     assert!(!msg.super_);
     assert!(!msg._has.super_());
     assert!(!msg.r#i32);

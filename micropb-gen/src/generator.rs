@@ -67,7 +67,7 @@ impl<'a> CurrentConfig<'a> {
 fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
     let code = mod_node.value_mut().take().unwrap_or_default();
     let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
-        let submod_name = Ident::new_raw(submod_name, Span::call_site());
+        let submod_name = resolve_path_elem(submod_name);
         let inner = generate_mod_tree(inner_node);
         quote! { pub mod #submod_name { #inner } }
     });
@@ -299,7 +299,7 @@ impl Generator {
         proto: &DescriptorProto,
         msg_conf: &CurrentConfig,
     ) -> io::Result<(TokenStream, Option<Vec<syn::Attribute>>)> {
-        let msg_mod_name = self.resolve_path_elem(msg.name);
+        let msg_mod_name = resolve_path_elem(msg.name);
         self.type_path.borrow_mut().push(msg.name.to_owned());
 
         let mut msg_mod = TokenStream::new();
@@ -393,17 +393,8 @@ impl Generator {
 
         let path = local_path
             .map(|_| format_ident!("super"))
-            .chain(ident_path.map(|e| self.resolve_path_elem(e)));
+            .chain(ident_path.map(resolve_path_elem));
         quote! { #(#path ::)* #ident_type }
-    }
-
-    fn resolve_path_elem(&self, elem: &str) -> Ident {
-        // Assume that type names all start with uppercase
-        if elem.starts_with(|c: char| c.is_ascii_uppercase()) {
-            format_ident!("mod_{elem}")
-        } else {
-            format_ident!("{elem}")
-        }
     }
 
     /// Convert variant name to Pascal-case, then strip the enum name from it
@@ -443,6 +434,18 @@ impl Generator {
         } else {
             boxed_type
         }
+    }
+}
+
+pub(crate) fn resolve_path_elem(elem: &str) -> Ident {
+    if elem.starts_with(|c: char| c.is_ascii_uppercase()) {
+        // Assume that type names all start with uppercase
+        format_ident!("mod_{elem}")
+    } else if ["crate", "self", "super"].contains(&elem) {
+        // Escape path segment keywords, since they can't be raw idents
+        format_ident!("_{elem}")
+    } else {
+        Ident::new_raw(elem, Span::call_site())
     }
 }
 
