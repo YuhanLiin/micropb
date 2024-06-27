@@ -1,5 +1,4 @@
-//! Placeholder
-
+#![doc = include_str!("../../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(any(feature = "std", doc)), no_std)]
 

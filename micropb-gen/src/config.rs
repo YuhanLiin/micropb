@@ -244,7 +244,7 @@ config_decl! {
 
     /// Container type that's generated for `map` fields. The provided type must implement `PbMap`.
     ///
-    /// If the provided type is fixed-capacity, such as `IndexMap`, then it should have type
+    /// If the provided type is fixed-capacity, such as `FnvIndexMap`, then it should have type
     /// parameters `<K, V, N: usize>`, where `K` is the key type, `V` is the value type, and `N` is
     /// the capacity. If the type is dynamic-capacity, such as `BTreeMap`, it should have a type
     /// parameters `<K, V>`.
@@ -259,8 +259,8 @@ config_decl! {
     /// # let mut gen = micropb_gen::Generator::new();
     /// // `map` field configured to `BTreeMap<K, V>` (dynamic-capacity)
     /// gen.configure(".pkg.Message.map_field", Config::new().map_type("BTreeMap"));
-    /// // `map` field configured to `IndexMap<K, V, 5>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("IndexMap").max_len(5));
+    /// // `map` field configured to `FnvIndexMap<K, V, 5>` (fixed-capacity)
+    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap").max_len(5));
     /// ```
     map_type: [deref] Option<String>,
 
