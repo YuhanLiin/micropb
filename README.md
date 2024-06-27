@@ -1,11 +1,11 @@
 # Micropb
 
-`micropb` is a Rust implementation of the Protobuf format, with a focus on embedded and `nostd` use-cases. `micropb` generates Rust code from Protobuf files.
+`micropb` is a Rust implementation of the Protobuf format, with a focus on `nostd` and embedded environments. `micropb` generates Rust code from Protobuf files.
 
-Unlike other Protobuf libraries, `micropb` is aimed for constrained environments where the standard library isn't available. Additionally, it aims to be maximally configurable, allowing the user to customize the generated code on a per-field granularity. As such, `micropb` offers a different set of advantages and limitations than other similar libraries.
+Unlike other Protobuf libraries, `micropb` is aimed for constrained environments where no allocator is available. Additionally, it aims to be maximally configurable, allowing the user to customize the generated code on a per-field granularity. As such, `micropb` offers a different set of advantages and limitations than other similar libraries.
 
-### Advantages
-- Generated code does not rely on `std` or `alloc` by default
+#### Advantages
+- Supports non-std and **non-alloc** environments
 - Reduced memory usage
 - Allows both statically-allocated containers (`heapless`, `arrayvec`) or dynamically-allocated containers from `alloc`
 - Code generator is highly configurable
@@ -13,7 +13,7 @@ Unlike other Protobuf libraries, `micropb` is aimed for constrained environments
 - Can enable either encoder or decoder alone
 - Can disable 64-bit integer operations
 
-### Limitations
+#### Limitations
 - Some speed has been traded off for memory usage
 - Protobuf groups are not supported
 - Unknown fields and extensions can only be captured with a custom handler
@@ -21,7 +21,7 @@ Unlike other Protobuf libraries, `micropb` is aimed for constrained environments
 - Does not perform cycle detection, so users need to break cyclic references themselves by boxing the field or using a custom handler
 - `string`, `bytes`, repeated, and `map` fields require some basic configuration to work, as explained later
 
-# Overview
+## Overview
 
 The `micropb` project consists of two crates:
 
@@ -29,7 +29,7 @@ The `micropb` project consists of two crates:
 
 - `micropb`: Encoding and decoding routines for the Protobuf format. The generated module will assume it's been imported as a regular dependency.
 
-## Getting Started
+### Getting Started
 
 Add `micropb` crates to your `Cargo.toml`:
 ```toml
@@ -74,12 +74,20 @@ fn main() {
 
     // Decode a new instance of `Example` into an existing struct
     example.decode(&mut decoder, data.len()).expect("decoding failed");
+
+    // Use heapless::Vec as the output stream and build an encoder around it
+    let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, 10>::new());
+
+    // Compute the size of the `Example` on the wire
+    let size = example.compute_size();
+    // Encode the `Example` to the data stream
+    example.encode(&mut encoder).expect("Vec over capacity");
 }
 ```
 
-# Generated Code
+## Generated Code
 
-## Messages
+### Messages
 
 Protobuf messages are translated directly into Rust structs, and each message field translates into a Rust field.
 
@@ -103,7 +111,8 @@ message Example {
 ```
 
 `micropb` will generate the following Rust structs and APIs:
-```rust,no_run
+```rust,ignore
+#[derive(Debug, Clone, PartialEq)]
 pub struct Example {
     pub f_int32: i32,
     pub f_int64: i64,
@@ -119,11 +128,25 @@ pub struct Example {
     pub f_float: f32,
     pub f_double: f64,
 }
+
+impl Default for Example {
+    // ...
+}
+
+impl micropb::MessageDecode for Example {
+    // ...
+}
+
+impl micropb::MessageEncode for Example {
+    // ...
+}
 ```
 
-## Repeated, `map`, `string`, and `bytes` Fields
+The generated `MessageDecode` and `MessageEncode` implementations provide APIs for decoding, encoding, and computing the size of `Example`.
 
-Repeated, `map`, `string`, and `bytes` fields require Rust "container" types, since they can contain multiple elements or characters. Normally standard types like `String` and `Vec` are used, but they aren't available on platforms without an allocator. In that case, statically-allocated containers with fixed size are needed. Since there is no defacto standard for static containers in Rust, `micropb` expects users to either opt into its built-in support for `heapless` and `arrayvec`, or provide their own container types.
+### Repeated, `map`, `string`, and `bytes` Fields
+
+Repeated, `map`, `string`, and `bytes` fields require Rust "container" types, since they can contain multiple elements or characters. Normally standard types like `String` and `Vec` are used, but they aren't available on platforms without an allocator. In that case, statically-allocated containers with fixed size are needed. Since there is no defacto standard for static containers in Rust, users are expected to configure the code generator with their own container types.
 
 For example, given the following Protobuf definition:
 ```proto
@@ -153,13 +176,11 @@ pub struct Containers {
     f_repeated: heapless::Vec<i32, 5>,
     f_map: heapless::IndexMap<i32, f32, 5>,
 }
-
-// Default impl
 ```
 
-A container type is expected to implement `PbVec`, `PbString`, or `PbMap` from `micropb::container`, depending on what type of field it's used for.
+A container type is expected to implement `PbVec`, `PbString`, or `PbMap` from `micropb::container`, depending on what type of field it's used for. For convenience, `micropb` comes with built-in implementations for container types from `heapless`, `arrayvec`, or `alloc`.
 
-## Optional Fields
+### Optional Fields
 
 Given the following Protobuf message:
 ```proto
@@ -210,14 +231,14 @@ pub mod mod_Example {
 }
 ```
 
-One big difference between `micropb` and other Protobuf libraries is that, by default, `micropb` does not generate `Option`s for optional fields. This is because `Option<T>` takes up extra space if `T` doesn't have an invalid representation or unused bits. For numeric types like `u32`, it can even double the size of the field. Instead, `micropb` tracks the presence of all optional fields in separate bitfields called a "hazzer". Hazzers are usually small enough to fit into the message struct's padding, in which case it does not increase the size at all. Field presence can either be queried directly from the hazzer or from struct APIs that return `Option`.
+One big difference between `micropb` and other Protobuf libraries is that **`micropb` does not generate `Option` for optional fields**. This is because `Option<T>` takes up extra space if `T` doesn't have an invalid representation or unused bits. This is true for numeric types like `u32`, and can lead to the size of the field being doubled. For this reason, `micropb` tracks the presence of all optional fields in a separate bitfield called a "hazzer". Hazzers are usually small enough to fit into the message struct's padding, in which case it does not increase the size at all. Field presence can either be queried directly from the hazzer or from message APIs that return `Option`.
 
-By default, boxed optional fields use `Option` to track presence, while other optional fields use hazzers. This behaviour can be changed by the user.
+By default, boxed optional fields use `Option` to track presence, while other optional fields use hazzers. This behaviour can be overriden by the user via configuration.
 
-### Required Fields
+#### Required Fields
 Due to the problematic semantics of Protobuf's required fields, `micropb` will treat required fields exactly the same way it treats optional fields.
 
-## Enums
+### Enums
 
 Protobuf enums are translated into "open" enums in Rust, rather than normal Rust enums. This is because proto3 requires enums to be able to store unrecognized values, which is only possible with open enums.
 
@@ -247,11 +268,11 @@ impl Language {
 // From<i32> impl
 ```
 
-The "enum" type is actually a thin struct wrapping an integer. Known enum variants are invoked with expressions like `Language::Rust`. As such, enum values can be created and matched in a similar manner as normal Rust enums. If the enum value is unknown, then the underlying integer value can be accessed directly.
+The "enum" type is actually a thin struct wrapping an integer. Known enum variants are implemented as constants. Enum values can be created and matched in a similar manner as normal Rust enums. If the enum value is unknown, then the underlying integer value can be accessed directly from the struct.
 
-## Oneof Fields
+### Oneof Fields
 
-Protobuf oneofs are translated into real Rust enums. The enum is defined in an internal module under the message, and its type name is the same as the name of the oneof field.
+Protobuf oneofs are translated into real Rust enums. The enum type is defined in an internal module under the message, and its type name is the same as the name of the oneof field.
 
 For example, given this Protobuf definition:
 ```proto
@@ -279,30 +300,24 @@ pub mod mod_Example {
 }
 ```
 
-## Packages
+### Packages
 
 `micropb` translates Protobuf packages into Rust modules. For example, if a Protobuf file has `package foo.bar`, all Rust types generated from the file will be in the `foo::bar` module. Code generated for Protobuf files without package specifiers will go into the module root.
 
-## Nested Types
+### Nested Types
 
 Rust does not allow a module to share its name with a struct, so nested messages and enums are defined in the `mod_Name` module, where `Name` is the message name. Oneof and hazzer definitions are also defined in `mod_Name`.
 
-# Decoder and Encoder
+## Decoder and Encoder
 
 `micropb` does not force a specific representation for Protobuf data streams. Instead, data streams are represented via read and write traits that users can implement, similar to `Read` and `Write` from the standard library. In addition, `micropb` provides decoder and encoder types that work on top of these traits to translate between the Protobuf data stream and Rust types. The decoder and encoder types are the main interface for accessing Protobuf data.
 
-## `PbDecoder` and `PbRead`
+### `PbDecoder` and `PbRead`
 
 Input data streams are represented by the `PbRead` trait, which is implemented on byte slices by default. The `PbDecoder` type wraps around an input stream and reads Protobuf structures from it, including message types generated by `micropb-gen`.
 
 ```rust,no_run
 use micropb::{PbRead, PbDecoder, MessageDecode};
-                                                                                                                                      
-# #[derive(Default)]
-# struct ProtoMessage;
-# impl micropb::MessageDecode for ProtoMessage {
-#   fn decode<R: PbRead>(&mut self, decoder: &mut PbDecoder<R>, len: usize) -> Result<(), micropb::DecodeError<R::Error>> { todo!() }
-# }
                                                                                                                                       
 let data = [0x08, 0x96, 0x01, /* additional bytes */];
 // Create decoder out of a byte slice, which is our input data stream
@@ -315,23 +330,15 @@ message.decode(&mut decoder, data.len()).unwrap();
 // We can also read Protobuf values directly from the decoder
 let i = decoder.decode_int32()?;
 let f = decoder.decode_float()?;
-# Ok::<(), DecodeError<never::Never>>(())
 ```
 
-## `PbEncoder` and `PbWrite`
+### `PbEncoder` and `PbWrite`
 
-Output data streams are represented by the `PbWrite` trait, which is implemented on vector types from `std`, `heapless`, and `arrayvec` by default, depending on what feature flags are enabled. The `PbEncoder` type wraps around an output stream and writes Protobuf structures to it, including message types generated by `micropb-gen`.
+Output data streams are represented by the `PbWrite` trait, which is implemented on vector types from `alloc`, `heapless`, and `arrayvec` by default, depending on what feature flags are enabled. The `PbEncoder` type wraps around an output stream and writes Protobuf structures to it, including message types generated by `micropb-gen`.
 
 ```rust,no_run
 use micropb::{PbEncoder, PbWrite, MessageEncode};
 use micropb::heapless::Vec;
-                                                                                                 
-# #[derive(Default)]
-# struct ProtoMessage(u32);
-# impl micropb::MessageEncode for ProtoMessage {
-#   fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> { todo!() }
-#   fn compute_size(&self) -> usize { 0 }
-# }
                                                                                                  
 // Use heapless::Vec as the output stream and build an encoder around it
 let mut encoder = PbEncoder::new(Vec::<u8, 10>::new());
@@ -344,10 +351,9 @@ message.encode(&mut encoder)?;
 // We can also write Protobuf values directly to the encoder
 encoder.encode_int32(-4)?;
 encoder.encode_float(12.491)?;
-# Ok::<(), ()>(())
 ```
 
-# Configuring the Code Generator
+## Configuring the Code Generator
 
 Users can configure how code is generated from individual Protobuf types and fields of their choosing. For example, if have a message named `Example` with a field named `f_int32`, we can generate `Box<i32>` instead of `i32` for its type by putting the following in our `build.rs`:
 
@@ -359,7 +365,7 @@ We can refer to specific types and fields, such as `f_int32`, by using their ful
 
 For more info on how to configure code generated from Protobuf types and fields, refer to `Generator::configure` and `Config` in `micropb-gen`.
 
-## Custom Field
+### Custom Field
 
 In addition to configuring how fields get generated, users can also replace the field's generated type with their own custom type. For example, we can generate a custom type for `f_int32` as follows:
 
@@ -378,7 +384,7 @@ pub struct Example<'a> {
 
 For more information on custom fields, see `Config::custom_field` in `micropb-gen`.
 
-# Feature Flags
+## Feature Flags
 
 - `encode`: Enable support for encoding and computing the size of messages. If disabled, the generator should be configured to not generate encoding logic via `Generator::encode_decode`. Enabled by default.
 - `decode`: Enable support for decoding messages. If disabled, the generator should be configured to not generate decoding logic via `Generator::encode_decode`. Enabled by default.
