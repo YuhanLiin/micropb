@@ -196,6 +196,15 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 /// message.decode(&mut decoder, data.len())?;
 /// # Ok::<(), DecodeError<never::Never>>(())
 /// ```
+///
+/// # Reducing Code Size
+///
+/// To prevent multiple monomorphizations and increased code size, make sure you instantiate
+/// `PbDecoder` with only one reader type across the whole application. If multiple readers need to
+/// be supported, wrap them in an enum or use a trait object.
+///
+/// Likewise, try to only use one set of string, vec, and map types across the application to
+/// reduce code size.
 pub struct PbDecoder<R: PbRead> {
     reader: R,
     idx: usize,
@@ -426,6 +435,21 @@ impl<R: PbRead> PbDecoder<R> {
         self.decode_varint32().map(Tag)
     }
 
+    fn read_into_buf(
+        &mut self,
+        buf: &mut [MaybeUninit<u8>],
+        len: usize,
+    ) -> Result<(), DecodeError<R::Error>> {
+        if buf.len() < len {
+            return Err(DecodeError::Capacity);
+        }
+        let target = &mut buf[..len];
+        self.read_exact(target)?;
+        // SAFETY: read_exact guarantees that all bytes of target have been initialized
+        from_utf8(unsafe { maybe_uninit_slice_assume_init_ref(target) })?;
+        Ok(())
+    }
+
     /// Decode a `string` into a [`PbString`] container.
     ///
     /// The string container's existing contents will be replaced by the string decoded from the
@@ -451,15 +475,9 @@ impl<R: PbRead> PbDecoder<R> {
         string.pb_clear();
         string.pb_reserve(len);
         let spare_cap = string.pb_spare_cap();
-        if spare_cap.len() < len {
-            return Err(DecodeError::Capacity);
-        }
-        let target = &mut spare_cap[..len];
-        self.read_exact(target)?;
-        // SAFETY: read_exact guarantees that all bytes of target have been initialized
-        from_utf8(unsafe { maybe_uninit_slice_assume_init_ref(target) })?;
+        self.read_into_buf(spare_cap, len)?;
 
-        // SAFETY: read_exact guarantees that `len` bytes have been written into the string.
+        // SAFETY: read_into_buf guarantees that `len` bytes have been written into the string.
         // Also, we just checked the UTF-8 validity of the written bytes, so the string is valid.
         unsafe { string.pb_set_len(len) };
         Ok(())
@@ -489,11 +507,8 @@ impl<R: PbRead> PbDecoder<R> {
         bytes.pb_clear();
         bytes.pb_reserve(len);
         let spare_cap = bytes.pb_spare_cap();
-        if spare_cap.len() < len {
-            return Err(DecodeError::Capacity);
-        }
-        self.read_exact(&mut spare_cap[..len])?;
-        // SAFETY: read_exact guarantees that `len` bytes have been written into the buffer
+        self.read_into_buf(spare_cap, len)?;
+        // SAFETY: read_into_buf guarantees that `len` bytes have been written into the buffer
         unsafe { bytes.pb_set_len(len) };
         Ok(())
     }

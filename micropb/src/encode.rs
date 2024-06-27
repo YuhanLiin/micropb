@@ -101,6 +101,12 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
 /// message.encode(&mut encoder)?;
 /// # Ok::<(), ()>(())
 /// ```
+///
+/// # Reducing Code Size
+///
+/// To prevent multiple monomorphizations and increased code size, make sure you instantiate
+/// `PbEncoder` with only one writer type across the whole application. If multiple writers need to
+/// be supported, wrap them in an enum or use a trait object.
 pub struct PbEncoder<W: PbWrite> {
     writer: W,
 }
