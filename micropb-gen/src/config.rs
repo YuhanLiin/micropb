@@ -374,15 +374,20 @@ config_decl! {
     /// definition inside the message.
     type_attributes: [deref] Option<String>,
 
-    /// Disable generating `Debug` trait derives for types.
+    /// Disable generating `Debug` trait derives for message types.
     no_debug_impl: Option<bool>,
 
     /// Disable generating `Default` trait impl for message types.
     ///
-    /// Useful when there are custom fields that don't implement `Default`. This can cause compile
-    /// errors if decoding logic is being generated, because decoding repeated and `map` fields
-    /// requires the elements to implement `Default`.
+    /// This can cause compile errors if decoding logic is being generated, because decoding
+    /// repeated and `map` fields requires the elements to implement `Default`.
     no_default_impl: Option<bool>,
+
+    /// Disable generating `PartialEq` trait derives for message types.
+    no_partial_eq_impl: Option<bool>,
+
+    /// Disable generating `Clone` trait derives for message types.
+    no_clone_impl: Option<bool>,
 
     /// Add a custom handler on a message struct for handling unknown fields.
     ///

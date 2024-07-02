@@ -148,6 +148,8 @@ pub(crate) struct Oneof<'a> {
     pub(crate) field_attrs: Vec<syn::Attribute>,
     pub(crate) type_attrs: Vec<syn::Attribute>,
     pub(crate) derive_dbg: bool,
+    pub(crate) derive_partial_eq: bool,
+    pub(crate) derive_clone: bool,
     pub(crate) idx: usize,
 }
 
@@ -217,6 +219,8 @@ impl<'a> Oneof<'a> {
             idx,
             otype,
             derive_dbg: oneof_conf.derive_dbg(),
+            derive_partial_eq: oneof_conf.derive_partial_eq(),
+            derive_clone: oneof_conf.derive_clone(),
             field_attrs,
             type_attrs,
         }))
@@ -226,7 +230,12 @@ impl<'a> Oneof<'a> {
         if let OneofType::Enum { type_name, fields } = &self.otype {
             assert!(!fields.is_empty(), "empty enums should have been filtered");
             let fields = fields.iter().map(|f| f.generate_field(gen));
-            let derive_msg = derive_msg_attr(self.derive_dbg, false);
+            let derive_msg = derive_msg_attr(
+                self.derive_dbg,
+                false,
+                self.derive_partial_eq,
+                self.derive_clone,
+            );
             let attrs = &self.type_attrs;
 
             quote! {
@@ -456,6 +465,8 @@ mod tests {
                 field_attrs: vec![],
                 type_attrs: vec![],
                 derive_dbg: true,
+                derive_partial_eq: true,
+                derive_clone: true,
                 idx: 0
             }
         );
@@ -481,6 +492,8 @@ mod tests {
                 field_attrs: parse_attributes("#[attr]").unwrap(),
                 type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
                 derive_dbg: false,
+                derive_partial_eq: true,
+                derive_clone: true,
                 idx: 0
             }
         );
@@ -500,6 +513,8 @@ mod tests {
             field_attrs: vec![],
             type_attrs: vec![],
             derive_dbg: true,
+            derive_partial_eq: true,
+            derive_clone: true,
             idx: 0,
         };
         assert!(oneof.generate_decl(&gen).is_empty());
@@ -521,6 +536,8 @@ mod tests {
             field_attrs: vec![],
             type_attrs: vec![],
             derive_dbg: true,
+            derive_partial_eq: true,
+            derive_clone: true,
             idx: 0,
         };
         assert!(oneof.generate_decl(&gen).is_empty());

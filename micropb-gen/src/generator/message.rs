@@ -32,7 +32,9 @@ pub(crate) struct Message<'a> {
     pub(crate) oneofs: Vec<Oneof<'a>>,
     pub(crate) fields: Vec<Field<'a>>,
     pub(crate) derive_dbg: bool,
-    pub(crate) derive_default: bool,
+    pub(crate) impl_default: bool,
+    pub(crate) derive_partial_eq: bool,
+    pub(crate) derive_clone: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
     pub(crate) unknown_handler: Option<syn::Type>,
     pub(crate) lifetime: Option<syn::Lifetime>,
@@ -144,8 +146,10 @@ impl<'a> Message<'a> {
             rust_name: Ident::new(msg_name, Span::call_site()),
             oneofs,
             fields,
-            derive_dbg: !msg_conf.config.no_debug_impl.unwrap_or(false),
-            derive_default: !msg_conf.config.no_default_impl.unwrap_or(false),
+            derive_dbg: msg_conf.derive_dbg(),
+            impl_default: msg_conf.impl_default(),
+            derive_partial_eq: msg_conf.derive_partial_eq(),
+            derive_clone: msg_conf.derive_clone(),
             attrs,
             unknown_handler,
             lifetime,
@@ -187,7 +191,7 @@ impl<'a> Message<'a> {
     ) -> Result<Option<(TokenStream, Vec<syn::Attribute>)>, String> {
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
         let attrs = &conf.config.type_attr_parsed()?;
-        let derive_msg = derive_msg_attr(!conf.config.no_debug_impl.unwrap_or(false), true);
+        let derive_msg = derive_msg_attr(true, true, true, true);
 
         let hazzers = self.fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
@@ -258,7 +262,12 @@ impl<'a> Message<'a> {
             quote! {}
         };
 
-        let derive_msg = derive_msg_attr(self.derive_dbg, false);
+        let derive_msg = derive_msg_attr(
+            self.derive_dbg,
+            false,
+            self.derive_partial_eq,
+            self.derive_clone,
+        );
         let attrs = &self.attrs;
 
         Ok(quote! {
@@ -278,7 +287,7 @@ impl<'a> Message<'a> {
         gen: &Generator,
         use_hazzer: bool,
     ) -> io::Result<TokenStream> {
-        if !self.derive_default {
+        if !self.impl_default {
             return Ok(quote! {});
         }
 
@@ -624,7 +633,9 @@ mod tests {
             oneofs: vec![],
             fields: vec![],
             derive_dbg: true,
-            derive_default: true,
+            impl_default: true,
+            derive_partial_eq: true,
+            derive_clone: true,
             attrs: vec![],
             unknown_handler: None,
             lifetime: None,
@@ -728,6 +739,8 @@ mod tests {
                     type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
                     // Inherits the no_debug_derive setting of the message
                     derive_dbg: false,
+                    derive_partial_eq: true,
+                    derive_clone: true,
                     idx: 0
                 }],
                 fields: vec![
@@ -750,7 +763,9 @@ mod tests {
                     ),
                 ],
                 derive_dbg: false,
-                derive_default: false,
+                impl_default: false,
+                derive_partial_eq: true,
+                derive_clone: true,
                 attrs: parse_attributes("#[derive(Self)]").unwrap(),
                 unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
                 lifetime: None
@@ -799,7 +814,9 @@ mod tests {
                     FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
                 )],
                 derive_dbg: true,
-                derive_default: true,
+                impl_default: true,
+                derive_partial_eq: true,
+                derive_clone: true,
                 attrs: vec![],
                 unknown_handler: None,
                 lifetime: None
@@ -827,7 +844,9 @@ mod tests {
                 ),
             ],
             derive_dbg: true,
-            derive_default: true,
+            impl_default: true,
+            derive_partial_eq: true,
+            derive_clone: true,
             attrs: vec![],
             unknown_handler: None,
             lifetime: None,

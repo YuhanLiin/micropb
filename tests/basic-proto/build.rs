@@ -205,7 +205,13 @@ fn container_alloc() {
 
 fn custom_field() {
     let mut generator = Generator::new();
-    generator.configure(".", Config::new().no_debug_impl(true));
+    generator.configure(
+        ".",
+        Config::new()
+            .no_debug_impl(true)
+            .no_clone_impl(true)
+            .no_partial_eq_impl(true),
+    );
     generator.configure(
         ".nested.Nested.inner",
         Config::new()

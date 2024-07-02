@@ -29,15 +29,16 @@ pub(crate) mod message;
 pub(crate) mod oneof;
 pub(crate) mod type_spec;
 
-fn derive_msg_attr(debug: bool, default: bool) -> TokenStream {
+fn derive_msg_attr(debug: bool, default: bool, partial_eq: bool, clone: bool) -> TokenStream {
     let debug = debug.then(|| quote! { Debug, });
     let default = default.then(|| quote! { Default, });
-    quote! { #[derive(#debug #default Clone, PartialEq)] }
+    let partial_eq = partial_eq.then(|| quote! { PartialEq, });
+    let clone = clone.then(|| quote! { Clone, });
+    quote! { #[derive(#debug #default #partial_eq #clone)] }
 }
 
-fn derive_enum_attr(debug: bool) -> TokenStream {
-    let debug = debug.then(|| quote! { Debug, });
-    quote! { #[derive(#debug Clone, Copy, PartialEq, Eq, Hash)] }
+fn derive_enum_attr() -> TokenStream {
+    quote! { #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)] }
 }
 
 pub(crate) struct CurrentConfig<'a> {
@@ -61,6 +62,18 @@ impl<'a> CurrentConfig<'a> {
 
     fn derive_dbg(&self) -> bool {
         !self.config.no_debug_impl.unwrap_or(false)
+    }
+
+    fn impl_default(&self) -> bool {
+        !self.config.no_default_impl.unwrap_or(false)
+    }
+
+    fn derive_partial_eq(&self) -> bool {
+        !self.config.no_partial_eq_impl.unwrap_or(false)
+    }
+
+    fn derive_clone(&self) -> bool {
+        !self.config.no_clone_impl.unwrap_or(false)
     }
 }
 
@@ -234,14 +247,13 @@ impl Generator {
         values: &[EnumValueDescriptorProto],
         enum_int_type: IntSize,
         attrs: &[Attribute],
-        derive_dbg: bool,
     ) -> TokenStream {
         let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number()));
         let var_names = values
             .iter()
             .map(|v| self.enum_variant_name(v.name(), name));
         let default_num = Literal::i32_unsuffixed(values[0].number());
-        let derive_enum = derive_enum_attr(derive_dbg);
+        let derive_enum = derive_enum_attr();
         let itype = enum_int_type.type_name(true);
 
         quote! {
@@ -283,13 +295,7 @@ impl Generator {
             .config
             .type_attr_parsed()
             .map_err(|e| msg_error(&self.pkg, enum_type.name(), &e))?;
-        let out = self.generate_enum_decl(
-            &name,
-            &enum_type.value,
-            enum_int_type,
-            attrs,
-            !enum_conf.config.no_debug_impl.unwrap_or(false),
-        );
+        let out = self.generate_enum_decl(&name, &enum_type.value, enum_int_type, attrs);
         Ok(out)
     }
 
@@ -484,11 +490,11 @@ mod tests {
         assert_eq!(gen.resolve_type_name(".Message").to_string(), "Message");
         assert_eq!(
             gen.resolve_type_name(".package.Message").to_string(),
-            quote! { package::Message }.to_string()
+            quote! { r#package::Message }.to_string()
         );
         assert_eq!(
             gen.resolve_type_name(".package.Message.Inner").to_string(),
-            quote! { package::mod_Message::Inner }.to_string()
+            quote! { r#package::mod_Message::Inner }.to_string()
         );
 
         gen.pkg_path.push("package".to_owned());
@@ -512,7 +518,7 @@ mod tests {
         );
         assert_eq!(
             gen.resolve_type_name(".abc.d").to_string(),
-            quote! { super::super::abc::d }.to_string()
+            quote! { super::super::r#abc::d }.to_string()
         );
     }
 
@@ -533,7 +539,7 @@ mod tests {
         ];
         let gen = Generator::default();
 
-        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, &[], true);
+        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, &[]);
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
@@ -577,10 +583,9 @@ mod tests {
             &value,
             IntSize::S8,
             &parse_attributes("#[derive(Serialize)]").unwrap(),
-            false,
         );
         let expected = quote! {
-            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             #[derive(Serialize)]
             pub struct Enum(pub i8);

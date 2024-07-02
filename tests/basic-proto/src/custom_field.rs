@@ -11,7 +11,7 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/custom_field.rs"));
 }
 
-#[derive(Clone, PartialEq, Default)]
+#[derive(Default)]
 struct MockField {
     tags: Vec<Tag>,
 }
