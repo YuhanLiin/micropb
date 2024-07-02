@@ -1,13 +1,13 @@
 # Micropb
 
-`micropb` is a Rust implementation of the Protobuf format, with a focus on `nostd` and embedded environments. `micropb` generates Rust code from Protobuf files.
+`micropb` is a [Rust](https://www.rust-lang.org/) implementation of the [Protobuf](https://protobuf.dev/) format, with a focus on embedded environments.
 
-Unlike other Protobuf libraries, `micropb` is aimed for constrained environments where no allocator is available. Additionally, it aims to be maximally configurable, allowing the user to customize the generated code on a per-field granularity. As such, `micropb` offers a different set of advantages and limitations than other similar libraries.
+Unlike other Protobuf libraries, `micropb` is aimed for constrained environments where no allocator is available. Additionally, it aims to be highly configurable, allowing the user to customize the generated code on a per-field granularity. As such, `micropb` offers a different set of tradeoffs compared to other Protobuf libraries.
 
 #### Advantages
-- Supports non-std and **non-alloc** environments
+- Supports no-std and **no-alloc** environments
 - Reduced memory usage
-- Allows both statically-allocated containers (`heapless`, `arrayvec`) or dynamically-allocated containers from `alloc`
+- Allows both statically-allocated containers ([`heapless`](https://docs.rs/heapless/latest/heapless), [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec)) or dynamically-allocated containers from [`alloc`](https://doc.rust-lang.org/alloc)
 - Code generator is highly configurable
 - Fields can have custom handlers with user-defined encoding and decoding behaviour
 - Can enable either encoder or decoder alone
@@ -19,15 +19,15 @@ Unlike other Protobuf libraries, `micropb` is aimed for constrained environments
 - Unknown fields and extensions can only be captured with a custom handler
 - Reflection is not supported
 - Does not perform cycle detection, so users need to break cyclic references themselves by boxing the field or using a custom handler
-- `string`, `bytes`, repeated, and `map` fields require some basic configuration to work, as explained later
+- `string`, `bytes`, repeated, and `map` fields require some basic user configuration, as [explained later](#repeated-map-string-and-bytes-fields)
 
 ## Overview
 
 The `micropb` project consists of two crates:
 
-- `micropb-gen`: Code generation tool that generates a Rust module from a set of Protobuf files. Include this as a build dependency.
+- **`micropb-gen`**: Code generation tool that generates a Rust module from a set of `.proto` files. Include this as a build dependency.
 
-- `micropb`: Encoding and decoding routines for the Protobuf format. The generated module will assume it's been imported as a regular dependency.
+- **`micropb`**: Encoding and decoding routines for the Protobuf wire data. The generated module will assume it's been imported as a regular dependency.
 
 ### Getting Started
 
@@ -154,7 +154,7 @@ message Containers {
     string f_string = 1;
     bytes f_bytes = 2;
     repeated int32 f_repeated = 3;
-    map<int32, float> f_map = 4;
+    map<int32, int64> f_map = 4;
 }
 ```
 
@@ -168,17 +168,16 @@ gen.configure(".", micropb_gen::Config::new().max_len(5).max_bytes(8));
 ```
 
 `micropb` will generate the following Rust definition:
-```
-#[derive(Debug, Clone, PartialEq)]
+```rust,no_run
 pub struct Containers {
     f_string: heapless::String<8>,
     f_bytes: heapless::Vec<u8, 8>,
     f_repeated: heapless::Vec<i32, 5>,
-    f_map: heapless::FnvIndexMap<i32, f32, 5>,
+    f_map: heapless::FnvIndexMap<i32, i64, 5>,
 }
 ```
 
-A container type is expected to implement `PbVec`, `PbString`, or `PbMap` from `micropb::container`, depending on what type of field it's used for. For convenience, `micropb` comes with built-in implementations for container types from `heapless`, `arrayvec`, or `alloc`.
+A container type is expected to implement `PbVec`, `PbString`, or `PbMap` from `micropb::container`, depending on what type of field it's used for. For convenience, `micropb` comes with built-in implementations of the container traits for types from [`heapless`](https://docs.rs/heapless/latest/heapless), [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), and [`alloc`](https://doc.rust-lang.org/alloc) (see [Feature Flags](#feature-flags) for details).
 
 ### Optional Fields
 
@@ -191,7 +190,7 @@ message Example {
 }
 ```
 
-`micropb` generates the following Rust definition:
+`micropb` generates the following Rust APIs:
 ```rust,ignore
 #[derive(Debug, Clone, PartialEq)]
 pub struct Example {
@@ -310,7 +309,7 @@ Rust does not allow a module to share its name with a struct, so nested messages
 
 ## Decoder and Encoder
 
-`micropb` does not force a specific representation for Protobuf data streams. Instead, data streams are represented via read and write traits that users can implement, similar to `Read` and `Write` from the standard library. In addition, `micropb` provides decoder and encoder types that work on top of these traits to translate between the Protobuf data stream and Rust types. The decoder and encoder types are the main interface for accessing Protobuf data.
+`micropb` does not force a specific representation for Protobuf data streams. Instead, data streams are represented via read and write traits that users can implement, similar to [`Read`](https://doc.rust-lang.org/std/io/trait.Read.html) and [`Write`](https://doc.rust-lang.org/std/io/trait.Write.html) from the standard library. In addition, `micropb` provides decoder and encoder types that work on top of these traits to translate between the Protobuf data stream and Rust types. The decoder and encoder types are the main interface for accessing Protobuf data.
 
 ### `PbDecoder` and `PbRead`
 
@@ -357,13 +356,13 @@ encoder.encode_float(12.491)?;
 
 ## Configuring the Code Generator
 
-Users can configure how code is generated from individual Protobuf types and fields of their choosing. For example, if have a message named `Example` with a field named `f_int32`, we can generate `Box<i32>` instead of `i32` for its type by putting the following in our `build.rs`:
+One of `micropb`'s main features is its granular configuration system. With it, users can control how code is generated from individual Protobuf messages and fields of their choosing. For example, if we have a message named `Example` with a field named `f_int32`, we can generate `Box<i32>` instead of `i32` for its type by putting the following in our `build.rs`:
 
 ```rust,ignore
-gen.configure(".Example.f_int32", micropb_gen::Config::new().boxed(true));
+generator.configure(".Example.f_int32", micropb_gen::Config::new().boxed(true));
 ```
 
-We can refer to specific types and fields, such as `f_int32`, by using their full Protobuf paths. This configuration system can be used to customize the generated code in a number of ways, including but not limited to: changing the representation of optional fields, setting the container type of repeated fields, setting field/type attributes, and changing the size of integer types.
+We reference the `f_int32` field by using its full Protobuf path of `.Example.f_int32`. This allows configuration of any field or type in the compiled `.proto` files. Possible configuration options include: changing the representation of optional fields, setting the container type of repeated fields, setting field/type attributes, and changing the size of integer types.
 
 For more info on how to configure code generated from Protobuf types and fields, refer to `Generator::configure` and `Config` in `micropb-gen`.
 
@@ -388,10 +387,10 @@ For more information on custom fields, see `Config::custom_field` in `micropb-ge
 
 ## Feature Flags
 
-- `encode`: Enable support for encoding and computing the size of messages. If disabled, the generator should be configured to not generate encoding logic via `Generator::encode_decode`. Enabled by default.
-- `decode`: Enable support for decoding messages. If disabled, the generator should be configured to not generate decoding logic via `Generator::encode_decode`. Enabled by default.
-- `enable-64bit`: Enable 64-bit integer operations. If disabled, then 64-bit fields such as `int64` or `sint64` should have `Config::int_size` set to 32 bits or less. Has no effect on `double` fields. Enabled by default.
-- `alloc`: Allow `Vec`, `String`, and `BTreeMap` from `alloc` to be used for container fields. Corresponds with `Generator::use_container_alloc`. Also implements `PbWrite` on `Vec`.
-- `std`: Enables standard library and the `alloc` feature. Also allows `HashMap` to be used for `map` fields.
-- `container-heapless`: Allow `Vec`, `String`, and `IndexMap` (`FnvIndexMap` in particular), to be used for container fields. Corresponds with `Generator::use_container_heapless`. Also implements `PbWrite` on `Vec`.
-- `container-arrayvec`: Allow `ArrayVec` and `ArrayString` to be used for container fields. Corresponds with `Generator::use_container_arrayvec`. Also implements `PbWrite` on `ArrayVec`.
+- **`encode`**: Enable support for encoding and computing the size of messages. If disabled, the generator should be configured to not generate encoding logic via `Generator::encode_decode`. Enabled by default.
+- **`decode`**: Enable support for decoding messages. If disabled, the generator should be configured to not generate decoding logic via `Generator::encode_decode`. Enabled by default.
+- **`enable-64bit`**: Enable 64-bit integer operations. If disabled, then 64-bit fields such as `int64` or `sint64` should have `Config::int_size` set to 32 bits or less. Has no effect on `double` fields. Enabled by default.
+- **`alloc`**: Implements container traits on `Vec`, `String`, and `BTreeMap` from [`alloc`](https://doc.rust-lang.org/alloc), allowing them to be used as container fields. Corresponds with `Generator::use_container_alloc` from `micropb-gen`. Also implements `PbWrite` on `Vec`.
+- **`std`**: Enables standard library and the `alloc` feature.
+- **`container-heapless`**: Implements container traits on `Vec`, `String`, and `IndexMap` from [`heapless`](https://docs.rs/heapless/latest/heapless), allowing them to be used as container fields. Corresponds with `Generator::use_container_heapless` from `micropb-gen`. Also implements `PbWrite` on `Vec`.
+- **`container-arrayvec`**: Implements container traits on `ArrayVec` and `ArrayString` from [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), allowing them to be used as container fields. Corresponds with `Generator::use_container_arrayvec` from `micropb-gen`. Also implements `PbWrite` on `ArrayVec`.
