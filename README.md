@@ -14,7 +14,7 @@ Unlike other Protobuf libraries, `micropb` is aimed for constrained environments
 - Can disable 64-bit integer operations
 
 #### Limitations
-- Some speed has been traded off for memory usage
+- Depends on `protoc`
 - Protobuf groups are not supported
 - Unknown fields and extensions can only be captured with a custom handler
 - Reflection is not supported
@@ -41,7 +41,7 @@ micropb = "0.1"
 micropb-gen = { version = "0.1", features = ["container-heapless"] }
 ```
 
-Then invoke the code generator in `build.rs`:
+`micropb-gen` requires `protoc` to build `.proto` files, so [install `protoc`](https://grpc.io/docs/protoc-installation) and add it to your PATH, then invoke the code generator in `build.rs`:
 ```rust,ignore
 fn main() {
     let mut gen = micropb_gen::Generator::new();
