@@ -52,7 +52,7 @@ impl<'a> CurrentConfig<'a> {
         if let Some(node) = self.node {
             let next = node.next(segment);
             if let Some(conf) = next.and_then(|n| n.access_value().as_ref()) {
-                (*config.to_mut()).merge(conf);
+                (*config.to_mut()).merge(conf, true);
             }
             Self { node: next, config }
         } else {
@@ -125,9 +125,13 @@ pub(crate) enum EncodeFunc {
 /// use micropb_gen::{Generator, Config};
 ///
 /// let mut gen = Generator::new();
+/// // Use container types from `heapless`
 /// gen.use_container_heapless()
+///     // Set max length of repeated fields in .test.Data to 5
 ///     .configure(".test.Data", Config::new().max_len(5))
+///     // Wrap .test.Data.value inside a Box
 ///     .configure(".test.Data.value", Config::new().boxed(true))
+///     // Compile test.proto into a Rust module
 ///     .compile_protos(
 ///         &["test.proto"],
 ///         std::env::var("OUT_DIR").unwrap() + "/test_proto.rs",
@@ -223,7 +227,7 @@ impl Generator {
             .clone();
         let node = root_node.visit_path(
             split_pkg_name(fdproto.package.as_deref().unwrap_or("")),
-            |next_conf| conf.merge(next_conf),
+            |next_conf| conf.merge(next_conf, true),
         );
         let cur_config = CurrentConfig {
             node,

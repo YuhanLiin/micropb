@@ -1,4 +1,11 @@
-//! Placeholder
+//! `micropb-gen` compiles `.proto` files into Rust. It is intended to be used inside `build.rs`
+//! for build-time code generation.
+//!
+//! The entry point of this crate is the code generator, [`Generator`]. Configuration of code
+//! generator behaviour is handled by [`Config`].
+//!
+//! **Note:** `micropb-gen` requires [`protoc`](https://grpc.io/docs/protoc-installation/) to be
+//! installed on the PATH.
 
 #![warn(missing_docs)]
 
@@ -120,7 +127,7 @@ impl Generator {
             .add_path(split_pkg_name(proto_path))
             .value_mut();
         match config_slot {
-            Some(existing) => existing.merge(&config),
+            Some(existing) => existing.merge(&config, false),
             None => *config_slot = Some(Box::new(config)),
         }
         self

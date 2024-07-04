@@ -83,22 +83,28 @@ macro_rules! config_decl {
                 Self::default()
             }
 
-            pub(crate) fn merge(&mut self, other: &Self) {
-                $(config_decl!(@merge $([$placeholder])? $field, self, other);)+
+            pub(crate) fn merge(&mut self, other: &Self, is_inherit: bool) {
+                $(config_decl!(@merge $([$placeholder])? $field, self, other, is_inherit);)+
             }
 
             $(config_decl!(@setter $(#[$doc])* $field: $([$placeholder2])? $type);)+
         }
     };
 
-    (@merge $field:ident, $self:ident, $other:ident) => {
+    (@merge $field:ident, $self:ident, $other:ident, $is_inherit:ident) => {
         if let Some(v) = &$other.$field {
             $self.$field = Some(v.clone());
         }
     };
 
-    (@merge [no_inherit] $field:ident, $self:ident, $other:ident) => {
-        $self.$field = $other.$field.clone();
+    (@merge [no_inherit] $field:ident, $self:ident, $other:ident, $is_inherit:ident) => {
+        if $is_inherit {
+            $self.$field = $other.$field.clone();
+        } else {
+            if let Some(v) = &$other.$field {
+                $self.$field = Some(v.clone());
+            }
+        }
     };
 
     (@setter $(#[$doc:meta])* $field:ident: [deref] $type:ty) => {
@@ -519,7 +525,7 @@ mod tests {
             .vec_type("vec")
             .string_type("str");
         let merger = Config::new().skip(false).vec_type("array");
-        mergee.merge(&merger);
+        mergee.merge(&merger, true);
 
         assert!(!mergee.skip.unwrap());
         assert_eq!(mergee.vec_type.unwrap(), "array");
@@ -528,6 +534,11 @@ mod tests {
         assert!(mergee.max_len.is_none());
         // rename_field gets overwritten unconditionally when merging
         assert!(mergee.rename_field.is_none());
+
+        let mut mergee = Config::new().rename_field("rename");
+        // if the merge is not inheritance, rename_field doesn't get unconditionally overwritten
+        mergee.merge(&merger, false);
+        assert_eq!(mergee.rename_field.unwrap(), "rename");
     }
 
     #[test]
