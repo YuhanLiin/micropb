@@ -162,6 +162,23 @@ and the following configuration in `build.rs`:
 ```rust,ignore
 // Use container types from `heapless`, which are statically-allocated
 gen.use_container_heapless();
+
+// We can also use container types from `arrayvec` or `alloc`
+/*
+gen.use_container_arrayvec();
+gen.use_container_alloc();
+*/
+
+// We can even use our own container types
+/*
+gen.configure(".",
+    micropb_gen::Config::new()
+        .string_type("crate::MyString")
+        .vec_type("crate::MyVec")
+        .map_type("crate::MyMap")
+);
+*/
+
 // Since we're using static containers, we need to specify the max capacity of each field
 // For simplicity, configure capacity of all repeated/map fields to 5 and string/bytes to 8
 gen.configure(".", micropb_gen::Config::new().max_len(5).max_bytes(8));
