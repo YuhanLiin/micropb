@@ -29,11 +29,11 @@ fn type_check() {
     };
     let _: RefField = nested.inner;
 
-    let inner = proto::nested::mod_Nested::InnerMsg::<'_> {
+    let inner = proto::nested::mod_Nested::InnerMsg {
         val: Default::default(),
         val2: Default::default(),
         _has: Default::default(),
-        _unknown: RefField(&12),
+        _unknown: Some(RefField(&12)),
     };
-    let _: RefField = inner._unknown;
+    let _: Option<RefField> = inner._unknown;
 }

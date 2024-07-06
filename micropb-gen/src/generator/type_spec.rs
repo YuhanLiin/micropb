@@ -121,16 +121,18 @@ pub(crate) fn find_lifetime_from_type(ty: &syn::Type) -> Option<&Lifetime> {
 
 /// Find the first lifetime embedded in a type path
 pub(crate) fn find_lifetime_from_path(tpath: &syn::Path) -> Option<&Lifetime> {
-    match &tpath.segments.last().expect("empty type path").arguments {
-        syn::PathArguments::AngleBracketed(args) => args.args.first().as_ref().and_then(|arg| {
-            if let syn::GenericArgument::Lifetime(lt) = arg {
-                Some(lt)
-            } else {
-                None
+    if let syn::PathArguments::AngleBracketed(args) =
+        &tpath.segments.last().expect("empty type path").arguments
+    {
+        for arg in &args.args {
+            match arg {
+                syn::GenericArgument::Lifetime(lt) => return Some(lt),
+                syn::GenericArgument::Type(ty) => return find_lifetime_from_type(ty),
+                _ => (),
             }
-        }),
-        _ => None,
+        }
     }
+    None
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -433,7 +435,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn find_type() {
+    fn find_lifetime() {
         let ty: syn::Type = syn::parse_str("Vec").unwrap();
         assert!(find_lifetime_from_type(&ty).is_none());
         let ty: syn::Type = syn::parse_str("Vec<u8>").unwrap();
@@ -445,6 +447,8 @@ mod tests {
         let ty: syn::Type = syn::parse_str("[&'a u8; 10]").unwrap();
         assert!(find_lifetime_from_type(&ty).is_some());
         let ty: syn::Type = syn::parse_str("([&'a u8; 10])").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("std::Option<std::Vec<'a>>").unwrap();
         assert!(find_lifetime_from_type(&ty).is_some());
     }
 
