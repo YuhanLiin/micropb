@@ -5,5 +5,7 @@ members = [
     "micropb",
     "micropb-gen",
     "tests/basic-proto", 
-    "tests/serde-proto"
+    "tests/serde-proto",
+    "tests/encode-only",
+    "tests/decode-only",
 ]

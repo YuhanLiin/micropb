@@ -93,6 +93,8 @@ Protobuf messages are translated directly into Rust structs, and each message fi
 
 Given the following Protobuf definition:
 ```proto
+syntax = "proto3";
+
 message Example {
     int32 f_int32 = 1;
     int64 f_int64 = 2;
