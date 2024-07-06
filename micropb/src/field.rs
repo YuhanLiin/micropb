@@ -73,6 +73,20 @@ impl<T: FieldDecode> FieldDecode for &mut T {
     }
 }
 
+#[cfg(feature = "decode")]
+/// Convenience implementation for fields wrapped in `Option`. If field is `None` when decoding,
+/// the field will first be set to the default before decoding.
+impl<T: Default + FieldDecode> FieldDecode for Option<T> {
+    fn decode_field<R: PbRead>(
+        &mut self,
+        tag: crate::Tag,
+        decoder: &mut PbDecoder<R>,
+    ) -> Result<bool, DecodeError<R::Error>> {
+        let f = self.get_or_insert_with(Default::default);
+        f.decode_field(tag, decoder)
+    }
+}
+
 #[cfg(feature = "encode")]
 /// One or more Protobuf fields that can be encoded onto the wire.
 ///
@@ -124,5 +138,24 @@ impl<T: FieldEncode> FieldEncode for &T {
 
     fn compute_fields_size(&self) -> usize {
         (*self).compute_fields_size()
+    }
+}
+
+#[cfg(feature = "encode")]
+/// Convenience implementation for fields wrapped in `Option`. If the value is `None`, then the
+/// field isn't encoded at all.
+impl<T: FieldEncode> FieldEncode for Option<T> {
+    fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
+        if let Some(f) = self {
+            f.encode_fields(encoder)?;
+        }
+        Ok(())
+    }
+
+    fn compute_fields_size(&self) -> usize {
+        if let Some(f) = self {
+            f.compute_fields_size();
+        }
+        0
     }
 }
