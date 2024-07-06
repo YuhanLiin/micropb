@@ -300,7 +300,7 @@ fn lifetime_fields() {
     );
     generator.configure(
         ".nested.Nested.InnerMsg",
-        Config::new().unknown_handler("crate::lifetime_fields::RefField<'a>"),
+        Config::new().unknown_handler("Option<crate::lifetime_fields::RefField<'a>>"),
     );
     generator.configure(
         ".basic.BasicTypes.int32_num",
@@ -312,6 +312,18 @@ fn lifetime_fields() {
         .compile_protos(
             &["proto/basic.proto", "proto/nested.proto"],
             std::env::var("OUT_DIR").unwrap() + "/lifetime_fields.rs",
+        )
+        .unwrap();
+}
+
+fn recursive() {
+    let mut generator = Generator::new();
+    generator.configure(".Recursive.recursive", Config::new().boxed(true));
+    generator.configure(".Recursive.rec", Config::new().boxed(true));
+    generator
+        .compile_protos(
+            &["proto/recursive.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/recursive.rs",
         )
         .unwrap();
 }
@@ -329,4 +341,5 @@ fn main() {
     implicit_presence();
     extern_import();
     lifetime_fields();
+    recursive();
 }

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message Recursive {
+    Recursive recursive = 1;
+    oneof of {
+        Recursive rec = 2;
+        int32 num = 3;
+    }
+}

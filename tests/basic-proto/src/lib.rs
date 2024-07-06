@@ -23,4 +23,6 @@ mod lifetime_fields;
 #[cfg(test)]
 mod no_config;
 #[cfg(test)]
+mod recursive;
+#[cfg(test)]
 mod skip;
