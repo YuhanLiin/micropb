@@ -127,7 +127,7 @@ impl Generator {
             .add_path(split_pkg_name(proto_path))
             .value_mut();
         match config_slot {
-            Some(existing) => existing.merge(&config, false),
+            Some(existing) => existing.merge(&config),
             None => *config_slot = Some(Box::new(config)),
         }
         self

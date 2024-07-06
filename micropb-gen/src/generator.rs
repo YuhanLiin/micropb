@@ -52,7 +52,7 @@ impl<'a> CurrentConfig<'a> {
         if let Some(node) = self.node {
             let next = node.next(segment);
             if let Some(conf) = next.and_then(|n| n.access_value().as_ref()) {
-                (*config.to_mut()).merge(conf, true);
+                (*config.to_mut()).merge(conf);
             }
             Self { node: next, config }
         } else {
@@ -227,7 +227,7 @@ impl Generator {
             .clone();
         let node = root_node.visit_path(
             split_pkg_name(fdproto.package.as_deref().unwrap_or("")),
-            |next_conf| conf.merge(next_conf, true),
+            |next_conf| conf.merge(next_conf),
         );
         let cur_config = CurrentConfig {
             node,

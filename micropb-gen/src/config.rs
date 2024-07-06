@@ -83,28 +83,22 @@ macro_rules! config_decl {
                 Self::default()
             }
 
-            pub(crate) fn merge(&mut self, other: &Self, is_inherit: bool) {
-                $(config_decl!(@merge $([$placeholder])? $field, self, other, is_inherit);)+
+            pub(crate) fn merge(&mut self, other: &Self) {
+                $(config_decl!(@merge $([$placeholder])? $field, self, other);)+
             }
 
             $(config_decl!(@setter $(#[$doc])* $field: $([$placeholder2])? $type);)+
         }
     };
 
-    (@merge $field:ident, $self:ident, $other:ident, $is_inherit:ident) => {
+    (@merge $field:ident, $self:ident, $other:ident) => {
         if let Some(v) = &$other.$field {
             $self.$field = Some(v.clone());
         }
     };
 
-    (@merge [no_inherit] $field:ident, $self:ident, $other:ident, $is_inherit:ident) => {
-        if $is_inherit {
-            $self.$field = $other.$field.clone();
-        } else {
-            if let Some(v) = &$other.$field {
-                $self.$field = Some(v.clone());
-            }
-        }
+    (@merge [no_inherit] $field:ident, $self:ident, $other:ident) => {
+        $self.$field = $other.$field.clone();
     };
 
     (@setter $(#[$doc:meta])* $field:ident: [deref] $type:ty) => {
@@ -524,7 +518,7 @@ mod tests {
             .vec_type("vec")
             .string_type("str");
         let merger = Config::new().skip(false).vec_type("array");
-        mergee.merge(&merger, true);
+        mergee.merge(&merger);
 
         assert!(!mergee.skip.unwrap());
         assert_eq!(mergee.vec_type.unwrap(), "array");
@@ -536,7 +530,7 @@ mod tests {
 
         let mut mergee = Config::new().rename_field("rename");
         // if the merge is not inheritance, rename_field doesn't get unconditionally overwritten
-        mergee.merge(&merger, false);
+        mergee.merge(&merger);
         assert_eq!(mergee.rename_field.unwrap(), "rename");
     }
 
