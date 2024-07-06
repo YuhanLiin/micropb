@@ -196,11 +196,10 @@ config_decl! {
 
     /// Wrap the field in a `Box`.
     ///
-    /// Applies to normal fields and oneof fields, but not oneof variants and elements of repeated
-    /// and `map` fields.
-    ///
     /// If the field is already wrapped in `Option`, then the field will be of type
     /// `Option<Box<_>>`.
+    ///
+    /// This config not apply to elements of repeated and `map` fields.
     boxed: Option<bool>,
 
     /// Container type that's generated for `bytes` and repeated fields. The provided type must

@@ -66,24 +66,33 @@ impl<'a> OneofField<'a> {
         &self,
         oneof_name: &Ident,
         oneof_type: &TokenStream,
+        oneof_boxed: bool,
         gen: &Generator,
         decoder: &Ident,
     ) -> TokenStream {
         let fnum = self.num;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
         let variant_name = &self.rust_name;
-        let extra_deref = self.boxed.then(|| quote! { * });
+        let extra_deref_of = oneof_boxed.then(|| quote! { * });
+        let extra_deref_var = self.boxed.then(|| quote! { * });
 
         let decode_stmts = self
             .tspec
             .generate_decode_mut(gen, false, decoder, &mut_ref);
+        let value = gen.wrapped_value(
+            quote! { #oneof_type::#variant_name(::core::default::Default::default()) },
+            oneof_boxed,
+            true,
+        );
         quote! {
             #fnum => {
                 let #mut_ref = loop {
-                    match &mut self.#oneof_name {
-                        ::core::option::Option::Some(#oneof_type::#variant_name(variant)) => break &mut #extra_deref *variant,
-                        _ => self.#oneof_name = ::core::option::Option::Some(#oneof_type::#variant_name(::core::default::Default::default())),
+                    if let ::core::option::Option::Some(variant) = &mut self.#oneof_name {
+                        if let #oneof_type::#variant_name(variant) = &mut #extra_deref_of *variant {
+                            break &mut #extra_deref_var *variant;
+                        }
                     }
+                    self.#oneof_name = #value;
                 };
                 #decode_stmts;
             }
@@ -147,6 +156,7 @@ pub(crate) struct Oneof<'a> {
     pub(crate) otype: OneofType<'a>,
     pub(crate) field_attrs: Vec<syn::Attribute>,
     pub(crate) type_attrs: Vec<syn::Attribute>,
+    pub(crate) boxed: bool,
     pub(crate) derive_dbg: bool,
     pub(crate) derive_partial_eq: bool,
     pub(crate) derive_clone: bool,
@@ -211,6 +221,7 @@ impl<'a> Oneof<'a> {
         };
         let field_attrs = oneof_conf.config.field_attr_parsed()?;
         let type_attrs = oneof_conf.config.type_attr_parsed()?;
+        let boxed = oneof_conf.config.boxed.unwrap_or(false);
 
         Ok(Some(Oneof {
             name,
@@ -218,6 +229,7 @@ impl<'a> Oneof<'a> {
             raw_rust_name,
             idx,
             otype,
+            boxed,
             derive_dbg: oneof_conf.derive_dbg(),
             derive_partial_eq: oneof_conf.derive_partial_eq(),
             derive_clone: oneof_conf.derive_clone(),
@@ -254,7 +266,7 @@ impl<'a> Oneof<'a> {
         let name = &self.raw_rust_name;
         let oneof_type = match &self.otype {
             OneofType::Enum { type_name, .. } => {
-                gen.wrapped_type(quote! { #msg_mod_name::#type_name }, false, true)
+                gen.wrapped_type(quote! { #msg_mod_name::#type_name }, self.boxed, true)
             }
             OneofType::Custom {
                 field: CustomField::Type(type_path),
@@ -282,7 +294,7 @@ impl<'a> Oneof<'a> {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
                 let branches = fields
                     .iter()
-                    .map(|f| f.generate_decode_branch(name, &oneof_type, gen, decoder));
+                    .map(|f| f.generate_decode_branch(name, &oneof_type, self.boxed, gen, decoder));
                 quote! {
                     #(#branches)*
                 }
@@ -318,12 +330,13 @@ impl<'a> Oneof<'a> {
         match &self.otype {
             OneofType::Enum { type_name, fields } => {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
+                let extra_deref = self.boxed.then(|| quote! { * });
                 let branches = fields
                     .iter()
                     .map(|f| f.generate_encode_branch(&oneof_type, gen, func_type));
                 quote! {
-                    if let Some(oneof) = &self.#name {
-                        match oneof {
+                    if let Some(oneof) = & self.#name {
+                        match &#extra_deref *oneof {
                             #(#branches)*
                         }
                     }
@@ -464,6 +477,7 @@ mod tests {
                 },
                 field_attrs: vec![],
                 type_attrs: vec![],
+                boxed: false,
                 derive_dbg: true,
                 derive_partial_eq: true,
                 derive_clone: true,
@@ -491,6 +505,7 @@ mod tests {
                 },
                 field_attrs: parse_attributes("#[attr]").unwrap(),
                 type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+                boxed: false,
                 derive_dbg: false,
                 derive_partial_eq: true,
                 derive_clone: true,
@@ -512,6 +527,7 @@ mod tests {
             },
             field_attrs: vec![],
             type_attrs: vec![],
+            boxed: false,
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,
@@ -535,6 +551,7 @@ mod tests {
             },
             field_attrs: vec![],
             type_attrs: vec![],
+            boxed: false,
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,

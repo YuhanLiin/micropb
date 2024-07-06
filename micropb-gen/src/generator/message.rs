@@ -737,6 +737,7 @@ mod tests {
                     field_attrs: vec![],
                     // Overrides the type attrs of the message
                     type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+                    boxed: false,
                     // Inherits the no_debug_derive setting of the message
                     derive_dbg: false,
                     derive_partial_eq: true,

@@ -8,15 +8,16 @@ mod proto {
 
 #[test]
 fn recursive_types() {
-    let recursive = proto::Recursive::default();
-    let _: Option<Box<proto::Recursive>> = recursive.recursive;
-    match recursive.of {
-        Some(proto::mod_Recursive::Of::Rec(r)) => {
+    let mut recursive = proto::Recursive::default();
+    let _: &Option<Box<proto::Recursive>> = &recursive.recursive;
+    let _: &Option<Box<proto::mod_Recursive::Of>> = &recursive.of;
+    recursive.of = Some(Box::new(proto::mod_Recursive::Of::Num(1)));
+    match *recursive.of.unwrap() {
+        proto::mod_Recursive::Of::Rec(r) => {
             let _: Box<Recursive> = r;
         }
-        Some(proto::mod_Recursive::Of::Num(i)) => {
+        proto::mod_Recursive::Of::Num(i) => {
             let _: i32 = i;
         }
-        None => {}
     }
 }
