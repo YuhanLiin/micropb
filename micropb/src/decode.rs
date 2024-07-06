@@ -937,6 +937,30 @@ mod tests {
     }
 
     #[test]
+    fn fixed_64_as_32() {
+        assert_decode!(
+            Ok(0xF4983212),
+            [0x12, 0x32, 0x98, 0xF4, 0x12, 0x34, 0x00, 0x00],
+            decode_fixed64_as_32()
+        );
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x12, 0x32, 0x98, 0xF4, 0x12, 0x34, 0x00],
+            decode_fixed64_as_32()
+        );
+        assert_decode!(
+            Ok(-0x0B67CDEE),
+            [0x12, 0x32, 0x98, 0xF4, 0xFF, 0xFF, 0x00, 0x00],
+            decode_sfixed64_as_32()
+        );
+        assert_decode!(
+            Err(DecodeError::UnexpectedEof),
+            [0x12, 0x32, 0x98, 0xF4],
+            decode_sfixed64_as_32()
+        );
+    }
+
+    #[test]
     fn float() {
         assert_decode!(
             Err(DecodeError::UnexpectedEof),

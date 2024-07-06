@@ -260,7 +260,8 @@ impl<W: PbWrite> PbEncoder<W> {
     ///
     /// Avoids 64-bit operations, which can have benefits on 32-bit architectures.
     pub fn encode_sfixed64_as_32(&mut self, i: i32) -> Result<(), W::Error> {
-        let mut bytes = [0; 8];
+        // If i is -ve, then write the extra bits to 1
+        let mut bytes = if i < 0 { [0xFF; 8] } else { [0; 8] };
         bytes[..4].copy_from_slice(&i.to_le_bytes());
         self.write(&bytes)
     }
@@ -519,6 +520,26 @@ mod tests {
             encode_fixed64(0x9950AA3BF4983212)
         );
         assert_encode_nosize!(&[0x12, 0x32, 0x98, 0xF4], encode_sfixed32(-0x0B67CDEE));
+    }
+
+    #[test]
+    fn fixed_64_as_32() {
+        assert_encode_nosize!(
+            &[0x12, 0x32, 0x98, 0xF4, 0x00, 0x00, 0x00, 0x00],
+            encode_fixed64_as_32(0xF4983212)
+        );
+        assert_encode_nosize!(
+            &[0x34, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            encode_sfixed64_as_32(0x1234)
+        );
+        assert_encode_nosize!(
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF],
+            encode_sfixed64_as_32(-1)
+        );
+        assert_encode_nosize!(
+            &[0x12, 0x32, 0x98, 0xF4, 0xFF, 0xFF, 0xFF, 0xFF],
+            encode_sfixed64_as_32(-0x0B67CDEE)
+        );
     }
 
     #[test]
