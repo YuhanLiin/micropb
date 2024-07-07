@@ -55,7 +55,7 @@ Finally, include the generated file in your code:
 ```rust,ignore
 // main.rs
 
-use micropb::{PbRead, PbDecoder, MessageDecode};
+use micropb::{PbRead, PbDecoder, MessageDecode, MessageEncode};
 
 mod example {
     #![allow(clippy::all)]

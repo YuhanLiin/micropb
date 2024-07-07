@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package gps;
+
+message Gps {
+    uint32 time = 1;
+    float longitude = 2;
+    float latitude = 3;
+    float speed = 4;
+    float altitude = 5;
+}
+
+message Accel {
+    uint32 time = 1;
+    float accel = 2;
+    optional float gyro = 3;
+}
+
+message LocationData {
+    message Point {
+        oneof point {
+            Gps gps = 1;
+            Accel accel = 2;
+            bytes raw = 3;
+        }
+    }
+
+    enum Type {
+        TYPE_GPS = 0;
+        TYPE_ACCEL = 1;
+        TYPE_RAW = 2;
+    }
+
+    repeated Point points = 1;
+    map<uint32, Type> time_to_type = 2;
+    fixed32 checksum = 3;
+    string comment = 4;
+}

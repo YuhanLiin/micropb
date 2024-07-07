@@ -8,4 +8,12 @@ members = [
     "tests/serde-proto",
     "tests/encode-only",
     "tests/decode-only",
+    "examples/no-panic",
 ]
+
+# For the no-panic example
+[profile.release-lto]
+inherits = "release"
+opt-level = "s"
+lto = "fat"
+codegen-units = 1

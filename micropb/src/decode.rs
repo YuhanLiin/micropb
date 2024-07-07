@@ -85,23 +85,20 @@ pub trait PbRead {
     /// advance the reader by the amount of bytes read, so no need to call
     /// [`pb_advance`](Self::pb_advance).
     fn pb_read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<usize, Self::Error> {
-        if buf.is_empty() {
-            return Ok(0);
-        }
-
         let mut pos = 0;
-        while {
-            let remaining = &mut buf[pos..];
+        loop {
+            let remaining = buf.get_mut(pos..).unwrap_or(&mut []);
+            if remaining.is_empty() {
+                break;
+            }
             let chunk = &self.pb_read_chunk()?;
             if chunk.is_empty() {
                 return Ok(pos);
             }
-            let n = chunk.len().min(remaining.len());
-            maybe_uninit_write_slice(&mut remaining[..n], &chunk[..n]);
+            let n = maybe_uninit_write_slice(remaining, chunk);
             self.pb_advance(n);
             pos += n;
-            pos < buf.len()
-        } {}
+        }
 
         debug_assert_eq!(pos, buf.len());
         Ok(pos)
@@ -137,13 +134,12 @@ impl PbRead for &[u8] {
 
     #[inline]
     fn pb_advance(&mut self, bytes: usize) {
-        *self = &self[bytes..];
+        *self = self.get(bytes..).unwrap_or(&[])
     }
 
     #[inline]
     fn pb_read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<usize, Self::Error> {
-        let n = buf.len().min(self.len());
-        maybe_uninit_write_slice(&mut buf[..n], &self[..n]);
+        let n = maybe_uninit_write_slice(buf, self);
         self.pb_advance(n);
         Ok(n)
     }

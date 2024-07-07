@@ -151,7 +151,7 @@ mod impl_arrayvec {
             let slice = unsafe {
                 core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<T>, N)
             };
-            &mut slice[len..]
+            slice.get_mut(len..).unwrap_or(&mut [])
         }
 
         #[inline]
@@ -173,7 +173,7 @@ mod impl_arrayvec {
             let s = self.deref_mut().as_mut_ptr();
             // SAFETY: Underlying storage is array of N bytes, so the slice is valid
             let slice = unsafe { core::slice::from_raw_parts_mut(s as *mut MaybeUninit<u8>, N) };
-            &mut slice[len..]
+            slice.get_mut(len..).unwrap_or(&mut [])
         }
 
         #[inline]
@@ -229,7 +229,7 @@ mod impl_heapless {
             let slice = unsafe {
                 core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<T>, N)
             };
-            &mut slice[len..]
+            slice.get_mut(len..).unwrap_or(&mut [])
         }
 
         #[inline]
@@ -252,7 +252,7 @@ mod impl_heapless {
                     N,
                 )
             };
-            &mut slice[len..]
+            slice.get_mut(len..).unwrap_or(&mut [])
         }
 
         #[inline]

@@ -2,19 +2,16 @@
 
 use core::mem::{self, MaybeUninit};
 
-pub(crate) fn maybe_uninit_write_slice<'a, T>(
-    this: &'a mut [MaybeUninit<T>],
-    src: &[T],
-) -> &'a mut [T]
+pub(crate) fn maybe_uninit_write_slice<T>(this: &mut [MaybeUninit<T>], src: &[T]) -> usize
 where
     T: Copy,
 {
     // SAFETY: copy-paste from rust stdlib.
     let uninit_src: &[MaybeUninit<T>] = unsafe { mem::transmute(src) };
 
-    this.copy_from_slice(uninit_src);
-
-    unsafe { &mut *(this as *mut [MaybeUninit<T>] as *mut [T]) }
+    let n = this.len().min(uninit_src.len());
+    this[..n].copy_from_slice(&uninit_src[..n]);
+    n
 }
 
 #[inline]

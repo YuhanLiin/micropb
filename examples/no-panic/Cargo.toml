@@ -1,0 +1,11 @@
+[package]
+name = "no-panic"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+micropb = { version = "0.1.0", path = "../../micropb", features = ["container-heapless"] }
+no-panic = { version = "0.1" }
+
+[build-dependencies]
+micropb-gen = { version = "0.1.0", path = "../../micropb-gen" }
