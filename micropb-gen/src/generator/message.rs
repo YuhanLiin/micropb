@@ -429,11 +429,11 @@ impl<'a> Message<'a> {
 
         quote! {
             impl<#lifetime> ::micropb::MessageDecode for #name<#lifetime> {
-                fn decode<R: ::micropb::PbRead>(
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                     &mut self,
-                    #decoder: &mut ::micropb::PbDecoder<R>,
+                    #decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
-                ) -> Result<(), ::micropb::DecodeError<R::Error>>
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>>
                 {
                     use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
 
@@ -497,10 +497,10 @@ impl<'a> Message<'a> {
 
         quote! {
             impl<#lifetime> ::micropb::MessageEncode for #name<#lifetime> {
-                fn encode<W: ::micropb::PbWrite>(
+                fn encode<IMPL_MICROPB_WRITE: ::micropb::PbWrite>(
                     &self,
-                    encoder: &mut ::micropb::PbEncoder<W>,
-                ) -> Result<(), W::Error>
+                    encoder: &mut ::micropb::PbEncoder<IMPL_MICROPB_WRITE>,
+                ) -> Result<(), IMPL_MICROPB_WRITE::Error>
                 {
                     use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
                     #encode
