@@ -586,7 +586,7 @@ mod tests {
                 ftype: FieldType::Single(TypeSpec::Bool),
                 name: "field",
                 rust_name: "renamed".to_owned(),
-                raw_rust_name: Ident::new_raw("renamed", Span::call_site()),
+                raw_rust_name: Ident::new("renamed", Span::call_site()),
                 default: Some("true"),
                 boxed: true,
                 attrs: parse_attributes("#[attr]").unwrap(),

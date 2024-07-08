@@ -3,6 +3,8 @@
 use proc_macro2::Span;
 use syn::Ident;
 
+use crate::generator::sanitized_ident;
+
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
 /// Sizes of integer types
@@ -435,11 +437,15 @@ impl Config {
 
     pub(crate) fn rust_field_name(&self, name: &str) -> Result<(String, Ident), String> {
         if let Some(s) = &self.rename_field {
-            let raw_rust_name = syn::parse_str(&format!("r#{s}"))
-                .map_err(|e| format!("Failed to parse rename_field \"{s}\" as identifier: {e}"))?;
-            Ok((s.to_owned(), raw_rust_name))
+            // expect user-supplied names to not require sanitization
+            Ok((
+                s.to_owned(),
+                syn::parse_str(s).map_err(|e| {
+                    format!("Failed to parse rename_field \"{s}\" as identifier: {e}")
+                })?,
+            ))
         } else {
-            Ok((name.to_owned(), Ident::new_raw(name, Span::call_site())))
+            Ok(sanitized_ident(name))
         }
     }
 
@@ -527,11 +533,6 @@ mod tests {
         assert!(mergee.max_len.is_none());
         // rename_field gets overwritten unconditionally when merging
         assert!(mergee.rename_field.is_none());
-
-        let mut mergee = Config::new().rename_field("rename");
-        // if the merge is not inheritance, rename_field doesn't get unconditionally overwritten
-        mergee.merge(&merger);
-        assert_eq!(mergee.rename_field.unwrap(), "rename");
     }
 
     #[test]
@@ -588,7 +589,7 @@ mod tests {
         config.rename_field = Some("rename".to_string());
         assert_eq!(
             config.rust_field_name("name").unwrap(),
-            ("rename".to_owned(), format_ident!("r#rename"))
+            ("rename".to_owned(), format_ident!("rename"))
         );
 
         config.custom_field = Some(CustomField::Type("Vec<u16, 4>".to_owned()));

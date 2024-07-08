@@ -498,7 +498,7 @@ mod tests {
             Oneof {
                 name: "oneof",
                 rust_name: "renamed_oneof".to_owned(),
-                raw_rust_name: Ident::new_raw("renamed_oneof", Span::call_site()),
+                raw_rust_name: Ident::new("renamed_oneof", Span::call_site()),
                 otype: OneofType::Enum {
                     type_name: Ident::new("RenamedOneof", Span::call_site()),
                     fields: vec![]

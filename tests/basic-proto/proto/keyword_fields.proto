@@ -11,3 +11,8 @@ message Msg {
         int32 as = 4;
     }
 }
+
+enum Enum {
+    ENUM_1 = 1;
+    ENUM_SELF = 2;
+}

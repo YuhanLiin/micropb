@@ -417,7 +417,7 @@ impl Generator {
         } else {
             &variant_name_cased
         };
-        Ident::new(stripped, Span::call_site())
+        sanitized_ident(stripped).1
     }
 
     fn wrapped_type(&self, typ: TokenStream, boxed: bool, optional: bool) -> TokenStream {
@@ -451,11 +451,28 @@ pub(crate) fn resolve_path_elem(elem: &str) -> Ident {
     if elem.starts_with(|c: char| c.is_ascii_uppercase()) {
         // Assume that type names all start with uppercase
         format_ident!("mod_{elem}")
-    } else if ["crate", "self", "super"].contains(&elem) {
-        // Escape path segment keywords, since they can't be raw idents
-        format_ident!("_{elem}")
     } else {
-        Ident::new_raw(elem, Span::call_site())
+        sanitized_ident(elem).1
+    }
+}
+
+#[inline]
+pub(crate) fn sanitized_ident(name: &str) -> (String, Ident) {
+    match name {
+        // These keywords can't be raw idents, so we suffix them with an underscore
+        "_" | "super" | "crate" | "self" | "Self" | "extern" => {
+            (format!("{name}_"), format_ident!("{name}_"))
+        }
+        // Idents can't start with numbers, so we need to prefix with unerscore
+        name if name.starts_with(|c: char| c.is_numeric()) => {
+            (format!("_{name}"), format_ident!("_{name}"))
+        }
+        // Use raw idents for lowercase names, since they may be keywords
+        name if name.starts_with(|c: char| c.is_lowercase()) => {
+            (name.to_owned(), Ident::new_raw(name, Span::call_site()))
+        }
+        // Use the name as is
+        name => (name.to_owned(), Ident::new(name, Span::call_site())),
     }
 }
 
