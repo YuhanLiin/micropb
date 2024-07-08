@@ -209,6 +209,31 @@ impl Generator {
         self
     }
 
+    /// Configure the generator to generate `std` containers for Protobuf `string`, `bytes`,
+    /// repeated, and `map` fields.
+    ///
+    /// If using this option, `micropb` should have the `std` feature enabled.
+    ///
+    /// Specifically, `std::string::String` is generated for `string` fields, `std::vec::Vec`
+    /// is generated for `bytes` and repeated fields, and `std::collections::HashMap` is
+    /// generated for `map` fields. This uses [`configure`](Self::configure) under the hood, so
+    /// configurations set by this call can all be overriden by future configurations.
+    ///
+    /// # Note
+    /// Since `std` containers are dynamic size, [`max_len`](Config::max_bytes) and
+    /// [`max_bytes`](Config::max_bytes) must NOT be set for all fields that generate these
+    /// containers.
+    pub fn use_container_std(&mut self) -> &mut Self {
+        self.configure(
+            ".",
+            Config::new()
+                .vec_type("::std::vec::Vec")
+                .string_type("::std::string::String")
+                .map_type("::std::collections::HashMap"),
+        );
+        self
+    }
+
     /// Compile `.proto` files into a single Rust file.
     ///
     /// # Example
