@@ -1,18 +1,17 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{field_descriptor_proto::Type, FieldDescriptorProto};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
 use crate::{
     config::IntSize,
+    descriptor::{mod_FieldDescriptorProto::Type, FieldDescriptorProto},
     utils::{path_suffix, unescape_c_escape_string},
 };
 
 use super::{CurrentConfig, Generator};
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum PbInt {
     Int32,
     Int64,
@@ -168,8 +167,8 @@ impl TypeSpec {
         type_conf: &CurrentConfig,
     ) -> Result<Self, String> {
         let conf = &type_conf.config;
-        let res = match proto.r#type() {
-            Type::Group => panic!("Groups are unsupported"),
+        let res = match proto.r#type {
+            Type::Group => return Err("Group fields are unsupported".to_owned()),
             Type::Double => TypeSpec::Double,
             Type::Float => TypeSpec::Float,
             Type::Bool => TypeSpec::Bool,
@@ -186,8 +185,8 @@ impl TypeSpec {
                 })?,
                 max_bytes: conf.max_bytes,
             },
-            Type::Message => TypeSpec::Message(proto.type_name().to_owned()),
-            Type::Enum => TypeSpec::Enum(proto.type_name().to_owned()),
+            Type::Message => TypeSpec::Message(proto.type_name.clone()),
+            Type::Enum => TypeSpec::Enum(proto.type_name.clone()),
             Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_size.unwrap_or(IntSize::S32)),
             Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_size.unwrap_or(IntSize::S64)),
             Type::Uint64 => TypeSpec::Int(PbInt::Uint64, conf.int_size.unwrap_or(IntSize::S64)),
@@ -198,6 +197,7 @@ impl TypeSpec {
             Type::Sfixed64 => TypeSpec::Int(PbInt::Sfixed64, conf.int_size.unwrap_or(IntSize::S64)),
             Type::Sint32 => TypeSpec::Int(PbInt::Sint32, conf.int_size.unwrap_or(IntSize::S32)),
             Type::Sint64 => TypeSpec::Int(PbInt::Sint64, conf.int_size.unwrap_or(IntSize::S64)),
+            t => return Err(format!("Unknown type specifier {}", t.0)),
         };
         Ok(res)
     }
@@ -453,13 +453,12 @@ mod tests {
     }
 
     fn field_proto(typ: Type, type_name: &str) -> FieldDescriptorProto {
-        FieldDescriptorProto {
-            name: Some("name".to_owned()),
-            number: Some(0),
-            r#type: Some(typ.into()),
-            type_name: Some(type_name.to_owned()),
-            ..Default::default()
-        }
+        let mut f = FieldDescriptorProto::default();
+        f.set_name("name".to_owned());
+        f.set_number(0);
+        f.set_type(typ);
+        f.set_type_name(type_name.to_owned());
+        f
     }
 
     #[test]

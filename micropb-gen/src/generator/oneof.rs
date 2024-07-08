@@ -1,6 +1,5 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{FieldDescriptorProto, OneofDescriptorProto};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
@@ -10,6 +9,8 @@ use super::{
     type_spec::{find_lifetime_from_type, TypeSpec},
     CurrentConfig, EncodeFunc, Generator,
 };
+
+use crate::descriptor::{FieldDescriptorProto, OneofDescriptorProto};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
@@ -31,7 +32,7 @@ impl<'a> OneofField<'a> {
             return Ok(None);
         }
 
-        let name = proto.name();
+        let name = &proto.name;
         // Oneof fields have camelcased variant names
         let rust_name = Ident::new(
             &field_conf
@@ -41,7 +42,7 @@ impl<'a> OneofField<'a> {
                 .to_case(Case::Pascal),
             Span::call_site(),
         );
-        let num = proto.number() as u32;
+        let num = proto.number as u32;
         let tspec = TypeSpec::from_proto(proto, field_conf)?;
         let attrs = field_conf.config.field_attr_parsed()?;
 
@@ -207,7 +208,7 @@ impl<'a> Oneof<'a> {
             return Ok(None);
         }
 
-        let name = proto.name();
+        let name = &proto.name;
         let (rust_name, raw_rust_name) = oneof_conf.config.rust_field_name(name)?;
         let otype = match oneof_conf.config.custom_field_parsed()? {
             Some(custom) => OneofType::Custom {
@@ -380,19 +381,18 @@ pub(crate) fn make_test_oneof_field(
 mod tests {
     use std::borrow::Cow;
 
-    use prost_types::field_descriptor_proto::Type;
+    use crate::descriptor::mod_FieldDescriptorProto::Type;
 
     use crate::config::{parse_attributes, Config};
 
     use super::*;
 
     fn field_proto(num: u32, name: &str) -> FieldDescriptorProto {
-        FieldDescriptorProto {
-            name: Some(name.to_owned()),
-            number: Some(num as i32),
-            r#type: Some(Type::Bool.into()),
-            ..Default::default()
-        }
+        let mut f = FieldDescriptorProto::default();
+        f.set_name(name.to_owned());
+        f.set_number(num as i32);
+        f.set_type(Type::Bool);
+        f
     }
 
     #[test]
@@ -461,10 +461,8 @@ mod tests {
             node: None,
             config: Cow::Borrowed(&config),
         };
-        let oneof = OneofDescriptorProto {
-            name: Some("oneof".to_owned()),
-            options: None,
-        };
+        let mut oneof = OneofDescriptorProto::default();
+        oneof.set_name("oneof".to_owned());
         assert_eq!(
             Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
             Oneof {

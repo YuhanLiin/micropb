@@ -9,6 +9,7 @@ members = [
     "tests/encode-only",
     "tests/decode-only",
     "examples/no-panic",
+    "examples/file-descriptor-set",
 ]
 
 # For the no-panic example

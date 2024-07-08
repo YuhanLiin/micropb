@@ -3,22 +3,18 @@ name = "micropb-gen"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
 default = ["format"]
 format = ["dep:prettyplease"]
 
 [dependencies]
 tempfile = "3.10"
-prost-types = "0.12"
-prost = { version = "0.12", default-features = false, features = ["std"] }
 quote = "1"
 proc-macro2 = "1"
 syn = { version = "2", default-features = false, features = ["parsing", "derive", "printing"] }
 convert_case = "0.6"
 prettyplease = { version = "0.2.17", optional = true }
-micropb = { version = "0.1.0", path = "../micropb", default-features = false, features = ["encode"] }
+micropb = { version = "0.1.0", path = "../micropb", features = ["std"] }
 
 [dev-dependencies]
 syn = { version = "2", default-features = false, features = ["extra-traits"] }

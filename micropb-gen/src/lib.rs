@@ -14,6 +14,15 @@ mod generator;
 mod pathtree;
 mod utils;
 
+// This module was generated from example/file-descriptor-proto
+mod descriptor {
+    #![allow(clippy::all)]
+    #![allow(warnings)]
+    include!("descriptor.rs");
+
+    pub use google::protobuf::*;
+}
+
 use std::{
     env,
     ffi::OsStr,
@@ -25,8 +34,7 @@ use std::{
 
 pub use config::Config;
 pub use generator::Generator;
-use prost::Message;
-use prost_types::FileDescriptorSet;
+use micropb::{MessageDecode, PbDecoder};
 
 #[derive(Debug, Clone, Copy, Default)]
 /// Whether to include encode and decode logic
@@ -286,7 +294,11 @@ impl Generator {
         out_filename: impl AsRef<Path>,
     ) -> io::Result<()> {
         let bytes = fs::read(fdset_file)?;
-        let fdset = FileDescriptorSet::decode(&*bytes)?;
+        let mut decoder = PbDecoder::new(bytes.as_slice());
+        let mut fdset = descriptor::FileDescriptorSet::default();
+        fdset
+            .decode(&mut decoder, bytes.len())
+            .expect("file descriptor set decode failed");
         let code = self.generate_fdset(&fdset)?;
 
         #[cfg(feature = "format")]

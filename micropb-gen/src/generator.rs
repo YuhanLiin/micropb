@@ -9,15 +9,15 @@ use std::{
 
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{
-    DescriptorProto, EnumDescriptorProto, EnumValueDescriptorProto, FileDescriptorProto,
-    FileDescriptorSet, Syntax,
-};
 use quote::{format_ident, quote};
 use syn::{Attribute, Ident};
 
 use crate::{
     config::{Config, IntSize},
+    descriptor::{
+        DescriptorProto, EnumDescriptorProto, EnumValueDescriptorProto, FileDescriptorProto,
+        FileDescriptorSet,
+    },
     pathtree::{Node, PathTree},
     split_pkg_name, EncodeDecode,
 };
@@ -102,6 +102,13 @@ fn msg_error(pkg: &str, msg_name: &str, err_text: &str) -> io::Error {
 pub(crate) enum EncodeFunc {
     Sizeof(Ident),
     Encode(Ident),
+}
+
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+pub(crate) enum Syntax {
+    #[default]
+    Proto2,
+    Proto3,
 }
 
 #[derive(Debug)]
@@ -189,7 +196,7 @@ impl Generator {
 
         for file in &fdset.file {
             let code = self.generate_fdproto(file)?;
-            if let Some(pkg_name) = &file.package {
+            if let Some(pkg_name) = file.package() {
                 *mod_tree.root.add_path(split_pkg_name(pkg_name)).value_mut() = Some(code);
             } else {
                 mod_tree
@@ -208,16 +215,16 @@ impl Generator {
         &mut self,
         fdproto: &FileDescriptorProto,
     ) -> io::Result<TokenStream> {
-        self.syntax = match fdproto.syntax.as_deref() {
-            Some("proto3") => Syntax::Proto3,
+        self.syntax = match fdproto.syntax.as_str() {
+            // If the syntax is "editions", still treat as proto3 for now
+            "proto3" | "editions" => Syntax::Proto3,
             _ => Syntax::Proto2,
         };
         self.pkg_path = fdproto
-            .package
-            .as_ref()
+            .package()
             .map(|s| split_pkg_name(s).map(ToOwned::to_owned).collect())
             .unwrap_or_default();
-        self.pkg = fdproto.package.clone().unwrap_or_default();
+        self.pkg = fdproto.package().cloned().unwrap_or_default();
 
         let root_node = &self.config_tree.root;
         let mut conf = root_node
@@ -226,7 +233,7 @@ impl Generator {
             .expect("root config should exist")
             .clone();
         let node = root_node.visit_path(
-            split_pkg_name(fdproto.package.as_deref().unwrap_or("")),
+            split_pkg_name(fdproto.package().map(String::as_str).unwrap_or("")),
             |next_conf| conf.merge(next_conf),
         );
         let cur_config = CurrentConfig {
@@ -236,10 +243,10 @@ impl Generator {
 
         let mut out = TokenStream::new();
         for m in &fdproto.message_type {
-            out.extend(self.generate_msg(m, cur_config.next_conf(m.name()))?);
+            out.extend(self.generate_msg(m, cur_config.next_conf(&m.name))?);
         }
         for e in &fdproto.enum_type {
-            out.extend(self.generate_enum(e, cur_config.next_conf(e.name()))?);
+            out.extend(self.generate_enum(e, cur_config.next_conf(&e.name))?);
         }
 
         Ok(out)
@@ -252,11 +259,9 @@ impl Generator {
         enum_int_type: IntSize,
         attrs: &[Attribute],
     ) -> TokenStream {
-        let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number()));
-        let var_names = values
-            .iter()
-            .map(|v| self.enum_variant_name(v.name(), name));
-        let default_num = Literal::i32_unsuffixed(values[0].number());
+        let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number));
+        let var_names = values.iter().map(|v| self.enum_variant_name(&v.name, name));
+        let default_num = Literal::i32_unsuffixed(values[0].number);
         let derive_enum = derive_enum_attr();
         let itype = enum_int_type.type_name(true);
 
@@ -293,12 +298,12 @@ impl Generator {
             return Ok(quote! {});
         }
 
-        let name = Ident::new(enum_type.name(), Span::call_site());
+        let name = Ident::new(&enum_type.name, Span::call_site());
         let enum_int_type = enum_conf.config.enum_int_size.unwrap_or(IntSize::S32);
         let attrs = &enum_conf
             .config
             .type_attr_parsed()
-            .map_err(|e| msg_error(&self.pkg, enum_type.name(), &e))?;
+            .map_err(|e| msg_error(&self.pkg, &enum_type.name, &e))?;
         let out = self.generate_enum_decl(&name, &enum_type.value, enum_int_type, attrs);
         Ok(out)
     }
@@ -316,12 +321,12 @@ impl Generator {
         for m in proto
             .nested_type
             .iter()
-            .filter(|m| !m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false))
+            .filter(|m| !m.options().map(|o| o.map_entry).unwrap_or(false))
         {
-            msg_mod.extend(self.generate_msg(m, msg_conf.next_conf(m.name()))?);
+            msg_mod.extend(self.generate_msg(m, msg_conf.next_conf(&m.name))?);
         }
         for e in proto.enum_type.iter() {
-            msg_mod.extend(self.generate_enum(e, msg_conf.next_conf(e.name()))?);
+            msg_mod.extend(self.generate_enum(e, msg_conf.next_conf(&e.name))?);
         }
         for o in &msg.oneofs {
             msg_mod.extend(o.generate_decl(self));
@@ -478,9 +483,7 @@ pub(crate) fn sanitized_ident(name: &str) -> (String, Ident) {
 
 #[cfg(test)]
 mod tests {
-    use prost_types::EnumValueDescriptorProto;
-
-    use crate::config::parse_attributes;
+    use crate::{config::parse_attributes, descriptor::EnumValueDescriptorProto};
 
     use super::*;
 
@@ -546,18 +549,14 @@ mod tests {
     #[test]
     fn enum_basic() {
         let name = Ident::new("Test", Span::call_site());
-        let value = vec![
-            EnumValueDescriptorProto {
-                name: Some("TEST_ONE".to_owned()),
-                number: Some(1),
-                options: None,
-            },
-            EnumValueDescriptorProto {
-                name: Some("OTHER_VALUE".to_owned()),
-                number: Some(2),
-                options: None,
-            },
+        let mut value = vec![
+            EnumValueDescriptorProto::default(),
+            EnumValueDescriptorProto::default(),
         ];
+        value[0].set_name("TEST_ONE".to_owned());
+        value[0].set_number(1);
+        value[1].set_name("OTHER_VALUE".to_owned());
+        value[1].set_number(2);
         let gen = Generator::default();
 
         let out = gen.generate_enum_decl(&name, &value, IntSize::S32, &[]);
@@ -589,11 +588,9 @@ mod tests {
     #[test]
     fn enum_with_config() {
         let name = Ident::new("Enum", Span::call_site());
-        let value = vec![EnumValueDescriptorProto {
-            name: Some("ENUM_ONE".to_owned()),
-            number: Some(1),
-            options: None,
-        }];
+        let mut value = vec![EnumValueDescriptorProto::default()];
+        value[0].set_name("ENUM_ONE".to_owned());
+        value[0].set_number(1);
         let gen = Generator {
             retain_enum_prefix: true,
             ..Default::default()

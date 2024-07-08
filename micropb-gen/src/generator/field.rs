@@ -1,13 +1,14 @@
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::{
-    field_descriptor_proto::{Label, Type},
-    DescriptorProto, FieldDescriptorProto, Syntax,
-};
 use quote::{format_ident, quote};
 use syn::{Ident, Lifetime};
 
 use crate::config::OptionalRepr;
+use crate::descriptor::{
+    mod_FieldDescriptorProto::{Label, Type},
+    DescriptorProto, FieldDescriptorProto,
+};
 
+use super::Syntax;
 use super::{
     type_spec::{find_lifetime_from_type, TypeSpec},
     CurrentConfig, EncodeFunc, Generator,
@@ -95,15 +96,15 @@ impl<'a> Field<'a> {
             return Ok(None);
         }
 
-        let num = proto.number() as u32;
-        let name = proto.name();
+        let num = proto.number as u32;
+        let name = &proto.name;
         let (rust_name, raw_rust_name) = field_conf.config.rust_field_name(name)?;
         let boxed = field_conf.config.boxed.unwrap_or(false);
 
         let ftype = match (
             field_conf.config.custom_field_parsed()?,
             map_msg,
-            proto.label(),
+            proto.label,
         ) {
             (Some(t), _, _) => FieldType::Custom(t),
 
@@ -128,16 +129,15 @@ impl<'a> Field<'a> {
                 })?,
                 max_len: field_conf.config.max_len,
                 packed: proto
-                    .options
-                    .as_ref()
-                    .and_then(|opt| opt.packed)
+                    .options()
+                    .and_then(|opt| opt.packed().copied())
                     .unwrap_or(false),
             },
 
             (None, None, Label::Required | Label::Optional)
                 if syntax == Syntax::Proto2
-                    || proto.proto3_optional()
-                    || proto.r#type() == Type::Message =>
+                    || proto.proto3_optional
+                    || proto.r#type == Type::Message =>
             {
                 let repr = field_conf.config.optional_repr.unwrap_or(if boxed {
                     OptionalRepr::Option
@@ -157,7 +157,7 @@ impl<'a> Field<'a> {
             name,
             rust_name,
             raw_rust_name,
-            default: proto.default_value.as_deref(),
+            default: proto.default_value().map(String::as_str),
             boxed,
             attrs,
         }))
@@ -517,14 +517,15 @@ mod tests {
         label: Option<Label>,
         proto3_opt: bool,
     ) -> FieldDescriptorProto {
-        FieldDescriptorProto {
-            name: Some(name.to_owned()),
-            number: Some(num as i32),
-            label: label.map(|l| l.into()),
-            r#type: Some(Type::Bool.into()),
-            proto3_optional: Some(proto3_opt),
-            ..Default::default()
+        let mut f = FieldDescriptorProto::default();
+        f.set_name(name.to_owned());
+        f.set_number(num as i32);
+        f.set_type(Type::Bool);
+        f.set_proto3_optional(proto3_opt);
+        if let Some(label) = label {
+            f.set_label(label);
         }
+        f
     }
 
     #[test]
@@ -576,7 +577,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let mut field = field_proto(2, "field", None, false);
-        field.default_value = Some("true".to_owned());
+        field.set_default_value("true".to_owned());
         assert_eq!(
             Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
@@ -720,7 +721,7 @@ mod tests {
         };
 
         let mut field = field_proto(0, "field", Some(Label::Repeated), false);
-        field.r#type = Some(Type::Int32.into());
+        field.set_type(Type::Int32);
         assert_eq!(
             Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
@@ -733,8 +734,8 @@ mod tests {
                 max_len: Some(21)
             }
         );
-        field.options = Some(Default::default());
-        field.options.as_mut().unwrap().packed = Some(true);
+        field.set_options(Default::default());
+        field.options.set_packed(true);
         assert_eq!(
             Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
                 .unwrap()
@@ -763,25 +764,29 @@ mod tests {
         };
 
         let mut key = field_proto(1, "key", Some(Label::Optional), false);
-        key.r#type = Some(Type::Int32.into());
+        key.set_type(Type::Int32);
         let mut value = field_proto(1, "value", Some(Label::Optional), false);
-        value.r#type = Some(Type::String.into());
+        value.set_type(Type::String);
         let mut map_elem = DescriptorProto {
-            name: Some("MapElem".to_owned()),
+            name: "MapElem".to_owned(),
             field: vec![key, value],
             extension: vec![],
             nested_type: vec![],
             enum_type: vec![],
             extension_range: vec![],
             oneof_decl: vec![],
-            options: Some(Default::default()),
+            options: Default::default(),
             reserved_range: vec![],
             reserved_name: vec![],
+
+            _has: Default::default(),
         };
-        map_elem.options.as_mut().unwrap().map_entry = Some(true);
+        map_elem._has.set_name(true);
+        map_elem._has.set_options(true);
+        map_elem.options.set_map_entry(true);
         let mut field = field_proto(0, "field", Some(Label::Repeated), false);
-        field.r#type = Some(Type::Message.into());
-        field.type_name = Some("MapElem".to_owned());
+        field.set_type(Type::Message);
+        field.set_type_name("MapElem".to_owned());
 
         assert_eq!(
             Field::from_proto(&field, &field_conf, Syntax::Proto2, Some(&map_elem))

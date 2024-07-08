@@ -4,12 +4,12 @@ use std::{
 };
 
 use proc_macro2::{Literal, Span, TokenStream};
-use prost_types::DescriptorProto;
 use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
     config::OptionalRepr,
+    descriptor::DescriptorProto,
     generator::{
         field::{CustomField, FieldType},
         resolve_path_elem, EncodeFunc,
@@ -50,11 +50,11 @@ impl<'a> Message<'a> {
             return Ok(None);
         }
 
-        let msg_name = proto.name();
+        let msg_name = &proto.name;
         let mut oneofs = vec![];
         for (idx, oneof) in proto.oneof_decl.iter().enumerate() {
-            let oneof = Oneof::from_proto(oneof, msg_conf.next_conf(oneof.name()), idx)
-                .map_err(|e| field_error(&gen.pkg, msg_name, oneof.name(), &e))?;
+            let oneof = Oneof::from_proto(oneof, msg_conf.next_conf(&oneof.name), idx)
+                .map_err(|e| field_error(&gen.pkg, msg_name, &oneof.name, &e))?;
             if let Some(oneof) = oneof {
                 oneofs.push(oneof);
             }
@@ -62,8 +62,8 @@ impl<'a> Message<'a> {
 
         let mut map_types = HashMap::new();
         for m in &proto.nested_type {
-            if m.options.as_ref().map(|o| o.map_entry()).unwrap_or(false) {
-                map_types.insert(m.name(), m);
+            if m.options().map(|o| o.map_entry).unwrap_or(false) {
+                map_types.insert(m.name.as_str(), m);
             }
         }
 
@@ -71,18 +71,18 @@ impl<'a> Message<'a> {
 
         let mut fields = vec![];
         for f in proto.field.iter() {
-            let field_conf = msg_conf.next_conf(f.name());
+            let field_conf = msg_conf.next_conf(&f.name);
             let raw_msg_name = f
-                .type_name()
+                .type_name
                 .rsplit_once('.')
                 .map(|(_, r)| r)
-                .unwrap_or(f.type_name());
+                .unwrap_or(&f.type_name);
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
                 Field::from_proto(f, &field_conf, gen.syntax, Some(map_msg))
-                    .map_err(|e| field_error(&gen.pkg, msg_name, f.name(), &e))?
+                    .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             } else {
-                if let Some(idx) = f.oneof_index {
-                    if f.proto3_optional() {
+                if let Some(idx) = f.oneof_index().copied() {
+                    if f.proto3_optional {
                         synthetic_oneof_idx.push(idx as usize);
                     } else {
                         match oneofs
@@ -93,14 +93,14 @@ impl<'a> Message<'a> {
                             Some(OneofType::Enum { fields, .. }) => {
                                 // Oneof field
                                 if let Some(field) = OneofField::from_proto(f, &field_conf)
-                                    .map_err(|e| field_error(&gen.pkg, msg_name, f.name(), &e))?
+                                    .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
                                 {
                                     fields.push(field);
                                 }
                             }
                             Some(OneofType::Custom { nums, .. }) => {
                                 if !field_conf.config.skip.unwrap_or(false) {
-                                    nums.push(f.number());
+                                    nums.push(f.number);
                                 }
                             }
                             _ => (),
@@ -110,7 +110,7 @@ impl<'a> Message<'a> {
                 }
                 // Normal field
                 Field::from_proto(f, &field_conf, gen.syntax, None)
-                    .map_err(|e| field_error(&gen.pkg, msg_name, f.name(), &e))?
+                    .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {
                 fields.push(field);
@@ -522,13 +522,12 @@ impl<'a> Message<'a> {
 mod tests {
     use std::borrow::Cow;
 
-    use prost_types::{
-        field_descriptor_proto::{Label, Type},
-        FieldDescriptorProto, FieldOptions, MessageOptions, OneofDescriptorProto,
-    };
-
     use crate::{
         config::{parse_attributes, Config, IntSize, OptionalRepr},
+        descriptor::{
+            mod_FieldDescriptorProto::{Label, Type},
+            FieldDescriptorProto, FieldOptions, MessageOptions, OneofDescriptorProto,
+        },
         generator::{
             field::{make_test_field, FieldType},
             oneof::make_test_oneof_field,
@@ -541,72 +540,71 @@ mod tests {
     use super::*;
 
     fn test_msg_proto() -> DescriptorProto {
-        let map_msg = DescriptorProto {
-            name: Some("MapElem".to_owned()),
-            field: vec![
-                FieldDescriptorProto {
-                    number: Some(1),
-                    name: Some("key".to_owned()),
-                    r#type: Some(Type::Int64.into()),
-                    ..Default::default()
-                },
-                FieldDescriptorProto {
-                    number: Some(2),
-                    name: Some("value".to_owned()),
-                    r#type: Some(Type::Uint64.into()),
-                    ..Default::default()
-                },
-            ],
-            options: Some(MessageOptions {
-                map_entry: Some(true),
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
+        let mut map_msg = DescriptorProto::default();
+        map_msg.set_name("MapElem".to_owned());
+        map_msg.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(1);
+            f.set_name("key".to_owned());
+            f.set_type(Type::Int64);
+            f
+        });
+        map_msg.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(2);
+            f.set_name("value".to_owned());
+            f.set_type(Type::Uint64);
+            f
+        });
+        map_msg.set_options({
+            let mut o = MessageOptions::default();
+            o.set_map_entry(true);
+            o
+        });
 
-        DescriptorProto {
-            name: Some("Message".to_owned()),
-            field: vec![
-                FieldDescriptorProto {
-                    number: Some(1),
-                    name: Some("bool_field".to_owned()),
-                    r#type: Some(Type::Bool.into()),
-                    ..Default::default()
-                },
-                FieldDescriptorProto {
-                    number: Some(2),
-                    name: Some("oneof_field".to_owned()),
-                    r#type: Some(Type::Sint32.into()),
-                    oneof_index: Some(0),
-                    ..Default::default()
-                },
-                FieldDescriptorProto {
-                    number: Some(3),
-                    name: Some("map_field".to_owned()),
-                    r#type: Some(Type::Message.into()),
-                    label: Some(Label::Repeated.into()),
-                    type_name: Some(".Message.MapElem".to_owned()),
-                    options: Some(FieldOptions {
-                        packed: Some(true),
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                },
-                FieldDescriptorProto {
-                    number: Some(4),
-                    name: Some("oneof_field2".to_owned()),
-                    r#type: Some(Type::Float.into()),
-                    oneof_index: Some(0),
-                    ..Default::default()
-                },
-            ],
-            oneof_decl: vec![OneofDescriptorProto {
-                name: Some("oneof".to_owned()),
-                options: None,
-            }],
-            nested_type: vec![map_msg],
-            ..Default::default()
-        }
+        let mut msg = DescriptorProto::default();
+        msg.set_name("Message".to_owned());
+        msg.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(1);
+            f.set_name("bool_field".to_owned());
+            f.set_type(Type::Bool);
+            f
+        });
+        msg.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(2);
+            f.set_name("oneof_field".to_owned());
+            f.set_type(Type::Sint32);
+            f.set_oneof_index(0);
+            f
+        });
+        msg.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(3);
+            f.set_name("map_field".to_owned());
+            f.set_type(Type::Message);
+            f.set_label(Label::Repeated);
+            f.set_type_name(".Message.MapElem".to_owned());
+            f.set_options(FieldOptions::default());
+            f.options.set_packed(true);
+            f
+        });
+        msg.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(4);
+            f.set_name("oneof_field2".to_owned());
+            f.set_type(Type::Float);
+            f.set_oneof_index(0);
+            f
+        });
+        msg.oneof_decl.push({
+            let mut o = OneofDescriptorProto::default();
+            o.set_name("oneof".to_owned());
+            o
+        });
+        msg.nested_type.push(map_msg);
+        msg
     }
 
     #[test]
@@ -779,22 +777,22 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto3;
 
-        let proto = DescriptorProto {
-            name: Some("Msg".to_owned()),
-            field: vec![FieldDescriptorProto {
-                number: Some(1),
-                name: Some("opt".to_owned()),
-                r#type: Some(Type::Bool.into()),
-                proto3_optional: Some(true),
-                oneof_index: Some(0),
-                ..Default::default()
-            }],
-            oneof_decl: vec![OneofDescriptorProto {
-                name: Some("_opt".to_owned()),
-                options: None,
-            }],
-            ..Default::default()
-        };
+        let mut proto = DescriptorProto::default();
+        proto.set_name("Msg".to_owned());
+        proto.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(1);
+            f.set_name("opt".to_owned());
+            f.set_type(Type::Bool);
+            f.set_proto3_optional(true);
+            f.set_oneof_index(0);
+            f
+        });
+        proto.oneof_decl.push({
+            let mut o = OneofDescriptorProto::default();
+            o.set_name("_opt".to_owned());
+            o
+        });
         let msg_conf = CurrentConfig {
             node: None,
             config: Cow::Owned(Box::new(Config::new())),
