@@ -1,0 +1,10 @@
+[package]
+name = "file-descriptor-set"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+micropb = { path = "../../micropb", default-features = false, features = ["std", "decode", "enable-64bit"] }
+
+[build-dependencies]
+micropb-gen = { path = "../../micropb-gen" }
