@@ -329,6 +329,16 @@ fn recursive() {
         .unwrap();
 }
 
+fn conflicting_names() {
+    let mut generator = Generator::new();
+    generator
+        .compile_protos(
+            &["proto/conflicting_names.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/conflicting_names.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -343,4 +353,5 @@ fn main() {
     extern_import();
     lifetime_fields();
     recursive();
+    conflicting_names();
 }

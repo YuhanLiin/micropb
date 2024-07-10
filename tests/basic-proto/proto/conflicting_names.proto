@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+message FieldEncode {
+    optional bool decode_field = 1;
+}
+
+message FieldDecode {
+    optional bool encode_fields = 1;
+}
+
+message PbVec {}
+
+message PbString {}
+
+message PbMap {}
+
+message MessageEncode {
+    optional bool encode = 1;
+}
+
+message MessageDecode {
+    optional bool decode = 1;
+}
+
+message SuperMessage {
+    optional FieldEncode fe = 1;
+    optional FieldDecode fd = 2;
+    optional PbVec pbv = 3;
+    optional PbString pbs = 4;
+    optional PbMap pbm = 5;
+    optional MessageEncode me = 6;
+    optional MessageDecode md = 7;
+}
