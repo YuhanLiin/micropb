@@ -781,8 +781,8 @@ mod tests {
 
             _has: Default::default(),
         };
-        map_elem._has.set_name(true);
-        map_elem._has.set_options(true);
+        map_elem._has.set_name();
+        map_elem._has.set_options();
         map_elem.options.set_map_entry(true);
         let mut field = field_proto(0, "field", Some(Label::Repeated), false);
         field.set_type(Type::Message);
