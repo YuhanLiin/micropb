@@ -6,15 +6,15 @@ Unlike other Protobuf libraries, `micropb` is aimed for constrained environments
 
 #### Advantages
 - Supports no-std and **no-alloc** environments
-- Reduced memory usage
+- Reduced memory usage for generated code
 - Allows both statically-allocated containers ([`heapless`](https://docs.rs/heapless/latest/heapless), [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec)) or dynamically-allocated containers from [`alloc`](https://doc.rust-lang.org/alloc)
 - Code generator is highly configurable
 - Fields can have custom handlers with user-defined encoding and decoding behaviour
+- Supports different data sources for encoding and decoding, abstracted behind the `PbEncoder` and `PbDecoder` traits.
 - Can enable either encoder or decoder alone
-- Can disable 64-bit integer operations
 
 #### Limitations
-- Depends on `protoc`
+- Some speed has been sacrificed for memory usage
 - Protobuf groups are not supported
 - Unknown fields and extensions can only be captured with a custom handler
 - Reflection is not supported
