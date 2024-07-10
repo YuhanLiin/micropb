@@ -202,15 +202,22 @@ impl<'a> Message<'a> {
         let methods = hazzers.enumerate().map(|(i, f)| {
             let fname = &f.raw_rust_name;
             let setter = format_ident!("set_{}", f.rust_name);
+            let init = format_ident!("init_{}", f.rust_name);
             let idx = Literal::usize_unsuffixed(i / 8);
             let mask = Literal::u8_unsuffixed(1 << (i % 8));
 
+            let getter_doc = format!("Query presence of `{}`", f.rust_name);
+            let setter_doc = format!("Set presence of `{}`", f.rust_name);
+            let init_doc = format!("Builder method that toggles on the presence of `{}`. Useful for initializing the Hazzer.", f.rust_name);
+
             quote! {
+                #[doc = #getter_doc]
                 #[inline]
                 pub fn #fname(&self) -> bool {
                     (self.0[#idx] & #mask) != 0
                 }
 
+                #[doc = #setter_doc]
                 #[inline]
                 pub fn #setter(&mut self, val: bool) {
                     let elem = &mut self.0[#idx];
@@ -219,6 +226,13 @@ impl<'a> Message<'a> {
                     } else {
                         *elem &= !#mask;
                     }
+                }
+
+                #[doc = #init_doc]
+                #[inline]
+                pub fn #init(self) -> Self {
+                    self.#setter(true);
+                    self
                 }
             }
         });
@@ -346,22 +360,38 @@ impl<'a> Message<'a> {
                 let clearer_name = format_ident!("clear_{}", f.rust_name);
                 let fname = &f.raw_rust_name;
 
+                let getter_doc = format!("Return a reference to `{}` as an `Option`", f.rust_name);
+                let muter_doc = format!(
+                    "Return a mutable reference to `{}` as an `Option`",
+                    f.rust_name
+                );
+                let setter_doc = format!("Set the value and presence of `{}`", f.rust_name);
+                let clearer_doc = format!("Clear the presence of `{}`", f.rust_name);
+
                 // use value.into() to handle conversion into boxed and non-boxed fields
                 if let OptionalRepr::Hazzer = opt {
                     quote! {
+                        #[doc = #getter_doc]
+                        #[inline]
                         pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
                             self._has.#fname().then_some(&self.#fname)
                         }
 
+                        #[doc = #muter_doc]
+                        #[inline]
                         pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
                             self._has.#fname().then_some(&mut self.#fname)
                         }
 
+                        #[doc = #setter_doc]
+                        #[inline]
                         pub fn #setter_name(&mut self, value: #type_name) {
                             self._has.#setter_name(true);
                             self.#fname = value.into();
                         }
 
+                        #[doc = #clearer_doc]
+                        #[inline]
                         pub fn #clearer_name(&mut self) {
                             self._has.#setter_name(false);
                         }
@@ -373,18 +403,26 @@ impl<'a> Message<'a> {
                         (format_ident!("as_ref"), format_ident!("as_mut"))
                     };
                     quote! {
+                        #[doc = #getter_doc]
+                        #[inline]
                         pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
                             self.#fname.#deref()
                         }
 
+                        #[doc = #muter_doc]
+                        #[inline]
                         pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
                             self.#fname.#deref_mut()
                         }
 
+                        #[doc = #setter_doc]
+                        #[inline]
                         pub fn #setter_name(&mut self, value: #type_name) {
                             self.#fname = ::core::option::Option::Some(value.into());
                         }
 
+                        #[doc = #clearer_doc]
+                        #[inline]
                         pub fn #clearer_name(&mut self) {
                             self.#fname = ::core::option::Option::None;
                         }

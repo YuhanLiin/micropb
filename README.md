@@ -221,16 +221,16 @@ pub struct Example {
 }
 
 impl Example {
-    // Get optional reference to f_int32
+    /// Return reference to f_int32 as an Option
     pub fn f_int32(&self) -> Option<&i32>;
-    // Get optional mutable reference to f_int32
+    /// Return mutable reference to f_int32 as an Option
     pub fn mut_f_int32(&mut self) -> Option<&mut i32>;
-    // Set f_int32 to a value
+    /// Set value and presence of f_int32
     pub fn set_f_int32(&mut self, val: i32);
-    // Clear value of f_int32
+    /// Clear presence of f_int32
     pub fn clear_f_int32(&mut self);
 
-    // Similar APIs for other optional fields
+    // Same APIs for other optional fields
 }
 
 pub mod mod_Example {
@@ -239,12 +239,14 @@ pub mod mod_Example {
     pub struct _Hazzer([u8; 1]);
 
     impl _Hazzer {
-        // Turn on presence of f_int32
+        /// Query presence of f_int32
         pub fn f_int32(&self) -> bool;
-        // Turn off presence of f_int32
+        /// Set presence of f_int32
         pub fn set_f_int32(&self, flag: bool);
+        /// Builder method that toggles on the presence of f_int32. Useful for initializing the Hazzer.
+        pub fn init_f_int32(self) -> Self;
 
-        // Similar APIs for other optional fields
+        // Same APIs for other optional fields
     }
 }
 ```
