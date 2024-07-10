@@ -134,8 +134,8 @@ pub(crate) enum Syntax {
 /// let mut gen = Generator::new();
 /// // Use container types from `heapless`
 /// gen.use_container_heapless()
-///     // Set max length of repeated fields in .test.Data to 5
-///     .configure(".test.Data", Config::new().max_len(5))
+///     // Set max length of repeated fields in .test.Data to 4
+///     .configure(".test.Data", Config::new().max_len(4))
 ///     // Wrap .test.Data.value inside a Box
 ///     .configure(".test.Data.value", Config::new().boxed(true))
 ///     // Compile test.proto into a Rust module

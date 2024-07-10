@@ -260,8 +260,8 @@ config_decl! {
     /// # let mut gen = micropb_gen::Generator::new();
     /// // `map` field configured to `BTreeMap<K, V>` (dynamic-capacity)
     /// gen.configure(".pkg.Message.map_field", Config::new().map_type("BTreeMap"));
-    /// // `map` field configured to `FnvIndexMap<K, V, 5>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap").max_len(5));
+    /// // `map` field configured to `FnvIndexMap<K, V, 4>` (fixed-capacity)
+    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap").max_len(4));
     /// ```
     map_type: [deref] Option<String>,
 

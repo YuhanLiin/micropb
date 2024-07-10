@@ -45,7 +45,6 @@ micropb-gen = { version = "0.1", features = ["container-heapless"] }
 ```rust,ignore
 fn main() {
     let mut gen = micropb_gen::Generator::new();
-    gen.use_container_heapless();
     // Compile example.proto into a Rust module
     gen.compile_protos(&["example.proto"], std::env::var("OUT_DIR").unwrap() + "example.rs").unwrap();
 }
@@ -181,9 +180,9 @@ gen.configure(".",
 );
 */
 
-// Since we're using static containers, we need to specify the max capacity of each field
-// For simplicity, configure capacity of all repeated/map fields to 5 and string/bytes to 8
-gen.configure(".", micropb_gen::Config::new().max_len(5).max_bytes(8));
+// Since we're using static containers, we need to specify the max capacity of each field.
+// For simplicity, configure capacity of all repeated/map fields to 4 and string/bytes to 8.
+gen.configure(".", micropb_gen::Config::new().max_len(4).max_bytes(8));
 ```
 
 `micropb` will generate the following Rust definition:
@@ -191,8 +190,8 @@ gen.configure(".", micropb_gen::Config::new().max_len(5).max_bytes(8));
 pub struct Containers {
     f_string: heapless::String<8>,
     f_bytes: heapless::Vec<u8, 8>,
-    f_repeated: heapless::Vec<i32, 5>,
-    f_map: heapless::FnvIndexMap<i32, i64, 5>,
+    f_repeated: heapless::Vec<i32, 4>,
+    f_map: heapless::FnvIndexMap<i32, i64, 4>,
 }
 ```
 
