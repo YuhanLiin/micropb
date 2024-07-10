@@ -42,7 +42,7 @@ fn imported_types() {
 #[test]
 fn encode_imported() {
     let mut nested = proto::nested::Nested::default();
-    nested._has.set_basic(true);
+    nested._has.set_basic();
     assert_eq!(nested.compute_size(), 2);
 
     let mut encoder = PbEncoder::new(vec![]);

@@ -273,7 +273,7 @@ impl<'a> Field<'a> {
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_expr };
-                    self._has.#setter(true);
+                    self._has.#setter();
                 }
             }
 

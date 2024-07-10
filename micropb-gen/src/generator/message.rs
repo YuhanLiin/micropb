@@ -202,13 +202,15 @@ impl<'a> Message<'a> {
         let methods = hazzers.enumerate().map(|(i, f)| {
             let fname = &f.raw_rust_name;
             let setter = format_ident!("set_{}", f.rust_name);
+            let clearer = format_ident!("clear_{}", f.rust_name);
             let init = format_ident!("init_{}", f.rust_name);
             let idx = Literal::usize_unsuffixed(i / 8);
             let mask = Literal::u8_unsuffixed(1 << (i % 8));
 
             let getter_doc = format!("Query presence of `{}`", f.rust_name);
             let setter_doc = format!("Set presence of `{}`", f.rust_name);
-            let init_doc = format!("Builder method that toggles on the presence of `{}`. Useful for initializing the Hazzer.", f.rust_name);
+            let clearer_doc = format!("Clear presence of `{}`", f.rust_name);
+            let init_doc = format!("Builder method that sets the presence of `{}`. Useful for initializing the Hazzer.", f.rust_name);
 
             quote! {
                 #[doc = #getter_doc]
@@ -219,19 +221,22 @@ impl<'a> Message<'a> {
 
                 #[doc = #setter_doc]
                 #[inline]
-                pub fn #setter(&mut self, val: bool) {
+                pub fn #setter(&mut self) {
                     let elem = &mut self.0[#idx];
-                    if val {
-                        *elem |= #mask;
-                    } else {
-                        *elem &= !#mask;
-                    }
+                    *elem |= #mask;
+                }
+
+                #[doc = #clearer_doc]
+                #[inline]
+                pub fn #clearer(&mut self) {
+                    let elem = &mut self.0[#idx];
+                    *elem &= !#mask;
                 }
 
                 #[doc = #init_doc]
                 #[inline]
-                pub fn #init(self) -> Self {
-                    self.#setter(true);
+                pub fn #init(mut self) -> Self {
+                    self.#setter();
                     self
                 }
             }
@@ -386,14 +391,14 @@ impl<'a> Message<'a> {
                         #[doc = #setter_doc]
                         #[inline]
                         pub fn #setter_name(&mut self, value: #type_name) {
-                            self._has.#setter_name(true);
+                            self._has.#setter_name();
                             self.#fname = value.into();
                         }
 
                         #[doc = #clearer_doc]
                         #[inline]
                         pub fn #clearer_name(&mut self) {
-                            self._has.#setter_name(false);
+                            self._has.#clearer_name();
                         }
                     }
                 } else {

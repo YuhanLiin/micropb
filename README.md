@@ -234,7 +234,7 @@ impl Example {
 }
 
 pub mod mod_Example {
-    // Tracks whether the optional fields are present
+    /// Tracks whether the optional fields are present
     #[derive(Debug, Default, Clone, PartialEq)]
     pub struct _Hazzer([u8; 1]);
 
@@ -242,9 +242,11 @@ pub mod mod_Example {
         /// Query presence of f_int32
         pub fn f_int32(&self) -> bool;
         /// Set presence of f_int32
-        pub fn set_f_int32(&self, flag: bool);
+        pub fn set_f_int32(&mut self);
+        /// Clear presence of f_int32
+        pub fn clear_f_int32(&mut self);
         /// Builder method that toggles on the presence of f_int32. Useful for initializing the Hazzer.
-        pub fn init_f_int32(self) -> Self;
+        pub fn init_f_int32(mut self) -> Self;
 
         // Same APIs for other optional fields
     }

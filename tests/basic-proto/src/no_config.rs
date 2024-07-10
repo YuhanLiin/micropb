@@ -53,7 +53,7 @@ fn basic_msg() {
     assert_eq!(basic.mut_enumeration(), None);
 
     basic.enumeration = proto::basic::Enum::One;
-    basic._has.set_enumeration(true);
+    basic._has.set_enumeration();
     assert!(basic._has.enumeration());
     assert_eq!(basic.enumeration, proto::basic::Enum::One);
     assert_eq!(basic.enumeration(), Some(&proto::basic::Enum::One));
@@ -89,7 +89,7 @@ fn basic_type_check() {
 #[test]
 fn nested_msg() {
     let mut nested = proto::nested::Nested::default();
-    nested._has.set_basic(true);
+    nested._has.set_basic();
     assert_eq!(nested.basic(), Some(&proto::basic::BasicTypes::default()));
     assert!(nested.inner.is_none());
     nested.inner = Some(proto::nested::mod_Nested::Inner::InnerMsg(
@@ -377,7 +377,7 @@ fn decode_nested() {
 #[test]
 fn encode_nested() {
     let mut nested = proto::nested::Nested::default();
-    nested._has.set_basic(true);
+    nested._has.set_basic();
     assert_eq!(nested.compute_size(), 2);
     nested.basic.set_int32_num(14);
     assert_eq!(nested.compute_size(), 4);
