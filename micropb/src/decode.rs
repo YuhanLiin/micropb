@@ -339,7 +339,6 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(self.decode_varint32()? != 0)
     }
 
-    #[inline]
     fn read_exact(&mut self, buf: &mut [MaybeUninit<u8>]) -> Result<(), DecodeError<R::Error>> {
         let bytes_read = self
             .reader
@@ -431,19 +430,19 @@ impl<R: PbRead> PbDecoder<R> {
         self.decode_varint32().map(Tag)
     }
 
-    fn read_into_buf(
+    #[inline]
+    fn read_into_buf<'a>(
         &mut self,
-        buf: &mut [MaybeUninit<u8>],
+        buf: &'a mut [MaybeUninit<u8>],
         len: usize,
-    ) -> Result<(), DecodeError<R::Error>> {
+    ) -> Result<&'a [u8], DecodeError<R::Error>> {
         if buf.len() < len {
             return Err(DecodeError::Capacity);
         }
         let target = &mut buf[..len];
         self.read_exact(target)?;
         // SAFETY: read_exact guarantees that all bytes of target have been initialized
-        from_utf8(unsafe { maybe_uninit_slice_assume_init_ref(target) })?;
-        Ok(())
+        Ok(unsafe { maybe_uninit_slice_assume_init_ref(target) })
     }
 
     /// Decode a `string` into a [`PbString`] container.
@@ -471,8 +470,10 @@ impl<R: PbRead> PbDecoder<R> {
         string.pb_clear();
         string.pb_reserve(len);
         let spare_cap = string.pb_spare_cap();
-        self.read_into_buf(spare_cap, len)?;
+        let written = self.read_into_buf(spare_cap, len)?;
 
+        // Check UTF8 validity
+        from_utf8(written)?;
         // SAFETY: read_into_buf guarantees that `len` bytes have been written into the string.
         // Also, we just checked the UTF-8 validity of the written bytes, so the string is valid.
         unsafe { string.pb_set_len(len) };
