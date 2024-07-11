@@ -1,7 +1,7 @@
 # Micropb
 
-`micropb` is a [Rust](https://www.rust-lang.org/) implementation of the [Protobuf](https://protobuf.dev/) format, with a focus on embedded environments.
-
+`micropb` is a [Rust](https://www.rust-lang.org/) implementation of the [Protobuf](https://protobuf.dev/) format, with a focus on embedded environments. `micropb` generates a Rust module from `.proto` files.
+.
 Unlike other Protobuf libraries, `micropb` is aimed for constrained environments where no allocator is available. Additionally, it aims to be highly configurable, allowing the user to customize the generated code on a per-field granularity. As such, `micropb` offers a different set of tradeoffs compared to other Protobuf libraries.
 
 #### Advantages
@@ -329,7 +329,7 @@ pub mod Example_ {
 
 `micropb` translates Protobuf package names into Rust modules by appending an underscore. For example, if a Protobuf file has `package foo.bar;`, all Rust types generated from the file will be in the `foo_::bar_` module. Code generated for Protobuf files without package specifiers will go into the module root.
 
-### Nested Types
+#### Nested Types
 
 Message names are also translated into Rust modules by appending an underscore, so oneofs and nested messages/enums are defined in the `Name_` module, where `Name` is the message name.
 
