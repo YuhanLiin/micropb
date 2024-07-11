@@ -1,4 +1,6 @@
 #![no_std]
+
+#[cfg(test)]
 use micropb::MessageEncode;
 
 mod example {
