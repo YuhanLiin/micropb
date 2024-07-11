@@ -333,6 +333,17 @@ fn conflicting_names() {
         .unwrap();
 }
 
+fn default_str_escape() {
+    let mut generator = Generator::new();
+    generator
+        .use_container_alloc()
+        .compile_protos(
+            &["proto/default_str_escape.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/default_str_escape.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -348,4 +359,5 @@ fn main() {
     lifetime_fields();
     recursive();
     conflicting_names();
+    default_str_escape();
 }

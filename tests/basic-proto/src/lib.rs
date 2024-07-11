@@ -13,6 +13,8 @@ mod container_heapless;
 #[cfg(test)]
 mod custom_field;
 #[cfg(test)]
+mod default_str_escape;
+#[cfg(test)]
 mod extern_import;
 #[cfg(test)]
 mod implicit_presence;
