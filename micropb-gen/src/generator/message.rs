@@ -571,8 +571,9 @@ mod tests {
     use crate::{
         config::{parse_attributes, Config, IntSize, OptionalRepr},
         descriptor::{
-            mod_FieldDescriptorProto::{Label, Type},
-            FieldDescriptorProto, FieldOptions, MessageOptions, OneofDescriptorProto,
+            FieldDescriptorProto,
+            FieldDescriptorProto_::{Label, Type},
+            FieldOptions, MessageOptions, OneofDescriptorProto,
         },
         generator::{
             field::{make_test_field, FieldType},

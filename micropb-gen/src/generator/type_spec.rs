@@ -5,7 +5,7 @@ use syn::{Ident, Lifetime};
 
 use crate::{
     config::IntSize,
-    descriptor::{mod_FieldDescriptorProto::Type, FieldDescriptorProto},
+    descriptor::{FieldDescriptorProto, FieldDescriptorProto_::Type},
     generator::sanitized_ident,
     utils::{path_suffix, unescape_c_escape_string},
 };

@@ -5,8 +5,8 @@ use syn::{Ident, Lifetime};
 
 use crate::config::OptionalRepr;
 use crate::descriptor::{
-    mod_FieldDescriptorProto::{Label, Type},
     DescriptorProto, FieldDescriptorProto,
+    FieldDescriptorProto_::{Label, Type},
 };
 
 use super::Syntax;

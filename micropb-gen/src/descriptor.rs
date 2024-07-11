@@ -1,6 +1,6 @@
-pub mod r#google {
-    pub mod r#protobuf {
-        pub mod mod_FileDescriptorSet {}
+pub mod google_ {
+    pub mod protobuf_ {
+        pub mod FileDescriptorSet_ {}
         #[derive(Debug)]
         pub struct FileDescriptorSet {
             pub r#file: ::std::vec::Vec<FileDescriptorProto>,
@@ -46,7 +46,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_FileDescriptorProto {
+        pub mod FileDescriptorProto_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -205,7 +205,7 @@ pub mod r#google {
             pub r#source_code_info: SourceCodeInfo,
             pub r#syntax: ::std::string::String,
             pub r#edition: Edition,
-            pub _has: mod_FileDescriptorProto::_Hazzer,
+            pub _has: FileDescriptorProto_::_Hazzer,
         }
         impl ::core::default::Default for FileDescriptorProto {
             fn default() -> Self {
@@ -532,8 +532,8 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_DescriptorProto {
-            pub mod mod_ExtensionRange {
+        pub mod DescriptorProto_ {
+            pub mod ExtensionRange_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -613,7 +613,7 @@ pub mod r#google {
                 pub r#start: i32,
                 pub r#end: i32,
                 pub r#options: super::ExtensionRangeOptions,
-                pub _has: mod_ExtensionRange::_Hazzer,
+                pub _has: ExtensionRange_::_Hazzer,
             }
             impl ::core::default::Default for ExtensionRange {
                 fn default() -> Self {
@@ -739,7 +739,7 @@ pub mod r#google {
                     Ok(())
                 }
             }
-            pub mod mod_ReservedRange {
+            pub mod ReservedRange_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -795,7 +795,7 @@ pub mod r#google {
             pub struct ReservedRange {
                 pub r#start: i32,
                 pub r#end: i32,
-                pub _has: mod_ReservedRange::_Hazzer,
+                pub _has: ReservedRange_::_Hazzer,
             }
             impl ::core::default::Default for ReservedRange {
                 fn default() -> Self {
@@ -946,12 +946,12 @@ pub mod r#google {
             pub r#extension: ::std::vec::Vec<FieldDescriptorProto>,
             pub r#nested_type: ::std::vec::Vec<DescriptorProto>,
             pub r#enum_type: ::std::vec::Vec<EnumDescriptorProto>,
-            pub r#extension_range: ::std::vec::Vec<mod_DescriptorProto::ExtensionRange>,
+            pub r#extension_range: ::std::vec::Vec<DescriptorProto_::ExtensionRange>,
             pub r#oneof_decl: ::std::vec::Vec<OneofDescriptorProto>,
             pub r#options: MessageOptions,
-            pub r#reserved_range: ::std::vec::Vec<mod_DescriptorProto::ReservedRange>,
+            pub r#reserved_range: ::std::vec::Vec<DescriptorProto_::ReservedRange>,
             pub r#reserved_name: ::std::vec::Vec<::std::string::String>,
-            pub _has: mod_DescriptorProto::_Hazzer,
+            pub _has: DescriptorProto_::_Hazzer,
         }
         impl ::core::default::Default for DescriptorProto {
             fn default() -> Self {
@@ -1091,7 +1091,7 @@ pub mod r#google {
                             }
                         }
                         5u32 => {
-                            let mut val: mod_DescriptorProto::ExtensionRange = ::core::default::Default::default();
+                            let mut val: DescriptorProto_::ExtensionRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -1124,7 +1124,7 @@ pub mod r#google {
                             self._has.set_options();
                         }
                         9u32 => {
-                            let mut val: mod_DescriptorProto::ReservedRange = ::core::default::Default::default();
+                            let mut val: DescriptorProto_::ReservedRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -1158,8 +1158,8 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_ExtensionRangeOptions {
-            pub mod mod_Declaration {
+        pub mod ExtensionRangeOptions_ {
+            pub mod Declaration_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -1287,7 +1287,7 @@ pub mod r#google {
                 pub r#type: ::std::string::String,
                 pub r#reserved: bool,
                 pub r#repeated: bool,
-                pub _has: mod_Declaration::_Hazzer,
+                pub _has: Declaration_::_Hazzer,
             }
             impl ::core::default::Default for Declaration {
                 fn default() -> Self {
@@ -1548,10 +1548,10 @@ pub mod r#google {
         #[derive(Debug)]
         pub struct ExtensionRangeOptions {
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub r#declaration: ::std::vec::Vec<mod_ExtensionRangeOptions::Declaration>,
+            pub r#declaration: ::std::vec::Vec<ExtensionRangeOptions_::Declaration>,
             pub r#features: FeatureSet,
-            pub r#verification: mod_ExtensionRangeOptions::VerificationState,
-            pub _has: mod_ExtensionRangeOptions::_Hazzer,
+            pub r#verification: ExtensionRangeOptions_::VerificationState,
+            pub _has: ExtensionRangeOptions_::_Hazzer,
         }
         impl ::core::default::Default for ExtensionRangeOptions {
             fn default() -> Self {
@@ -1559,7 +1559,7 @@ pub mod r#google {
                     r#uninterpreted_option: ::core::default::Default::default(),
                     r#declaration: ::core::default::Default::default(),
                     r#features: ::core::default::Default::default(),
-                    r#verification: mod_ExtensionRangeOptions::VerificationState::Unverified,
+                    r#verification: ExtensionRangeOptions_::VerificationState::Unverified,
                     _has: ::core::default::Default::default(),
                 }
             }
@@ -1590,23 +1590,21 @@ pub mod r#google {
             #[inline]
             pub fn r#verification(
                 &self,
-            ) -> ::core::option::Option<&mod_ExtensionRangeOptions::VerificationState> {
+            ) -> ::core::option::Option<&ExtensionRangeOptions_::VerificationState> {
                 self._has.r#verification().then_some(&self.r#verification)
             }
             ///Return a mutable reference to `verification` as an `Option`
             #[inline]
             pub fn mut_verification(
                 &mut self,
-            ) -> ::core::option::Option<
-                &mut mod_ExtensionRangeOptions::VerificationState,
-            > {
+            ) -> ::core::option::Option<&mut ExtensionRangeOptions_::VerificationState> {
                 self._has.r#verification().then_some(&mut self.r#verification)
             }
             ///Set the value and presence of `verification`
             #[inline]
             pub fn set_verification(
                 &mut self,
-                value: mod_ExtensionRangeOptions::VerificationState,
+                value: ExtensionRangeOptions_::VerificationState,
             ) {
                 self._has.set_verification();
                 self.r#verification = value.into();
@@ -1643,7 +1641,7 @@ pub mod r#google {
                             }
                         }
                         2u32 => {
-                            let mut val: mod_ExtensionRangeOptions::Declaration = ::core::default::Default::default();
+                            let mut val: ExtensionRangeOptions_::Declaration = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -1667,7 +1665,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_ExtensionRangeOptions::VerificationState(
+                                    .map(|n| ExtensionRangeOptions_::VerificationState(
                                         n as _,
                                     ))?;
                                 let val_ref = &val;
@@ -1683,7 +1681,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_FieldDescriptorProto {
+        pub mod FieldDescriptorProto_ {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct Type(pub i32);
@@ -1997,8 +1995,8 @@ pub mod r#google {
         pub struct FieldDescriptorProto {
             pub r#name: ::std::string::String,
             pub r#number: i32,
-            pub r#label: mod_FieldDescriptorProto::Label,
-            pub r#type: mod_FieldDescriptorProto::Type,
+            pub r#label: FieldDescriptorProto_::Label,
+            pub r#type: FieldDescriptorProto_::Type,
             pub r#type_name: ::std::string::String,
             pub r#extendee: ::std::string::String,
             pub r#default_value: ::std::string::String,
@@ -2006,7 +2004,7 @@ pub mod r#google {
             pub r#json_name: ::std::string::String,
             pub r#options: FieldOptions,
             pub r#proto3_optional: bool,
-            pub _has: mod_FieldDescriptorProto::_Hazzer,
+            pub _has: FieldDescriptorProto_::_Hazzer,
         }
         impl ::core::default::Default for FieldDescriptorProto {
             fn default() -> Self {
@@ -2075,19 +2073,19 @@ pub mod r#google {
             #[inline]
             pub fn r#label(
                 &self,
-            ) -> ::core::option::Option<&mod_FieldDescriptorProto::Label> {
+            ) -> ::core::option::Option<&FieldDescriptorProto_::Label> {
                 self._has.r#label().then_some(&self.r#label)
             }
             ///Return a mutable reference to `label` as an `Option`
             #[inline]
             pub fn mut_label(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FieldDescriptorProto::Label> {
+            ) -> ::core::option::Option<&mut FieldDescriptorProto_::Label> {
                 self._has.r#label().then_some(&mut self.r#label)
             }
             ///Set the value and presence of `label`
             #[inline]
-            pub fn set_label(&mut self, value: mod_FieldDescriptorProto::Label) {
+            pub fn set_label(&mut self, value: FieldDescriptorProto_::Label) {
                 self._has.set_label();
                 self.r#label = value.into();
             }
@@ -2100,19 +2098,19 @@ pub mod r#google {
             #[inline]
             pub fn r#type(
                 &self,
-            ) -> ::core::option::Option<&mod_FieldDescriptorProto::Type> {
+            ) -> ::core::option::Option<&FieldDescriptorProto_::Type> {
                 self._has.r#type().then_some(&self.r#type)
             }
             ///Return a mutable reference to `type` as an `Option`
             #[inline]
             pub fn mut_type(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FieldDescriptorProto::Type> {
+            ) -> ::core::option::Option<&mut FieldDescriptorProto_::Type> {
                 self._has.r#type().then_some(&mut self.r#type)
             }
             ///Set the value and presence of `type`
             #[inline]
-            pub fn set_type(&mut self, value: mod_FieldDescriptorProto::Type) {
+            pub fn set_type(&mut self, value: FieldDescriptorProto_::Type) {
                 self._has.set_type();
                 self.r#type = value.into();
             }
@@ -2313,7 +2311,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FieldDescriptorProto::Label(n as _))?;
+                                    .map(|n| FieldDescriptorProto_::Label(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -2324,7 +2322,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FieldDescriptorProto::Type(n as _))?;
+                                    .map(|n| FieldDescriptorProto_::Type(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -2395,7 +2393,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_OneofDescriptorProto {
+        pub mod OneofDescriptorProto_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -2451,7 +2449,7 @@ pub mod r#google {
         pub struct OneofDescriptorProto {
             pub r#name: ::std::string::String,
             pub r#options: OneofOptions,
-            pub _has: mod_OneofDescriptorProto::_Hazzer,
+            pub _has: OneofDescriptorProto_::_Hazzer,
         }
         impl ::core::default::Default for OneofDescriptorProto {
             fn default() -> Self {
@@ -2543,8 +2541,8 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_EnumDescriptorProto {
-            pub mod mod_EnumReservedRange {
+        pub mod EnumDescriptorProto_ {
+            pub mod EnumReservedRange_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -2600,7 +2598,7 @@ pub mod r#google {
             pub struct EnumReservedRange {
                 pub r#start: i32,
                 pub r#end: i32,
-                pub _has: mod_EnumReservedRange::_Hazzer,
+                pub _has: EnumReservedRange_::_Hazzer,
             }
             impl ::core::default::Default for EnumReservedRange {
                 fn default() -> Self {
@@ -2750,10 +2748,10 @@ pub mod r#google {
             pub r#value: ::std::vec::Vec<EnumValueDescriptorProto>,
             pub r#options: EnumOptions,
             pub r#reserved_range: ::std::vec::Vec<
-                mod_EnumDescriptorProto::EnumReservedRange,
+                EnumDescriptorProto_::EnumReservedRange,
             >,
             pub r#reserved_name: ::std::vec::Vec<::std::string::String>,
-            pub _has: mod_EnumDescriptorProto::_Hazzer,
+            pub _has: EnumDescriptorProto_::_Hazzer,
         }
         impl ::core::default::Default for EnumDescriptorProto {
             fn default() -> Self {
@@ -2854,7 +2852,7 @@ pub mod r#google {
                             self._has.set_options();
                         }
                         4u32 => {
-                            let mut val: mod_EnumDescriptorProto::EnumReservedRange = ::core::default::Default::default();
+                            let mut val: EnumDescriptorProto_::EnumReservedRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -2888,7 +2886,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_EnumValueDescriptorProto {
+        pub mod EnumValueDescriptorProto_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -2968,7 +2966,7 @@ pub mod r#google {
             pub r#name: ::std::string::String,
             pub r#number: i32,
             pub r#options: EnumValueOptions,
-            pub _has: mod_EnumValueDescriptorProto::_Hazzer,
+            pub _has: EnumValueDescriptorProto_::_Hazzer,
         }
         impl ::core::default::Default for EnumValueDescriptorProto {
             fn default() -> Self {
@@ -3093,7 +3091,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_ServiceDescriptorProto {
+        pub mod ServiceDescriptorProto_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -3150,7 +3148,7 @@ pub mod r#google {
             pub r#name: ::std::string::String,
             pub r#method: ::std::vec::Vec<MethodDescriptorProto>,
             pub r#options: ServiceOptions,
-            pub _has: mod_ServiceDescriptorProto::_Hazzer,
+            pub _has: ServiceDescriptorProto_::_Hazzer,
         }
         impl ::core::default::Default for ServiceDescriptorProto {
             fn default() -> Self {
@@ -3258,7 +3256,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_MethodDescriptorProto {
+        pub mod MethodDescriptorProto_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -3410,7 +3408,7 @@ pub mod r#google {
             pub r#options: MethodOptions,
             pub r#client_streaming: bool,
             pub r#server_streaming: bool,
-            pub _has: mod_MethodDescriptorProto::_Hazzer,
+            pub _has: MethodDescriptorProto_::_Hazzer,
         }
         impl ::core::default::Default for MethodDescriptorProto {
             fn default() -> Self {
@@ -3632,7 +3630,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_FileOptions {
+        pub mod FileOptions_ {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct OptimizeMode(pub i32);
@@ -4123,7 +4121,7 @@ pub mod r#google {
             pub r#java_multiple_files: bool,
             pub r#java_generate_equals_and_hash: bool,
             pub r#java_string_check_utf8: bool,
-            pub r#optimize_for: mod_FileOptions::OptimizeMode,
+            pub r#optimize_for: FileOptions_::OptimizeMode,
             pub r#go_package: ::std::string::String,
             pub r#cc_generic_services: bool,
             pub r#java_generic_services: bool,
@@ -4139,7 +4137,7 @@ pub mod r#google {
             pub r#ruby_package: ::std::string::String,
             pub r#features: FeatureSet,
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub _has: mod_FileOptions::_Hazzer,
+            pub _has: FileOptions_::_Hazzer,
         }
         impl ::core::default::Default for FileOptions {
             fn default() -> Self {
@@ -4149,7 +4147,7 @@ pub mod r#google {
                     r#java_multiple_files: false as _,
                     r#java_generate_equals_and_hash: ::core::default::Default::default(),
                     r#java_string_check_utf8: false as _,
-                    r#optimize_for: mod_FileOptions::OptimizeMode::Speed,
+                    r#optimize_for: FileOptions_::OptimizeMode::Speed,
                     r#go_package: ::core::default::Default::default(),
                     r#cc_generic_services: false as _,
                     r#java_generic_services: false as _,
@@ -4309,19 +4307,19 @@ pub mod r#google {
             #[inline]
             pub fn r#optimize_for(
                 &self,
-            ) -> ::core::option::Option<&mod_FileOptions::OptimizeMode> {
+            ) -> ::core::option::Option<&FileOptions_::OptimizeMode> {
                 self._has.r#optimize_for().then_some(&self.r#optimize_for)
             }
             ///Return a mutable reference to `optimize_for` as an `Option`
             #[inline]
             pub fn mut_optimize_for(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FileOptions::OptimizeMode> {
+            ) -> ::core::option::Option<&mut FileOptions_::OptimizeMode> {
                 self._has.r#optimize_for().then_some(&mut self.r#optimize_for)
             }
             ///Set the value and presence of `optimize_for`
             #[inline]
-            pub fn set_optimize_for(&mut self, value: mod_FileOptions::OptimizeMode) {
+            pub fn set_optimize_for(&mut self, value: FileOptions_::OptimizeMode) {
                 self._has.set_optimize_for();
                 self.r#optimize_for = value.into();
             }
@@ -4735,7 +4733,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FileOptions::OptimizeMode(n as _))?;
+                                    .map(|n| FileOptions_::OptimizeMode(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -4878,7 +4876,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_MessageOptions {
+        pub mod MessageOptions_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -5031,7 +5029,7 @@ pub mod r#google {
             pub r#deprecated_legacy_json_field_conflicts: bool,
             pub r#features: FeatureSet,
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub _has: mod_MessageOptions::_Hazzer,
+            pub _has: MessageOptions_::_Hazzer,
         }
         impl ::core::default::Default for MessageOptions {
             fn default() -> Self {
@@ -5283,8 +5281,8 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_FieldOptions {
-            pub mod mod_EditionDefault {
+        pub mod FieldOptions_ {
+            pub mod EditionDefault_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -5340,7 +5338,7 @@ pub mod r#google {
             pub struct EditionDefault {
                 pub r#edition: super::Edition,
                 pub r#value: ::std::string::String,
-                pub _has: mod_EditionDefault::_Hazzer,
+                pub _has: EditionDefault_::_Hazzer,
             }
             impl ::core::default::Default for EditionDefault {
                 fn default() -> Self {
@@ -5438,7 +5436,7 @@ pub mod r#google {
                     Ok(())
                 }
             }
-            pub mod mod_FeatureSupport {
+            pub mod FeatureSupport_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -5542,7 +5540,7 @@ pub mod r#google {
                 pub r#edition_deprecated: super::Edition,
                 pub r#deprecation_warning: ::std::string::String,
                 pub r#edition_removed: super::Edition,
-                pub _has: mod_FeatureSupport::_Hazzer,
+                pub _has: FeatureSupport_::_Hazzer,
             }
             impl ::core::default::Default for FeatureSupport {
                 fn default() -> Self {
@@ -6069,28 +6067,28 @@ pub mod r#google {
         }
         #[derive(Debug)]
         pub struct FieldOptions {
-            pub r#ctype: mod_FieldOptions::CType,
+            pub r#ctype: FieldOptions_::CType,
             pub r#packed: bool,
-            pub r#jstype: mod_FieldOptions::JSType,
+            pub r#jstype: FieldOptions_::JSType,
             pub r#lazy: bool,
             pub r#unverified_lazy: bool,
             pub r#deprecated: bool,
             pub r#weak: bool,
             pub r#debug_redact: bool,
-            pub r#retention: mod_FieldOptions::OptionRetention,
-            pub r#targets: ::std::vec::Vec<mod_FieldOptions::OptionTargetType>,
-            pub r#edition_defaults: ::std::vec::Vec<mod_FieldOptions::EditionDefault>,
+            pub r#retention: FieldOptions_::OptionRetention,
+            pub r#targets: ::std::vec::Vec<FieldOptions_::OptionTargetType>,
+            pub r#edition_defaults: ::std::vec::Vec<FieldOptions_::EditionDefault>,
             pub r#features: FeatureSet,
-            pub r#feature_support: mod_FieldOptions::FeatureSupport,
+            pub r#feature_support: FieldOptions_::FeatureSupport,
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub _has: mod_FieldOptions::_Hazzer,
+            pub _has: FieldOptions_::_Hazzer,
         }
         impl ::core::default::Default for FieldOptions {
             fn default() -> Self {
                 Self {
-                    r#ctype: mod_FieldOptions::CType::String,
+                    r#ctype: FieldOptions_::CType::String,
                     r#packed: ::core::default::Default::default(),
-                    r#jstype: mod_FieldOptions::JSType::JsNormal,
+                    r#jstype: FieldOptions_::JSType::JsNormal,
                     r#lazy: false as _,
                     r#unverified_lazy: false as _,
                     r#deprecated: false as _,
@@ -6109,19 +6107,19 @@ pub mod r#google {
         impl FieldOptions {
             ///Return a reference to `ctype` as an `Option`
             #[inline]
-            pub fn r#ctype(&self) -> ::core::option::Option<&mod_FieldOptions::CType> {
+            pub fn r#ctype(&self) -> ::core::option::Option<&FieldOptions_::CType> {
                 self._has.r#ctype().then_some(&self.r#ctype)
             }
             ///Return a mutable reference to `ctype` as an `Option`
             #[inline]
             pub fn mut_ctype(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FieldOptions::CType> {
+            ) -> ::core::option::Option<&mut FieldOptions_::CType> {
                 self._has.r#ctype().then_some(&mut self.r#ctype)
             }
             ///Set the value and presence of `ctype`
             #[inline]
-            pub fn set_ctype(&mut self, value: mod_FieldOptions::CType) {
+            pub fn set_ctype(&mut self, value: FieldOptions_::CType) {
                 self._has.set_ctype();
                 self.r#ctype = value.into();
             }
@@ -6153,19 +6151,19 @@ pub mod r#google {
             }
             ///Return a reference to `jstype` as an `Option`
             #[inline]
-            pub fn r#jstype(&self) -> ::core::option::Option<&mod_FieldOptions::JSType> {
+            pub fn r#jstype(&self) -> ::core::option::Option<&FieldOptions_::JSType> {
                 self._has.r#jstype().then_some(&self.r#jstype)
             }
             ///Return a mutable reference to `jstype` as an `Option`
             #[inline]
             pub fn mut_jstype(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FieldOptions::JSType> {
+            ) -> ::core::option::Option<&mut FieldOptions_::JSType> {
                 self._has.r#jstype().then_some(&mut self.r#jstype)
             }
             ///Set the value and presence of `jstype`
             #[inline]
-            pub fn set_jstype(&mut self, value: mod_FieldOptions::JSType) {
+            pub fn set_jstype(&mut self, value: FieldOptions_::JSType) {
                 self._has.set_jstype();
                 self.r#jstype = value.into();
             }
@@ -6283,19 +6281,19 @@ pub mod r#google {
             #[inline]
             pub fn r#retention(
                 &self,
-            ) -> ::core::option::Option<&mod_FieldOptions::OptionRetention> {
+            ) -> ::core::option::Option<&FieldOptions_::OptionRetention> {
                 self._has.r#retention().then_some(&self.r#retention)
             }
             ///Return a mutable reference to `retention` as an `Option`
             #[inline]
             pub fn mut_retention(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FieldOptions::OptionRetention> {
+            ) -> ::core::option::Option<&mut FieldOptions_::OptionRetention> {
                 self._has.r#retention().then_some(&mut self.r#retention)
             }
             ///Set the value and presence of `retention`
             #[inline]
-            pub fn set_retention(&mut self, value: mod_FieldOptions::OptionRetention) {
+            pub fn set_retention(&mut self, value: FieldOptions_::OptionRetention) {
                 self._has.set_retention();
                 self.r#retention = value.into();
             }
@@ -6329,22 +6327,19 @@ pub mod r#google {
             #[inline]
             pub fn r#feature_support(
                 &self,
-            ) -> ::core::option::Option<&mod_FieldOptions::FeatureSupport> {
+            ) -> ::core::option::Option<&FieldOptions_::FeatureSupport> {
                 self._has.r#feature_support().then_some(&self.r#feature_support)
             }
             ///Return a mutable reference to `feature_support` as an `Option`
             #[inline]
             pub fn mut_feature_support(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FieldOptions::FeatureSupport> {
+            ) -> ::core::option::Option<&mut FieldOptions_::FeatureSupport> {
                 self._has.r#feature_support().then_some(&mut self.r#feature_support)
             }
             ///Set the value and presence of `feature_support`
             #[inline]
-            pub fn set_feature_support(
-                &mut self,
-                value: mod_FieldOptions::FeatureSupport,
-            ) {
+            pub fn set_feature_support(&mut self, value: FieldOptions_::FeatureSupport) {
                 self._has.set_feature_support();
                 self.r#feature_support = value.into();
             }
@@ -6371,7 +6366,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FieldOptions::CType(n as _))?;
+                                    .map(|n| FieldOptions_::CType(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -6391,7 +6386,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FieldOptions::JSType(n as _))?;
+                                    .map(|n| FieldOptions_::JSType(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -6447,7 +6442,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FieldOptions::OptionRetention(n as _))?;
+                                    .map(|n| FieldOptions_::OptionRetention(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -6461,7 +6456,7 @@ pub mod r#google {
                                         |decoder| {
                                             decoder
                                                 .decode_int32()
-                                                .map(|n| mod_FieldOptions::OptionTargetType(n as _))
+                                                .map(|n| FieldOptions_::OptionTargetType(n as _))
                                                 .map(|v| v as _)
                                         },
                                     )?;
@@ -6472,7 +6467,7 @@ pub mod r#google {
                                         .pb_push(
                                             decoder
                                                 .decode_int32()
-                                                .map(|n| mod_FieldOptions::OptionTargetType(n as _))? as _,
+                                                .map(|n| FieldOptions_::OptionTargetType(n as _))? as _,
                                         ),
                                     decoder.ignore_repeated_cap_err,
                                 ) {
@@ -6481,7 +6476,7 @@ pub mod r#google {
                             }
                         }
                         20u32 => {
-                            let mut val: mod_FieldOptions::EditionDefault = ::core::default::Default::default();
+                            let mut val: FieldOptions_::EditionDefault = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -6528,7 +6523,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_OneofOptions {
+        pub mod OneofOptions_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -6561,7 +6556,7 @@ pub mod r#google {
         pub struct OneofOptions {
             pub r#features: FeatureSet,
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub _has: mod_OneofOptions::_Hazzer,
+            pub _has: OneofOptions_::_Hazzer,
         }
         impl ::core::default::Default for OneofOptions {
             fn default() -> Self {
@@ -6635,7 +6630,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_EnumOptions {
+        pub mod EnumOptions_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -6740,7 +6735,7 @@ pub mod r#google {
             pub r#deprecated_legacy_json_field_conflicts: bool,
             pub r#features: FeatureSet,
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub _has: mod_EnumOptions::_Hazzer,
+            pub _has: EnumOptions_::_Hazzer,
         }
         impl ::core::default::Default for EnumOptions {
             fn default() -> Self {
@@ -6916,7 +6911,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_EnumValueOptions {
+        pub mod EnumValueOptions_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -7019,9 +7014,9 @@ pub mod r#google {
             pub r#deprecated: bool,
             pub r#features: FeatureSet,
             pub r#debug_redact: bool,
-            pub r#feature_support: mod_FieldOptions::FeatureSupport,
+            pub r#feature_support: FieldOptions_::FeatureSupport,
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub _has: mod_EnumValueOptions::_Hazzer,
+            pub _has: EnumValueOptions_::_Hazzer,
         }
         impl ::core::default::Default for EnumValueOptions {
             fn default() -> Self {
@@ -7103,22 +7098,19 @@ pub mod r#google {
             #[inline]
             pub fn r#feature_support(
                 &self,
-            ) -> ::core::option::Option<&mod_FieldOptions::FeatureSupport> {
+            ) -> ::core::option::Option<&FieldOptions_::FeatureSupport> {
                 self._has.r#feature_support().then_some(&self.r#feature_support)
             }
             ///Return a mutable reference to `feature_support` as an `Option`
             #[inline]
             pub fn mut_feature_support(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FieldOptions::FeatureSupport> {
+            ) -> ::core::option::Option<&mut FieldOptions_::FeatureSupport> {
                 self._has.r#feature_support().then_some(&mut self.r#feature_support)
             }
             ///Set the value and presence of `feature_support`
             #[inline]
-            pub fn set_feature_support(
-                &mut self,
-                value: mod_FieldOptions::FeatureSupport,
-            ) {
+            pub fn set_feature_support(&mut self, value: FieldOptions_::FeatureSupport) {
                 self._has.set_feature_support();
                 self.r#feature_support = value.into();
             }
@@ -7193,7 +7185,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_ServiceOptions {
+        pub mod ServiceOptions_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
@@ -7250,7 +7242,7 @@ pub mod r#google {
             pub r#features: FeatureSet,
             pub r#deprecated: bool,
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub _has: mod_ServiceOptions::_Hazzer,
+            pub _has: ServiceOptions_::_Hazzer,
         }
         impl ::core::default::Default for ServiceOptions {
             fn default() -> Self {
@@ -7355,7 +7347,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_MethodOptions {
+        pub mod MethodOptions_ {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct IdempotencyLevel(pub i32);
@@ -7451,16 +7443,16 @@ pub mod r#google {
         #[derive(Debug)]
         pub struct MethodOptions {
             pub r#deprecated: bool,
-            pub r#idempotency_level: mod_MethodOptions::IdempotencyLevel,
+            pub r#idempotency_level: MethodOptions_::IdempotencyLevel,
             pub r#features: FeatureSet,
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            pub _has: mod_MethodOptions::_Hazzer,
+            pub _has: MethodOptions_::_Hazzer,
         }
         impl ::core::default::Default for MethodOptions {
             fn default() -> Self {
                 Self {
                     r#deprecated: false as _,
-                    r#idempotency_level: mod_MethodOptions::IdempotencyLevel::IdempotencyUnknown,
+                    r#idempotency_level: MethodOptions_::IdempotencyLevel::IdempotencyUnknown,
                     r#features: ::core::default::Default::default(),
                     r#uninterpreted_option: ::core::default::Default::default(),
                     _has: ::core::default::Default::default(),
@@ -7493,21 +7485,21 @@ pub mod r#google {
             #[inline]
             pub fn r#idempotency_level(
                 &self,
-            ) -> ::core::option::Option<&mod_MethodOptions::IdempotencyLevel> {
+            ) -> ::core::option::Option<&MethodOptions_::IdempotencyLevel> {
                 self._has.r#idempotency_level().then_some(&self.r#idempotency_level)
             }
             ///Return a mutable reference to `idempotency_level` as an `Option`
             #[inline]
             pub fn mut_idempotency_level(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_MethodOptions::IdempotencyLevel> {
+            ) -> ::core::option::Option<&mut MethodOptions_::IdempotencyLevel> {
                 self._has.r#idempotency_level().then_some(&mut self.r#idempotency_level)
             }
             ///Set the value and presence of `idempotency_level`
             #[inline]
             pub fn set_idempotency_level(
                 &mut self,
-                value: mod_MethodOptions::IdempotencyLevel,
+                value: MethodOptions_::IdempotencyLevel,
             ) {
                 self._has.set_idempotency_level();
                 self.r#idempotency_level = value.into();
@@ -7565,7 +7557,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_MethodOptions::IdempotencyLevel(n as _))?;
+                                    .map(|n| MethodOptions_::IdempotencyLevel(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -7599,8 +7591,8 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_UninterpretedOption {
-            pub mod mod_NamePart {
+        pub mod UninterpretedOption_ {
+            pub mod NamePart_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -7656,7 +7648,7 @@ pub mod r#google {
             pub struct NamePart {
                 pub r#name_part: ::std::string::String,
                 pub r#is_extension: bool,
-                pub _has: mod_NamePart::_Hazzer,
+                pub _has: NamePart_::_Hazzer,
             }
             impl ::core::default::Default for NamePart {
                 fn default() -> Self {
@@ -7897,14 +7889,14 @@ pub mod r#google {
         }
         #[derive(Debug)]
         pub struct UninterpretedOption {
-            pub r#name: ::std::vec::Vec<mod_UninterpretedOption::NamePart>,
+            pub r#name: ::std::vec::Vec<UninterpretedOption_::NamePart>,
             pub r#identifier_value: ::std::string::String,
             pub r#positive_int_value: u64,
             pub r#negative_int_value: i64,
             pub r#double_value: f64,
             pub r#string_value: ::std::vec::Vec<u8>,
             pub r#aggregate_value: ::std::string::String,
-            pub _has: mod_UninterpretedOption::_Hazzer,
+            pub _has: UninterpretedOption_::_Hazzer,
         }
         impl ::core::default::Default for UninterpretedOption {
             fn default() -> Self {
@@ -8081,7 +8073,7 @@ pub mod r#google {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         2u32 => {
-                            let mut val: mod_UninterpretedOption::NamePart = ::core::default::Default::default();
+                            let mut val: UninterpretedOption_::NamePart = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -8152,7 +8144,7 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_FeatureSet {
+        pub mod FeatureSet_ {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct FieldPresence(pub i32);
@@ -8407,13 +8399,13 @@ pub mod r#google {
         }
         #[derive(Debug)]
         pub struct FeatureSet {
-            pub r#field_presence: mod_FeatureSet::FieldPresence,
-            pub r#enum_type: mod_FeatureSet::EnumType,
-            pub r#repeated_field_encoding: mod_FeatureSet::RepeatedFieldEncoding,
-            pub r#utf8_validation: mod_FeatureSet::Utf8Validation,
-            pub r#message_encoding: mod_FeatureSet::MessageEncoding,
-            pub r#json_format: mod_FeatureSet::JsonFormat,
-            pub _has: mod_FeatureSet::_Hazzer,
+            pub r#field_presence: FeatureSet_::FieldPresence,
+            pub r#enum_type: FeatureSet_::EnumType,
+            pub r#repeated_field_encoding: FeatureSet_::RepeatedFieldEncoding,
+            pub r#utf8_validation: FeatureSet_::Utf8Validation,
+            pub r#message_encoding: FeatureSet_::MessageEncoding,
+            pub r#json_format: FeatureSet_::JsonFormat,
+            pub _has: FeatureSet_::_Hazzer,
         }
         impl ::core::default::Default for FeatureSet {
             fn default() -> Self {
@@ -8433,19 +8425,19 @@ pub mod r#google {
             #[inline]
             pub fn r#field_presence(
                 &self,
-            ) -> ::core::option::Option<&mod_FeatureSet::FieldPresence> {
+            ) -> ::core::option::Option<&FeatureSet_::FieldPresence> {
                 self._has.r#field_presence().then_some(&self.r#field_presence)
             }
             ///Return a mutable reference to `field_presence` as an `Option`
             #[inline]
             pub fn mut_field_presence(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FeatureSet::FieldPresence> {
+            ) -> ::core::option::Option<&mut FeatureSet_::FieldPresence> {
                 self._has.r#field_presence().then_some(&mut self.r#field_presence)
             }
             ///Set the value and presence of `field_presence`
             #[inline]
-            pub fn set_field_presence(&mut self, value: mod_FeatureSet::FieldPresence) {
+            pub fn set_field_presence(&mut self, value: FeatureSet_::FieldPresence) {
                 self._has.set_field_presence();
                 self.r#field_presence = value.into();
             }
@@ -8456,21 +8448,19 @@ pub mod r#google {
             }
             ///Return a reference to `enum_type` as an `Option`
             #[inline]
-            pub fn r#enum_type(
-                &self,
-            ) -> ::core::option::Option<&mod_FeatureSet::EnumType> {
+            pub fn r#enum_type(&self) -> ::core::option::Option<&FeatureSet_::EnumType> {
                 self._has.r#enum_type().then_some(&self.r#enum_type)
             }
             ///Return a mutable reference to `enum_type` as an `Option`
             #[inline]
             pub fn mut_enum_type(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FeatureSet::EnumType> {
+            ) -> ::core::option::Option<&mut FeatureSet_::EnumType> {
                 self._has.r#enum_type().then_some(&mut self.r#enum_type)
             }
             ///Set the value and presence of `enum_type`
             #[inline]
-            pub fn set_enum_type(&mut self, value: mod_FeatureSet::EnumType) {
+            pub fn set_enum_type(&mut self, value: FeatureSet_::EnumType) {
                 self._has.set_enum_type();
                 self.r#enum_type = value.into();
             }
@@ -8483,7 +8473,7 @@ pub mod r#google {
             #[inline]
             pub fn r#repeated_field_encoding(
                 &self,
-            ) -> ::core::option::Option<&mod_FeatureSet::RepeatedFieldEncoding> {
+            ) -> ::core::option::Option<&FeatureSet_::RepeatedFieldEncoding> {
                 self._has
                     .r#repeated_field_encoding()
                     .then_some(&self.r#repeated_field_encoding)
@@ -8492,7 +8482,7 @@ pub mod r#google {
             #[inline]
             pub fn mut_repeated_field_encoding(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FeatureSet::RepeatedFieldEncoding> {
+            ) -> ::core::option::Option<&mut FeatureSet_::RepeatedFieldEncoding> {
                 self._has
                     .r#repeated_field_encoding()
                     .then_some(&mut self.r#repeated_field_encoding)
@@ -8501,7 +8491,7 @@ pub mod r#google {
             #[inline]
             pub fn set_repeated_field_encoding(
                 &mut self,
-                value: mod_FeatureSet::RepeatedFieldEncoding,
+                value: FeatureSet_::RepeatedFieldEncoding,
             ) {
                 self._has.set_repeated_field_encoding();
                 self.r#repeated_field_encoding = value.into();
@@ -8515,22 +8505,19 @@ pub mod r#google {
             #[inline]
             pub fn r#utf8_validation(
                 &self,
-            ) -> ::core::option::Option<&mod_FeatureSet::Utf8Validation> {
+            ) -> ::core::option::Option<&FeatureSet_::Utf8Validation> {
                 self._has.r#utf8_validation().then_some(&self.r#utf8_validation)
             }
             ///Return a mutable reference to `utf8_validation` as an `Option`
             #[inline]
             pub fn mut_utf8_validation(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FeatureSet::Utf8Validation> {
+            ) -> ::core::option::Option<&mut FeatureSet_::Utf8Validation> {
                 self._has.r#utf8_validation().then_some(&mut self.r#utf8_validation)
             }
             ///Set the value and presence of `utf8_validation`
             #[inline]
-            pub fn set_utf8_validation(
-                &mut self,
-                value: mod_FeatureSet::Utf8Validation,
-            ) {
+            pub fn set_utf8_validation(&mut self, value: FeatureSet_::Utf8Validation) {
                 self._has.set_utf8_validation();
                 self.r#utf8_validation = value.into();
             }
@@ -8543,22 +8530,19 @@ pub mod r#google {
             #[inline]
             pub fn r#message_encoding(
                 &self,
-            ) -> ::core::option::Option<&mod_FeatureSet::MessageEncoding> {
+            ) -> ::core::option::Option<&FeatureSet_::MessageEncoding> {
                 self._has.r#message_encoding().then_some(&self.r#message_encoding)
             }
             ///Return a mutable reference to `message_encoding` as an `Option`
             #[inline]
             pub fn mut_message_encoding(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FeatureSet::MessageEncoding> {
+            ) -> ::core::option::Option<&mut FeatureSet_::MessageEncoding> {
                 self._has.r#message_encoding().then_some(&mut self.r#message_encoding)
             }
             ///Set the value and presence of `message_encoding`
             #[inline]
-            pub fn set_message_encoding(
-                &mut self,
-                value: mod_FeatureSet::MessageEncoding,
-            ) {
+            pub fn set_message_encoding(&mut self, value: FeatureSet_::MessageEncoding) {
                 self._has.set_message_encoding();
                 self.r#message_encoding = value.into();
             }
@@ -8571,19 +8555,19 @@ pub mod r#google {
             #[inline]
             pub fn r#json_format(
                 &self,
-            ) -> ::core::option::Option<&mod_FeatureSet::JsonFormat> {
+            ) -> ::core::option::Option<&FeatureSet_::JsonFormat> {
                 self._has.r#json_format().then_some(&self.r#json_format)
             }
             ///Return a mutable reference to `json_format` as an `Option`
             #[inline]
             pub fn mut_json_format(
                 &mut self,
-            ) -> ::core::option::Option<&mut mod_FeatureSet::JsonFormat> {
+            ) -> ::core::option::Option<&mut FeatureSet_::JsonFormat> {
                 self._has.r#json_format().then_some(&mut self.r#json_format)
             }
             ///Set the value and presence of `json_format`
             #[inline]
-            pub fn set_json_format(&mut self, value: mod_FeatureSet::JsonFormat) {
+            pub fn set_json_format(&mut self, value: FeatureSet_::JsonFormat) {
                 self._has.set_json_format();
                 self.r#json_format = value.into();
             }
@@ -8610,7 +8594,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FeatureSet::FieldPresence(n as _))?;
+                                    .map(|n| FeatureSet_::FieldPresence(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -8621,7 +8605,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FeatureSet::EnumType(n as _))?;
+                                    .map(|n| FeatureSet_::EnumType(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -8632,7 +8616,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FeatureSet::RepeatedFieldEncoding(n as _))?;
+                                    .map(|n| FeatureSet_::RepeatedFieldEncoding(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -8643,7 +8627,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FeatureSet::Utf8Validation(n as _))?;
+                                    .map(|n| FeatureSet_::Utf8Validation(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -8654,7 +8638,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FeatureSet::MessageEncoding(n as _))?;
+                                    .map(|n| FeatureSet_::MessageEncoding(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -8665,7 +8649,7 @@ pub mod r#google {
                             {
                                 let val = decoder
                                     .decode_int32()
-                                    .map(|n| mod_FeatureSet::JsonFormat(n as _))?;
+                                    .map(|n| FeatureSet_::JsonFormat(n as _))?;
                                 let val_ref = &val;
                                 *mut_ref = val as _;
                             };
@@ -8679,8 +8663,8 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_FeatureSetDefaults {
-            pub mod mod_FeatureSetEditionDefault {
+        pub mod FeatureSetDefaults_ {
+            pub mod FeatureSetEditionDefault_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -8760,7 +8744,7 @@ pub mod r#google {
                 pub r#edition: super::Edition,
                 pub r#overridable_features: super::FeatureSet,
                 pub r#fixed_features: super::FeatureSet,
-                pub _has: mod_FeatureSetEditionDefault::_Hazzer,
+                pub _has: FeatureSetEditionDefault_::_Hazzer,
             }
             impl ::core::default::Default for FeatureSetEditionDefault {
                 fn default() -> Self {
@@ -8950,11 +8934,11 @@ pub mod r#google {
         #[derive(Debug)]
         pub struct FeatureSetDefaults {
             pub r#defaults: ::std::vec::Vec<
-                mod_FeatureSetDefaults::FeatureSetEditionDefault,
+                FeatureSetDefaults_::FeatureSetEditionDefault,
             >,
             pub r#minimum_edition: Edition,
             pub r#maximum_edition: Edition,
-            pub _has: mod_FeatureSetDefaults::_Hazzer,
+            pub _has: FeatureSetDefaults_::_Hazzer,
         }
         impl ::core::default::Default for FeatureSetDefaults {
             fn default() -> Self {
@@ -9027,7 +9011,7 @@ pub mod r#google {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
-                            let mut val: mod_FeatureSetDefaults::FeatureSetEditionDefault = ::core::default::Default::default();
+                            let mut val: FeatureSetDefaults_::FeatureSetEditionDefault = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -9065,8 +9049,8 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_SourceCodeInfo {
-            pub mod mod_Location {
+        pub mod SourceCodeInfo_ {
+            pub mod Location_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
@@ -9125,7 +9109,7 @@ pub mod r#google {
                 pub r#leading_comments: ::std::string::String,
                 pub r#trailing_comments: ::std::string::String,
                 pub r#leading_detached_comments: ::std::vec::Vec<::std::string::String>,
-                pub _has: mod_Location::_Hazzer,
+                pub _has: Location_::_Hazzer,
             }
             impl ::core::default::Default for Location {
                 fn default() -> Self {
@@ -9280,7 +9264,7 @@ pub mod r#google {
         }
         #[derive(Debug)]
         pub struct SourceCodeInfo {
-            pub r#location: ::std::vec::Vec<mod_SourceCodeInfo::Location>,
+            pub r#location: ::std::vec::Vec<SourceCodeInfo_::Location>,
         }
         impl ::core::default::Default for SourceCodeInfo {
             fn default() -> Self {
@@ -9303,7 +9287,7 @@ pub mod r#google {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
-                            let mut val: mod_SourceCodeInfo::Location = ::core::default::Default::default();
+                            let mut val: SourceCodeInfo_::Location = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -9323,8 +9307,8 @@ pub mod r#google {
                 Ok(())
             }
         }
-        pub mod mod_GeneratedCodeInfo {
-            pub mod mod_Annotation {
+        pub mod GeneratedCodeInfo_ {
+            pub mod Annotation_ {
                 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
                 #[repr(transparent)]
                 pub struct Semantic(pub i32);
@@ -9446,8 +9430,8 @@ pub mod r#google {
                 pub r#source_file: ::std::string::String,
                 pub r#begin: i32,
                 pub r#end: i32,
-                pub r#semantic: mod_Annotation::Semantic,
-                pub _has: mod_Annotation::_Hazzer,
+                pub r#semantic: Annotation_::Semantic,
+                pub _has: Annotation_::_Hazzer,
             }
             impl ::core::default::Default for Annotation {
                 fn default() -> Self {
@@ -9533,19 +9517,19 @@ pub mod r#google {
                 #[inline]
                 pub fn r#semantic(
                     &self,
-                ) -> ::core::option::Option<&mod_Annotation::Semantic> {
+                ) -> ::core::option::Option<&Annotation_::Semantic> {
                     self._has.r#semantic().then_some(&self.r#semantic)
                 }
                 ///Return a mutable reference to `semantic` as an `Option`
                 #[inline]
                 pub fn mut_semantic(
                     &mut self,
-                ) -> ::core::option::Option<&mut mod_Annotation::Semantic> {
+                ) -> ::core::option::Option<&mut Annotation_::Semantic> {
                     self._has.r#semantic().then_some(&mut self.r#semantic)
                 }
                 ///Set the value and presence of `semantic`
                 #[inline]
-                pub fn set_semantic(&mut self, value: mod_Annotation::Semantic) {
+                pub fn set_semantic(&mut self, value: Annotation_::Semantic) {
                     self._has.set_semantic();
                     self.r#semantic = value.into();
                 }
@@ -9614,7 +9598,7 @@ pub mod r#google {
                                 {
                                     let val = decoder
                                         .decode_int32()
-                                        .map(|n| mod_Annotation::Semantic(n as _))?;
+                                        .map(|n| Annotation_::Semantic(n as _))?;
                                     let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
@@ -9631,7 +9615,7 @@ pub mod r#google {
         }
         #[derive(Debug)]
         pub struct GeneratedCodeInfo {
-            pub r#annotation: ::std::vec::Vec<mod_GeneratedCodeInfo::Annotation>,
+            pub r#annotation: ::std::vec::Vec<GeneratedCodeInfo_::Annotation>,
         }
         impl ::core::default::Default for GeneratedCodeInfo {
             fn default() -> Self {
@@ -9654,7 +9638,7 @@ pub mod r#google {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
-                            let mut val: mod_GeneratedCodeInfo::Annotation = ::core::default::Default::default();
+                            let mut val: GeneratedCodeInfo_::Annotation = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;

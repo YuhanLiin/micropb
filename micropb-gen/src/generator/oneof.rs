@@ -384,7 +384,7 @@ pub(crate) fn make_test_oneof_field(
 mod tests {
     use std::borrow::Cow;
 
-    use crate::descriptor::mod_FieldDescriptorProto::Type;
+    use crate::descriptor::FieldDescriptorProto_::Type;
 
     use crate::config::{parse_attributes, Config};
 

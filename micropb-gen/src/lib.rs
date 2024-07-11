@@ -20,7 +20,7 @@ mod descriptor {
     #![allow(warnings)]
     include!("descriptor.rs");
 
-    pub use google::protobuf::*;
+    pub use google_::protobuf_::*;
 }
 
 use std::{
