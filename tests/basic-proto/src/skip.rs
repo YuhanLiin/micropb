@@ -8,7 +8,7 @@ mod proto {
 
 #[test]
 fn empty_msg() {
-    let mut nested = proto::nested::Nested::default();
-    nested.inner = Some(proto::nested::mod_Nested::Inner::Scalar(true));
-    assert_eq!(size_of::<proto::nested::Nested>(), size_of::<bool>());
+    let mut nested = proto::nested_::Nested::default();
+    nested.inner = Some(proto::nested_::Nested_::Inner::Scalar(true));
+    assert_eq!(size_of::<proto::nested_::Nested>(), size_of::<bool>());
 }

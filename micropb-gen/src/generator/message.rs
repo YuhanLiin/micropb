@@ -21,13 +21,16 @@ use super::{
     field::Field,
     field_error, msg_error,
     oneof::{Oneof, OneofField, OneofType},
+    sanitized_ident,
     type_spec::find_lifetime_from_type,
     CurrentConfig, Generator,
 };
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Message<'a> {
+    /// Protobuf name
     pub(crate) name: &'a str,
+    /// Sanitized Rust ident, used for struct name
     pub(crate) rust_name: Ident,
     pub(crate) oneofs: Vec<Oneof<'a>>,
     pub(crate) fields: Vec<Field<'a>>,
@@ -143,7 +146,7 @@ impl<'a> Message<'a> {
 
         Ok(Some(Self {
             name: msg_name,
-            rust_name: Ident::new(msg_name, Span::call_site()),
+            rust_name: sanitized_ident(msg_name),
             oneofs,
             fields,
             derive_dbg: msg_conf.derive_dbg(),
@@ -200,7 +203,7 @@ impl<'a> Message<'a> {
         }
 
         let methods = hazzers.enumerate().map(|(i, f)| {
-            let fname = &f.raw_rust_name;
+            let fname = &f.san_rust_name;
             let setter = format_ident!("set_{}", f.rust_name);
             let clearer = format_ident!("clear_{}", f.rust_name);
             let init = format_ident!("init_{}", f.rust_name);
@@ -314,7 +317,7 @@ impl<'a> Message<'a> {
         for f in &self.fields {
             // Skip delegate fields when generating defaults
             if !matches!(f.ftype, FieldType::Custom(CustomField::Delegate(_))) {
-                let name = &f.raw_rust_name;
+                let name = &f.san_rust_name;
                 let default = f
                     .generate_default(gen)
                     .map_err(|e| field_error(&gen.pkg, self.name, f.name, &e))?;
@@ -330,7 +333,7 @@ impl<'a> Message<'a> {
             {
                 None
             } else {
-                Some(&o.raw_rust_name)
+                Some(&o.san_rust_name)
             }
         });
         let hazzer_default =
@@ -363,7 +366,7 @@ impl<'a> Message<'a> {
                 let setter_name = format_ident!("set_{}", f.rust_name);
                 let muter_name = format_ident!("mut_{}", f.rust_name);
                 let clearer_name = format_ident!("clear_{}", f.rust_name);
-                let fname = &f.raw_rust_name;
+                let fname = &f.san_rust_name;
 
                 let getter_doc = format!("Return a reference to `{}` as an `Option`", f.rust_name);
                 let muter_doc = format!(
@@ -761,8 +764,7 @@ mod tests {
                 rust_name: Ident::new("Message", Span::call_site()),
                 oneofs: vec![Oneof {
                     name: "oneof",
-                    rust_name: "oneof".to_owned(),
-                    raw_rust_name: Ident::new_raw("oneof", Span::call_site()),
+                    san_rust_name: Ident::new_raw("oneof", Span::call_site()),
                     otype: OneofType::Enum {
                         type_name: Ident::new("Oneof", Span::call_site()),
                         fields: vec![

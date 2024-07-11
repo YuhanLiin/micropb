@@ -298,7 +298,7 @@ impl Generator {
             return Ok(quote! {});
         }
 
-        let name = Ident::new(&enum_type.name, Span::call_site());
+        let name = sanitized_ident(&enum_type.name);
         let enum_int_type = enum_conf.config.enum_int_size.unwrap_or(IntSize::S32);
         let attrs = &enum_conf
             .config
@@ -392,7 +392,7 @@ impl Generator {
         }
 
         let mut ident_path = pb_fq_type_name[1..].split('.');
-        let ident_type = Ident::new(ident_path.next_back().unwrap(), Span::call_site());
+        let ident_type = sanitized_ident(ident_path.next_back().unwrap());
         let mut ident_path = ident_path.peekable();
 
         let type_path = self.type_path.borrow();
@@ -422,7 +422,7 @@ impl Generator {
         } else {
             &variant_name_cased
         };
-        sanitized_ident(stripped).1
+        sanitized_ident(stripped)
     }
 
     fn wrapped_type(&self, typ: TokenStream, boxed: bool, optional: bool) -> TokenStream {
@@ -452,32 +452,29 @@ impl Generator {
     }
 }
 
+#[inline]
 pub(crate) fn resolve_path_elem(elem: &str) -> Ident {
-    if elem.starts_with(|c: char| c.is_ascii_uppercase()) {
-        // Assume that type names all start with uppercase
-        format_ident!("mod_{elem}")
-    } else {
-        sanitized_ident(elem).1
-    }
+    // Add underscore suffix
+    format_ident!("{elem}_")
 }
 
 #[inline]
-pub(crate) fn sanitized_ident(name: &str) -> (String, Ident) {
+pub(crate) fn sanitized_ident(name: &str) -> Ident {
     match name {
-        // These keywords can't be raw idents, so we suffix them with an underscore
+        // These keywords can't be raw idents, so prefix with underscore
         "_" | "super" | "crate" | "self" | "Self" | "extern" => {
-            (format!("{name}_"), format_ident!("{name}_"))
+            format_ident!("_{name}")
         }
-        // Idents can't start with numbers, so we need to prefix with unerscore
+        // Idents can't start with numbers, so prefix with underscore
         name if name.starts_with(|c: char| c.is_numeric()) => {
-            (format!("_{name}"), format_ident!("_{name}"))
+            format_ident!("_{name}")
         }
-        // Use raw idents for lowercase names, since they may be keywords
+        // Use raw idents for other lowercase names, since they may be keywords
         name if name.starts_with(|c: char| c.is_lowercase()) => {
-            (name.to_owned(), Ident::new_raw(name, Span::call_site()))
+            Ident::new_raw(name, Span::call_site())
         }
         // Use the name as is
-        name => (name.to_owned(), Ident::new(name, Span::call_site())),
+        name => Ident::new(name, Span::call_site()),
     }
 }
 
@@ -514,11 +511,11 @@ mod tests {
         assert_eq!(gen.resolve_type_name(".Message").to_string(), "Message");
         assert_eq!(
             gen.resolve_type_name(".package.Message").to_string(),
-            quote! { r#package::Message }.to_string()
+            quote! { package_::Message }.to_string()
         );
         assert_eq!(
             gen.resolve_type_name(".package.Message.Inner").to_string(),
-            quote! { r#package::mod_Message::Inner }.to_string()
+            quote! { package_::Message_::Inner }.to_string()
         );
 
         gen.pkg_path.push("package".to_owned());
@@ -534,7 +531,7 @@ mod tests {
         );
         assert_eq!(
             gen.resolve_type_name(".Message.Item").to_string(),
-            quote! { super::super::mod_Message::Item }.to_string()
+            quote! { super::super::Message_::Item }.to_string()
         );
         assert_eq!(
             gen.resolve_type_name(".package.Message.Inner").to_string(),
@@ -542,7 +539,7 @@ mod tests {
         );
         assert_eq!(
             gen.resolve_type_name(".abc.d").to_string(),
-            quote! { super::super::r#abc::d }.to_string()
+            quote! { super::super::abc_::r#d }.to_string()
         );
     }
 
@@ -644,12 +641,12 @@ mod tests {
         let expected = quote! {
             Root
 
-            pub mod r#foo {
-                pub mod r#bar { Bar }
-                pub mod r#baz { Baz }
+            pub mod foo_ {
+                pub mod bar_ { Bar }
+                pub mod baz_ { Baz }
             }
 
-            pub mod r#bow { Bow }
+            pub mod bow_ { Bow }
         };
         assert_eq!(out.to_string(), expected.to_string());
     }

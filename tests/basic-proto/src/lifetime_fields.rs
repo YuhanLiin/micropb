@@ -24,12 +24,12 @@ impl<'a> FieldEncode for RefField<'a> {
 
 #[test]
 fn type_check() {
-    let nested = proto::nested::Nested::<'_> {
+    let nested = proto::nested_::Nested::<'_> {
         inner: RefField(&5),
     };
     let _: RefField = nested.inner;
 
-    let inner = proto::nested::mod_Nested::InnerMsg {
+    let inner = proto::nested_::Nested_::InnerMsg {
         val: Default::default(),
         val2: Default::default(),
         _has: Default::default(),

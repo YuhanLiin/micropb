@@ -94,6 +94,8 @@ Given the following Protobuf definition:
 ```proto
 syntax = "proto3";
 
+package example;
+
 message Example {
     int32 f_int32 = 1;
     int64 f_int64 = 2;
@@ -113,33 +115,35 @@ message Example {
 
 `micropb` will generate the following Rust structs and APIs:
 ```rust,ignore
-#[derive(Debug, Clone, PartialEq)]
-pub struct Example {
-    pub f_int32: i32,
-    pub f_int64: i64,
-    pub f_uint32: u32,
-    pub f_uint64: u64,
-    pub f_sint32: i32,
-    pub f_sint64: i64,
-    pub f_bool: bool,
-    pub f_fixed32: u32,
-    pub f_fixed64: u64,
-    pub f_sfixed32: u32,
-    pub f_sfixed64: u64,
-    pub f_float: f32,
-    pub f_double: f64,
-}
+pub mod example_ {
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct Example {
+        pub f_int32: i32,
+        pub f_int64: i64,
+        pub f_uint32: u32,
+        pub f_uint64: u64,
+        pub f_sint32: i32,
+        pub f_sint64: i64,
+        pub f_bool: bool,
+        pub f_fixed32: u32,
+        pub f_fixed64: u64,
+        pub f_sfixed32: u32,
+        pub f_sfixed64: u64,
+        pub f_float: f32,
+        pub f_double: f64,
+    }
 
-impl Default for Example {
-    // ...
-}
+    impl Default for Example {
+        // ...
+    }
 
-impl micropb::MessageDecode for Example {
-    // ...
-}
+    impl micropb::MessageDecode for Example {
+        // ...
+    }
 
-impl micropb::MessageEncode for Example {
-    // ...
+    impl micropb::MessageEncode for Example {
+        // ...
+    }
 }
 ```
 
@@ -216,7 +220,7 @@ pub struct Example {
     pub f_int64: i64,
     pub f_bool: bool,
 
-    pub _has: mod_Example::_Hazzer,
+    pub _has: Example_::_Hazzer,
 }
 
 impl Example {
@@ -232,7 +236,7 @@ impl Example {
     // Same APIs for other optional fields
 }
 
-pub mod mod_Example {
+pub mod Example_ {
     /// Tracks whether the optional fields are present
     #[derive(Debug, Default, Clone, PartialEq)]
     pub struct _Hazzer([u8; 1]);
@@ -309,10 +313,10 @@ message Example {
 ```rust,no_run
 #[derive(Debug, Clone, PartialEq)]
 pub struct Example {
-    pub number: Option<mod_Example::Number>,
+    pub number: Option<Example_::Number>,
 }
 
-pub mod mod_Example {
+pub mod Example_ {
     #[derive(Debug, Clone, PartialEq)]
     pub enum Number {
         Int(i32),
@@ -323,11 +327,11 @@ pub mod mod_Example {
 
 ### Packages
 
-`micropb` translates Protobuf packages into Rust modules. For example, if a Protobuf file has `package foo.bar`, all Rust types generated from the file will be in the `foo::bar` module. Code generated for Protobuf files without package specifiers will go into the module root.
+`micropb` translates Protobuf package names into Rust modules by appending an underscore. For example, if a Protobuf file has `package foo.bar;`, all Rust types generated from the file will be in the `foo_::bar_` module. Code generated for Protobuf files without package specifiers will go into the module root.
 
 ### Nested Types
 
-Rust does not allow a module to share its name with a struct, so nested messages and enums are defined in the `mod_Name` module, where `Name` is the message name. Oneof and hazzer definitions are also defined in `mod_Name`.
+Message names are also translated into Rust modules by appending an underscore, so oneofs and nested messages/enums are defined in the `Name_` module, where `Name` is the message name.
 
 ## Decoder and Encoder
 

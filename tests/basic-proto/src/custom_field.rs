@@ -51,10 +51,10 @@ impl FieldEncode for MockField {
 
 #[test]
 fn type_check() {
-    let nested = proto::nested::Nested::default();
+    let nested = proto::nested_::Nested::default();
     // custom_inner + _unknown, which are both MockField
     assert_eq!(
-        size_of::<proto::nested::Nested>(),
+        size_of::<proto::nested_::Nested>(),
         size_of::<MockField>() * 2
     );
     let _: MockField = nested.custom_inner;
@@ -67,7 +67,7 @@ fn type_check() {
 
 #[test]
 fn decode_custom_fields() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     let mut decoder = PbDecoder::new(
         [
             0x0A, 0x02, 0x08, 0x01, // Field 1
@@ -89,7 +89,7 @@ fn decode_custom_fields() {
 
 #[test]
 fn encode_custom_fields() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     assert_eq!(nested.compute_size(), 0);
     nested.custom_inner.tags.push(Tag::from_parts(1, 2));
     nested.custom_inner.tags.push(Tag::from_parts(3, 2));
@@ -106,7 +106,7 @@ fn encode_custom_fields() {
 
 #[test]
 fn decode_unknown() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     let mut decoder = PbDecoder::new(
         [
             0x30, 0x00, // Field 6

@@ -445,7 +445,7 @@ impl Config {
                 })?,
             ))
         } else {
-            Ok(sanitized_ident(name))
+            Ok((name.to_owned(), sanitized_ident(name)))
         }
     }
 

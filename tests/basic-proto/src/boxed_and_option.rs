@@ -10,7 +10,7 @@ mod proto {
 
 #[test]
 fn boxed_and_option() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
 
     // Option<Box<bool>>
     assert_eq!(basic.boolean, None);
@@ -67,7 +67,7 @@ fn boxed_collections() {
 
 #[test]
 fn decode() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     let mut decoder = PbDecoder::new(
         [
             0x58, 0x01, // field 11
@@ -85,7 +85,7 @@ fn decode() {
 
 #[test]
 fn encode() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     assert_eq!(basic.compute_size(), 0);
     basic.boolean = Some(Box::new(true));
     assert_eq!(basic.compute_size(), 2);
@@ -105,14 +105,14 @@ fn encode() {
 
 #[test]
 fn decode_boxed_oneof() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
 
     let mut decoder = PbDecoder::new([0x10, 0x00].as_slice());
     let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(
         nested.inner.as_ref().unwrap(),
-        &proto::nested::mod_Nested::Inner::Enumeration(Box::new(0.into()))
+        &proto::nested_::Nested_::Inner::Enumeration(Box::new(0.into()))
     );
 
     // Decode the InnerMsg variant twice to make sure the field isn't cleared between decodes
@@ -124,6 +124,6 @@ fn decode_boxed_oneof() {
     nested.decode(&mut decoder, len).unwrap();
     assert!(matches!(
         nested.inner.as_ref().unwrap(),
-        proto::nested::mod_Nested::Inner::InnerMsg(msg) if msg.val == Some(Box::new(-1)) && msg.val2() == Some(&1)
+        proto::nested_::Nested_::Inner::InnerMsg(msg) if msg.val == Some(Box::new(-1)) && msg.val2() == Some(&1)
     ));
 }

@@ -10,13 +10,13 @@ mod proto {
 fn recursive_types() {
     let mut recursive = proto::Recursive::default();
     let _: &Option<Box<proto::Recursive>> = &recursive.recursive;
-    let _: &Option<Box<proto::mod_Recursive::Of>> = &recursive.of;
-    recursive.of = Some(Box::new(proto::mod_Recursive::Of::Num(1)));
+    let _: &Option<Box<proto::Recursive_::Of>> = &recursive.of;
+    recursive.of = Some(Box::new(proto::Recursive_::Of::Num(1)));
     match *recursive.of.unwrap() {
-        proto::mod_Recursive::Of::Rec(r) => {
+        proto::Recursive_::Of::Rec(r) => {
             let _: Box<Recursive> = r;
         }
-        proto::mod_Recursive::Of::Num(i) => {
+        proto::Recursive_::Of::Num(i) => {
             let _: i32 = i;
         }
     }

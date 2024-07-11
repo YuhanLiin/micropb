@@ -32,16 +32,16 @@ impl MessageDecode for Empty {
 
 #[test]
 fn imported_types() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     let _basic: Empty = nested.basic;
-    nested.inner = Some(proto::nested::mod_Nested::Inner::Enumeration(
-        proto::basic::Enum(0),
+    nested.inner = Some(proto::nested_::Nested_::Inner::Enumeration(
+        proto::basic_::Enum(0),
     ));
 }
 
 #[test]
 fn encode_imported() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     nested._has.set_basic();
     assert_eq!(nested.compute_size(), 2);
 
@@ -52,7 +52,7 @@ fn encode_imported() {
 
 #[test]
 fn decode_imported() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     let mut decoder = PbDecoder::new([0x0A, 0].as_slice());
     let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();

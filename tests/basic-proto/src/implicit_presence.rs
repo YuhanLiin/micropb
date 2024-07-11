@@ -105,7 +105,7 @@ fn decode_explicit_presence() {
         enumeration: proto::Enum::Two,
         st: String::from("stuff"),
         bt: vec![0x01, 0x02],
-        _has: proto::mod_Optional::_Hazzer::default(),
+        _has: proto::Optional_::_Hazzer::default(),
     };
 
     // All fields should be written with 0s or empty strings

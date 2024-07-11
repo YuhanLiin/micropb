@@ -1,5 +1,6 @@
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
+use syn::ext::IdentExt;
 use syn::{Ident, Lifetime};
 
 use crate::config::OptionalRepr;
@@ -46,9 +47,12 @@ pub(crate) enum FieldType {
 pub(crate) struct Field<'a> {
     pub(crate) num: u32,
     pub(crate) ftype: FieldType,
+    /// Protobuf name
     pub(crate) name: &'a str,
+    /// Non-sanitized Rust name after renaming, used for accessor names
     pub(crate) rust_name: String,
-    pub(crate) raw_rust_name: Ident,
+    /// Sanitized Rust ident after renaming, used for field name and delegate name
+    pub(crate) san_rust_name: Ident,
     pub(crate) default: Option<&'a str>,
     pub(crate) boxed: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
@@ -71,9 +75,9 @@ impl<'a> Field<'a> {
         }
     }
 
-    pub(crate) fn custom_type_field(&self) -> Option<&str> {
+    pub(crate) fn custom_type_field(&self) -> Option<String> {
         if let FieldType::Custom(CustomField::Type(_)) = &self.ftype {
-            Some(&self.rust_name)
+            Some(self.san_rust_name.unraw().to_string())
         } else {
             None
         }
@@ -156,7 +160,7 @@ impl<'a> Field<'a> {
             ftype,
             name,
             rust_name,
-            raw_rust_name,
+            san_rust_name: raw_rust_name,
             default: proto.default_value().map(String::as_str),
             boxed,
             attrs,
@@ -204,7 +208,7 @@ impl<'a> Field<'a> {
             return quote! {};
         }
         let typ = self.generate_rust_type(gen);
-        let name = &self.raw_rust_name;
+        let name = &self.san_rust_name;
         let attrs = &self.attrs;
         quote! { #(#attrs)* pub #name : #typ, }
     }
@@ -236,7 +240,7 @@ impl<'a> Field<'a> {
         decoder: &Ident,
     ) -> TokenStream {
         let fnum = self.num;
-        let fname = &self.raw_rust_name;
+        let fname = &self.san_rust_name;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
         let extra_deref = self.boxed.then(|| quote! { * });
 
@@ -344,7 +348,7 @@ impl<'a> Field<'a> {
     }
 
     pub(crate) fn generate_encode(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
-        let fname = &self.raw_rust_name;
+        let fname = &self.san_rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
         let extra_deref = self.boxed.then(|| quote! { * });
         let wire_type = self.wire_type();
@@ -490,7 +494,7 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         ftype,
         name,
         rust_name: name.to_owned(),
-        raw_rust_name: Ident::new_raw(name, proc_macro2::Span::call_site()),
+        san_rust_name: Ident::new_raw(name, proc_macro2::Span::call_site()),
         default: None,
         boxed,
         attrs: vec![],
@@ -558,7 +562,7 @@ mod tests {
                 ftype: FieldType::Single(TypeSpec::Bool),
                 name: "field",
                 rust_name: "field".to_owned(),
-                raw_rust_name: Ident::new_raw("field", Span::call_site()),
+                san_rust_name: Ident::new_raw("field", Span::call_site()),
                 default: None,
                 boxed: false,
                 attrs: vec![],
@@ -587,7 +591,7 @@ mod tests {
                 ftype: FieldType::Single(TypeSpec::Bool),
                 name: "field",
                 rust_name: "renamed".to_owned(),
-                raw_rust_name: Ident::new("renamed", Span::call_site()),
+                san_rust_name: Ident::new("renamed", Span::call_site()),
                 default: Some("true"),
                 boxed: true,
                 attrs: parse_attributes("#[attr]").unwrap(),

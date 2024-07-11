@@ -6,13 +6,30 @@ message Msg {
     optional bool super = 1;
     optional bool i32 = 2;
     optional bool type = 3;
+    optional Self self_msg = 4;
+    optional Self.Self self_enum = 5;
 
     oneof try {
-        int32 as = 4;
+        int32 as = 10;
+    }
+
+    oneof self {
+        int32 crate = 12;
+    }
+}
+
+message Self {
+    enum Self {
+        SELF_SELF = 0;
+    }
+
+    oneof crate {
+        int32 self = 1;
     }
 }
 
 enum Enum {
     ENUM_1 = 1;
     ENUM_SELF = 2;
+    ENUM_ERROR = 3;
 }

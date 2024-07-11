@@ -8,20 +8,20 @@ mod proto {
 
 #[test]
 fn enum_test() {
-    assert_eq!(proto::basic::Enum::Zero, proto::basic::Enum(0));
-    assert_eq!(proto::basic::Enum::One, proto::basic::Enum(1));
-    assert_eq!(proto::basic::Enum::Two, proto::basic::Enum(2));
-    assert_eq!(proto::basic::Enum::Two, proto::basic::Enum::default());
+    assert_eq!(proto::basic_::Enum::Zero, proto::basic_::Enum(0));
+    assert_eq!(proto::basic_::Enum::One, proto::basic_::Enum(1));
+    assert_eq!(proto::basic_::Enum::Two, proto::basic_::Enum(2));
+    assert_eq!(proto::basic_::Enum::Two, proto::basic_::Enum::default());
     assert_eq!(
-        std::mem::size_of::<proto::basic::Enum>(),
+        std::mem::size_of::<proto::basic_::Enum>(),
         std::mem::size_of::<i32>()
     );
-    let _: i32 = proto::basic::Enum(0).0;
+    let _: i32 = proto::basic_::Enum(0).0;
 }
 
 #[test]
 fn basic_msg() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     assert!(!basic._has.dbl());
     assert_eq!(basic.dbl, 0.0);
     assert_eq!(basic.dbl(), None);
@@ -48,17 +48,17 @@ fn basic_msg() {
     assert_eq!(basic.mut_int64_num(), None);
 
     assert!(!basic._has.enumeration());
-    assert_eq!(basic.enumeration, proto::basic::Enum::One); // custom default
+    assert_eq!(basic.enumeration, proto::basic_::Enum::One); // custom default
     assert_eq!(basic.enumeration(), None);
     assert_eq!(basic.mut_enumeration(), None);
 
-    basic.enumeration = proto::basic::Enum::One;
+    basic.enumeration = proto::basic_::Enum::One;
     basic._has.set_enumeration();
     assert!(basic._has.enumeration());
-    assert_eq!(basic.enumeration, proto::basic::Enum::One);
-    assert_eq!(basic.enumeration(), Some(&proto::basic::Enum::One));
-    *basic.mut_enumeration().unwrap() = proto::basic::Enum::Zero;
-    assert_eq!(basic.enumeration(), Some(&proto::basic::Enum::Zero));
+    assert_eq!(basic.enumeration, proto::basic_::Enum::One);
+    assert_eq!(basic.enumeration(), Some(&proto::basic_::Enum::One));
+    *basic.mut_enumeration().unwrap() = proto::basic_::Enum::Zero;
+    assert_eq!(basic.enumeration(), Some(&proto::basic_::Enum::Zero));
 
     basic.set_int32_num(100);
     assert!(basic._has.int32_num());
@@ -70,7 +70,7 @@ fn basic_msg() {
 
 #[test]
 fn basic_type_check() {
-    let basic = proto::basic::BasicTypes::default();
+    let basic = proto::basic_::BasicTypes::default();
     let _: i32 = basic.int32_num;
     let _: i64 = basic.int64_num;
     let _: u32 = basic.uint32_num;
@@ -88,57 +88,57 @@ fn basic_type_check() {
 
 #[test]
 fn nested_msg() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     nested._has.set_basic();
-    assert_eq!(nested.basic(), Some(&proto::basic::BasicTypes::default()));
+    assert_eq!(nested.basic(), Some(&proto::basic_::BasicTypes::default()));
     assert!(nested.inner.is_none());
-    nested.inner = Some(proto::nested::mod_Nested::Inner::InnerMsg(
-        proto::nested::mod_Nested::InnerMsg::default(),
+    nested.inner = Some(proto::nested_::Nested_::Inner::InnerMsg(
+        proto::nested_::Nested_::InnerMsg::default(),
     ));
 
-    let _: proto::basic::BasicTypes = nested.basic;
-    let _: Option<proto::nested::mod_Nested::Inner> = nested.inner;
+    let _: proto::basic_::BasicTypes = nested.basic;
+    let _: Option<proto::nested_::Nested_::Inner> = nested.inner;
     match nested.inner.unwrap() {
-        proto::nested::mod_Nested::Inner::Scalar(v) => {
+        proto::nested_::Nested_::Inner::Scalar(v) => {
             let _: bool = v;
         }
-        proto::nested::mod_Nested::Inner::InnerMsg(m) => {
-            let _: proto::nested::mod_Nested::InnerMsg = m;
+        proto::nested_::Nested_::Inner::InnerMsg(m) => {
+            let _: proto::nested_::Nested_::InnerMsg = m;
             assert_eq!(m.val, 0);
         }
-        proto::nested::mod_Nested::Inner::Enumeration(e) => {
-            let _: proto::basic::Enum = e;
+        proto::nested_::Nested_::Inner::Enumeration(e) => {
+            let _: proto::basic_::Enum = e;
         }
-        proto::nested::mod_Nested::Inner::InnerEnum(e) => {
-            let _: proto::nested::mod_Nested::InnerEnum = e;
+        proto::nested_::Nested_::Inner::InnerEnum(e) => {
+            let _: proto::nested_::Nested_::InnerEnum = e;
         }
     }
 }
 
 #[test]
 fn proto3() {
-    let non_opt = proto::basic3::NonOptional::default();
+    let non_opt = proto::basic3_::NonOptional::default();
     let _: i32 = non_opt.non_opt;
     // no hazzer, so message size should equal field size
     assert_eq!(
-        std::mem::size_of::<proto::basic3::NonOptional>(),
+        std::mem::size_of::<proto::basic3_::NonOptional>(),
         std::mem::size_of::<i32>()
     );
 
-    let opt = proto::basic3::Optional::default();
+    let opt = proto::basic3_::Optional::default();
     let _: i32 = opt.opt;
-    let _: proto::basic3::ZST = opt.zst_opt;
-    let _: proto::basic3::ZST = opt.zst;
+    let _: proto::basic3_::ZST = opt.zst_opt;
+    let _: proto::basic3_::ZST = opt.zst;
     // regardless of whether the ZST is marked as optional, it should be treated as optional
     assert!(opt.zst().is_none());
     assert!(opt.zst_opt().is_none());
     // hazzer exists, so message size should exceed field size
-    assert!(std::mem::size_of::<proto::basic3::Optional>() > std::mem::size_of::<i32>());
+    assert!(std::mem::size_of::<proto::basic3_::Optional>() > std::mem::size_of::<i32>());
 }
 
 #[test]
 fn decode_varint() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     let mut decoder = PbDecoder::new([3, 0x08, 0x96, 0x01].as_slice()); // field 1
     basic.decode_len_delimited(&mut decoder).unwrap();
     assert_eq!(basic.int32_num(), Some(&150));
@@ -180,7 +180,7 @@ fn decode_varint() {
 
 #[test]
 fn encode_varint() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     assert_eq!(basic.compute_size(), 0);
     let mut encoder = PbEncoder::new(vec![]);
     basic.encode(&mut encoder).unwrap();
@@ -213,7 +213,7 @@ fn encode_varint() {
 
 #[test]
 fn decode_fixed() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     let mut decoder = PbDecoder::new(
         [
             0x39, 0x11, 0x00, 0x00, 0x12, // field 7
@@ -255,7 +255,7 @@ fn decode_fixed() {
 
 #[test]
 fn encode_fixed() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     basic.set_fixed32_num(0);
     assert_eq!(basic.compute_size(), 5);
     basic.set_fixed64_num(0xABCDEF);
@@ -289,11 +289,11 @@ fn encode_fixed() {
 
 #[test]
 fn decode_enum() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     let mut decoder = PbDecoder::new([0x70, 0x00].as_slice());
     let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
-    assert_eq!(basic.enumeration(), Some(&proto::basic::Enum::Zero));
+    assert_eq!(basic.enumeration(), Some(&proto::basic_::Enum::Zero));
 
     let mut decoder = PbDecoder::new(
         [
@@ -303,15 +303,15 @@ fn decode_enum() {
     );
     let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
-    assert_eq!(basic.enumeration(), Some(&proto::basic::Enum(-2)));
+    assert_eq!(basic.enumeration(), Some(&proto::basic_::Enum(-2)));
 }
 
 #[test]
 fn encode_enum() {
-    let mut basic = proto::basic::BasicTypes::default();
-    basic.set_enumeration(proto::basic::Enum::Two);
+    let mut basic = proto::basic_::BasicTypes::default();
+    basic.set_enumeration(proto::basic_::Enum::Two);
     assert_eq!(basic.compute_size(), 2);
-    basic.set_enumeration(proto::basic::Enum(130));
+    basic.set_enumeration(proto::basic_::Enum(130));
     assert_eq!(basic.compute_size(), 3);
 
     let mut encoder = PbEncoder::new(vec![]);
@@ -321,7 +321,7 @@ fn encode_enum() {
 
 #[test]
 fn decode_nested() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     let mut decoder = PbDecoder::new([0x0A, 0x00].as_slice());
     let len = decoder.as_reader().len();
     nested.decode(&mut decoder, len).unwrap();
@@ -342,7 +342,7 @@ fn decode_nested() {
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(
         nested.inner.as_ref().unwrap(),
-        &proto::nested::mod_Nested::Inner::Enumeration(0.into())
+        &proto::nested_::Nested_::Inner::Enumeration(0.into())
     );
 
     // Decode the InnerMsg variant twice to make sure the field isn't cleared between decodes
@@ -354,7 +354,7 @@ fn decode_nested() {
     nested.decode(&mut decoder, len).unwrap();
     assert!(matches!(
         nested.inner.as_ref().unwrap(),
-        proto::nested::mod_Nested::Inner::InnerMsg(msg) if msg.val() == Some(&-1) && msg.val2() == Some(&1)
+        proto::nested_::Nested_::Inner::InnerMsg(msg) if msg.val() == Some(&-1) && msg.val2() == Some(&1)
     ));
 
     let mut decoder = PbDecoder::new([0x20, 0x00].as_slice());
@@ -362,7 +362,7 @@ fn decode_nested() {
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(
         nested.inner.as_ref().unwrap(),
-        &proto::nested::mod_Nested::Inner::InnerEnum(0.into())
+        &proto::nested_::Nested_::Inner::InnerEnum(0.into())
     );
 
     let mut decoder = PbDecoder::new([0x28, 0x00].as_slice());
@@ -370,13 +370,13 @@ fn decode_nested() {
     nested.decode(&mut decoder, len).unwrap();
     assert_eq!(
         nested.inner.as_ref().unwrap(),
-        &proto::nested::mod_Nested::Inner::Scalar(false)
+        &proto::nested_::Nested_::Inner::Scalar(false)
     );
 }
 
 #[test]
 fn encode_nested() {
-    let mut nested = proto::nested::Nested::default();
+    let mut nested = proto::nested_::Nested::default();
     nested._has.set_basic();
     assert_eq!(nested.compute_size(), 2);
     nested.basic.set_int32_num(14);
@@ -388,8 +388,8 @@ fn encode_nested() {
     nested.clear_basic();
     assert_eq!(nested.compute_size(), 0);
 
-    nested.inner = Some(proto::nested::mod_Nested::Inner::InnerMsg({
-        let mut msg = proto::nested::mod_Nested::InnerMsg::default();
+    nested.inner = Some(proto::nested_::Nested_::Inner::InnerMsg({
+        let mut msg = proto::nested_::Nested_::InnerMsg::default();
         msg.set_val(-1);
         msg.set_val2(-3);
         msg
@@ -399,13 +399,13 @@ fn encode_nested() {
     nested.encode(&mut encoder).unwrap();
     assert_eq!(encoder.into_writer(), &[0x1A, 4, 0x08, 1, 0x10, 5]);
 
-    nested.inner = Some(proto::nested::mod_Nested::Inner::InnerEnum(0.into()));
+    nested.inner = Some(proto::nested_::Nested_::Inner::InnerEnum(0.into()));
     assert_eq!(nested.compute_size(), 2);
     let mut encoder = PbEncoder::new(vec![]);
     nested.encode(&mut encoder).unwrap();
     assert_eq!(encoder.into_writer(), &[0x20, 0x00]);
 
-    nested.inner = Some(proto::nested::mod_Nested::Inner::Scalar(false));
+    nested.inner = Some(proto::nested_::Nested_::Inner::Scalar(false));
     assert_eq!(nested.compute_size(), 2);
     let mut encoder = PbEncoder::new(vec![]);
     nested.encode(&mut encoder).unwrap();
@@ -414,7 +414,7 @@ fn encode_nested() {
 
 #[test]
 fn decode_non_optional() {
-    let mut non_opt = proto::basic3::NonOptional::default();
+    let mut non_opt = proto::basic3_::NonOptional::default();
     let mut decoder = PbDecoder::new([0x08, 0x96, 0x01].as_slice());
     let len = decoder.as_reader().len();
     non_opt.decode(&mut decoder, len).unwrap();
@@ -423,7 +423,7 @@ fn decode_non_optional() {
 
 #[test]
 fn encode_non_optional() {
-    let mut non_opt = proto::basic3::NonOptional::default();
+    let mut non_opt = proto::basic3_::NonOptional::default();
     assert_eq!(non_opt.compute_size(), 0);
     let mut encoder = PbEncoder::new(vec![]);
     non_opt.encode(&mut encoder).unwrap();
@@ -438,7 +438,7 @@ fn encode_non_optional() {
 
 #[test]
 fn decode_errors() {
-    let mut basic = proto::basic::BasicTypes::default();
+    let mut basic = proto::basic_::BasicTypes::default();
     let mut decoder = PbDecoder::new([0x00, 0x96, 0x01].as_slice()); // field 0
     let len = decoder.as_reader().len();
     assert_eq!(basic.decode(&mut decoder, len), Err(DecodeError::ZeroField));

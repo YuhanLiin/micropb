@@ -7,36 +7,36 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/gps_example.rs"));
 }
 
-fn gps_point(gps: proto::gps::Gps) -> proto::gps::mod_LocationData::Point {
-    use proto::gps::mod_LocationData::*;
+fn gps_point(gps: proto::gps_::Gps) -> proto::gps_::LocationData_::Point {
+    use proto::gps_::LocationData_::*;
 
     Point {
-        point: Some(mod_Point::Point::Gps(gps)),
+        point: Some(Point_::Point::Gps(gps)),
     }
 }
 
-fn accel_point(accel: proto::gps::Accel) -> proto::gps::mod_LocationData::Point {
-    use proto::gps::mod_LocationData::*;
+fn accel_point(accel: proto::gps_::Accel) -> proto::gps_::LocationData_::Point {
+    use proto::gps_::LocationData_::*;
 
     Point {
-        point: Some(mod_Point::Point::Accel(accel)),
+        point: Some(Point_::Point::Accel(accel)),
     }
 }
 
 #[inline]
-fn raw_point(raw: &[u8]) -> proto::gps::mod_LocationData::Point {
-    use proto::gps::mod_LocationData::*;
+fn raw_point(raw: &[u8]) -> proto::gps_::LocationData_::Point {
+    use proto::gps_::LocationData_::*;
 
     Point {
-        point: Some(mod_Point::Point::Raw(raw.try_into().unwrap())),
+        point: Some(Point_::Point::Raw(raw.try_into().unwrap())),
     }
 }
 
 #[no_panic]
-fn round_trip() -> Result<(proto::gps::LocationData, proto::gps::LocationData), &'static str> {
+fn round_trip() -> Result<(proto::gps_::LocationData, proto::gps_::LocationData), &'static str> {
     let mut points = micropb::heapless::Vec::new();
     points
-        .push(gps_point(proto::gps::Gps {
+        .push(gps_point(proto::gps_::Gps {
             time: 165547,
             longitude: -79.012343,
             latitude: 45.092345,
@@ -46,7 +46,7 @@ fn round_trip() -> Result<(proto::gps::LocationData, proto::gps::LocationData), 
         .unwrap();
     points
         .push(accel_point({
-            let mut a = proto::gps::Accel {
+            let mut a = proto::gps_::Accel {
                 time: 165577,
                 accel: -4.5,
                 ..Default::default()
@@ -59,11 +59,11 @@ fn round_trip() -> Result<(proto::gps::LocationData, proto::gps::LocationData), 
 
     let mut time_to_type = micropb::heapless::FnvIndexMap::new();
     // Can't unwrap these inserts, since the compiler will generate panics here
-    let _ = time_to_type.insert(165547, proto::gps::mod_LocationData::Type::Gps);
-    let _ = time_to_type.insert(165577, proto::gps::mod_LocationData::Type::Accel);
-    let _ = time_to_type.insert(165578, proto::gps::mod_LocationData::Type::Raw);
+    let _ = time_to_type.insert(165547, proto::gps_::LocationData_::Type::Gps);
+    let _ = time_to_type.insert(165577, proto::gps_::LocationData_::Type::Accel);
+    let _ = time_to_type.insert(165578, proto::gps_::LocationData_::Type::Raw);
 
-    let input_location = proto::gps::LocationData {
+    let input_location = proto::gps_::LocationData {
         checksum: 0xDEADBEEF,
         comment: micropb::heapless::String::try_from("nice").unwrap(),
         points,
@@ -77,7 +77,7 @@ fn round_trip() -> Result<(proto::gps::LocationData, proto::gps::LocationData), 
     let data = encoder.into_writer();
 
     let mut decoder = PbDecoder::new(data.as_slice());
-    let mut output_location = proto::gps::LocationData::default();
+    let mut output_location = proto::gps_::LocationData::default();
     output_location
         .decode(&mut decoder, data.len())
         .map_err(|_| "Decode error")?;

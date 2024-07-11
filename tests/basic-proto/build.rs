@@ -130,12 +130,6 @@ fn skip() {
 
 fn keyword_fields() {
     let mut generator = Generator::new();
-    // Only the `super` field was renamed, every other field are raw identifiers
-    generator.configure(
-        ".crate.self.async.Msg.super",
-        Config::new().rename_field("super_"),
-    );
-
     generator
         .compile_protos(
             &["proto/keyword_fields.proto"],
@@ -276,7 +270,7 @@ fn extern_import() {
     // Replace `BasicTypes` with an empty message
     gen2.extern_type_path(".basic.BasicTypes", "crate::extern_import::Empty")
         // Replace `Enum` with the generated enum type
-        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic::Enum")
+        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic_::Enum")
         .compile_protos(
             &["proto/nested.proto"],
             std::env::var("OUT_DIR").unwrap() + "/import_nested.rs",

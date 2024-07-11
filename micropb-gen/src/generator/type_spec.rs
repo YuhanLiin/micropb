@@ -6,6 +6,7 @@ use syn::{Ident, Lifetime};
 use crate::{
     config::IntSize,
     descriptor::{mod_FieldDescriptorProto::Type, FieldDescriptorProto},
+    generator::sanitized_ident,
     utils::{path_suffix, unescape_c_escape_string},
 };
 
@@ -263,7 +264,7 @@ impl TypeSpec {
             TypeSpec::Enum(tpath) => {
                 let enum_path = gen.resolve_type_name(tpath);
                 let enum_name =
-                    Ident::new(&path_suffix(tpath).to_case(Case::Pascal), Span::call_site());
+                    sanitized_ident(&path_suffix(tpath).to_case(Case::Pascal));
                 let variant = gen.enum_variant_name(default, &enum_name);
                 quote! { #enum_path::#variant }
             }
