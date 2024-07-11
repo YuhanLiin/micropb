@@ -1,5 +1,5 @@
 [package]
-name = "no-panic"
+name = "no-panicking"
 version = "0.0.0"
 edition = "2021"
 

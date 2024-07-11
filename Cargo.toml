@@ -8,11 +8,11 @@ members = [
     "tests/serde-proto",
     "tests/encode-only",
     "tests/decode-only",
-    "examples/no-panic",
+    "examples/no-panicking",
     "examples/file-descriptor-set",
 ]
 
-# For the no-panic example
+# For the no-panicking example
 [profile.release-lto]
 inherits = "release"
 opt-level = "s"
