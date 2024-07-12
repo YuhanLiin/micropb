@@ -9,7 +9,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - 1.70
+          - 1.70.0
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -27,7 +27,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - 1.70
+          - 1.70.0
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
