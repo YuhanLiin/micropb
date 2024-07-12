@@ -3,12 +3,13 @@ on: [push, pull_request]
 
 jobs:
   check_and_test:
-    name: check and test workspace
+    name: check and test workspace with ${{matrix.toolchain}}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         toolchain:
           - stable
+          - 1.70
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -20,12 +21,13 @@ jobs:
       - run: cargo test
 
   build:
-    name: build workspace
+    name: build workspace with ${{matrix.toolchain}}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         toolchain:
           - stable
+          - 1.70
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
