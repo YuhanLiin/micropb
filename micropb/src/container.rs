@@ -62,7 +62,7 @@ pub trait PbVec<T>: PbContainer + Deref<Target = [T]> {
     /// Returns error if the slice is longer than the fixed capacity of the vector type.
     fn pb_from_slice(s: &[T]) -> Result<Self, ()>
     where
-        T: Clone;
+        T: Copy;
 }
 
 /// UTF-8 string that stores characters.
@@ -157,7 +157,7 @@ mod impl_arrayvec {
         #[inline]
         fn pb_from_slice(s: &[T]) -> Result<Self, ()>
         where
-            T: Clone,
+            T: Copy,
         {
             Self::try_from(s).map_err(drop)
         }
@@ -235,7 +235,7 @@ mod impl_heapless {
         #[inline]
         fn pb_from_slice(s: &[T]) -> Result<Self, ()>
         where
-            T: Clone,
+            T: Copy,
         {
             Self::try_from(s).map_err(drop)
         }
@@ -368,7 +368,7 @@ mod impl_alloc {
         #[inline]
         fn pb_from_slice(s: &[T]) -> Result<Self, ()>
         where
-            T: Clone,
+            T: Copy,
         {
             Ok(Self::from(s))
         }
