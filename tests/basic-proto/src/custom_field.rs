@@ -7,7 +7,7 @@ use micropb::{
 
 mod proto {
     #![allow(clippy::all)]
-    #![allow(nonstandard_style, dead_code, unused_imports)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
     include!(concat!(env!("OUT_DIR"), "/custom_field.rs"));
 }
 

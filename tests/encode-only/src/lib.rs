@@ -5,7 +5,7 @@ use micropb::MessageEncode;
 
 mod example {
     #![allow(clippy::all)]
-    #![allow(nonstandard_style, dead_code, unused_imports)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
     include!(concat!(env!("OUT_DIR"), "/encode_only.rs"));
 }
 
