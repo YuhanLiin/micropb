@@ -17,7 +17,7 @@ mod utils;
 // This module was generated from example/file-descriptor-proto
 mod descriptor {
     #![allow(clippy::all)]
-    #![allow(warnings)]
+    #![allow(nonstandard_style, dead_code, unused_imports)]
     include!("descriptor.rs");
 
     pub use google_::protobuf_::*;

@@ -305,13 +305,13 @@ impl TypeSpec {
 
     pub(crate) fn generate_implicit_presence_check(&self, val_ref: &Ident) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => quote! { true },
-            TypeSpec::Enum(_) => quote! { #val_ref.0 != 0 },
-            TypeSpec::Float | TypeSpec::Double => quote! { *#val_ref != 0.0 },
-            TypeSpec::Bool => quote! { *#val_ref },
-            TypeSpec::Int(_, _) => quote! { *#val_ref != 0 },
-            TypeSpec::String { .. } => quote! { !#val_ref.is_empty() },
-            TypeSpec::Bytes { .. } => quote! { !#val_ref.is_empty() },
+            TypeSpec::Message(_) => quote! {},
+            TypeSpec::Enum(_) => quote! { if #val_ref.0 != 0 },
+            TypeSpec::Float | TypeSpec::Double => quote! { if *#val_ref != 0.0 },
+            TypeSpec::Bool => quote! { if *#val_ref },
+            TypeSpec::Int(_, _) => quote! { if *#val_ref != 0 },
+            TypeSpec::String { .. } => quote! { if !#val_ref.is_empty() },
+            TypeSpec::Bytes { .. } => quote! { if !#val_ref.is_empty() },
         }
     }
 
@@ -362,11 +362,12 @@ impl TypeSpec {
                 let val_expr = self
                     .generate_decode_val(gen, decoder)
                     .expect("ints should be packable");
-                let val_ref = Ident::new("val_ref", Span::call_site());
                 let setter = if implicit_presence {
+                    let val_ref = Ident::new("val_ref", Span::call_site());
                     let presence_check = self.generate_implicit_presence_check(&val_ref);
                     quote! {
-                        if #presence_check {
+                        let #val_ref = &val;
+                        #presence_check {
                             *#mut_ref = val as _;
                         }
                     }
@@ -375,7 +376,6 @@ impl TypeSpec {
                 };
                 quote! {
                     let val = #val_expr?;
-                    let #val_ref = &val;
                     #setter
                 }
             }

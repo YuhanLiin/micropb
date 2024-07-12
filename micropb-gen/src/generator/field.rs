@@ -392,10 +392,10 @@ impl<'a> Field<'a> {
                 let check = if let FieldType::Optional(..) = self.ftype {
                     quote! { if let Some(#val_ref) = self.#fname() }
                 } else {
-                    let implicit_presence = tspec.generate_implicit_presence_check(&val_ref);
+                    let implicit_presence_check = tspec.generate_implicit_presence_check(&val_ref);
                     quote! {
                         let #val_ref = &#extra_deref self.#fname;
-                        if #implicit_presence
+                        #implicit_presence_check
                     }
                 };
                 let stmts = match &func_type {

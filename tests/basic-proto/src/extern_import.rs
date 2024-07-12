@@ -2,7 +2,7 @@ use micropb::{DecodeError, MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod proto {
     #![allow(clippy::all)]
-    #![allow(warnings)]
+    #![allow(nonstandard_style, dead_code, unused_imports)]
     include!(concat!(env!("OUT_DIR"), "/import_basic.rs"));
     include!(concat!(env!("OUT_DIR"), "/import_nested.rs"));
 }

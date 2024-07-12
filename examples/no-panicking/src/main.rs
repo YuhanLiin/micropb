@@ -3,7 +3,7 @@ use no_panic::no_panic;
 
 mod proto {
     #![allow(clippy::all)]
-    #![allow(warnings)]
+    #![allow(nonstandard_style, dead_code, unused_imports)]
     include!(concat!(env!("OUT_DIR"), "/gps_example.rs"));
 }
 

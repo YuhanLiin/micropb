@@ -4,7 +4,7 @@ use micropb::{DecodeError, MessageDecode, PbDecoder};
 
 mod proto {
     #![allow(clippy::all)]
-    #![allow(warnings)]
+    #![allow(nonstandard_style, dead_code, unused_imports)]
     include!(concat!(env!("OUT_DIR"), "/container_heapless.rs"));
 }
 

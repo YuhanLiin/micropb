@@ -4,7 +4,7 @@ use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod proto {
     #![allow(clippy::all)]
-    #![allow(warnings)]
+    #![allow(nonstandard_style, dead_code, unused_imports)]
     include!(concat!(env!("OUT_DIR"), "/int_type.rs"));
 }
 

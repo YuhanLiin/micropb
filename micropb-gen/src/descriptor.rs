@@ -519,7 +519,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#edition;
                             {
                                 let val = decoder.decode_int32().map(|n| Edition(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_edition();
@@ -710,7 +709,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#start;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_start();
@@ -719,7 +717,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#end;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_end();
@@ -866,7 +863,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#start;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_start();
@@ -875,7 +871,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#end;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_end();
@@ -1430,7 +1425,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#number;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_number();
@@ -1455,7 +1449,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#reserved;
                                 {
                                     let val = decoder.decode_bool()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_reserved();
@@ -1464,7 +1457,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#repeated;
                                 {
                                     let val = decoder.decode_bool()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_repeated();
@@ -1668,7 +1660,6 @@ pub mod google_ {
                                     .map(|n| ExtensionRangeOptions_::VerificationState(
                                         n as _,
                                     ))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_verification();
@@ -2301,7 +2292,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#number;
                             {
                                 let val = decoder.decode_int32()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_number();
@@ -2312,7 +2302,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FieldDescriptorProto_::Label(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_label();
@@ -2323,7 +2312,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FieldDescriptorProto_::Type(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_type();
@@ -2356,7 +2344,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#oneof_index;
                             {
                                 let val = decoder.decode_int32()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_oneof_index();
@@ -2380,7 +2367,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#proto3_optional;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_proto3_optional();
@@ -2669,7 +2655,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#start;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_start();
@@ -2678,7 +2663,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#end;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_end();
@@ -3071,7 +3055,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#number;
                             {
                                 let val = decoder.decode_int32()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_number();
@@ -3608,7 +3591,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#client_streaming;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_client_streaming();
@@ -3617,7 +3599,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#server_streaming;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_server_streaming();
@@ -4705,7 +4686,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#java_multiple_files;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_java_multiple_files();
@@ -4714,7 +4694,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#java_generate_equals_and_hash;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_java_generate_equals_and_hash();
@@ -4723,7 +4702,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#java_string_check_utf8;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_java_string_check_utf8();
@@ -4734,7 +4712,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FileOptions_::OptimizeMode(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_optimize_for();
@@ -4751,7 +4728,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#cc_generic_services;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_cc_generic_services();
@@ -4760,7 +4736,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#java_generic_services;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_java_generic_services();
@@ -4769,7 +4744,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#py_generic_services;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_py_generic_services();
@@ -4778,7 +4752,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated();
@@ -4787,7 +4760,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#cc_enable_arenas;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_cc_enable_arenas();
@@ -5211,7 +5183,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#message_set_wire_format;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_message_set_wire_format();
@@ -5220,7 +5191,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#no_standard_descriptor_accessor;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_no_standard_descriptor_accessor();
@@ -5229,7 +5199,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated();
@@ -5238,7 +5207,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#map_entry;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_map_entry();
@@ -5248,7 +5216,6 @@ pub mod google_ {
                                 .r#deprecated_legacy_json_field_conflicts;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated_legacy_json_field_conflicts();
@@ -5415,7 +5382,6 @@ pub mod google_ {
                                     let val = decoder
                                         .decode_int32()
                                         .map(|n| super::Edition(n as _))?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_edition();
@@ -5685,7 +5651,6 @@ pub mod google_ {
                                     let val = decoder
                                         .decode_int32()
                                         .map(|n| super::Edition(n as _))?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_edition_introduced();
@@ -5696,7 +5661,6 @@ pub mod google_ {
                                     let val = decoder
                                         .decode_int32()
                                         .map(|n| super::Edition(n as _))?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_edition_deprecated();
@@ -5715,7 +5679,6 @@ pub mod google_ {
                                     let val = decoder
                                         .decode_int32()
                                         .map(|n| super::Edition(n as _))?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_edition_removed();
@@ -6367,7 +6330,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FieldOptions_::CType(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_ctype();
@@ -6376,7 +6338,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#packed;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_packed();
@@ -6387,7 +6348,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FieldOptions_::JSType(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_jstype();
@@ -6396,7 +6356,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#lazy;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_lazy();
@@ -6405,7 +6364,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#unverified_lazy;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_unverified_lazy();
@@ -6414,7 +6372,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated();
@@ -6423,7 +6380,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#weak;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_weak();
@@ -6432,7 +6388,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#debug_redact;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_debug_redact();
@@ -6443,7 +6398,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FieldOptions_::OptionRetention(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_retention();
@@ -6859,7 +6813,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#allow_alias;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_allow_alias();
@@ -6868,7 +6821,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated();
@@ -6878,7 +6830,6 @@ pub mod google_ {
                                 .r#deprecated_legacy_json_field_conflicts;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated_legacy_json_field_conflicts();
@@ -7136,7 +7087,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated();
@@ -7152,7 +7102,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#debug_redact;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_debug_redact();
@@ -7321,7 +7270,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated();
@@ -7547,7 +7495,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated();
@@ -7558,7 +7505,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| MethodOptions_::IdempotencyLevel(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_idempotency_level();
@@ -7731,7 +7677,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#is_extension;
                                 {
                                     let val = decoder.decode_bool()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_is_extension();
@@ -8097,7 +8042,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#positive_int_value;
                             {
                                 let val = decoder.decode_varint64()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_positive_int_value();
@@ -8106,7 +8050,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#negative_int_value;
                             {
                                 let val = decoder.decode_int64()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_negative_int_value();
@@ -8115,7 +8058,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#double_value;
                             {
                                 let val = decoder.decode_double()?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_double_value();
@@ -8595,7 +8537,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FeatureSet_::FieldPresence(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_field_presence();
@@ -8606,7 +8547,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FeatureSet_::EnumType(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_enum_type();
@@ -8617,7 +8557,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FeatureSet_::RepeatedFieldEncoding(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_repeated_field_encoding();
@@ -8628,7 +8567,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FeatureSet_::Utf8Validation(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_utf8_validation();
@@ -8639,7 +8577,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FeatureSet_::MessageEncoding(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_message_encoding();
@@ -8650,7 +8587,6 @@ pub mod google_ {
                                 let val = decoder
                                     .decode_int32()
                                     .map(|n| FeatureSet_::JsonFormat(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_json_format();
@@ -8853,7 +8789,6 @@ pub mod google_ {
                                     let val = decoder
                                         .decode_int32()
                                         .map(|n| super::Edition(n as _))?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_edition();
@@ -9027,7 +8962,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#minimum_edition;
                             {
                                 let val = decoder.decode_int32().map(|n| Edition(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_minimum_edition();
@@ -9036,7 +8970,6 @@ pub mod google_ {
                             let mut_ref = &mut self.r#maximum_edition;
                             {
                                 let val = decoder.decode_int32().map(|n| Edition(n as _))?;
-                                let val_ref = &val;
                                 *mut_ref = val as _;
                             };
                             self._has.set_maximum_edition();
@@ -9579,7 +9512,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#begin;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_begin();
@@ -9588,7 +9520,6 @@ pub mod google_ {
                                 let mut_ref = &mut self.r#end;
                                 {
                                     let val = decoder.decode_int32()?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_end();
@@ -9599,7 +9530,6 @@ pub mod google_ {
                                     let val = decoder
                                         .decode_int32()
                                         .map(|n| Annotation_::Semantic(n as _))?;
-                                    let val_ref = &val;
                                     *mut_ref = val as _;
                                 };
                                 self._has.set_semantic();
