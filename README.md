@@ -1,7 +1,7 @@
 # Micropb
 
 `micropb` is a [Rust](https://www.rust-lang.org/) implementation of the [Protobuf](https://protobuf.dev/) format, with a focus on embedded environments. `micropb` generates a Rust module from `.proto` files.
-.
+
 Unlike other Protobuf libraries, `micropb` is aimed for constrained environments where no allocator is available. Additionally, it aims to be highly configurable, allowing the user to customize the generated code on a per-field granularity. As such, `micropb` offers a different set of tradeoffs compared to other Protobuf libraries.
 
 #### Advantages
