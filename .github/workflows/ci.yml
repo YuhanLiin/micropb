@@ -35,7 +35,7 @@ jobs:
       - run: cargo build --workspace --exclude no-panicking
       - run: cargo build -p no-panicking --profile release-lto
 
-  miri test:
+  miri:
     name: miri testing on unsafe code
     runs-on: ubuntu-latest
     steps:
