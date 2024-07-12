@@ -55,7 +55,7 @@ fn encode() {
     basic.set_int32_num(-1);
     assert_eq!(basic.compute_size(), 11);
     // Regardless of the int type, fixed numbers have fixed size
-    basic.set_sfixed32_num(i64::min_value());
+    basic.set_sfixed32_num(i64::MIN);
     assert_eq!(basic.compute_size(), 16);
 
     let mut encoder = PbEncoder::new(vec![]);

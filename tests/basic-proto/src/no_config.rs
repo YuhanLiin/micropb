@@ -151,7 +151,7 @@ fn decode_varint() {
     );
     let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
-    assert_eq!(basic.int64_num(), Some(&i64::min_value()));
+    assert_eq!(basic.int64_num(), Some(&i64::MIN));
 
     let mut decoder = PbDecoder::new(
         [
@@ -163,7 +163,7 @@ fn decode_varint() {
     let len = decoder.as_reader().len();
     basic.decode(&mut decoder, len).unwrap();
     assert_eq!(basic.uint32_num(), Some(&150));
-    assert_eq!(basic.uint64_num(), Some(&u64::max_value()));
+    assert_eq!(basic.uint64_num(), Some(&u64::MAX));
 
     let mut decoder = PbDecoder::new(
         [
