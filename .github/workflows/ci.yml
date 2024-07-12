@@ -1,0 +1,48 @@
+name: test suite
+on: [push, pull_request]
+
+jobs:
+  check_and_test:
+    name: check and test workspace
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@${{ matrix.toolchain }}
+      - uses: arduino/setup-protoc@v3
+      - run: cargo clippy --tests -- -Dwarnings
+      - run: cargo test
+
+  build:
+    name: build workspace
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@${{ matrix.toolchain }}
+      - uses: arduino/setup-protoc@v3
+      - run: cargo build --workspace --exclude no-panicking
+      - run: cargo build -p no-panicking --profile release-lto
+
+  miri test:
+    name: miri testing on unsafe code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: arduino/setup-protoc@v3
+      - run: MIRIFLAGS=-"Zmiri-tree-borrows" cargo +nightly miri test -p micropb -p basic-proto
+
+  documentation:
+    name: document released packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: RUSTDOCFLAGS="-D warnings" cargo doc -p micropb -p micropb-gen
