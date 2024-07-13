@@ -232,7 +232,6 @@ impl<W: PbWrite> PbEncoder<W> {
         self.write(&u.to_le_bytes())
     }
 
-    #[inline]
     /// Encode a 32-bit number as `fixed64`.
     ///
     /// Avoids 64-bit operations, which can have benefits on 32-bit architectures.
@@ -255,7 +254,6 @@ impl<W: PbWrite> PbEncoder<W> {
         self.encode_fixed64(i as u64)
     }
 
-    #[inline]
     /// Encode a 32-bit number as `sfixed64`.
     ///
     /// Avoids 64-bit operations, which can have benefits on 32-bit architectures.

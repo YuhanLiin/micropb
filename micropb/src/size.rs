@@ -87,6 +87,7 @@ pub const fn sizeof_len_record(len: usize) -> usize {
     len + sizeof_varint32(len as u32)
 }
 
+#[inline]
 /// Calculate size of a key-value pair in a map. Does not include the length prefix.
 pub fn sizeof_map_elem<K: ?Sized, V: ?Sized, FK: FnMut(&K) -> usize, FV: FnMut(&V) -> usize>(
     key: &K,

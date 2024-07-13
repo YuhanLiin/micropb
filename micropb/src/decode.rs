@@ -254,7 +254,6 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(b)
     }
 
-    #[inline]
     /// Decode an `uint32`.
     pub fn decode_varint32(&mut self) -> Result<u32, DecodeError<R::Error>> {
         let b = self.get_byte()?;
@@ -281,7 +280,6 @@ impl<R: PbRead> PbDecoder<R> {
         Err(DecodeError::VarIntLimit)
     }
 
-    #[inline]
     #[cfg(feature = "enable-64bit")]
     /// Decode an `uint64`.
     pub fn decode_varint64(&mut self) -> Result<u64, DecodeError<R::Error>> {
