@@ -421,6 +421,10 @@ For more information on custom fields, see `Config::custom_field` in `micropb-ge
 - **`container-heapless`**: Implements container traits on `Vec`, `String`, and `IndexMap` from [`heapless`](https://docs.rs/heapless/latest/heapless), allowing them to be used as container fields. Corresponds with `Generator::use_container_heapless` from `micropb-gen`. Also implements `PbWrite` on `Vec`.
 - **`container-arrayvec`**: Implements container traits on `ArrayVec` and `ArrayString` from [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), allowing them to be used as container fields. Corresponds with `Generator::use_container_arrayvec` from `micropb-gen`. Also implements `PbWrite` on `ArrayVec`.
 
+## MSRV
+
+The oldest version of Rust that `micropb` supports is **1.74.0**.
+
 ## License
 
 `micropb` is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
