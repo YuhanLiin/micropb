@@ -1,0 +1,17 @@
+[package]
+authors = ["YuhanLiin <yuhanliin+github@protonmail.com>"]
+edition = "2021"
+readme = "README.md"
+name = "arm-app"
+version = "0.0.0"
+
+[dependencies]
+cortex-m = "0.6.0"
+cortex-m-rt = "0.6.10"
+cortex-m-semihosting = "0.3.3"
+panic-halt = "0.2.0"
+
+micropb = { path = "../../micropb", features = ["container-heapless"] }
+
+[build-dependencies]
+micropb-gen = { path = "../../micropb-gen" }

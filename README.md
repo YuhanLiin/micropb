@@ -84,6 +84,8 @@ fn main() {
 }
 ```
 
+For a concrete example of `micropb` on an embedded application, see [`arm-app`](examples/arm-app).
+
 ## Generated Code
 
 ### Messages

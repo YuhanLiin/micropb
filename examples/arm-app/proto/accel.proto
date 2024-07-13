@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package accel;
+
+message Accel {
+    float acceleration = 1;
+    float gyro = 2;
+}

@@ -10,6 +10,7 @@ members = [
     "tests/decode-only",
     "examples/no-panicking",
     "examples/file-descriptor-set",
+    "examples/arm-app",
 ]
 
 # For the no-panicking example

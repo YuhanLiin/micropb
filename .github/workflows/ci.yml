@@ -34,8 +34,26 @@ jobs:
         with:
           toolchain: ${{matrix.toolchain}}
       - uses: arduino/setup-protoc@v3
-      - run: cargo build --workspace --exclude no-panicking
+      - run: cargo build --workspace --exclude no-panicking --exclude arm-app
       - run: cargo build -p no-panicking --profile release-lto
+
+  build-arm-app:
+    name: build arm-app with ${{matrix.toolchain}}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - 1.74.0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{matrix.toolchain}}
+          target: thumbv7em-none-eabihf
+      - uses: arduino/setup-protoc@v3
+      - run: cd examples/arm-app
+      - run: cargo build --profile release-lto
 
   miri:
     name: miri testing on unsafe code

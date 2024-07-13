@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package packet;
+
+import "google/protobuf/timestamp.proto";
+import "gps.proto";
+import "accel.proto";
+import "raw.proto";
+
+message Log {
+    google.protobuf.Timestamp time = 1;
+    oneof msg {
+        gps.Gps gps = 2;
+        accel.Accel accel = 3;
+        raw.RawMsg raw = 4;
+    }
+}
+
+message LogBundle {
+    repeated Log logs = 1;
+}
+
+message Init {
+    sint32 id = 1;
+    string version = 2;
+}
+
+message Packet {
+    oneof msg {
+        Init init = 1;
+        LogBundle logs = 2;
+    }
+}

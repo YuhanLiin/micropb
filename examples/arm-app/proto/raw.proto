@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package raw;
+
+message RawMsg {
+    uint32 type = 1;
+    bytes payload = 2;
+}
