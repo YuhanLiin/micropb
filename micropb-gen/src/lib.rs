@@ -26,7 +26,7 @@ mod descriptor {
 use std::{
     env,
     ffi::OsStr,
-    fs,
+    fmt, fs,
     io::{self, Write},
     path::{Path, PathBuf},
     process::Command,
@@ -35,6 +35,7 @@ use std::{
 pub use config::Config;
 pub use generator::Generator;
 use micropb::{MessageDecode, PbDecoder};
+use pathtree::PathTree;
 
 #[derive(Debug, Clone, Copy, Default)]
 /// Whether to include encode and decode logic
@@ -58,10 +59,43 @@ impl EncodeDecode {
     }
 }
 
+type WarningCb = fn(fmt::Arguments);
+
+fn warn_cargo_build(args: fmt::Arguments) {
+    println!("cargo:warning={args}");
+}
+
+#[allow(clippy::new_without_default)]
 impl Generator {
     /// Create new generator with default settings
+    ///
+    /// By default, the generator assumes it's running inside a Cargo build script, so all warnings
+    /// will be emitted as compiler warnings. If the generator is not running inside a build
+    /// script, use [`with_warning_callback`](Self::with_warning_callback).
     pub fn new() -> Self {
-        Self::default()
+        Self::with_warning_callback(warn_cargo_build)
+    }
+
+    /// Create a generator with a custom callback for emitting warnings
+    pub fn with_warning_callback(warning_cb: WarningCb) -> Self {
+        let config_tree = PathTree::new(Box::new(Config::new()));
+        Self {
+            syntax: Default::default(),
+            pkg_path: Default::default(),
+            pkg: Default::default(),
+            type_path: Default::default(),
+
+            warning_cb,
+
+            encode_decode: Default::default(),
+            retain_enum_prefix: Default::default(),
+            format: true,
+            fdset_path: Default::default(),
+            protoc_args: Default::default(),
+
+            config_tree,
+            extern_paths: Default::default(),
+        }
     }
 
     /// Apply code generator configurations to Protobuf types and fields. See
@@ -301,6 +335,8 @@ impl Generator {
             .expect("file descriptor set decode failed");
         let code = self.generate_fdset(&fdset)?;
 
+        self.warn_unused_configs();
+
         #[cfg(feature = "format")]
         let output = if self.format {
             prettyplease::unparse(
@@ -315,7 +351,6 @@ impl Generator {
         let mut file = fs::File::create(out_filename)?;
         file.write_all(output.as_bytes())?;
 
-        self.warn_unused_configs();
         Ok(())
     }
 

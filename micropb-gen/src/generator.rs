@@ -23,6 +23,7 @@ use crate::{
 };
 
 use self::message::Message;
+use super::WarningCb;
 
 pub(crate) mod field;
 pub(crate) mod message;
@@ -148,10 +149,12 @@ pub(crate) enum Syntax {
 ///     .unwrap();
 /// ```
 pub struct Generator {
-    syntax: Syntax,
-    pkg_path: Vec<String>,
-    pkg: String,
-    type_path: RefCell<Vec<String>>,
+    pub(crate) syntax: Syntax,
+    pub(crate) pkg_path: Vec<String>,
+    pub(crate) pkg: String,
+    pub(crate) type_path: RefCell<Vec<String>>,
+
+    pub(crate) warning_cb: WarningCb,
 
     pub(crate) encode_decode: EncodeDecode,
     pub(crate) retain_enum_prefix: bool,
@@ -163,33 +166,11 @@ pub struct Generator {
     pub(crate) extern_paths: HashMap<String, TokenStream>,
 }
 
-impl Default for Generator {
-    fn default() -> Self {
-        let config_tree = PathTree::new(Box::new(Config::new()));
-        Self {
-            syntax: Default::default(),
-            pkg_path: Default::default(),
-            pkg: Default::default(),
-            type_path: Default::default(),
-
-            encode_decode: Default::default(),
-            retain_enum_prefix: Default::default(),
-            format: true,
-            fdset_path: Default::default(),
-            protoc_args: Default::default(),
-
-            config_tree,
-            extern_paths: Default::default(),
-        }
-    }
-}
-
 impl Generator {
     pub(crate) fn warn_unused_configs(&self) {
         self.config_tree.find_all_unaccessed(|_node, path| {
             let path = path.join(".");
-            // TODO generate real warnings
-            println!("Unused configuration path: \"{path}\". Make sure the path points to an actual Protobuf type or module.");
+            (self.warning_cb)(format_args!("Unused configuration path: \"{path}\". Make sure the path points to an actual Protobuf type or module."));
         });
     }
 
@@ -488,7 +469,7 @@ mod tests {
 
     #[test]
     fn enum_variant_name() {
-        let mut gen = Generator::default();
+        let mut gen = Generator::new();
         let enum_name = Ident::new("Enum", Span::call_site());
         assert_eq!(
             gen.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
@@ -508,7 +489,7 @@ mod tests {
 
     #[test]
     fn resolve_type_name() {
-        let mut gen = Generator::default();
+        let mut gen = Generator::new();
         // currently in root-level module
         assert_eq!(gen.resolve_type_name(".Message").to_string(), "Message");
         assert_eq!(
@@ -556,7 +537,7 @@ mod tests {
         value[0].set_number(1);
         value[1].set_name("OTHER_VALUE".to_owned());
         value[1].set_number(2);
-        let gen = Generator::default();
+        let gen = Generator::new();
 
         let out = gen.generate_enum_decl(&name, &value, IntSize::S32, &[]);
         let expected = quote! {
@@ -592,7 +573,7 @@ mod tests {
         value[0].set_number(1);
         let gen = Generator {
             retain_enum_prefix: true,
-            ..Default::default()
+            ..Generator::new()
         };
 
         let out = gen.generate_enum_decl(

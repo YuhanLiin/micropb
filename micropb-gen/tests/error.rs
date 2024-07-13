@@ -1,6 +1,13 @@
+use std::fmt::Arguments;
+
 use micropb_gen::{config::CustomField, Config, Generator};
 
 use tempfile::NamedTempFile;
+
+// If we get any warnings, fail the test
+fn warn_panic(args: Arguments) {
+    panic!("Unexpected warning: {args}");
+}
 
 fn compile(mut gen: Generator) -> String {
     let file = NamedTempFile::new().unwrap();
@@ -12,7 +19,7 @@ fn compile(mut gen: Generator) -> String {
 
 #[test]
 fn no_string() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(".", Config::new().vec_type("Vec").map_type("HashMap"));
     let err = compile(gen);
     dbg!(&err);
@@ -22,7 +29,7 @@ fn no_string() {
 
 #[test]
 fn no_vec_bytes() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(".", Config::new().string_type("String").map_type("HashMap"));
     gen.configure(".test.Msg.list", Config::new().vec_type("Vec"));
     let err = compile(gen);
@@ -33,7 +40,7 @@ fn no_vec_bytes() {
 
 #[test]
 fn no_vec_repeated() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(".", Config::new().string_type("String").map_type("HashMap"));
     gen.configure(".test.Msg.bt", Config::new().vec_type("Vec"));
     let err = compile(gen);
@@ -44,7 +51,7 @@ fn no_vec_repeated() {
 
 #[test]
 fn no_map() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(".", Config::new().string_type("String").vec_type("Vec"));
     let err = compile(gen);
     dbg!(&err);
@@ -54,7 +61,7 @@ fn no_map() {
 
 #[test]
 fn long_default_string() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_heapless();
     gen.configure(".test.Msg.st", Config::new().max_bytes(2));
     let err = compile(gen);
@@ -66,7 +73,7 @@ fn long_default_string() {
 
 #[test]
 fn long_default_bytes() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_heapless();
     gen.configure(".test.Msg.bt", Config::new().max_bytes(2));
     let err = compile(gen);
@@ -78,7 +85,7 @@ fn long_default_bytes() {
 
 #[test]
 fn parse_string_type() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(
         ".",
         Config::new()
@@ -94,7 +101,7 @@ fn parse_string_type() {
 
 #[test]
 fn parse_vec_type() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(
         ".",
         Config::new()
@@ -110,7 +117,7 @@ fn parse_vec_type() {
 
 #[test]
 fn parse_map_type() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(
         ".",
         Config::new()
@@ -126,7 +133,7 @@ fn parse_map_type() {
 
 #[test]
 fn parse_rename() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg.kv", Config::new().rename_field("two words"));
     let err = compile(gen);
@@ -137,7 +144,7 @@ fn parse_rename() {
 
 #[test]
 fn parse_type_attr() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg.of", Config::new().type_attributes(""));
     gen.configure(".test.Msg._has", Config::new().type_attributes(""));
@@ -150,7 +157,7 @@ fn parse_type_attr() {
 
 #[test]
 fn parse_type_attr_hazzer() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg._has", Config::new().type_attributes("error"));
     let err = compile(gen);
@@ -161,7 +168,7 @@ fn parse_type_attr_hazzer() {
 
 #[test]
 fn parse_type_attr_enum() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Enum", Config::new().type_attributes("error"));
     let err = compile(gen);
@@ -172,7 +179,7 @@ fn parse_type_attr_enum() {
 
 #[test]
 fn parse_type_attr_oneof() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg.of", Config::new().type_attributes("error"));
     let err = compile(gen);
@@ -183,7 +190,7 @@ fn parse_type_attr_oneof() {
 
 #[test]
 fn parse_field_attr() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg.kv", Config::new().field_attributes("error"));
     let err = compile(gen);
@@ -194,7 +201,7 @@ fn parse_field_attr() {
 
 #[test]
 fn parse_field_attr_hazzer() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg._has", Config::new().field_attributes("error"));
     let err = compile(gen);
@@ -205,7 +212,7 @@ fn parse_field_attr_hazzer() {
 
 #[test]
 fn parse_field_attr_unknown() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg", Config::new().unknown_handler("Handler"));
     gen.configure(
@@ -220,7 +227,7 @@ fn parse_field_attr_unknown() {
 
 #[test]
 fn parse_field_attr_oneof() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg.of", Config::new().field_attributes("error"));
     let err = compile(gen);
@@ -231,7 +238,7 @@ fn parse_field_attr_oneof() {
 
 #[test]
 fn parse_unknown_handler() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(".test.Msg", Config::new().unknown_handler("Type<"));
     let err = compile(gen);
@@ -242,7 +249,7 @@ fn parse_unknown_handler() {
 
 #[test]
 fn parse_custom_type() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(
         ".test.Msg.kv",
@@ -256,7 +263,7 @@ fn parse_custom_type() {
 
 #[test]
 fn parse_custom_type_oneof() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(
         ".test.Msg.of",
@@ -270,7 +277,7 @@ fn parse_custom_type_oneof() {
 
 #[test]
 fn parse_custom_delegate() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(
         ".test.Msg.st",
@@ -284,7 +291,7 @@ fn parse_custom_delegate() {
 
 #[test]
 fn parse_custom_type_delegate() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(
         ".test.Msg.of",
@@ -298,7 +305,7 @@ fn parse_custom_type_delegate() {
 
 #[test]
 fn unfound_delegate() {
-    let mut gen = Generator::new();
+    let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_alloc();
     gen.configure(
         ".test.Msg.st",
@@ -308,4 +315,15 @@ fn unfound_delegate() {
     dbg!(&err);
     assert!(err.contains("(.test.Msg.st)"));
     assert!(err.contains("Delegate field refers to custom field of kv"));
+}
+
+#[test]
+#[should_panic = "Unused configuration path: \".Msg\""]
+fn warn_unused_config() {
+    let mut gen = Generator::with_warning_callback(warn_panic);
+    // Warnings are only emitted if code generation succeeds, which is ensured by using alloc
+    gen.use_container_alloc();
+    // Unused config path as Msg
+    gen.configure(".Msg", Config::new().max_len(5));
+    compile(gen);
 }

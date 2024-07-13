@@ -572,7 +572,7 @@ mod tests {
 
     #[test]
     fn tspec_default() {
-        let gen = Generator::default();
+        let gen = Generator::new();
         assert_eq!(
             TypeSpec::Bool
                 .generate_default("true", &gen)

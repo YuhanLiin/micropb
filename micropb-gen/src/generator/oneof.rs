@@ -515,7 +515,7 @@ mod tests {
 
     #[test]
     fn oneof_custom() {
-        let gen = Generator::default();
+        let gen = Generator::new();
         let oneof = Oneof {
             name: "oneof",
             san_rust_name: Ident::new_raw("oneof", Span::call_site()),
