@@ -300,19 +300,19 @@ impl Generator {
         let msg_mod_name = resolve_path_elem(msg.name);
         self.type_path.borrow_mut().push(msg.name.to_owned());
 
-        let mut msg_mod = TokenStream::new();
+        let mut msg_mod_body = TokenStream::new();
         for m in proto
             .nested_type
             .iter()
             .filter(|m| !m.options().map(|o| o.map_entry).unwrap_or(false))
         {
-            msg_mod.extend(self.generate_msg(m, msg_conf.next_conf(&m.name))?);
+            msg_mod_body.extend(self.generate_msg(m, msg_conf.next_conf(&m.name))?);
         }
         for e in proto.enum_type.iter() {
-            msg_mod.extend(self.generate_enum(e, msg_conf.next_conf(&e.name))?);
+            msg_mod_body.extend(self.generate_enum(e, msg_conf.next_conf(&e.name))?);
         }
         for o in &msg.oneofs {
-            msg_mod.extend(o.generate_decl(self));
+            msg_mod_body.extend(o.generate_decl(self));
         }
 
         let (hazzer_decl, hazzer_field_attr) = match msg
@@ -322,13 +322,16 @@ impl Generator {
             Some((d, a)) => (Some(d), Some(a)),
             None => (None, None),
         };
-        msg_mod.extend(hazzer_decl);
+        msg_mod_body.extend(hazzer_decl);
 
         self.type_path.borrow_mut().pop();
-        Ok((
-            quote! { pub mod #msg_mod_name { #msg_mod } },
-            hazzer_field_attr,
-        ))
+
+        let msg_mod = if msg_mod_body.is_empty() {
+            quote! {}
+        } else {
+            quote! { pub mod #msg_mod_name { #msg_mod_body } }
+        };
+        Ok((msg_mod, hazzer_field_attr))
     }
 
     fn generate_msg(
