@@ -15,6 +15,8 @@ mod custom_field;
 #[cfg(test)]
 mod default_str_escape;
 #[cfg(test)]
+mod extension;
+#[cfg(test)]
 mod extern_import;
 #[cfg(test)]
 mod implicit_presence;

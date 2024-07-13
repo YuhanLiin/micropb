@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package ext;
+
+message Extendee {
+    optional double dbl = 5;
+
+    extensions 100 to 199 [
+        declaration = {
+          number: 126,
+          full_name: ".ext.num",
+          type: "int32",
+        },
+        // Ensures all field numbers in this extension range are declarations.
+        verification = DECLARATION
+    ];
+}
+
+extend Extendee {
+    optional int32 num = 126;
+}

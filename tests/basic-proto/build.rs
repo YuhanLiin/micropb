@@ -344,6 +344,16 @@ fn default_str_escape() {
         .unwrap();
 }
 
+fn extension() {
+    let mut generator = Generator::new();
+    generator
+        .compile_protos(
+            &["proto/extension.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/extension.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -360,4 +370,5 @@ fn main() {
     recursive();
     conflicting_names();
     default_str_escape();
+    extension();
 }
