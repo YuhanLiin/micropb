@@ -17,7 +17,8 @@ jobs:
           toolchain: ${{matrix.toolchain}}
           components: clippy
       - uses: arduino/setup-protoc@v3
-      - run: cargo clippy --workspace --tests --exclude arm-app -- -Dwarnings
+      - run: cargo clippy --workspace --tests --no-default-features --exclude arm-app -- -Dwarnings
+      - run: cargo clippy --workspace --tests --all-features --exclude arm-app -- -Dwarnings
       - run: cargo test --workspace --exclude arm-app
 
   build:
