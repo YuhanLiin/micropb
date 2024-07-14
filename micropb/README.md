@@ -1,6 +1,6 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/YuhanLiin/micropb/ci.yml)
-![docs.rs](https://img.shields.io/docsrs/micropb)
-![Crates.io Version](https://img.shields.io/crates/v/micropb)
+[![docs.rs](https://img.shields.io/docsrs/micropb)](https://docs.rs/micropb/latest/micropb)
+[![Crates.io Version](https://img.shields.io/crates/v/micropb)](https://crates.io/crates/micropb)
 
 # Micropb
 
