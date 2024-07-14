@@ -1,12 +1,4 @@
-//! `micropb-gen` compiles `.proto` files into Rust. It is intended to be used inside `build.rs`
-//! for build-time code generation.
-//!
-//! The entry point of this crate is the code generator, [`Generator`]. Configuration of code
-//! generator behaviour is handled by [`Config`].
-//!
-//! **Note:** `micropb-gen` requires [`protoc`](https://grpc.io/docs/protoc-installation/) to be
-//! installed on the PATH.
-
+#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
 pub mod config;
