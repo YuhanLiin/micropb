@@ -29,9 +29,9 @@ Unlike other Protobuf libraries, `micropb` is aimed for constrained environments
 
 The `micropb` project consists of two crates:
 
-- **`micropb-gen`**: Code generation tool that generates a Rust module from a set of `.proto` files. Include this as a build dependency.
+- [`micropb`](https://crates.io/crates/micropb): Encoding and decoding routines for the Protobuf wire data. The generated module will assume it's been imported as a regular dependency.
 
-- **`micropb`**: Encoding and decoding routines for the Protobuf wire data. The generated module will assume it's been imported as a regular dependency.
+- [`micropb-gen`](https://crates.io/crates/micropb-gen): Code generation tool that generates a Rust module from a set of `.proto` files. Include this as a build dependency.
 
 ### Getting Started
 
