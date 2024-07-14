@@ -2,7 +2,14 @@ name: test suite
 on: [push, pull_request]
 
 jobs:
-  check_and_test:
+  sync-readme:
+    name: check that README.md files are synced
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: diff REAME.txt micropb/README.md
+
+  check-and-test:
     name: check and test workspace with ${{matrix.toolchain}}
     runs-on: ubuntu-latest
     strategy:
