@@ -1,3 +1,6 @@
+![docs.rs](https://img.shields.io/docsrs/micropb-gen)
+![Crates.io Version](https://img.shields.io/crates/v/micropb-gen)
+
 # micropb-gen
 
 `micropb-gen` compiles `.proto` files into Rust. It is intended to be used inside `build.rs` for build-time code generation.

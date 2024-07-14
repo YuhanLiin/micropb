@@ -1,3 +1,7 @@
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/YuhanLiin/micropb/ci.yml)
+![docs.rs](https://img.shields.io/docsrs/micropb)
+![Crates.io Version](https://img.shields.io/crates/v/micropb)
+
 # Micropb
 
 `micropb` is a [Rust](https://www.rust-lang.org/) implementation of the [Protobuf](https://protobuf.dev/) format, with a focus on embedded environments. `micropb` generates a Rust module from `.proto` files.
