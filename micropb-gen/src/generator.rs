@@ -342,7 +342,6 @@ impl Generator {
         let Some(msg) = Message::from_proto(proto, self, &msg_conf)? else {
             return Ok(quote! {});
         };
-        msg.check_delegates(self)?;
         let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf)?;
         let unknown_conf = msg_conf.next_conf("_unknown");
 

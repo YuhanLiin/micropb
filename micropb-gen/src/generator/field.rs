@@ -1,6 +1,5 @@
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
-use syn::ext::IdentExt;
 use syn::{Ident, Lifetime};
 
 use crate::config::OptionalRepr;
@@ -51,7 +50,7 @@ pub(crate) struct Field<'a> {
     pub(crate) name: &'a str,
     /// Non-sanitized Rust name after renaming, used for accessor names
     pub(crate) rust_name: String,
-    /// Sanitized Rust ident after renaming, used for field name and delegate name
+    /// Sanitized Rust ident after renaming, used for field name
     pub(crate) san_rust_name: Ident,
     pub(crate) default: Option<&'a str>,
     pub(crate) boxed: bool,
@@ -65,22 +64,6 @@ impl<'a> Field<'a> {
 
     pub(crate) fn is_hazzer(&self) -> bool {
         matches!(self.ftype, FieldType::Optional(_, OptionalRepr::Hazzer))
-    }
-
-    pub(crate) fn delegate(&self) -> Option<&Ident> {
-        if let FieldType::Custom(CustomField::Delegate(d)) = &self.ftype {
-            Some(d)
-        } else {
-            None
-        }
-    }
-
-    pub(crate) fn custom_type_field(&self) -> Option<String> {
-        if let FieldType::Custom(CustomField::Type(_)) = &self.ftype {
-            Some(self.san_rust_name.unraw().to_string())
-        } else {
-            None
-        }
     }
 
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {

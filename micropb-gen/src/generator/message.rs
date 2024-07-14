@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-};
+use std::{collections::HashMap, io};
 
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
@@ -157,35 +154,6 @@ impl<'a> Message<'a> {
             unknown_handler,
             lifetime,
         }))
-    }
-
-    pub(crate) fn check_delegates(&self, gen: &Generator) -> io::Result<()> {
-        let ocustoms = self.oneofs.iter().filter_map(|o| o.custom_type_field());
-        let fcustoms = self.fields.iter().filter_map(|f| f.custom_type_field());
-        let customs: HashSet<_> = ocustoms.chain(fcustoms).collect();
-
-        let odelegates = self
-            .oneofs
-            .iter()
-            .filter_map(|o| o.delegate().map(|d| (d, o.name)));
-        let fdelegates = self
-            .fields
-            .iter()
-            .filter_map(|f| f.delegate().map(|d| (d, f.name)));
-        for (delegate, fname) in odelegates.chain(fdelegates) {
-            let delegate = delegate.to_string();
-            if !customs.contains(delegate.as_str()) {
-                return Err(field_error(
-                    &gen.pkg,
-                    self.name,
-                    fname,
-                    &format!(
-                        "Delegate field refers to custom field of {delegate}, which doesn't exist"
-                    ),
-                ));
-            }
-        }
-        Ok(())
     }
 
     pub(crate) fn generate_hazzer_decl(

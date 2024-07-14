@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::quote;
-use syn::{ext::IdentExt, Ident, Lifetime};
+use syn::{Ident, Lifetime};
 
 use super::{
     derive_msg_attr,
@@ -154,8 +154,9 @@ pub(crate) enum OneofType<'a> {
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Oneof<'a> {
     /// Protobuf name
+    #[allow(unused)]
     pub(crate) name: &'a str,
-    /// Sanitized Rust ident after renaming, used for delegate name and field name
+    /// Sanitized Rust ident after renaming, used for field name
     pub(crate) san_rust_name: Ident,
     pub(crate) otype: OneofType<'a>,
     pub(crate) field_attrs: Vec<syn::Attribute>,
@@ -168,30 +169,6 @@ pub(crate) struct Oneof<'a> {
 }
 
 impl<'a> Oneof<'a> {
-    pub(crate) fn delegate(&self) -> Option<&Ident> {
-        if let OneofType::Custom {
-            field: CustomField::Delegate(d),
-            ..
-        } = &self.otype
-        {
-            Some(d)
-        } else {
-            None
-        }
-    }
-
-    pub(crate) fn custom_type_field(&self) -> Option<String> {
-        if let OneofType::Custom {
-            field: CustomField::Type(_),
-            ..
-        } = &self.otype
-        {
-            Some(self.san_rust_name.unraw().to_string())
-        } else {
-            None
-        }
-    }
-
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match &self.otype {
             OneofType::Custom {

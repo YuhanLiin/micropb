@@ -304,20 +304,6 @@ fn parse_custom_type_delegate() {
 }
 
 #[test]
-fn unfound_delegate() {
-    let mut gen = Generator::with_warning_callback(warn_panic);
-    gen.use_container_alloc();
-    gen.configure(
-        ".test.Msg.st",
-        Config::new().custom_field(CustomField::Delegate("kv".to_owned())),
-    );
-    let err = compile(gen);
-    dbg!(&err);
-    assert!(err.contains("(.test.Msg.st)"));
-    assert!(err.contains("Delegate field refers to custom field of kv"));
-}
-
-#[test]
 #[should_panic = "Unused configuration path: \".Msg\""]
 fn warn_unused_config() {
     let mut gen = Generator::with_warning_callback(warn_panic);
