@@ -17,8 +17,8 @@ jobs:
           toolchain: ${{matrix.toolchain}}
           components: clippy
       - uses: arduino/setup-protoc@v3
-      - run: cargo clippy --tests --exclude arm-app -- -Dwarnings
-      - run: cargo test --exclude arm-app
+      - run: cargo clippy --workspace --tests --exclude arm-app -- -Dwarnings
+      - run: cargo test --workspace --exclude arm-app
 
   build:
     name: build workspace with ${{matrix.toolchain}}
@@ -52,8 +52,7 @@ jobs:
           toolchain: ${{matrix.toolchain}}
           target: thumbv7em-none-eabihf
       - uses: arduino/setup-protoc@v3
-      - run: cd examples/arm-app
-      - run: cargo build --profile release-lto --target thumbv7em-none-eabihf
+      - run: cd examples/arm-app && cargo build --profile release-lto --target thumbv7em-none-eabihf
 
   miri:
     name: miri testing on unsafe code
