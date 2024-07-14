@@ -9,7 +9,7 @@ use crate::{
         maybe_uninit_slice_assume_init_ref, maybe_uninit_write_slice,
         maybe_ununit_array_assume_init,
     },
-    Presence, Tag, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
+    MessageDecode, Presence, Tag, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
 };
 
 use never::Never;
@@ -671,6 +671,16 @@ impl<R: PbRead> PbDecoder<R> {
             _ => return Err(DecodeError::UnknownWireType),
         }
         Ok(())
+    }
+
+    /// Decode a new message from the wire.
+    pub fn decode_message<M: MessageDecode + Default>(
+        &mut self,
+        len: usize,
+    ) -> Result<M, DecodeError<R::Error>> {
+        let mut msg = M::default();
+        msg.decode(self, len)?;
+        Ok(msg)
     }
 }
 

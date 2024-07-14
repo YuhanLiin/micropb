@@ -1,4 +1,4 @@
-use crate::{Tag, VarInt};
+use crate::{MessageEncode, Tag, VarInt};
 
 /// A writer to which Protobuf data is written, similar to [`std::io::Write`].
 ///
@@ -348,6 +348,12 @@ impl<W: PbWrite> PbEncoder<W> {
         self.encode_tag(val_tag)?;
         val_encoder(self, val)?;
         Ok(())
+    }
+
+    /// Encode a message to the wire.
+    #[inline]
+    pub fn encode_message<M: MessageEncode>(&mut self, msg: &M) -> Result<(), W::Error> {
+        msg.encode(self)
     }
 }
 
