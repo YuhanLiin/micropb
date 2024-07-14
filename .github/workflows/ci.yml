@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: diff REAME.txt micropb/README.md
+      - run: diff REAME.md micropb/README.md
 
   check-and-test:
     name: check and test workspace with ${{matrix.toolchain}}
