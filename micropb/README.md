@@ -19,6 +19,7 @@ Unlike other Protobuf libraries, `micropb` is aimed for constrained environments
 
 #### Limitations
 - Some speed has been sacrificed for memory usage
+- Does not support Protobuf editions for now
 - Protobuf groups are not supported
 - Unknown fields and extensions can only be captured with a custom handler
 - Reflection is not supported
