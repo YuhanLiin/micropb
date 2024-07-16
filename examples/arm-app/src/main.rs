@@ -1,8 +1,9 @@
 #![no_std]
 #![no_main]
 
-use core::{mem::size_of, str::FromStr};
+use core::{hint::black_box, mem::size_of, str::FromStr};
 
+#[cfg(feature = "formatting")]
 use cortex_m_semihosting::{debug, hprintln};
 use micropb::{
     heapless::{String, Vec},
@@ -26,6 +27,7 @@ use proto::raw_::*;
 
 #[entry]
 fn main() -> ! {
+    #[cfg(feature = "formatting")]
     hprintln!(
         "size of Packet = {}, Packet_::Msg = {}, LogBundle = {}, Log = {}",
         size_of::<Packet>(),
@@ -102,23 +104,18 @@ fn main() -> ! {
     let mut logs_pkt_out = Packet::default();
     logs_pkt_out.decode_len_delimited(&mut decoder).unwrap();
 
-    // Don't use assert to check message equality, because debug printing logic bloats code size
-    if init_pkt != init_pkt_out {
-        // Uncomment to debug panic
-        //hprintln!("init_pkt = {init_pkt:?}\ninit_pkt_out = {init_pkt_out:?}").unwrap();
-        panic!("init package fails roundtrip test");
-    }
-    if logs_pkt != logs_pkt_out {
-        // Uncomment to debug panic
-        //hprintln!("logs_pkt = {logs_pkt:?}\nlogs_pkt_out = {logs_pkt_out:?}").unwrap();
-        panic!("log package fails roundtrip test");
+    #[cfg(feature = "formatting")]
+    {
+        assert_eq!(init_pkt, init_pkt_out);
+        assert_eq!(logs_pkt, logs_pkt_out);
+        hprintln!("Example complete").unwrap();
+
+        // exit QEMU
+        // NOTE do not run this on hardware; it can corrupt OpenOCD state
+        debug::exit(debug::EXIT_SUCCESS);
     }
 
-    hprintln!("Example complete").unwrap();
-
-    // exit QEMU
-    // NOTE do not run this on hardware; it can corrupt OpenOCD state
-    debug::exit(debug::EXIT_SUCCESS);
+    black_box((init_pkt, init_pkt_out, logs_pkt, logs_pkt_out));
 
     loop {}
 }
