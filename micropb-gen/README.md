@@ -1,4 +1,4 @@
-[![docs.rs](https://img.shields.io/docsrs/micropb-gen)](https://docs.rs/micropb/latest/micropb-gen)
+[![docs.rs](https://img.shields.io/docsrs/micropb-gen)](https://docs.rs/micropb-gen/latest/micropb-gen)
 [![Crates.io Version](https://img.shields.io/crates/v/micropb-gen)](https://crates.io/crates/micropb-gen)
 
 # micropb-gen

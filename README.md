@@ -263,9 +263,25 @@ pub mod Example_ {
 }
 ```
 
-One big difference between `micropb` and other Protobuf libraries is that **`micropb` does not generate `Option` for optional fields**. This is because `Option<T>` takes up extra space if `T` doesn't have an invalid representation or unused bits. This is true for numeric types like `u32`, and can lead to the size of the field being doubled. For this reason, `micropb` tracks the presence of all optional fields in a separate bitfield called a "hazzer". Hazzers are usually small enough to fit into the message struct's padding, in which case it does not increase the size at all. Field presence can either be queried directly from the hazzer or from message APIs that return `Option`.
+One big difference between `micropb` and other Protobuf libraries is that **`micropb` does not generate `Option` for optional fields**. This is because `Option<T>` takes up extra space for types like `i32` that don't have unused bits. Instead, `micropb` tracks the presence of all optional fields in a separate bitfield called a *hazzer*, which is usually small enough to fit into the message's padding. Field presence can either be queried directly from the hazzer or from message APIs that return `Option`.
 
-By default, boxed optional fields use `Option` to track presence, while other optional fields use hazzers. This behaviour can be overriden by the user via configuration.
+Note that a field will be considered empty (and ignored by the encoder) if its bit in the hazzer is not set, even if the field itself has been written. For example, the following is the proper way to initialize `Example` with all fields set:
+```rust,ignore
+Example {
+    f_int32: 4,
+    f_int64: -5,
+    f_bool: true,
+    // initialize the bitfield with all fields set to true
+    // without this line, all fields in Example will be considered unset
+    _has: Example_::_Hazzer::default()
+            .init_f_int32()
+            .init_f_int64()
+            .init_f_bool()
+}
+```
+
+#### Boxed optional fields
+If an optional field is configured to be boxed, it will use `Option` instead of the hazzer to track presence, since `Option<Box<T>>` doesn't take up extra space.
 
 #### Required Fields
 Due to the problematic semantics of Protobuf's required fields, `micropb` will treat required fields exactly the same way it treats optional fields.
@@ -395,16 +411,19 @@ One of `micropb`'s main features is its granular configuration system. With it, 
 generator.configure(".Example.f_int32", micropb_gen::Config::new().boxed(true));
 ```
 
-We reference the `f_int32` field by using its full Protobuf path of `.Example.f_int32`. This allows configuration of any field or type in the compiled `.proto` files. Possible configuration options include: changing the representation of optional fields, setting the container type of repeated fields, setting field/type attributes, and changing the size of integer types.
+We reference the `f_int32` field by using its full Protobuf path of `.Example.f_int32`. This allows configuration of any field or type in the compiled `.proto` files. Possible configuration options include: changing optional fields from using hazzers to `Option`, setting the container type of repeated fields, adding field/type attributes, and changing the size of integer fields.
 
-For more info on how to configure code generated from Protobuf types and fields, refer to `Generator::configure` and `Config` in `micropb-gen`.
+For more info on how to configure code generated from Protobuf types and fields, refer to [`Generator::configure`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.configure) and [`Config`](https://docs.rs/micropb-gen/latest/micropb_gen/config/struct.Config.html) in `micropb-gen`.
 
 ### Custom Field
 
 In addition to configuring how fields get generated, users can also replace the field's generated type with their own custom type. For example, we can generate a custom type for `f_int32` as follows:
 
 ```rust,ignore
-gen.configure(".Example.f_int32", micropb_gen::Config::new().custom_field(CustomField::Type("MyIntField<'a>".to_owned())));
+gen.configure(
+    ".Example.f_int32",
+    micropb_gen::Config::new().custom_field(CustomField::Type("MyIntField<'a>".to_owned()))
+);
 ```
 
 This generates the following:
