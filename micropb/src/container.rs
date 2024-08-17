@@ -11,13 +11,13 @@
 //! gated by feature flags.
 //!
 //! - For `heapless`, [`PbVec`], [`PbString`], and [`PbMap`] are
-//! implemented on `heapless::Vec`, `heapless::String`, and `heapless::IndexMap`
-//! respectively.
+//!   implemented on `heapless::Vec`, `heapless::String`, and `heapless::IndexMap`
+//!   respectively.
 //! - For `arrayvec`, [`PbVec`] and [`PbString`] are implemented on `arrayvec::ArrayVec` and
-//! `arrayvec::ArrayString` respectively.
+//!   `arrayvec::ArrayString` respectively.
 //! - For `alloc`, [`PbVec`], [`PbString`], and [`PbMap`] are implemented on `Vec`, `String`,
-//! and `BTreeMap` respectively. If `std` is enabled, [`PbMap`] is also implemented for
-//! `HashMap`.
+//!   and `BTreeMap` respectively. If `std` is enabled, [`PbMap`] is also implemented for
+//!   `HashMap`.
 //!
 //! It is also possible to use other types as containers if the container traits are implemented.
 
