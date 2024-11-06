@@ -39,11 +39,11 @@ The `micropb` project consists of two crates:
 Add `micropb` crates to your `Cargo.toml`:
 ```toml
 [dependencies]
-micropb = "0.1"
+# Allow types from `heapless` to be used for container fields
+micropb = { version = "0.1.0", features = ["container-heapless"] }
 
 [build-dependencies]
-# Allow types from `heapless` to be used for container fields
-micropb-gen = { version = "0.1", features = ["container-heapless"] }
+micropb-gen = "0.1.0"
 ```
 
 `micropb-gen` requires `protoc` to build `.proto` files, so [install `protoc`](https://grpc.io/docs/protoc-installation) and add it to your PATH, then invoke the code generator in `build.rs`:
@@ -55,11 +55,34 @@ fn main() {
 }
 ```
 
+Add `example.proto` to the project root directory:
+```proto
+syntax = "proto3";
+
+package example;
+
+message Example {
+    int32 f_int32 = 1;
+    int64 f_int64 = 2;
+    uint32 f_uint32 = 3;
+    uint64 f_uint64 = 4;
+    sint32 f_sint32 = 5;
+    sint64 f_sint64 = 6;
+    bool f_bool = 7;
+    fixed32 f_fixed32 = 8;
+    fixed64 f_fixed64 = 9;
+    sfixed32 f_sfixed32 = 10;
+    sfixed64 f_sfixed64 = 11;
+    float f_float = 12;
+    double f_double = 13;
+}
+```
+
 Finally, include the generated file in your code:
 ```rust,ignore
 // main.rs
 
-use micropb::{PbRead, PbDecoder, MessageDecode, MessageEncode};
+use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod example {
     #![allow(clippy::all)]
@@ -70,22 +93,30 @@ mod example {
 }
 
 fn main() {
-    let mut example = example::Example::default();
+    // Initialize an example struct
+    let mut example0 = example::example_::Example::default();
+    example0.f_bool = true;
+    example0.f_double = 17.4;
 
-    let data: &[u8] = &[ /* Protobuf data bytes */ ];
+    // Use heapless::Vec as the output stream and build an encoder around it
+    let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, 16>::new());
+
+    // Compute the size of the `Example` on the wire
+    let size = example0.compute_size();
+    println!("size: {}", size);
+    // Encode the `Example` to the data stream
+    example0.encode(&mut encoder).expect("Vec over capacity");
+    let data: &[u8] = encoder.as_writer().as_slice();
+
     // Construct new decoder from byte slice
     let mut decoder = PbDecoder::new(data);
+
+    let mut example = example::example_::Example::default();
 
     // Decode a new instance of `Example` into an existing struct
     example.decode(&mut decoder, data.len()).expect("decoding failed");
 
-    // Use heapless::Vec as the output stream and build an encoder around it
-    let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, 10>::new());
-
-    // Compute the size of the `Example` on the wire
-    let size = example.compute_size();
-    // Encode the `Example` to the data stream
-    example.encode(&mut encoder).expect("Vec over capacity");
+    println!("decoded: {:?}", example);
 }
 ```
 
