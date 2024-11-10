@@ -39,11 +39,21 @@ The `micropb` project consists of two crates:
 Add `micropb` crates to your `Cargo.toml`:
 ```toml
 [dependencies]
-micropb = "0.1"
+# Allow types from `heapless` to be used for container fields
+micropb = { version = "0.1.0", features = ["container-heapless"] }
 
 [build-dependencies]
-# Allow types from `heapless` to be used for container fields
-micropb-gen = { version = "0.1", features = ["container-heapless"] }
+micropb-gen = "0.1.0"
+```
+
+Then, place your `.proto` file into the project's root directory:
+```proto
+// example.proto
+message Example {
+    int32 field1 = 1;
+    bool field2 = 2;
+    double field3 = 3;
+}
 ```
 
 `micropb-gen` requires `protoc` to build `.proto` files, so [install `protoc`](https://grpc.io/docs/protoc-installation) and add it to your PATH, then invoke the code generator in `build.rs`:
@@ -58,8 +68,7 @@ fn main() {
 Finally, include the generated file in your code:
 ```rust,ignore
 // main.rs
-
-use micropb::{PbRead, PbDecoder, MessageDecode, MessageEncode};
+use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod example {
     #![allow(clippy::all)]
@@ -70,22 +79,30 @@ mod example {
 }
 
 fn main() {
-    let mut example = example::Example::default();
-
-    let data: &[u8] = &[ /* Protobuf data bytes */ ];
-    // Construct new decoder from byte slice
-    let mut decoder = PbDecoder::new(data);
-
-    // Decode a new instance of `Example` into an existing struct
-    example.decode(&mut decoder, data.len()).expect("decoding failed");
+    let example = example::Example {
+        field1: 12,
+        field2: true,
+        field3: 0.234,
+        ..Default::default()
+    };
 
     // Use heapless::Vec as the output stream and build an encoder around it
-    let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, 10>::new());
+    let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, 32>::new());
 
     // Compute the size of the `Example` on the wire
     let size = example.compute_size();
     // Encode the `Example` to the data stream
     example.encode(&mut encoder).expect("Vec over capacity");
+
+    let data = encoder.into_writer();
+    // Construct new decoder from byte slice
+    let mut decoder = PbDecoder::new(data.as_slice());
+
+    // Decode a new instance of `Example` into a new struct
+    let mut new = example::Example::default();
+    new.decode(&mut decoder, data.len())
+        .expect("decoding failed");
+    assert_eq!(example, new);
 }
 ```
 

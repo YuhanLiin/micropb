@@ -11,6 +11,7 @@ members = [
     "examples/no-panicking",
     "examples/file-descriptor-set",
     "examples/arm-app",
+    "examples/basic",
 ]
 
 # For the no-panicking example
