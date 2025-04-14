@@ -692,7 +692,7 @@ mod tests {
 
     struct Multichunk<'a>(&'a [u8]);
 
-    impl<'a> Multichunk<'a> {
+    impl Multichunk<'_> {
         fn len(&self) -> usize {
             self.0.len()
         }
@@ -703,7 +703,7 @@ mod tests {
         }
     }
 
-    impl<'a> PbRead for Multichunk<'a> {
+    impl PbRead for Multichunk<'_> {
         type Error = Never;
 
         fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error> {
