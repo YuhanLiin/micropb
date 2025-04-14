@@ -30,3 +30,6 @@ never = { version = "0.1", default-features = false }
 [dev-dependencies]
 micropb = { path = ".", features = ["std" ,"container-arrayvec", "container-heapless"] }
 paste = "1"
+
+[package.metadata.docs.rs]
+features = ["std"]
