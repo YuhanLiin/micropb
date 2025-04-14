@@ -1,6 +1,6 @@
 [package]
 name = "micropb"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Yuhan Lin <yuhanliin@protonmail.com>"]
 description = "Rust Protobuf library targetting embedded systems and no_std environments"
