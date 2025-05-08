@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package basic;
+
+message BasicDup {
+    int32 x = 1;
+}

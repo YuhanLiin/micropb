@@ -354,6 +354,16 @@ fn extension() {
         .unwrap();
 }
 
+fn files_with_same_package() {
+    let mut generator = Generator::new();
+    generator
+        .compile_protos(
+            &["proto/basic.proto", "proto/basic-dup.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/files_with_same_package.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -371,4 +381,5 @@ fn main() {
     conflicting_names();
     default_str_escape();
     extension();
+    files_with_same_package();
 }

@@ -180,7 +180,12 @@ impl Generator {
         for file in &fdset.file {
             let code = self.generate_fdproto(file)?;
             if let Some(pkg_name) = file.package() {
-                *mod_tree.root.add_path(split_pkg_name(pkg_name)).value_mut() = Some(code);
+                mod_tree
+                    .root
+                    .add_path(split_pkg_name(pkg_name))
+                    .value_mut()
+                    .get_or_insert_with(TokenStream::new)
+                    .extend(code);
             } else {
                 mod_tree
                     .root
