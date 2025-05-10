@@ -216,6 +216,111 @@ impl<'a> Field<'a> {
         Ok(quote! { ::core::default::Default::default() })
     }
 
+    pub(crate) fn generate_accessors(&self, gen: &Generator) -> TokenStream {
+        if let FieldType::Optional(type_spec, opt) = &self.ftype {
+            let type_name = type_spec.generate_rust_type(gen);
+            let wrapped_type = gen.wrapped_type(type_name.clone(), self.boxed, true);
+            let setter_name = format_ident!("set_{}", self.rust_name);
+            let muter_name = format_ident!("mut_{}", self.rust_name);
+            let clearer_name = format_ident!("clear_{}", self.rust_name);
+            let taker_name = format_ident!("take_{}", self.rust_name);
+            let fname = &self.san_rust_name;
+
+            let getter_doc = format!("Return a reference to `{}` as an `Option`", self.rust_name);
+            let muter_doc = format!(
+                "Return a mutable reference to `{}` as an `Option`",
+                self.rust_name
+            );
+            let setter_doc = format!("Set the value and presence of `{}`", self.rust_name);
+            let clearer_doc = format!("Clear the presence of `{}`", self.rust_name);
+            let taker_doc = format!(
+                "Take the value of `{}` and clear its presence",
+                self.rust_name
+            );
+
+            // use value.into() to handle conversion into boxed and non-boxed fields
+            if let OptionalRepr::Hazzer = opt {
+                quote! {
+                    #[doc = #getter_doc]
+                    #[inline]
+                    pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                        self._has.#fname().then_some(&self.#fname)
+                    }
+
+                    #[doc = #muter_doc]
+                    #[inline]
+                    pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                        self._has.#fname().then_some(&mut self.#fname)
+                    }
+
+                    #[doc = #setter_doc]
+                    #[inline]
+                    pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                        self._has.#setter_name();
+                        self.#fname = value.into();
+                        self
+                    }
+
+                    #[doc = #clearer_doc]
+                    #[inline]
+                    pub fn #clearer_name(&mut self) -> &mut Self {
+                        self._has.#clearer_name();
+                        self
+                    }
+
+                    #[doc = #taker_doc]
+                    #[inline]
+                    pub fn #taker_name(&mut self) -> #wrapped_type {
+                        let val = self._has.#fname().then(|| ::core::mem::take(&mut self.#fname));
+                        self._has.#clearer_name();
+                        val
+                    }
+                }
+            } else {
+                let (deref, deref_mut) = if self.boxed {
+                    (format_ident!("as_deref"), format_ident!("as_deref_mut"))
+                } else {
+                    (format_ident!("as_ref"), format_ident!("as_mut"))
+                };
+                quote! {
+                    #[doc = #getter_doc]
+                    #[inline]
+                    pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                        self.#fname.#deref()
+                    }
+
+                    #[doc = #muter_doc]
+                    #[inline]
+                    pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                        self.#fname.#deref_mut()
+                    }
+
+                    #[doc = #setter_doc]
+                    #[inline]
+                    pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                        self.#fname = ::core::option::Option::Some(value.into());
+                        self
+                    }
+
+                    #[doc = #clearer_doc]
+                    #[inline]
+                    pub fn #clearer_name(&mut self) -> &mut Self {
+                        self.#fname = ::core::option::Option::None;
+                        self
+                    }
+
+                    #[doc = #taker_doc]
+                    #[inline]
+                    pub fn #taker_name(&mut self) -> #wrapped_type {
+                        self.#fname.take()
+                    }
+                }
+            }
+        } else {
+            quote! {}
+        }
+    }
+
     pub(crate) fn generate_decode_branch(
         &self,
         gen: &Generator,
