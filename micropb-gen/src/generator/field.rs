@@ -85,7 +85,7 @@ impl<'a> Field<'a> {
 
         let num = proto.number as u32;
         let name = &proto.name;
-        let (rust_name, raw_rust_name) = field_conf.config.rust_field_name(name)?;
+        let (rust_name, san_rust_name) = field_conf.config.rust_field_name(name)?;
         let boxed = field_conf.config.boxed.unwrap_or(false);
 
         let ftype = match (
@@ -143,7 +143,7 @@ impl<'a> Field<'a> {
             ftype,
             name,
             rust_name,
-            san_rust_name: raw_rust_name,
+            san_rust_name,
             default: proto.default_value().map(String::as_str),
             boxed,
             attrs,
