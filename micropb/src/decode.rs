@@ -468,10 +468,21 @@ impl<R: PbRead> PbDecoder<R> {
         string.pb_clear();
         string.pb_reserve(len);
         let spare_cap = string.pb_spare_cap();
-        let written = self.read_into_buf(spare_cap, len)?;
+        let written = match self.read_into_buf(spare_cap, len) {
+            Ok(w) => w,
+            Err(e) => {
+                // Clear UTF8 errors for fixed-len String
+                string.pb_clear();
+                return Err(e);
+            }
+        };
 
         // Check UTF8 validity
-        from_utf8(written)?;
+        if let Err(e) = from_utf8(written) {
+            // Clear UTF8 errors for fixed-len String
+            string.pb_clear();
+            return Err(e.into());
+        }
         // SAFETY: read_into_buf guarantees that `len` bytes have been written into the string.
         // Also, we just checked the UTF-8 validity of the written bytes, so the string is valid.
         unsafe { string.pb_set_len(len) };
@@ -687,6 +698,8 @@ impl<R: PbRead> PbDecoder<R> {
 #[cfg(test)]
 mod tests {
     use arrayvec::{ArrayString, ArrayVec};
+
+    use crate::{FixedLenBytes, FixedLenString};
 
     use super::*;
 
@@ -1064,22 +1077,38 @@ mod tests {
     }
 
     macro_rules! container_test {
-        ($test:ident, $name:ident, $container:ty, $fixed_cap:literal) => {
+        ($test:ident, $name:ident, $container:ty, $fixed_cap:literal, $fixed_len:literal) => {
             #[test]
             fn $name() {
-                $test::<$container>($fixed_cap);
+                $test::<$container>($fixed_cap, $fixed_len);
             }
         };
     }
 
-    fn string<S: PbString + Default>(fixed_cap: bool) {
+    fn string<S: PbString + Default>(fixed_cap: bool, fixed_len: bool) {
         let mut string = S::default();
-        assert_decode_vec!(Ok(""), [0], decode_string(string, Presence::Explicit));
-        assert_decode_vec!(
-            Ok("a"),
-            [1, b'a'],
-            decode_string(string, Presence::Implicit)
-        );
+        if fixed_len {
+            assert_decode_vec!(
+                Ok("\0\0\0\0"),
+                [0],
+                decode_string(string, Presence::Explicit)
+            );
+        } else {
+            assert_decode_vec!(Ok(""), [0], decode_string(string, Presence::Explicit));
+        }
+        if fixed_len {
+            assert_decode_vec!(
+                Ok("a\0\0\0"),
+                [1, b'a'],
+                decode_string(string, Presence::Implicit)
+            );
+        } else {
+            assert_decode_vec!(
+                Ok("a"),
+                [1, b'a'],
+                decode_string(string, Presence::Implicit)
+            );
+        }
         assert_decode_vec!(
             Ok("abcd"),
             [4, b'a', b'b', b'c', b'd'],
@@ -1090,18 +1119,27 @@ mod tests {
             [4, 208, 151, 208, 180],
             decode_string(string, Presence::Implicit)
         );
-        assert_decode_vec!(Ok("Зд"), [0], decode_string(string, Presence::Implicit));
+        if !fixed_len {
+            assert_decode_vec!(Ok("Зд"), [0], decode_string(string, Presence::Implicit));
+        }
 
+        string.pb_clear();
         assert_decode_vec!(
             Err(DecodeError::UnexpectedEof),
             [],
             decode_string(string, Presence::Explicit)
         );
+        if fixed_len {
+            assert_eq!(string.deref(), "\0\0\0\0");
+        }
         assert_decode_vec!(
             Err(DecodeError::UnexpectedEof),
             [4, b'b', b'c', b'd'],
             decode_string(string, Presence::Explicit)
         );
+        if fixed_len {
+            assert_eq!(string.deref(), "\0\0\0\0");
+        }
         if fixed_cap {
             assert_decode_vec!(
                 Err(DecodeError::Capacity),
@@ -1109,21 +1147,37 @@ mod tests {
                 decode_string(string, Presence::Explicit)
             );
         }
+        if fixed_len {
+            assert_eq!(string.deref(), "\0\0\0\0");
+        }
         assert_decode_vec!(
             Err(DecodeError::Utf8),
             [4, 0x80, 0x80, 0x80, 0x80],
             decode_string(string, Presence::Explicit)
         );
+        if fixed_len {
+            assert_eq!(string.deref(), "\0\0\0\0");
+        }
     }
 
-    container_test!(string, string_arrayvec, ArrayString::<4>, true);
-    container_test!(string, string_heapless, heapless::String::<4>, true);
-    container_test!(string, string_alloc, String, false);
+    container_test!(string, string_arrayvec, ArrayString::<4>, true, false);
+    container_test!(string, string_heapless, heapless::String::<4>, true, false);
+    container_test!(string, string_alloc, String, false, false);
+    container_test!(string, string_fixed_len, FixedLenString::<4>, true, true);
 
-    fn bytes<S: PbVec<u8> + Default>(fixed_cap: bool) {
+    fn bytes<S: PbVec<u8> + Default>(fixed_cap: bool, fixed_len: bool) {
         let mut bytes = S::default();
-        assert_decode_vec!(Ok(&[]), [0], decode_bytes(bytes, Presence::Explicit));
-        assert_decode_vec!(Ok(b"a"), [1, b'a'], decode_bytes(bytes, Presence::Implicit));
+        if fixed_len {
+            assert_decode_vec!(Ok(&[0, 0, 0]), [0], decode_bytes(bytes, Presence::Explicit));
+            assert_decode_vec!(
+                Ok(b"a\0\0"),
+                [1, b'a'],
+                decode_bytes(bytes, Presence::Implicit)
+            );
+        } else {
+            assert_decode_vec!(Ok(&[]), [0], decode_bytes(bytes, Presence::Explicit));
+            assert_decode_vec!(Ok(b"a"), [1, b'a'], decode_bytes(bytes, Presence::Implicit));
+        }
         assert_decode_vec!(
             Ok(&[0x10, 0x20, 0x30]),
             [3, 0x10, 0x20, 0x30],
@@ -1154,11 +1208,12 @@ mod tests {
         );
     }
 
-    container_test!(bytes, bytes_arrayvec, ArrayVec::<_, 3>, true);
-    container_test!(bytes, bytes_heapless, heapless::Vec::<_, 3>, true);
-    container_test!(bytes, bytes_alloc, Vec<_>, false);
+    container_test!(bytes, bytes_arrayvec, ArrayVec::<_, 3>, true, false);
+    container_test!(bytes, bytes_heapless, heapless::Vec::<_, 3>, true, false);
+    container_test!(bytes, bytes_alloc, Vec<_>, false, false);
+    container_test!(bytes, bytes_fixed, FixedLenBytes<3>, true, true);
 
-    fn packed<S: PbVec<u32> + Default>(fixed_cap: bool) {
+    fn packed<S: PbVec<u32> + Default>(fixed_cap: bool, _fixed_len: bool) {
         let mut vec1 = S::default();
         let mut vec2 = S::default();
         assert_decode_vec!(
@@ -1194,9 +1249,9 @@ mod tests {
         }
     }
 
-    container_test!(packed, packed_arrayvec, ArrayVec::<_, 5>, true);
-    container_test!(packed, packed_heapless, heapless::Vec::<_, 5>, true);
-    container_test!(packed, packed_alloc, Vec<_>, false);
+    container_test!(packed, packed_arrayvec, ArrayVec::<_, 5>, true, false);
+    container_test!(packed, packed_heapless, heapless::Vec::<_, 5>, true, false);
+    container_test!(packed, packed_alloc, Vec<_>, false, false);
 
     //#[cfg(target_endian = "little")]
     //fn packed_fixed<S: PbVec<u32>>(fixed_cap: bool) {
