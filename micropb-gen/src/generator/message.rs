@@ -192,16 +192,18 @@ impl<'a> Message<'a> {
 
                 #[doc = #setter_doc]
                 #[inline]
-                pub fn #setter(&mut self) {
+                pub fn #setter(&mut self) -> &mut Self {
                     let elem = &mut self.0[#idx];
                     *elem |= #mask;
+                    self
                 }
 
                 #[doc = #clearer_doc]
                 #[inline]
-                pub fn #clearer(&mut self) {
+                pub fn #clearer(&mut self) -> &mut Self {
                     let elem = &mut self.0[#idx];
                     *elem &= !#mask;
+                    self
                 }
 
                 #[doc = #init_doc]
