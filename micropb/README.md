@@ -253,9 +253,13 @@ impl Example {
     /// Return mutable reference to f_int32 as an Option
     pub fn mut_f_int32(&mut self) -> Option<&mut i32>;
     /// Set value and presence of f_int32
-    pub fn set_f_int32(&mut self, val: i32);
+    pub fn set_f_int32(&mut self, val: i32) -> &mut Self;
     /// Clear presence of f_int32
-    pub fn clear_f_int32(&mut self);
+    pub fn clear_f_int32(&mut self) -> &mut Self;
+    /// Take f_int32 and return it
+    pub fn take_f_int32(&mut self) -> Option<i32>;
+    /// Builder method that sets f_int32. Useful for initializing the message.
+    pub fn init_f_int32(mut self, val: i32) -> Self;
 
     // Same APIs for other optional fields
 }
@@ -269,9 +273,9 @@ pub mod Example_ {
         /// Query presence of f_int32
         pub fn f_int32(&self) -> bool;
         /// Set presence of f_int32
-        pub fn set_f_int32(&mut self);
+        pub fn set_f_int32(&mut self) -> &mut Self;
         /// Clear presence of f_int32
-        pub fn clear_f_int32(&mut self);
+        pub fn clear_f_int32(&mut self) -> &mut Self;
         /// Builder method that toggles on the presence of f_int32. Useful for initializing the Hazzer.
         pub fn init_f_int32(mut self) -> Self;
 
@@ -282,7 +286,12 @@ pub mod Example_ {
 
 One big difference between `micropb` and other Protobuf libraries is that **`micropb` does not generate `Option` for optional fields**. This is because `Option<T>` takes up extra space for types like `i32` that don't have unused bits. Instead, `micropb` tracks the presence of all optional fields in a separate bitfield called a *hazzer*, which is usually small enough to fit into the message's padding. Field presence can either be queried directly from the hazzer or from message APIs that return `Option`.
 
-Note that a field will be considered empty (and ignored by the encoder) if its bit in the hazzer is not set, even if the field itself has been written. For example, the following is the proper way to initialize `Example` with all fields set:
+Note that a field will be considered empty (and ignored by the encoder) if its bit in the hazzer is not set, even if the field itself has been written. The following is an easy way to initialize a message with all optional fields set:
+```rust,ignore
+Example::default().init_f_int32(4).init_f_int64(-5).init_f_bool(true)
+```
+
+Alternatively, we can initialize the message using the constructor by manually setting the bits in the hazzer:
 ```rust,ignore
 Example {
     f_int32: 4,
