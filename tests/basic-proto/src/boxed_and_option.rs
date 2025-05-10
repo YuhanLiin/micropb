@@ -18,6 +18,8 @@ fn boxed_and_option() {
     basic.set_boolean(true);
     assert_eq!(basic.boolean, Some(Box::new(true)));
     assert_eq!(basic.boolean(), Some(&true));
+    assert_eq!(basic.take_boolean(), Some(Box::new(true)));
+    assert_eq!(basic.take_boolean(), None);
 
     // Option<i32>
     assert_eq!(basic.int32_num, None);
@@ -25,6 +27,8 @@ fn boxed_and_option() {
     basic.set_int32_num(32);
     assert_eq!(basic.int32_num, Some(32));
     assert_eq!(basic.int32_num(), Some(&32));
+    assert_eq!(basic.take_int32_num(), Some(32));
+    assert_eq!(basic.take_int32_num(), None);
 
     // Box<u32>
     assert_eq!(basic.uint32_num, Box::new(0));
@@ -33,6 +37,8 @@ fn boxed_and_option() {
     assert_eq!(basic.uint32_num, Box::new(3));
     assert_eq!(basic.uint32_num(), Some(&3));
     assert!(basic._has.uint32_num());
+    assert_eq!(basic.take_uint32_num(), Some(Box::new(3)));
+    assert_eq!(basic.take_uint32_num(), None);
 }
 
 #[test]
