@@ -69,6 +69,18 @@ fn basic_msg() {
 }
 
 #[test]
+fn chain_init() {
+    let basic = proto::basic_::BasicTypes::default()
+        .init_boolean(true)
+        .init_int32_num(32)
+        .init_fixed32_num(10);
+    assert_eq!(basic.boolean(), Some(&true));
+    assert_eq!(basic.int32_num(), Some(&32));
+    assert_eq!(basic.fixed32_num(), Some(&10));
+    assert_eq!(basic.dbl(), None);
+}
+
+#[test]
 fn basic_type_check() {
     let basic = proto::basic_::BasicTypes::default();
     let _: i32 = basic.int32_num;

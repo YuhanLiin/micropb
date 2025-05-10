@@ -225,7 +225,9 @@ impl<'a> Field<'a> {
                 let muter_name = format_ident!("mut_{}", self.rust_name);
                 let clearer_name = format_ident!("clear_{}", self.rust_name);
                 let taker_name = format_ident!("take_{}", self.rust_name);
+                let init_name = format_ident!("init_{}", self.rust_name);
                 let fname = &self.san_rust_name;
+
                 let getter_doc =
                     format!("Return a reference to `{}` as an `Option`", self.rust_name);
                 let muter_doc = format!(
@@ -238,6 +240,11 @@ impl<'a> Field<'a> {
                     "Take the value of `{}` and clear its presence",
                     self.rust_name
                 );
+                let init_doc = format!(
+                    "Builder method that sets the value of `{}`. Useful for initializing the message.",
+                    self.rust_name
+                );
+
                 if let OptionalRepr::Hazzer = opt {
                     quote! {
                         #[doc = #getter_doc]
@@ -273,6 +280,13 @@ impl<'a> Field<'a> {
                             let val = self._has.#fname().then(|| ::core::mem::take(&mut self.#fname));
                             self._has.#clearer_name();
                             val
+                        }
+
+                        #[doc = #init_doc]
+                        #[inline]
+                        pub fn #init_name(mut self, value: #type_name) -> Self {
+                            self.#setter_name(value);
+                            self
                         }
                     }
                 } else {
@@ -313,6 +327,13 @@ impl<'a> Field<'a> {
                         pub fn #taker_name(&mut self) -> #wrapped_type {
                             self.#fname.take()
                         }
+
+                        #[doc = #init_doc]
+                        #[inline]
+                        pub fn #init_name(mut self, value: #type_name) -> Self {
+                            self.#setter_name(value);
+                            self
+                        }
                     }
                 }
             }
@@ -320,10 +341,16 @@ impl<'a> Field<'a> {
                 let type_name = type_spec.generate_rust_type(gen);
                 let setter_name = format_ident!("set_{}", self.rust_name);
                 let muter_name = format_ident!("mut_{}", self.rust_name);
+                let init_name = format_ident!("init_{}", self.rust_name);
                 let fname = &self.san_rust_name;
+
                 let getter_doc = format!("Return a reference to `{}`", self.rust_name);
                 let muter_doc = format!("Return a mutable reference to `{}`", self.rust_name);
                 let setter_doc = format!("Set the value of `{}`", self.rust_name);
+                let init_doc = format!(
+                    "Builder method that sets the value of `{}`. Useful for initializing the message.",
+                    self.rust_name
+                );
 
                 quote! {
                     #[doc = #getter_doc]
@@ -341,6 +368,13 @@ impl<'a> Field<'a> {
                     #[doc = #setter_doc]
                     #[inline]
                     pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                        self.#fname = value.into();
+                        self
+                    }
+
+                    #[doc = #init_doc]
+                    #[inline]
+                    pub fn #init_name(mut self, value: #type_name) -> Self {
                         self.#fname = value.into();
                         self
                     }
