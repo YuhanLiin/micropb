@@ -176,6 +176,21 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
+    impl<const N: usize> TryFrom<&str> for FixedLenString<N> {
+        type Error = ();
+
+        /// Return error if `s.len() != N`
+        fn try_from(s: &str) -> Result<Self, Self::Error> {
+            Self::pb_from_str(s)
+        }
+    }
+
+    impl<const N: usize> From<FixedLenString<N>> for [u8; N] {
+        fn from(value: FixedLenString<N>) -> Self {
+            value.0
+        }
+    }
+
     /// Array with fixed length, used for representing Protobuf `bytes` fields with constant size.
     ///
     /// Essentially a wrapper over `[T; N]`. Length information is not included in the array, so
@@ -233,6 +248,18 @@ pub(crate) mod impl_fixed_len {
                 return Err(());
             }
             Ok(Self(s.try_into().unwrap()))
+        }
+    }
+
+    impl<T: Copy, const N: usize> From<[T; N]> for FixedLenArray<T, N> {
+        fn from(value: [T; N]) -> Self {
+            Self(value)
+        }
+    }
+
+    impl<T: Copy, const N: usize> From<FixedLenArray<T, N>> for [T; N] {
+        fn from(value: FixedLenArray<T, N>) -> Self {
+            value.0
         }
     }
 }
