@@ -699,7 +699,7 @@ impl<R: PbRead> PbDecoder<R> {
 mod tests {
     use arrayvec::{ArrayString, ArrayVec};
 
-    use crate::{FixedLenBytes, FixedLenString};
+    use crate::{FixedLenArray, FixedLenString};
 
     use super::*;
 
@@ -1211,7 +1211,7 @@ mod tests {
     container_test!(bytes, bytes_arrayvec, ArrayVec::<_, 3>, true, false);
     container_test!(bytes, bytes_heapless, heapless::Vec::<_, 3>, true, false);
     container_test!(bytes, bytes_alloc, Vec<_>, false, false);
-    container_test!(bytes, bytes_fixed, FixedLenBytes<3>, true, true);
+    container_test!(bytes, bytes_fixed, FixedLenArray<u8, 3>, true, true);
 
     fn packed<S: PbVec<u32> + Default>(fixed_cap: bool, _fixed_len: bool) {
         let mut vec1 = S::default();

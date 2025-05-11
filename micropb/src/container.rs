@@ -176,22 +176,22 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
-    /// Byte array with fixed length, used for representing Protobuf `bytes` fields with constant size.
+    /// Array with fixed length, used for representing Protobuf `bytes` fields with constant size.
     ///
-    /// Essentially a wrapper over `[u8; N]`. Length information is not included in the bytes, so
-    /// this type saves memory compared to dynamically-sized bytes, even those with fixed capacity.     
+    /// Essentially a wrapper over `[T; N]`. Length information is not included in the array, so
+    /// this type saves memory compared to dynamically-sized arrays, even those with fixed capacity.     
     ///
     /// Default value is all zeroes.
     #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
-    pub struct FixedLenBytes<const N: usize>([u8; N]);
+    pub struct FixedLenArray<T: Copy, const N: usize>([T; N]);
 
-    impl<const N: usize> Default for FixedLenBytes<N> {
+    impl<T: Copy + Default, const N: usize> Default for FixedLenArray<T, N> {
         fn default() -> Self {
-            Self([0; N])
+            Self([T::default(); N])
         }
     }
 
-    impl<const N: usize> PbContainer for FixedLenBytes<N> {
+    impl<T: Copy, const N: usize> PbContainer for FixedLenArray<T, N> {
         #[inline]
         unsafe fn pb_set_len(&mut self, _len: usize) {}
 
@@ -199,8 +199,8 @@ pub(crate) mod impl_fixed_len {
         fn pb_clear(&mut self) {}
     }
 
-    impl<const N: usize> Deref for FixedLenBytes<N> {
-        type Target = [u8];
+    impl<T: Copy, const N: usize> Deref for FixedLenArray<T, N> {
+        type Target = [T];
 
         #[inline]
         fn deref(&self) -> &Self::Target {
@@ -208,26 +208,26 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
-    impl<const N: usize> DerefMut for FixedLenBytes<N> {
+    impl<T: Copy, const N: usize> DerefMut for FixedLenArray<T, N> {
         #[inline]
         fn deref_mut(&mut self) -> &mut Self::Target {
             self.0.as_mut_slice()
         }
     }
 
-    impl<const N: usize> PbVec<u8> for FixedLenBytes<N> {
-        fn pb_push(&mut self, _elem: u8) -> Result<(), ()> {
+    impl<T: Copy, const N: usize> PbVec<T> for FixedLenArray<T, N> {
+        fn pb_push(&mut self, _elem: T) -> Result<(), ()> {
             panic!("Cannot use fixed-length array for repeated field")
         }
 
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
             // SAFETY: Converting to MaybeUninit is always safe
             unsafe {
-                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<u8>, N)
+                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<T>, N)
             }
         }
 
-        fn pb_from_slice(s: &[u8]) -> Result<Self, ()> {
+        fn pb_from_slice(s: &[T]) -> Result<Self, ()> {
             // Throw error if length is wrong
             if s.len() != N {
                 return Err(());
