@@ -21,6 +21,8 @@ mod extern_import;
 #[cfg(test)]
 mod files_with_same_package;
 #[cfg(test)]
+mod fixed_string_and_bytes;
+#[cfg(test)]
 mod implicit_presence;
 #[cfg(test)]
 mod int_type;
