@@ -149,6 +149,25 @@ fn proto3() {
 }
 
 #[test]
+fn partial_eq() {
+    let non_opt1 = proto::basic3_::NonOptional::default();
+    let mut non_opt2 = proto::basic3_::NonOptional::default();
+    assert_eq!(non_opt1, non_opt2);
+    non_opt2.non_opt = 12;
+    assert_ne!(non_opt1, non_opt2);
+
+    let mut basic1 = proto::basic_::BasicTypes::default();
+    let mut basic2 = proto::basic_::BasicTypes::default();
+    assert_eq!(basic1, basic2);
+    basic2.int32_num = 12;
+    assert_eq!(basic1, basic2);
+    basic2._has.set_int32_num();
+    assert_ne!(basic1, basic2);
+    basic1._has.set_int32_num();
+    assert_ne!(basic1, basic2);
+}
+
+#[test]
 fn decode_varint() {
     let mut basic = proto::basic_::BasicTypes::default();
     let mut decoder = PbDecoder::new([3, 0x08, 0x96, 0x01].as_slice()); // field 1

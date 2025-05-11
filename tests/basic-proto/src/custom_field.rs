@@ -11,7 +11,7 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/custom_field.rs"));
 }
 
-#[derive(Default)]
+#[derive(Default, PartialEq)]
 struct MockField {
     tags: Vec<Tag>,
 }
@@ -63,6 +63,16 @@ fn type_check() {
     // only one MockField
     assert_eq!(size_of::<proto::List>(), size_of::<MockField>());
     let _: MockField = list.list;
+}
+
+#[test]
+fn partial_eq() {
+    let nested1 = proto::nested_::Nested::default();
+    let mut nested2 = proto::nested_::Nested::default();
+    assert!(nested1 == nested2);
+
+    nested2.custom_inner.tags.push(Tag::from_parts(12, 4));
+    assert!(nested1 != nested2);
 }
 
 #[test]
