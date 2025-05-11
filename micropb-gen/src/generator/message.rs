@@ -32,7 +32,7 @@ pub(crate) struct Message<'a> {
     pub(crate) fields: Vec<Field<'a>>,
     pub(crate) derive_dbg: bool,
     pub(crate) impl_default: bool,
-    pub(crate) derive_partial_eq: bool,
+    pub(crate) impl_partial_eq: bool,
     pub(crate) derive_clone: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
     pub(crate) unknown_handler: Option<syn::Type>,
@@ -147,7 +147,7 @@ impl<'a> Message<'a> {
             fields,
             derive_dbg: msg_conf.derive_dbg(),
             impl_default: msg_conf.impl_default(),
-            derive_partial_eq: msg_conf.derive_partial_eq(),
+            impl_partial_eq: msg_conf.derive_partial_eq(),
             derive_clone: msg_conf.derive_clone(),
             attrs,
             unknown_handler,
@@ -253,12 +253,7 @@ impl<'a> Message<'a> {
             quote! {}
         };
 
-        let derive_msg = derive_msg_attr(
-            self.derive_dbg,
-            false,
-            self.derive_partial_eq,
-            self.derive_clone,
-        );
+        let derive_msg = derive_msg_attr(self.derive_dbg, false, false, self.derive_clone);
         let attrs = &self.attrs;
 
         Ok(quote! {
@@ -326,6 +321,52 @@ impl<'a> Message<'a> {
                 }
             }
         })
+    }
+
+    pub(crate) fn generate_partial_eq(&self) -> TokenStream {
+        if !self.impl_partial_eq {
+            return quote! {};
+        }
+
+        let ret_name = Ident::new("ret", Span::call_site());
+        let other_name = Ident::new("other", Span::call_site());
+        let mut body = TokenStream::new();
+        for f in &self.fields {
+            let fname = &f.san_rust_name;
+            let comparison = match f.ftype {
+                // Retain Option comparison semantics even when using Hazzers
+                FieldType::Optional(..) => {
+                    quote! { #ret_name &= (self.#fname() == #other_name.#fname()); }
+                }
+                FieldType::Custom(CustomField::Delegate(_)) => quote! {},
+                _ => quote! { #ret_name &= (self.#fname == #other_name.#fname); },
+            };
+            body.extend(comparison);
+        }
+
+        for o in &self.oneofs {
+            if let OneofType::Custom {
+                field: CustomField::Delegate(_),
+                ..
+            } = o.otype
+            {
+            } else {
+                let oname = &o.san_rust_name;
+                body.extend(quote! { #ret_name &= (self.#oname == #other_name.#oname); });
+            }
+        }
+
+        let rust_name = &self.rust_name;
+        let lifetime = &self.lifetime;
+        quote! {
+            impl<#lifetime> ::core::cmp::PartialEq for #rust_name<#lifetime> {
+                fn eq(&self, #other_name: &Self) -> bool {
+                    let mut #ret_name = true;
+                    #body
+                    #ret_name
+                }
+            }
+        }
     }
 
     pub(crate) fn generate_impl(&self, gen: &Generator) -> TokenStream {
@@ -568,7 +609,7 @@ mod tests {
             fields: vec![],
             derive_dbg: true,
             impl_default: true,
-            derive_partial_eq: true,
+            impl_partial_eq: true,
             derive_clone: true,
             attrs: vec![],
             unknown_handler: None,
@@ -698,7 +739,7 @@ mod tests {
                 ],
                 derive_dbg: false,
                 impl_default: false,
-                derive_partial_eq: true,
+                impl_partial_eq: true,
                 derive_clone: true,
                 attrs: parse_attributes("#[derive(Self)]").unwrap(),
                 unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
@@ -749,7 +790,7 @@ mod tests {
                 )],
                 derive_dbg: true,
                 impl_default: true,
-                derive_partial_eq: true,
+                impl_partial_eq: true,
                 derive_clone: true,
                 attrs: vec![],
                 unknown_handler: None,
@@ -779,7 +820,7 @@ mod tests {
             ],
             derive_dbg: true,
             impl_default: true,
-            derive_partial_eq: true,
+            impl_partial_eq: true,
             derive_clone: true,
             attrs: vec![],
             unknown_handler: None,
