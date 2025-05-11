@@ -110,10 +110,10 @@ pub(crate) mod impl_fixed_len {
 
     use super::*;
 
-    /// String with fixed length.
+    /// String with fixed length, used for representing Protobuf `string` fields with constant size.
     ///
-    /// Useful for Protobuf string fields with a constant length. In that case, length information
-    /// can be omitted from the string, which saves memory.
+    /// Length information is not included in the string, so this type saves memory compared to
+    /// dynamically-sized strings, even those with fixed capacity.
     ///
     /// Default value is all null bytes.
     #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
@@ -176,10 +176,10 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
-    /// Byte array with fixed length. Essentially a wrapper over `[u8; N]`.
+    /// Byte array with fixed length, used for representing Protobuf `bytes` fields with constant size.
     ///
-    /// Useful for Protobuf bytes fields with a constant length. In that case, length information
-    /// can be omitted from the array, which saves memory.
+    /// Essentially a wrapper over `[u8; N]`. Length information is not included in the bytes, so
+    /// this type saves memory compared to dynamically-sized bytes, even those with fixed capacity.     
     ///
     /// Default value is all zeroes.
     #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
