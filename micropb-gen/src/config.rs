@@ -384,7 +384,7 @@ config_decl! {
     /// repeated and `map` fields requires the elements to implement `Default`.
     no_default_impl: Option<bool>,
 
-    /// Disable generating `PartialEq` trait derives for message types.
+    /// Disable generating `PartialEq` trait impl for message types.
     no_partial_eq_impl: Option<bool>,
 
     /// Disable generating `Clone` trait derives for message types.
