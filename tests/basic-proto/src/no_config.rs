@@ -150,21 +150,37 @@ fn proto3() {
 
 #[test]
 fn partial_eq() {
+    // PartialEq with singular fields
     let non_opt1 = proto::basic3_::NonOptional::default();
     let mut non_opt2 = proto::basic3_::NonOptional::default();
     assert_eq!(non_opt1, non_opt2);
     non_opt2.non_opt = 12;
     assert_ne!(non_opt1, non_opt2);
 
+    // PartialEq with Hazzers
     let mut basic1 = proto::basic_::BasicTypes::default();
     let mut basic2 = proto::basic_::BasicTypes::default();
     assert_eq!(basic1, basic2);
     basic2.int32_num = 12;
+    // int32_num has no bearing on equality if the Hazzer bit is off
     assert_eq!(basic1, basic2);
     basic2._has.set_int32_num();
     assert_ne!(basic1, basic2);
     basic1._has.set_int32_num();
     assert_ne!(basic1, basic2);
+
+    // PartialEq with oneof fields
+    let mut nested1 = proto::nested_::Nested::default();
+    let mut nested2 = proto::nested_::Nested::default();
+    assert_eq!(nested1, nested2);
+    nested1.inner = Some(proto::nested_::Nested_::Inner::InnerMsg(
+        proto::nested_::Nested_::InnerMsg::default(),
+    ));
+    assert_ne!(nested1, nested2);
+    nested2.inner = Some(proto::nested_::Nested_::Inner::InnerMsg(
+        proto::nested_::Nested_::InnerMsg::default(),
+    ));
+    assert_eq!(nested1, nested2);
 }
 
 #[test]
