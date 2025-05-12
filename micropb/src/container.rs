@@ -105,6 +105,165 @@ pub trait PbMap<K, V> {
     fn pb_iter(&self) -> Self::Iter<'_>;
 }
 
+pub(crate) mod impl_fixed_len {
+    use core::ops::DerefMut;
+
+    use super::*;
+
+    /// String with fixed length, used for representing Protobuf `string` fields with constant size.
+    ///
+    /// Length information is not included in the string, so this type saves memory compared to
+    /// dynamically-sized strings, even those with fixed capacity.
+    ///
+    /// Default value is all null bytes.
+    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+    pub struct FixedLenString<const N: usize>([u8; N]);
+
+    impl<const N: usize> Default for FixedLenString<N> {
+        #[inline]
+        fn default() -> Self {
+            Self([0; N])
+        }
+    }
+
+    impl<const N: usize> PbContainer for FixedLenString<N> {
+        #[inline]
+        unsafe fn pb_set_len(&mut self, _len: usize) {}
+
+        /// Zero out all bytes to prevent UTF-8 invalidation
+        #[inline]
+        fn pb_clear(&mut self) {
+            self.0 = [0; N];
+        }
+    }
+
+    impl<const N: usize> Deref for FixedLenString<N> {
+        type Target = str;
+
+        #[inline]
+        fn deref(&self) -> &Self::Target {
+            // SAFETY: Only safe way to set bytes is via pb_from_str, which is guaranteed to be
+            // valid UTF-8
+            unsafe { core::str::from_utf8_unchecked(self.0.as_slice()) }
+        }
+    }
+
+    impl<const N: usize> DerefMut for FixedLenString<N> {
+        #[inline]
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            // SAFETY: See above
+            unsafe { core::str::from_utf8_unchecked_mut(self.0.as_mut_slice()) }
+        }
+    }
+
+    impl<const N: usize> PbString for FixedLenString<N> {
+        #[inline]
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            // SAFETY: Converting to MaybeUninit is always safe
+            unsafe {
+                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<u8>, N)
+            }
+        }
+
+        #[inline]
+        fn pb_from_str(s: &str) -> Result<Self, ()> {
+            // Throw error if length is wrong
+            if s.len() != N {
+                return Err(());
+            }
+            let bytes = s.as_bytes().try_into().unwrap();
+            Ok(Self(bytes))
+        }
+    }
+
+    impl<const N: usize> TryFrom<&str> for FixedLenString<N> {
+        type Error = ();
+
+        /// Return error if `s.len() != N`
+        fn try_from(s: &str) -> Result<Self, Self::Error> {
+            Self::pb_from_str(s)
+        }
+    }
+
+    impl<const N: usize> From<FixedLenString<N>> for [u8; N] {
+        fn from(value: FixedLenString<N>) -> Self {
+            value.0
+        }
+    }
+
+    /// Array with fixed length, used for representing Protobuf `bytes` fields with constant size.
+    ///
+    /// Essentially a wrapper over `[T; N]`. Length information is not included in the array, so
+    /// this type saves memory compared to dynamically-sized arrays, even those with fixed capacity.     
+    ///
+    /// Default value is all zeroes.
+    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+    pub struct FixedLenArray<T: Copy, const N: usize>([T; N]);
+
+    impl<T: Copy + Default, const N: usize> Default for FixedLenArray<T, N> {
+        fn default() -> Self {
+            Self([T::default(); N])
+        }
+    }
+
+    impl<T: Copy, const N: usize> PbContainer for FixedLenArray<T, N> {
+        #[inline]
+        unsafe fn pb_set_len(&mut self, _len: usize) {}
+
+        #[inline]
+        fn pb_clear(&mut self) {}
+    }
+
+    impl<T: Copy, const N: usize> Deref for FixedLenArray<T, N> {
+        type Target = [T];
+
+        #[inline]
+        fn deref(&self) -> &Self::Target {
+            self.0.as_slice()
+        }
+    }
+
+    impl<T: Copy, const N: usize> DerefMut for FixedLenArray<T, N> {
+        #[inline]
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            self.0.as_mut_slice()
+        }
+    }
+
+    impl<T: Copy, const N: usize> PbVec<T> for FixedLenArray<T, N> {
+        fn pb_push(&mut self, _elem: T) -> Result<(), ()> {
+            panic!("Cannot use fixed-length array for repeated field")
+        }
+
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
+            // SAFETY: Converting to MaybeUninit is always safe
+            unsafe {
+                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<T>, N)
+            }
+        }
+
+        fn pb_from_slice(s: &[T]) -> Result<Self, ()> {
+            // Throw error if length is wrong
+            if s.len() != N {
+                return Err(());
+            }
+            Ok(Self(s.try_into().unwrap()))
+        }
+    }
+
+    impl<T: Copy, const N: usize> From<[T; N]> for FixedLenArray<T, N> {
+        fn from(value: [T; N]) -> Self {
+            Self(value)
+        }
+    }
+
+    impl<T: Copy, const N: usize> From<FixedLenArray<T, N>> for [T; N] {
+        fn from(value: FixedLenArray<T, N>) -> Self {
+            value.0
+        }
+    }
+}
+
 #[cfg(feature = "container-arrayvec")]
 mod impl_arrayvec {
     use core::ops::DerefMut;
@@ -262,7 +421,12 @@ mod impl_heapless {
     }
 
     impl<K: Eq + Hash, V, S: BuildHasher, const N: usize> PbMap<K, V> for IndexMap<K, V, S, N> {
-        type Iter<'a> = IndexMapIter<'a, K, V> where S: 'a, K: 'a, V: 'a;
+        type Iter<'a>
+            = IndexMapIter<'a, K, V>
+        where
+            S: 'a,
+            K: 'a,
+            V: 'a;
 
         #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
@@ -409,7 +573,11 @@ mod impl_alloc {
     //}
 
     impl<K: Ord, V> PbMap<K, V> for BTreeMap<K, V> {
-        type Iter<'a> = btree_map::Iter<'a, K, V> where K: 'a, V: 'a;
+        type Iter<'a>
+            = btree_map::Iter<'a, K, V>
+        where
+            K: 'a,
+            V: 'a;
 
         #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
@@ -425,7 +593,11 @@ mod impl_alloc {
 
     #[cfg(feature = "std")]
     impl<K: Eq + core::hash::Hash, V> PbMap<K, V> for std::collections::HashMap<K, V> {
-        type Iter<'a> = std::collections::hash_map::Iter<'a, K, V> where K: 'a, V: 'a;
+        type Iter<'a>
+            = std::collections::hash_map::Iter<'a, K, V>
+        where
+            K: 'a,
+            V: 'a;
 
         #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {

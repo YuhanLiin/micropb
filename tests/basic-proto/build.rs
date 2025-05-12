@@ -197,6 +197,30 @@ fn container_alloc() {
         .unwrap();
 }
 
+fn fixed_string_and_bytes() {
+    let mut generator = Generator::new();
+    generator.use_container_alloc();
+    generator.configure(
+        ".Data.s",
+        Config::new()
+            .string_type("::micropb::FixedLenString")
+            .max_bytes(3),
+    );
+    generator.configure(
+        ".Data.b",
+        Config::new()
+            .vec_type("::micropb::FixedLenArray")
+            .max_bytes(2),
+    );
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/fixed_string_and_bytes.rs",
+        )
+        .unwrap();
+}
+
 fn custom_field() {
     let mut generator = Generator::new();
     generator.configure(".", Config::new().no_debug_impl(true).no_clone_impl(true));
@@ -376,4 +400,5 @@ fn main() {
     default_str_escape();
     extension();
     files_with_same_package();
+    fixed_string_and_bytes();
 }

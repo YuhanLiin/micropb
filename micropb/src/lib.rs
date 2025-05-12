@@ -22,6 +22,7 @@ pub mod size;
 pub use ::arrayvec;
 #[cfg(feature = "container-heapless")]
 pub use ::heapless;
+pub use container::impl_fixed_len::{FixedLenArray, FixedLenString};
 
 pub use container::{PbContainer, PbMap, PbString, PbVec};
 #[cfg(feature = "decode")]
