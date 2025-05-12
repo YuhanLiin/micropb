@@ -351,6 +351,7 @@ impl Generator {
         let unknown_conf = msg_conf.next_conf("_unknown");
 
         let default = msg.generate_default_impl(self, hazzer_field_attr.is_some())?;
+        let partial_eq = msg.generate_partial_eq();
         let decl = msg.generate_decl(self, hazzer_field_attr, &unknown_conf)?;
         let msg_impl = msg.generate_impl(self);
         let decode = self
@@ -366,6 +367,7 @@ impl Generator {
             #msg_mod
             #decl
             #default
+            #partial_eq
             #msg_impl
             #decode
             #encode

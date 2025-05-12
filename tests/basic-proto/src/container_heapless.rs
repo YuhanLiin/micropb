@@ -65,6 +65,27 @@ fn map() {
 }
 
 #[test]
+fn partial_eq() {
+    let mut data1 = proto::Data::default();
+    let mut data2 = proto::Data::default();
+    assert_eq!(data1, data2);
+    data1.s = "x".try_into().unwrap();
+    assert_eq!(data1, data2);
+    data1._has.set_s();
+    assert_ne!(data1, data2);
+    data2.set_s("x".try_into().unwrap());
+    assert_eq!(data1, data2);
+
+    let mut list1 = proto::List::default();
+    let mut list2 = proto::List::default();
+    assert_eq!(list1, list2);
+    list1.list.push(proto::Data::default()).unwrap();
+    assert_ne!(list1, list2);
+    list2.list.push(proto::Data::default()).unwrap();
+    assert_eq!(list1, list2);
+}
+
+#[test]
 fn decode_string_bytes_cap() {
     let mut data = proto::Data::default();
     let mut decoder = PbDecoder::new(
