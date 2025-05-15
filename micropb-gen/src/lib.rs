@@ -290,18 +290,6 @@ impl Generator {
             tmp.path().join("micropb-fdset")
         };
 
-        match Command::new("protoc").spawn() {
-            Ok(_) => (),
-            Err(e) => {
-                if let io::ErrorKind::NotFound = e.kind() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::Other,
-                        format!("`protoc` was not found. Check your PATH."),
-                    ));
-                }
-            }
-        }
-
         // Get protoc command from PROTOC env-var, otherwise just use "protoc"
         let mut cmd = Command::new(env::var("PROTOC").as_deref().unwrap_or("protoc"));
         cmd.arg("-o").arg(fdset_file.as_os_str());
@@ -311,7 +299,12 @@ impl Generator {
             cmd.arg(proto.as_ref());
         }
 
-        let output = cmd.output()?;
+        let output = cmd.output().map_err(|e| match e.kind() {
+            io::ErrorKind::NotFound => {
+                io::Error::new(e.kind(), "`protoc` was not found. Check your PATH.")
+            }
+            _ => e,
+        })?;
         if !output.status.success() {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
