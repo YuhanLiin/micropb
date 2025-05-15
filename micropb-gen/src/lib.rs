@@ -299,7 +299,12 @@ impl Generator {
             cmd.arg(proto.as_ref());
         }
 
-        let output = cmd.output()?;
+        let output = cmd.output().map_err(|e| match e.kind() {
+            io::ErrorKind::NotFound => {
+                io::Error::new(e.kind(), "`protoc` was not found. Check your PATH.")
+            }
+            _ => e,
+        })?;
         if !output.status.success() {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
