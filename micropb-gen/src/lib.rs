@@ -306,8 +306,7 @@ impl Generator {
             _ => e,
         })?;
         if !output.status.success() {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
+            return Err(io::Error::other(
                 format!("protoc failed: {}", String::from_utf8_lossy(&output.stderr)),
             ));
         }
