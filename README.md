@@ -140,7 +140,7 @@ message Example {
 `micropb` will generate the following Rust structs and APIs:
 ```rust,ignore
 pub mod example_ {
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone)]
     pub struct Example {
         pub f_int32: i32,
         pub f_int64: i64,
@@ -158,6 +158,10 @@ pub mod example_ {
     }
 
     impl Default for Example {
+        // ...
+    }
+
+    impl PartialEq for Example {
         // ...
     }
 
@@ -238,7 +242,7 @@ message Example {
 
 `micropb` generates the following Rust APIs:
 ```rust,ignore
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Example {
     pub f_int32: i32,
     pub f_int64: i64,
