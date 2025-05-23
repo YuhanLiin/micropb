@@ -1,6 +1,5 @@
 pub mod google_ {
     pub mod protobuf_ {
-        pub mod FileDescriptorSet_ {}
         #[derive(Debug)]
         pub struct FileDescriptorSet {
             pub r#file: ::std::vec::Vec<FileDescriptorProto>,
@@ -57,15 +56,17 @@ pub mod google_ {
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) {
+                pub fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) {
+                pub fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -80,15 +81,17 @@ pub mod google_ {
                 }
                 ///Set presence of `package`
                 #[inline]
-                pub fn set_package(&mut self) {
+                pub fn set_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `package`
                 #[inline]
-                pub fn clear_package(&mut self) {
+                pub fn clear_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `package`. Useful for initializing the Hazzer.
                 #[inline]
@@ -103,15 +106,17 @@ pub mod google_ {
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) {
+                pub fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
@@ -126,15 +131,17 @@ pub mod google_ {
                 }
                 ///Set presence of `source_code_info`
                 #[inline]
-                pub fn set_source_code_info(&mut self) {
+                pub fn set_source_code_info(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `source_code_info`
                 #[inline]
-                pub fn clear_source_code_info(&mut self) {
+                pub fn clear_source_code_info(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `source_code_info`. Useful for initializing the Hazzer.
                 #[inline]
@@ -149,15 +156,17 @@ pub mod google_ {
                 }
                 ///Set presence of `syntax`
                 #[inline]
-                pub fn set_syntax(&mut self) {
+                pub fn set_syntax(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `syntax`
                 #[inline]
-                pub fn clear_syntax(&mut self) {
+                pub fn clear_syntax(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `syntax`. Useful for initializing the Hazzer.
                 #[inline]
@@ -172,15 +181,17 @@ pub mod google_ {
                 }
                 ///Set presence of `edition`
                 #[inline]
-                pub fn set_edition(&mut self) {
+                pub fn set_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `edition`
                 #[inline]
-                pub fn clear_edition(&mut self) {
+                pub fn clear_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
                 #[inline]
@@ -242,14 +253,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `name`
             #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) {
+            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_name();
                 self.r#name = value.into();
+                self
             }
             ///Clear the presence of `name`
             #[inline]
-            pub fn clear_name(&mut self) {
+            pub fn clear_name(&mut self) -> &mut Self {
                 self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
             }
             ///Return a reference to `package` as an `Option`
             #[inline]
@@ -265,14 +296,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `package`
             #[inline]
-            pub fn set_package(&mut self, value: ::std::string::String) {
+            pub fn set_package(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_package();
                 self.r#package = value.into();
+                self
             }
             ///Clear the presence of `package`
             #[inline]
-            pub fn clear_package(&mut self) {
+            pub fn clear_package(&mut self) -> &mut Self {
                 self._has.clear_package();
+                self
+            }
+            ///Take the value of `package` and clear its presence
+            #[inline]
+            pub fn take_package(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#package()
+                    .then(|| ::core::mem::take(&mut self.r#package));
+                self._has.clear_package();
+                val
+            }
+            ///Builder method that sets the value of `package`. Useful for initializing the message.
+            #[inline]
+            pub fn init_package(mut self, value: ::std::string::String) -> Self {
+                self.set_package(value);
+                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
@@ -286,14 +337,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `options`
             #[inline]
-            pub fn set_options(&mut self, value: FileOptions) {
+            pub fn set_options(&mut self, value: FileOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
             }
             ///Clear the presence of `options`
             #[inline]
-            pub fn clear_options(&mut self) {
+            pub fn clear_options(&mut self) -> &mut Self {
                 self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<FileOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: FileOptions) -> Self {
+                self.set_options(value);
+                self
             }
             ///Return a reference to `source_code_info` as an `Option`
             #[inline]
@@ -309,14 +378,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `source_code_info`
             #[inline]
-            pub fn set_source_code_info(&mut self, value: SourceCodeInfo) {
+            pub fn set_source_code_info(&mut self, value: SourceCodeInfo) -> &mut Self {
                 self._has.set_source_code_info();
                 self.r#source_code_info = value.into();
+                self
             }
             ///Clear the presence of `source_code_info`
             #[inline]
-            pub fn clear_source_code_info(&mut self) {
+            pub fn clear_source_code_info(&mut self) -> &mut Self {
                 self._has.clear_source_code_info();
+                self
+            }
+            ///Take the value of `source_code_info` and clear its presence
+            #[inline]
+            pub fn take_source_code_info(
+                &mut self,
+            ) -> ::core::option::Option<SourceCodeInfo> {
+                let val = self
+                    ._has
+                    .r#source_code_info()
+                    .then(|| ::core::mem::take(&mut self.r#source_code_info));
+                self._has.clear_source_code_info();
+                val
+            }
+            ///Builder method that sets the value of `source_code_info`. Useful for initializing the message.
+            #[inline]
+            pub fn init_source_code_info(mut self, value: SourceCodeInfo) -> Self {
+                self.set_source_code_info(value);
+                self
             }
             ///Return a reference to `syntax` as an `Option`
             #[inline]
@@ -332,14 +421,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `syntax`
             #[inline]
-            pub fn set_syntax(&mut self, value: ::std::string::String) {
+            pub fn set_syntax(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_syntax();
                 self.r#syntax = value.into();
+                self
             }
             ///Clear the presence of `syntax`
             #[inline]
-            pub fn clear_syntax(&mut self) {
+            pub fn clear_syntax(&mut self) -> &mut Self {
                 self._has.clear_syntax();
+                self
+            }
+            ///Take the value of `syntax` and clear its presence
+            #[inline]
+            pub fn take_syntax(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#syntax()
+                    .then(|| ::core::mem::take(&mut self.r#syntax));
+                self._has.clear_syntax();
+                val
+            }
+            ///Builder method that sets the value of `syntax`. Useful for initializing the message.
+            #[inline]
+            pub fn init_syntax(mut self, value: ::std::string::String) -> Self {
+                self.set_syntax(value);
+                self
             }
             ///Return a reference to `edition` as an `Option`
             #[inline]
@@ -353,14 +462,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `edition`
             #[inline]
-            pub fn set_edition(&mut self, value: Edition) {
+            pub fn set_edition(&mut self, value: Edition) -> &mut Self {
                 self._has.set_edition();
                 self.r#edition = value.into();
+                self
             }
             ///Clear the presence of `edition`
             #[inline]
-            pub fn clear_edition(&mut self) {
+            pub fn clear_edition(&mut self) -> &mut Self {
                 self._has.clear_edition();
+                self
+            }
+            ///Take the value of `edition` and clear its presence
+            #[inline]
+            pub fn take_edition(&mut self) -> ::core::option::Option<Edition> {
+                let val = self
+                    ._has
+                    .r#edition()
+                    .then(|| ::core::mem::take(&mut self.r#edition));
+                self._has.clear_edition();
+                val
+            }
+            ///Builder method that sets the value of `edition`. Useful for initializing the message.
+            #[inline]
+            pub fn init_edition(mut self, value: Edition) -> Self {
+                self.set_edition(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for FileDescriptorProto {
@@ -543,15 +670,17 @@ pub mod google_ {
                     }
                     ///Set presence of `start`
                     #[inline]
-                    pub fn set_start(&mut self) {
+                    pub fn set_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `start`
                     #[inline]
-                    pub fn clear_start(&mut self) {
+                    pub fn clear_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
                     #[inline]
@@ -566,15 +695,17 @@ pub mod google_ {
                     }
                     ///Set presence of `end`
                     #[inline]
-                    pub fn set_end(&mut self) {
+                    pub fn set_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `end`
                     #[inline]
-                    pub fn clear_end(&mut self) {
+                    pub fn clear_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
                     #[inline]
@@ -589,15 +720,17 @@ pub mod google_ {
                     }
                     ///Set presence of `options`
                     #[inline]
-                    pub fn set_options(&mut self) {
+                    pub fn set_options(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
+                        self
                     }
                     ///Clear presence of `options`
                     #[inline]
-                    pub fn clear_options(&mut self) {
+                    pub fn clear_options(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
+                        self
                     }
                     ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                     #[inline]
@@ -637,14 +770,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `start`
                 #[inline]
-                pub fn set_start(&mut self, value: i32) {
+                pub fn set_start(&mut self, value: i32) -> &mut Self {
                     self._has.set_start();
                     self.r#start = value.into();
+                    self
                 }
                 ///Clear the presence of `start`
                 #[inline]
-                pub fn clear_start(&mut self) {
+                pub fn clear_start(&mut self) -> &mut Self {
                     self._has.clear_start();
+                    self
+                }
+                ///Take the value of `start` and clear its presence
+                #[inline]
+                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#start()
+                        .then(|| ::core::mem::take(&mut self.r#start));
+                    self._has.clear_start();
+                    val
+                }
+                ///Builder method that sets the value of `start`. Useful for initializing the message.
+                #[inline]
+                pub fn init_start(mut self, value: i32) -> Self {
+                    self.set_start(value);
+                    self
                 }
                 ///Return a reference to `end` as an `Option`
                 #[inline]
@@ -658,14 +809,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `end`
                 #[inline]
-                pub fn set_end(&mut self, value: i32) {
+                pub fn set_end(&mut self, value: i32) -> &mut Self {
                     self._has.set_end();
                     self.r#end = value.into();
+                    self
                 }
                 ///Clear the presence of `end`
                 #[inline]
-                pub fn clear_end(&mut self) {
+                pub fn clear_end(&mut self) -> &mut Self {
                     self._has.clear_end();
+                    self
+                }
+                ///Take the value of `end` and clear its presence
+                #[inline]
+                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#end()
+                        .then(|| ::core::mem::take(&mut self.r#end));
+                    self._has.clear_end();
+                    val
+                }
+                ///Builder method that sets the value of `end`. Useful for initializing the message.
+                #[inline]
+                pub fn init_end(mut self, value: i32) -> Self {
+                    self.set_end(value);
+                    self
                 }
                 ///Return a reference to `options` as an `Option`
                 #[inline]
@@ -683,14 +852,40 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `options`
                 #[inline]
-                pub fn set_options(&mut self, value: super::ExtensionRangeOptions) {
+                pub fn set_options(
+                    &mut self,
+                    value: super::ExtensionRangeOptions,
+                ) -> &mut Self {
                     self._has.set_options();
                     self.r#options = value.into();
+                    self
                 }
                 ///Clear the presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     self._has.clear_options();
+                    self
+                }
+                ///Take the value of `options` and clear its presence
+                #[inline]
+                pub fn take_options(
+                    &mut self,
+                ) -> ::core::option::Option<super::ExtensionRangeOptions> {
+                    let val = self
+                        ._has
+                        .r#options()
+                        .then(|| ::core::mem::take(&mut self.r#options));
+                    self._has.clear_options();
+                    val
+                }
+                ///Builder method that sets the value of `options`. Useful for initializing the message.
+                #[inline]
+                pub fn init_options(
+                    mut self,
+                    value: super::ExtensionRangeOptions,
+                ) -> Self {
+                    self.set_options(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for ExtensionRange {
@@ -747,15 +942,17 @@ pub mod google_ {
                     }
                     ///Set presence of `start`
                     #[inline]
-                    pub fn set_start(&mut self) {
+                    pub fn set_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `start`
                     #[inline]
-                    pub fn clear_start(&mut self) {
+                    pub fn clear_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
                     #[inline]
@@ -770,15 +967,17 @@ pub mod google_ {
                     }
                     ///Set presence of `end`
                     #[inline]
-                    pub fn set_end(&mut self) {
+                    pub fn set_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `end`
                     #[inline]
-                    pub fn clear_end(&mut self) {
+                    pub fn clear_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
                     #[inline]
@@ -816,14 +1015,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `start`
                 #[inline]
-                pub fn set_start(&mut self, value: i32) {
+                pub fn set_start(&mut self, value: i32) -> &mut Self {
                     self._has.set_start();
                     self.r#start = value.into();
+                    self
                 }
                 ///Clear the presence of `start`
                 #[inline]
-                pub fn clear_start(&mut self) {
+                pub fn clear_start(&mut self) -> &mut Self {
                     self._has.clear_start();
+                    self
+                }
+                ///Take the value of `start` and clear its presence
+                #[inline]
+                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#start()
+                        .then(|| ::core::mem::take(&mut self.r#start));
+                    self._has.clear_start();
+                    val
+                }
+                ///Builder method that sets the value of `start`. Useful for initializing the message.
+                #[inline]
+                pub fn init_start(mut self, value: i32) -> Self {
+                    self.set_start(value);
+                    self
                 }
                 ///Return a reference to `end` as an `Option`
                 #[inline]
@@ -837,14 +1054,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `end`
                 #[inline]
-                pub fn set_end(&mut self, value: i32) {
+                pub fn set_end(&mut self, value: i32) -> &mut Self {
                     self._has.set_end();
                     self.r#end = value.into();
+                    self
                 }
                 ///Clear the presence of `end`
                 #[inline]
-                pub fn clear_end(&mut self) {
+                pub fn clear_end(&mut self) -> &mut Self {
                     self._has.clear_end();
+                    self
+                }
+                ///Take the value of `end` and clear its presence
+                #[inline]
+                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#end()
+                        .then(|| ::core::mem::take(&mut self.r#end));
+                    self._has.clear_end();
+                    val
+                }
+                ///Builder method that sets the value of `end`. Useful for initializing the message.
+                #[inline]
+                pub fn init_end(mut self, value: i32) -> Self {
+                    self.set_end(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for ReservedRange {
@@ -893,15 +1128,17 @@ pub mod google_ {
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) {
+                pub fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) {
+                pub fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -916,15 +1153,17 @@ pub mod google_ {
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) {
+                pub fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
@@ -980,14 +1219,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `name`
             #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) {
+            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_name();
                 self.r#name = value.into();
+                self
             }
             ///Clear the presence of `name`
             #[inline]
-            pub fn clear_name(&mut self) {
+            pub fn clear_name(&mut self) -> &mut Self {
                 self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
@@ -1003,14 +1262,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `options`
             #[inline]
-            pub fn set_options(&mut self, value: MessageOptions) {
+            pub fn set_options(&mut self, value: MessageOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
             }
             ///Clear the presence of `options`
             #[inline]
-            pub fn clear_options(&mut self) {
+            pub fn clear_options(&mut self) -> &mut Self {
                 self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<MessageOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: MessageOptions) -> Self {
+                self.set_options(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for DescriptorProto {
@@ -1165,15 +1442,17 @@ pub mod google_ {
                     }
                     ///Set presence of `number`
                     #[inline]
-                    pub fn set_number(&mut self) {
+                    pub fn set_number(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `number`
                     #[inline]
-                    pub fn clear_number(&mut self) {
+                    pub fn clear_number(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
                     #[inline]
@@ -1188,15 +1467,17 @@ pub mod google_ {
                     }
                     ///Set presence of `full_name`
                     #[inline]
-                    pub fn set_full_name(&mut self) {
+                    pub fn set_full_name(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `full_name`
                     #[inline]
-                    pub fn clear_full_name(&mut self) {
+                    pub fn clear_full_name(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `full_name`. Useful for initializing the Hazzer.
                     #[inline]
@@ -1211,15 +1492,17 @@ pub mod google_ {
                     }
                     ///Set presence of `type`
                     #[inline]
-                    pub fn set_type(&mut self) {
+                    pub fn set_type(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
+                        self
                     }
                     ///Clear presence of `type`
                     #[inline]
-                    pub fn clear_type(&mut self) {
+                    pub fn clear_type(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
+                        self
                     }
                     ///Builder method that sets the presence of `type`. Useful for initializing the Hazzer.
                     #[inline]
@@ -1234,15 +1517,17 @@ pub mod google_ {
                     }
                     ///Set presence of `reserved`
                     #[inline]
-                    pub fn set_reserved(&mut self) {
+                    pub fn set_reserved(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 8;
+                        self
                     }
                     ///Clear presence of `reserved`
                     #[inline]
-                    pub fn clear_reserved(&mut self) {
+                    pub fn clear_reserved(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !8;
+                        self
                     }
                     ///Builder method that sets the presence of `reserved`. Useful for initializing the Hazzer.
                     #[inline]
@@ -1257,15 +1542,17 @@ pub mod google_ {
                     }
                     ///Set presence of `repeated`
                     #[inline]
-                    pub fn set_repeated(&mut self) {
+                    pub fn set_repeated(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 16;
+                        self
                     }
                     ///Clear presence of `repeated`
                     #[inline]
-                    pub fn clear_repeated(&mut self) {
+                    pub fn clear_repeated(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !16;
+                        self
                     }
                     ///Builder method that sets the presence of `repeated`. Useful for initializing the Hazzer.
                     #[inline]
@@ -1309,14 +1596,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `number`
                 #[inline]
-                pub fn set_number(&mut self, value: i32) {
+                pub fn set_number(&mut self, value: i32) -> &mut Self {
                     self._has.set_number();
                     self.r#number = value.into();
+                    self
                 }
                 ///Clear the presence of `number`
                 #[inline]
-                pub fn clear_number(&mut self) {
+                pub fn clear_number(&mut self) -> &mut Self {
                     self._has.clear_number();
+                    self
+                }
+                ///Take the value of `number` and clear its presence
+                #[inline]
+                pub fn take_number(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#number()
+                        .then(|| ::core::mem::take(&mut self.r#number));
+                    self._has.clear_number();
+                    val
+                }
+                ///Builder method that sets the value of `number`. Useful for initializing the message.
+                #[inline]
+                pub fn init_number(mut self, value: i32) -> Self {
+                    self.set_number(value);
+                    self
                 }
                 ///Return a reference to `full_name` as an `Option`
                 #[inline]
@@ -1334,14 +1639,37 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `full_name`
                 #[inline]
-                pub fn set_full_name(&mut self, value: ::std::string::String) {
+                pub fn set_full_name(
+                    &mut self,
+                    value: ::std::string::String,
+                ) -> &mut Self {
                     self._has.set_full_name();
                     self.r#full_name = value.into();
+                    self
                 }
                 ///Clear the presence of `full_name`
                 #[inline]
-                pub fn clear_full_name(&mut self) {
+                pub fn clear_full_name(&mut self) -> &mut Self {
                     self._has.clear_full_name();
+                    self
+                }
+                ///Take the value of `full_name` and clear its presence
+                #[inline]
+                pub fn take_full_name(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#full_name()
+                        .then(|| ::core::mem::take(&mut self.r#full_name));
+                    self._has.clear_full_name();
+                    val
+                }
+                ///Builder method that sets the value of `full_name`. Useful for initializing the message.
+                #[inline]
+                pub fn init_full_name(mut self, value: ::std::string::String) -> Self {
+                    self.set_full_name(value);
+                    self
                 }
                 ///Return a reference to `type` as an `Option`
                 #[inline]
@@ -1357,14 +1685,34 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `type`
                 #[inline]
-                pub fn set_type(&mut self, value: ::std::string::String) {
+                pub fn set_type(&mut self, value: ::std::string::String) -> &mut Self {
                     self._has.set_type();
                     self.r#type = value.into();
+                    self
                 }
                 ///Clear the presence of `type`
                 #[inline]
-                pub fn clear_type(&mut self) {
+                pub fn clear_type(&mut self) -> &mut Self {
                     self._has.clear_type();
+                    self
+                }
+                ///Take the value of `type` and clear its presence
+                #[inline]
+                pub fn take_type(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#type()
+                        .then(|| ::core::mem::take(&mut self.r#type));
+                    self._has.clear_type();
+                    val
+                }
+                ///Builder method that sets the value of `type`. Useful for initializing the message.
+                #[inline]
+                pub fn init_type(mut self, value: ::std::string::String) -> Self {
+                    self.set_type(value);
+                    self
                 }
                 ///Return a reference to `reserved` as an `Option`
                 #[inline]
@@ -1378,14 +1726,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `reserved`
                 #[inline]
-                pub fn set_reserved(&mut self, value: bool) {
+                pub fn set_reserved(&mut self, value: bool) -> &mut Self {
                     self._has.set_reserved();
                     self.r#reserved = value.into();
+                    self
                 }
                 ///Clear the presence of `reserved`
                 #[inline]
-                pub fn clear_reserved(&mut self) {
+                pub fn clear_reserved(&mut self) -> &mut Self {
                     self._has.clear_reserved();
+                    self
+                }
+                ///Take the value of `reserved` and clear its presence
+                #[inline]
+                pub fn take_reserved(&mut self) -> ::core::option::Option<bool> {
+                    let val = self
+                        ._has
+                        .r#reserved()
+                        .then(|| ::core::mem::take(&mut self.r#reserved));
+                    self._has.clear_reserved();
+                    val
+                }
+                ///Builder method that sets the value of `reserved`. Useful for initializing the message.
+                #[inline]
+                pub fn init_reserved(mut self, value: bool) -> Self {
+                    self.set_reserved(value);
+                    self
                 }
                 ///Return a reference to `repeated` as an `Option`
                 #[inline]
@@ -1399,14 +1765,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `repeated`
                 #[inline]
-                pub fn set_repeated(&mut self, value: bool) {
+                pub fn set_repeated(&mut self, value: bool) -> &mut Self {
                     self._has.set_repeated();
                     self.r#repeated = value.into();
+                    self
                 }
                 ///Clear the presence of `repeated`
                 #[inline]
-                pub fn clear_repeated(&mut self) {
+                pub fn clear_repeated(&mut self) -> &mut Self {
                     self._has.clear_repeated();
+                    self
+                }
+                ///Take the value of `repeated` and clear its presence
+                #[inline]
+                pub fn take_repeated(&mut self) -> ::core::option::Option<bool> {
+                    let val = self
+                        ._has
+                        .r#repeated()
+                        .then(|| ::core::mem::take(&mut self.r#repeated));
+                    self._has.clear_repeated();
+                    val
+                }
+                ///Builder method that sets the value of `repeated`. Useful for initializing the message.
+                #[inline]
+                pub fn init_repeated(mut self, value: bool) -> Self {
+                    self.set_repeated(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for Declaration {
@@ -1496,15 +1880,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1519,15 +1905,17 @@ pub mod google_ {
                 }
                 ///Set presence of `verification`
                 #[inline]
-                pub fn set_verification(&mut self) {
+                pub fn set_verification(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `verification`
                 #[inline]
-                pub fn clear_verification(&mut self) {
+                pub fn clear_verification(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `verification`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1569,14 +1957,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
             ///Return a reference to `verification` as an `Option`
             #[inline]
@@ -1597,14 +2003,37 @@ pub mod google_ {
             pub fn set_verification(
                 &mut self,
                 value: ExtensionRangeOptions_::VerificationState,
-            ) {
+            ) -> &mut Self {
                 self._has.set_verification();
                 self.r#verification = value.into();
+                self
             }
             ///Clear the presence of `verification`
             #[inline]
-            pub fn clear_verification(&mut self) {
+            pub fn clear_verification(&mut self) -> &mut Self {
                 self._has.clear_verification();
+                self
+            }
+            ///Take the value of `verification` and clear its presence
+            #[inline]
+            pub fn take_verification(
+                &mut self,
+            ) -> ::core::option::Option<ExtensionRangeOptions_::VerificationState> {
+                let val = self
+                    ._has
+                    .r#verification()
+                    .then(|| ::core::mem::take(&mut self.r#verification));
+                self._has.clear_verification();
+                val
+            }
+            ///Builder method that sets the value of `verification`. Useful for initializing the message.
+            #[inline]
+            pub fn init_verification(
+                mut self,
+                value: ExtensionRangeOptions_::VerificationState,
+            ) -> Self {
+                self.set_verification(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for ExtensionRangeOptions {
@@ -1734,15 +2163,17 @@ pub mod google_ {
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) {
+                pub fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) {
+                pub fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1757,15 +2188,17 @@ pub mod google_ {
                 }
                 ///Set presence of `number`
                 #[inline]
-                pub fn set_number(&mut self) {
+                pub fn set_number(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `number`
                 #[inline]
-                pub fn clear_number(&mut self) {
+                pub fn clear_number(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1780,15 +2213,17 @@ pub mod google_ {
                 }
                 ///Set presence of `label`
                 #[inline]
-                pub fn set_label(&mut self) {
+                pub fn set_label(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `label`
                 #[inline]
-                pub fn clear_label(&mut self) {
+                pub fn clear_label(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `label`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1803,15 +2238,17 @@ pub mod google_ {
                 }
                 ///Set presence of `type`
                 #[inline]
-                pub fn set_type(&mut self) {
+                pub fn set_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `type`
                 #[inline]
-                pub fn clear_type(&mut self) {
+                pub fn clear_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `type`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1826,15 +2263,17 @@ pub mod google_ {
                 }
                 ///Set presence of `type_name`
                 #[inline]
-                pub fn set_type_name(&mut self) {
+                pub fn set_type_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `type_name`
                 #[inline]
-                pub fn clear_type_name(&mut self) {
+                pub fn clear_type_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `type_name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1849,15 +2288,17 @@ pub mod google_ {
                 }
                 ///Set presence of `extendee`
                 #[inline]
-                pub fn set_extendee(&mut self) {
+                pub fn set_extendee(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `extendee`
                 #[inline]
-                pub fn clear_extendee(&mut self) {
+                pub fn clear_extendee(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `extendee`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1872,15 +2313,17 @@ pub mod google_ {
                 }
                 ///Set presence of `default_value`
                 #[inline]
-                pub fn set_default_value(&mut self) {
+                pub fn set_default_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 64;
+                    self
                 }
                 ///Clear presence of `default_value`
                 #[inline]
-                pub fn clear_default_value(&mut self) {
+                pub fn clear_default_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !64;
+                    self
                 }
                 ///Builder method that sets the presence of `default_value`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1895,15 +2338,17 @@ pub mod google_ {
                 }
                 ///Set presence of `oneof_index`
                 #[inline]
-                pub fn set_oneof_index(&mut self) {
+                pub fn set_oneof_index(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 128;
+                    self
                 }
                 ///Clear presence of `oneof_index`
                 #[inline]
-                pub fn clear_oneof_index(&mut self) {
+                pub fn clear_oneof_index(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !128;
+                    self
                 }
                 ///Builder method that sets the presence of `oneof_index`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1918,15 +2363,17 @@ pub mod google_ {
                 }
                 ///Set presence of `json_name`
                 #[inline]
-                pub fn set_json_name(&mut self) {
+                pub fn set_json_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `json_name`
                 #[inline]
-                pub fn clear_json_name(&mut self) {
+                pub fn clear_json_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `json_name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1941,15 +2388,17 @@ pub mod google_ {
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) {
+                pub fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
@@ -1964,15 +2413,17 @@ pub mod google_ {
                 }
                 ///Set presence of `proto3_optional`
                 #[inline]
-                pub fn set_proto3_optional(&mut self) {
+                pub fn set_proto3_optional(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `proto3_optional`
                 #[inline]
-                pub fn clear_proto3_optional(&mut self) {
+                pub fn clear_proto3_optional(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `proto3_optional`. Useful for initializing the Hazzer.
                 #[inline]
@@ -2030,14 +2481,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `name`
             #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) {
+            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_name();
                 self.r#name = value.into();
+                self
             }
             ///Clear the presence of `name`
             #[inline]
-            pub fn clear_name(&mut self) {
+            pub fn clear_name(&mut self) -> &mut Self {
                 self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
             }
             ///Return a reference to `number` as an `Option`
             #[inline]
@@ -2051,14 +2522,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `number`
             #[inline]
-            pub fn set_number(&mut self, value: i32) {
+            pub fn set_number(&mut self, value: i32) -> &mut Self {
                 self._has.set_number();
                 self.r#number = value.into();
+                self
             }
             ///Clear the presence of `number`
             #[inline]
-            pub fn clear_number(&mut self) {
+            pub fn clear_number(&mut self) -> &mut Self {
                 self._has.clear_number();
+                self
+            }
+            ///Take the value of `number` and clear its presence
+            #[inline]
+            pub fn take_number(&mut self) -> ::core::option::Option<i32> {
+                let val = self
+                    ._has
+                    .r#number()
+                    .then(|| ::core::mem::take(&mut self.r#number));
+                self._has.clear_number();
+                val
+            }
+            ///Builder method that sets the value of `number`. Useful for initializing the message.
+            #[inline]
+            pub fn init_number(mut self, value: i32) -> Self {
+                self.set_number(value);
+                self
             }
             ///Return a reference to `label` as an `Option`
             #[inline]
@@ -2076,14 +2565,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `label`
             #[inline]
-            pub fn set_label(&mut self, value: FieldDescriptorProto_::Label) {
+            pub fn set_label(
+                &mut self,
+                value: FieldDescriptorProto_::Label,
+            ) -> &mut Self {
                 self._has.set_label();
                 self.r#label = value.into();
+                self
             }
             ///Clear the presence of `label`
             #[inline]
-            pub fn clear_label(&mut self) {
+            pub fn clear_label(&mut self) -> &mut Self {
                 self._has.clear_label();
+                self
+            }
+            ///Take the value of `label` and clear its presence
+            #[inline]
+            pub fn take_label(
+                &mut self,
+            ) -> ::core::option::Option<FieldDescriptorProto_::Label> {
+                let val = self
+                    ._has
+                    .r#label()
+                    .then(|| ::core::mem::take(&mut self.r#label));
+                self._has.clear_label();
+                val
+            }
+            ///Builder method that sets the value of `label`. Useful for initializing the message.
+            #[inline]
+            pub fn init_label(mut self, value: FieldDescriptorProto_::Label) -> Self {
+                self.set_label(value);
+                self
             }
             ///Return a reference to `type` as an `Option`
             #[inline]
@@ -2101,14 +2613,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `type`
             #[inline]
-            pub fn set_type(&mut self, value: FieldDescriptorProto_::Type) {
+            pub fn set_type(&mut self, value: FieldDescriptorProto_::Type) -> &mut Self {
                 self._has.set_type();
                 self.r#type = value.into();
+                self
             }
             ///Clear the presence of `type`
             #[inline]
-            pub fn clear_type(&mut self) {
+            pub fn clear_type(&mut self) -> &mut Self {
                 self._has.clear_type();
+                self
+            }
+            ///Take the value of `type` and clear its presence
+            #[inline]
+            pub fn take_type(
+                &mut self,
+            ) -> ::core::option::Option<FieldDescriptorProto_::Type> {
+                let val = self
+                    ._has
+                    .r#type()
+                    .then(|| ::core::mem::take(&mut self.r#type));
+                self._has.clear_type();
+                val
+            }
+            ///Builder method that sets the value of `type`. Useful for initializing the message.
+            #[inline]
+            pub fn init_type(mut self, value: FieldDescriptorProto_::Type) -> Self {
+                self.set_type(value);
+                self
             }
             ///Return a reference to `type_name` as an `Option`
             #[inline]
@@ -2124,14 +2656,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `type_name`
             #[inline]
-            pub fn set_type_name(&mut self, value: ::std::string::String) {
+            pub fn set_type_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_type_name();
                 self.r#type_name = value.into();
+                self
             }
             ///Clear the presence of `type_name`
             #[inline]
-            pub fn clear_type_name(&mut self) {
+            pub fn clear_type_name(&mut self) -> &mut Self {
                 self._has.clear_type_name();
+                self
+            }
+            ///Take the value of `type_name` and clear its presence
+            #[inline]
+            pub fn take_type_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#type_name()
+                    .then(|| ::core::mem::take(&mut self.r#type_name));
+                self._has.clear_type_name();
+                val
+            }
+            ///Builder method that sets the value of `type_name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_type_name(mut self, value: ::std::string::String) -> Self {
+                self.set_type_name(value);
+                self
             }
             ///Return a reference to `extendee` as an `Option`
             #[inline]
@@ -2147,14 +2699,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `extendee`
             #[inline]
-            pub fn set_extendee(&mut self, value: ::std::string::String) {
+            pub fn set_extendee(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_extendee();
                 self.r#extendee = value.into();
+                self
             }
             ///Clear the presence of `extendee`
             #[inline]
-            pub fn clear_extendee(&mut self) {
+            pub fn clear_extendee(&mut self) -> &mut Self {
                 self._has.clear_extendee();
+                self
+            }
+            ///Take the value of `extendee` and clear its presence
+            #[inline]
+            pub fn take_extendee(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#extendee()
+                    .then(|| ::core::mem::take(&mut self.r#extendee));
+                self._has.clear_extendee();
+                val
+            }
+            ///Builder method that sets the value of `extendee`. Useful for initializing the message.
+            #[inline]
+            pub fn init_extendee(mut self, value: ::std::string::String) -> Self {
+                self.set_extendee(value);
+                self
             }
             ///Return a reference to `default_value` as an `Option`
             #[inline]
@@ -2172,14 +2744,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `default_value`
             #[inline]
-            pub fn set_default_value(&mut self, value: ::std::string::String) {
+            pub fn set_default_value(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_default_value();
                 self.r#default_value = value.into();
+                self
             }
             ///Clear the presence of `default_value`
             #[inline]
-            pub fn clear_default_value(&mut self) {
+            pub fn clear_default_value(&mut self) -> &mut Self {
                 self._has.clear_default_value();
+                self
+            }
+            ///Take the value of `default_value` and clear its presence
+            #[inline]
+            pub fn take_default_value(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#default_value()
+                    .then(|| ::core::mem::take(&mut self.r#default_value));
+                self._has.clear_default_value();
+                val
+            }
+            ///Builder method that sets the value of `default_value`. Useful for initializing the message.
+            #[inline]
+            pub fn init_default_value(mut self, value: ::std::string::String) -> Self {
+                self.set_default_value(value);
+                self
             }
             ///Return a reference to `oneof_index` as an `Option`
             #[inline]
@@ -2193,14 +2788,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `oneof_index`
             #[inline]
-            pub fn set_oneof_index(&mut self, value: i32) {
+            pub fn set_oneof_index(&mut self, value: i32) -> &mut Self {
                 self._has.set_oneof_index();
                 self.r#oneof_index = value.into();
+                self
             }
             ///Clear the presence of `oneof_index`
             #[inline]
-            pub fn clear_oneof_index(&mut self) {
+            pub fn clear_oneof_index(&mut self) -> &mut Self {
                 self._has.clear_oneof_index();
+                self
+            }
+            ///Take the value of `oneof_index` and clear its presence
+            #[inline]
+            pub fn take_oneof_index(&mut self) -> ::core::option::Option<i32> {
+                let val = self
+                    ._has
+                    .r#oneof_index()
+                    .then(|| ::core::mem::take(&mut self.r#oneof_index));
+                self._has.clear_oneof_index();
+                val
+            }
+            ///Builder method that sets the value of `oneof_index`. Useful for initializing the message.
+            #[inline]
+            pub fn init_oneof_index(mut self, value: i32) -> Self {
+                self.set_oneof_index(value);
+                self
             }
             ///Return a reference to `json_name` as an `Option`
             #[inline]
@@ -2216,14 +2829,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `json_name`
             #[inline]
-            pub fn set_json_name(&mut self, value: ::std::string::String) {
+            pub fn set_json_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_json_name();
                 self.r#json_name = value.into();
+                self
             }
             ///Clear the presence of `json_name`
             #[inline]
-            pub fn clear_json_name(&mut self) {
+            pub fn clear_json_name(&mut self) -> &mut Self {
                 self._has.clear_json_name();
+                self
+            }
+            ///Take the value of `json_name` and clear its presence
+            #[inline]
+            pub fn take_json_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#json_name()
+                    .then(|| ::core::mem::take(&mut self.r#json_name));
+                self._has.clear_json_name();
+                val
+            }
+            ///Builder method that sets the value of `json_name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_json_name(mut self, value: ::std::string::String) -> Self {
+                self.set_json_name(value);
+                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
@@ -2237,14 +2870,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `options`
             #[inline]
-            pub fn set_options(&mut self, value: FieldOptions) {
+            pub fn set_options(&mut self, value: FieldOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
             }
             ///Clear the presence of `options`
             #[inline]
-            pub fn clear_options(&mut self) {
+            pub fn clear_options(&mut self) -> &mut Self {
                 self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<FieldOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: FieldOptions) -> Self {
+                self.set_options(value);
+                self
             }
             ///Return a reference to `proto3_optional` as an `Option`
             #[inline]
@@ -2258,14 +2909,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `proto3_optional`
             #[inline]
-            pub fn set_proto3_optional(&mut self, value: bool) {
+            pub fn set_proto3_optional(&mut self, value: bool) -> &mut Self {
                 self._has.set_proto3_optional();
                 self.r#proto3_optional = value.into();
+                self
             }
             ///Clear the presence of `proto3_optional`
             #[inline]
-            pub fn clear_proto3_optional(&mut self) {
+            pub fn clear_proto3_optional(&mut self) -> &mut Self {
                 self._has.clear_proto3_optional();
+                self
+            }
+            ///Take the value of `proto3_optional` and clear its presence
+            #[inline]
+            pub fn take_proto3_optional(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#proto3_optional()
+                    .then(|| ::core::mem::take(&mut self.r#proto3_optional));
+                self._has.clear_proto3_optional();
+                val
+            }
+            ///Builder method that sets the value of `proto3_optional`. Useful for initializing the message.
+            #[inline]
+            pub fn init_proto3_optional(mut self, value: bool) -> Self {
+                self.set_proto3_optional(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for FieldDescriptorProto {
@@ -2390,15 +3059,17 @@ pub mod google_ {
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) {
+                pub fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) {
+                pub fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -2413,15 +3084,17 @@ pub mod google_ {
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) {
+                pub fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
@@ -2461,14 +3134,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `name`
             #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) {
+            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_name();
                 self.r#name = value.into();
+                self
             }
             ///Clear the presence of `name`
             #[inline]
-            pub fn clear_name(&mut self) {
+            pub fn clear_name(&mut self) -> &mut Self {
                 self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
@@ -2482,14 +3175,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `options`
             #[inline]
-            pub fn set_options(&mut self, value: OneofOptions) {
+            pub fn set_options(&mut self, value: OneofOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
             }
             ///Clear the presence of `options`
             #[inline]
-            pub fn clear_options(&mut self) {
+            pub fn clear_options(&mut self) -> &mut Self {
                 self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<OneofOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: OneofOptions) -> Self {
+                self.set_options(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for OneofDescriptorProto {
@@ -2539,15 +3250,17 @@ pub mod google_ {
                     }
                     ///Set presence of `start`
                     #[inline]
-                    pub fn set_start(&mut self) {
+                    pub fn set_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `start`
                     #[inline]
-                    pub fn clear_start(&mut self) {
+                    pub fn clear_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
                     #[inline]
@@ -2562,15 +3275,17 @@ pub mod google_ {
                     }
                     ///Set presence of `end`
                     #[inline]
-                    pub fn set_end(&mut self) {
+                    pub fn set_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `end`
                     #[inline]
-                    pub fn clear_end(&mut self) {
+                    pub fn clear_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
                     #[inline]
@@ -2608,14 +3323,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `start`
                 #[inline]
-                pub fn set_start(&mut self, value: i32) {
+                pub fn set_start(&mut self, value: i32) -> &mut Self {
                     self._has.set_start();
                     self.r#start = value.into();
+                    self
                 }
                 ///Clear the presence of `start`
                 #[inline]
-                pub fn clear_start(&mut self) {
+                pub fn clear_start(&mut self) -> &mut Self {
                     self._has.clear_start();
+                    self
+                }
+                ///Take the value of `start` and clear its presence
+                #[inline]
+                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#start()
+                        .then(|| ::core::mem::take(&mut self.r#start));
+                    self._has.clear_start();
+                    val
+                }
+                ///Builder method that sets the value of `start`. Useful for initializing the message.
+                #[inline]
+                pub fn init_start(mut self, value: i32) -> Self {
+                    self.set_start(value);
+                    self
                 }
                 ///Return a reference to `end` as an `Option`
                 #[inline]
@@ -2629,14 +3362,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `end`
                 #[inline]
-                pub fn set_end(&mut self, value: i32) {
+                pub fn set_end(&mut self, value: i32) -> &mut Self {
                     self._has.set_end();
                     self.r#end = value.into();
+                    self
                 }
                 ///Clear the presence of `end`
                 #[inline]
-                pub fn clear_end(&mut self) {
+                pub fn clear_end(&mut self) -> &mut Self {
                     self._has.clear_end();
+                    self
+                }
+                ///Take the value of `end` and clear its presence
+                #[inline]
+                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#end()
+                        .then(|| ::core::mem::take(&mut self.r#end));
+                    self._has.clear_end();
+                    val
+                }
+                ///Builder method that sets the value of `end`. Useful for initializing the message.
+                #[inline]
+                pub fn init_end(mut self, value: i32) -> Self {
+                    self.set_end(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for EnumReservedRange {
@@ -2685,15 +3436,17 @@ pub mod google_ {
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) {
+                pub fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) {
+                pub fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -2708,15 +3461,17 @@ pub mod google_ {
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) {
+                pub fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
@@ -2764,14 +3519,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `name`
             #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) {
+            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_name();
                 self.r#name = value.into();
+                self
             }
             ///Clear the presence of `name`
             #[inline]
-            pub fn clear_name(&mut self) {
+            pub fn clear_name(&mut self) -> &mut Self {
                 self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
@@ -2785,14 +3560,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `options`
             #[inline]
-            pub fn set_options(&mut self, value: EnumOptions) {
+            pub fn set_options(&mut self, value: EnumOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
             }
             ///Clear the presence of `options`
             #[inline]
-            pub fn clear_options(&mut self) {
+            pub fn clear_options(&mut self) -> &mut Self {
                 self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<EnumOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: EnumOptions) -> Self {
+                self.set_options(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for EnumDescriptorProto {
@@ -2881,15 +3674,17 @@ pub mod google_ {
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) {
+                pub fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) {
+                pub fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -2904,15 +3699,17 @@ pub mod google_ {
                 }
                 ///Set presence of `number`
                 #[inline]
-                pub fn set_number(&mut self) {
+                pub fn set_number(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `number`
                 #[inline]
-                pub fn clear_number(&mut self) {
+                pub fn clear_number(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
                 #[inline]
@@ -2927,15 +3724,17 @@ pub mod google_ {
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) {
+                pub fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
@@ -2977,14 +3776,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `name`
             #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) {
+            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_name();
                 self.r#name = value.into();
+                self
             }
             ///Clear the presence of `name`
             #[inline]
-            pub fn clear_name(&mut self) {
+            pub fn clear_name(&mut self) -> &mut Self {
                 self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
             }
             ///Return a reference to `number` as an `Option`
             #[inline]
@@ -2998,14 +3817,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `number`
             #[inline]
-            pub fn set_number(&mut self, value: i32) {
+            pub fn set_number(&mut self, value: i32) -> &mut Self {
                 self._has.set_number();
                 self.r#number = value.into();
+                self
             }
             ///Clear the presence of `number`
             #[inline]
-            pub fn clear_number(&mut self) {
+            pub fn clear_number(&mut self) -> &mut Self {
                 self._has.clear_number();
+                self
+            }
+            ///Take the value of `number` and clear its presence
+            #[inline]
+            pub fn take_number(&mut self) -> ::core::option::Option<i32> {
+                let val = self
+                    ._has
+                    .r#number()
+                    .then(|| ::core::mem::take(&mut self.r#number));
+                self._has.clear_number();
+                val
+            }
+            ///Builder method that sets the value of `number`. Useful for initializing the message.
+            #[inline]
+            pub fn init_number(mut self, value: i32) -> Self {
+                self.set_number(value);
+                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
@@ -3021,14 +3858,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `options`
             #[inline]
-            pub fn set_options(&mut self, value: EnumValueOptions) {
+            pub fn set_options(&mut self, value: EnumValueOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
             }
             ///Clear the presence of `options`
             #[inline]
-            pub fn clear_options(&mut self) {
+            pub fn clear_options(&mut self) -> &mut Self {
                 self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<EnumValueOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: EnumValueOptions) -> Self {
+                self.set_options(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for EnumValueDescriptorProto {
@@ -3085,15 +3940,17 @@ pub mod google_ {
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) {
+                pub fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) {
+                pub fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3108,15 +3965,17 @@ pub mod google_ {
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) {
+                pub fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3158,14 +4017,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `name`
             #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) {
+            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_name();
                 self.r#name = value.into();
+                self
             }
             ///Clear the presence of `name`
             #[inline]
-            pub fn clear_name(&mut self) {
+            pub fn clear_name(&mut self) -> &mut Self {
                 self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
@@ -3181,14 +4060,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `options`
             #[inline]
-            pub fn set_options(&mut self, value: ServiceOptions) {
+            pub fn set_options(&mut self, value: ServiceOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
             }
             ///Clear the presence of `options`
             #[inline]
-            pub fn clear_options(&mut self) {
+            pub fn clear_options(&mut self) -> &mut Self {
                 self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<ServiceOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: ServiceOptions) -> Self {
+                self.set_options(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for ServiceDescriptorProto {
@@ -3250,15 +4147,17 @@ pub mod google_ {
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) {
+                pub fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) {
+                pub fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3273,15 +4172,17 @@ pub mod google_ {
                 }
                 ///Set presence of `input_type`
                 #[inline]
-                pub fn set_input_type(&mut self) {
+                pub fn set_input_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `input_type`
                 #[inline]
-                pub fn clear_input_type(&mut self) {
+                pub fn clear_input_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `input_type`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3296,15 +4197,17 @@ pub mod google_ {
                 }
                 ///Set presence of `output_type`
                 #[inline]
-                pub fn set_output_type(&mut self) {
+                pub fn set_output_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `output_type`
                 #[inline]
-                pub fn clear_output_type(&mut self) {
+                pub fn clear_output_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `output_type`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3319,15 +4222,17 @@ pub mod google_ {
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) {
+                pub fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) {
+                pub fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3342,15 +4247,17 @@ pub mod google_ {
                 }
                 ///Set presence of `client_streaming`
                 #[inline]
-                pub fn set_client_streaming(&mut self) {
+                pub fn set_client_streaming(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `client_streaming`
                 #[inline]
-                pub fn clear_client_streaming(&mut self) {
+                pub fn clear_client_streaming(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `client_streaming`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3365,15 +4272,17 @@ pub mod google_ {
                 }
                 ///Set presence of `server_streaming`
                 #[inline]
-                pub fn set_server_streaming(&mut self) {
+                pub fn set_server_streaming(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `server_streaming`
                 #[inline]
-                pub fn clear_server_streaming(&mut self) {
+                pub fn clear_server_streaming(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `server_streaming`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3421,14 +4330,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `name`
             #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) {
+            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_name();
                 self.r#name = value.into();
+                self
             }
             ///Clear the presence of `name`
             #[inline]
-            pub fn clear_name(&mut self) {
+            pub fn clear_name(&mut self) -> &mut Self {
                 self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
             }
             ///Return a reference to `input_type` as an `Option`
             #[inline]
@@ -3446,14 +4375,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `input_type`
             #[inline]
-            pub fn set_input_type(&mut self, value: ::std::string::String) {
+            pub fn set_input_type(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_input_type();
                 self.r#input_type = value.into();
+                self
             }
             ///Clear the presence of `input_type`
             #[inline]
-            pub fn clear_input_type(&mut self) {
+            pub fn clear_input_type(&mut self) -> &mut Self {
                 self._has.clear_input_type();
+                self
+            }
+            ///Take the value of `input_type` and clear its presence
+            #[inline]
+            pub fn take_input_type(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#input_type()
+                    .then(|| ::core::mem::take(&mut self.r#input_type));
+                self._has.clear_input_type();
+                val
+            }
+            ///Builder method that sets the value of `input_type`. Useful for initializing the message.
+            #[inline]
+            pub fn init_input_type(mut self, value: ::std::string::String) -> Self {
+                self.set_input_type(value);
+                self
             }
             ///Return a reference to `output_type` as an `Option`
             #[inline]
@@ -3471,14 +4420,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `output_type`
             #[inline]
-            pub fn set_output_type(&mut self, value: ::std::string::String) {
+            pub fn set_output_type(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_output_type();
                 self.r#output_type = value.into();
+                self
             }
             ///Clear the presence of `output_type`
             #[inline]
-            pub fn clear_output_type(&mut self) {
+            pub fn clear_output_type(&mut self) -> &mut Self {
                 self._has.clear_output_type();
+                self
+            }
+            ///Take the value of `output_type` and clear its presence
+            #[inline]
+            pub fn take_output_type(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#output_type()
+                    .then(|| ::core::mem::take(&mut self.r#output_type));
+                self._has.clear_output_type();
+                val
+            }
+            ///Builder method that sets the value of `output_type`. Useful for initializing the message.
+            #[inline]
+            pub fn init_output_type(mut self, value: ::std::string::String) -> Self {
+                self.set_output_type(value);
+                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
@@ -3492,14 +4464,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `options`
             #[inline]
-            pub fn set_options(&mut self, value: MethodOptions) {
+            pub fn set_options(&mut self, value: MethodOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
             }
             ///Clear the presence of `options`
             #[inline]
-            pub fn clear_options(&mut self) {
+            pub fn clear_options(&mut self) -> &mut Self {
                 self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<MethodOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: MethodOptions) -> Self {
+                self.set_options(value);
+                self
             }
             ///Return a reference to `client_streaming` as an `Option`
             #[inline]
@@ -3513,14 +4503,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `client_streaming`
             #[inline]
-            pub fn set_client_streaming(&mut self, value: bool) {
+            pub fn set_client_streaming(&mut self, value: bool) -> &mut Self {
                 self._has.set_client_streaming();
                 self.r#client_streaming = value.into();
+                self
             }
             ///Clear the presence of `client_streaming`
             #[inline]
-            pub fn clear_client_streaming(&mut self) {
+            pub fn clear_client_streaming(&mut self) -> &mut Self {
                 self._has.clear_client_streaming();
+                self
+            }
+            ///Take the value of `client_streaming` and clear its presence
+            #[inline]
+            pub fn take_client_streaming(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#client_streaming()
+                    .then(|| ::core::mem::take(&mut self.r#client_streaming));
+                self._has.clear_client_streaming();
+                val
+            }
+            ///Builder method that sets the value of `client_streaming`. Useful for initializing the message.
+            #[inline]
+            pub fn init_client_streaming(mut self, value: bool) -> Self {
+                self.set_client_streaming(value);
+                self
             }
             ///Return a reference to `server_streaming` as an `Option`
             #[inline]
@@ -3534,14 +4542,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `server_streaming`
             #[inline]
-            pub fn set_server_streaming(&mut self, value: bool) {
+            pub fn set_server_streaming(&mut self, value: bool) -> &mut Self {
                 self._has.set_server_streaming();
                 self.r#server_streaming = value.into();
+                self
             }
             ///Clear the presence of `server_streaming`
             #[inline]
-            pub fn clear_server_streaming(&mut self) {
+            pub fn clear_server_streaming(&mut self) -> &mut Self {
                 self._has.clear_server_streaming();
+                self
+            }
+            ///Take the value of `server_streaming` and clear its presence
+            #[inline]
+            pub fn take_server_streaming(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#server_streaming()
+                    .then(|| ::core::mem::take(&mut self.r#server_streaming));
+                self._has.clear_server_streaming();
+                val
+            }
+            ///Builder method that sets the value of `server_streaming`. Useful for initializing the message.
+            #[inline]
+            pub fn init_server_streaming(mut self, value: bool) -> Self {
+                self.set_server_streaming(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for MethodDescriptorProto {
@@ -3640,15 +4666,17 @@ pub mod google_ {
                 }
                 ///Set presence of `java_package`
                 #[inline]
-                pub fn set_java_package(&mut self) {
+                pub fn set_java_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `java_package`
                 #[inline]
-                pub fn clear_java_package(&mut self) {
+                pub fn clear_java_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `java_package`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3663,15 +4691,17 @@ pub mod google_ {
                 }
                 ///Set presence of `java_outer_classname`
                 #[inline]
-                pub fn set_java_outer_classname(&mut self) {
+                pub fn set_java_outer_classname(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `java_outer_classname`
                 #[inline]
-                pub fn clear_java_outer_classname(&mut self) {
+                pub fn clear_java_outer_classname(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `java_outer_classname`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3686,15 +4716,17 @@ pub mod google_ {
                 }
                 ///Set presence of `java_multiple_files`
                 #[inline]
-                pub fn set_java_multiple_files(&mut self) {
+                pub fn set_java_multiple_files(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `java_multiple_files`
                 #[inline]
-                pub fn clear_java_multiple_files(&mut self) {
+                pub fn clear_java_multiple_files(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `java_multiple_files`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3709,15 +4741,17 @@ pub mod google_ {
                 }
                 ///Set presence of `java_generate_equals_and_hash`
                 #[inline]
-                pub fn set_java_generate_equals_and_hash(&mut self) {
+                pub fn set_java_generate_equals_and_hash(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `java_generate_equals_and_hash`
                 #[inline]
-                pub fn clear_java_generate_equals_and_hash(&mut self) {
+                pub fn clear_java_generate_equals_and_hash(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `java_generate_equals_and_hash`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3732,15 +4766,17 @@ pub mod google_ {
                 }
                 ///Set presence of `java_string_check_utf8`
                 #[inline]
-                pub fn set_java_string_check_utf8(&mut self) {
+                pub fn set_java_string_check_utf8(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `java_string_check_utf8`
                 #[inline]
-                pub fn clear_java_string_check_utf8(&mut self) {
+                pub fn clear_java_string_check_utf8(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `java_string_check_utf8`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3755,15 +4791,17 @@ pub mod google_ {
                 }
                 ///Set presence of `optimize_for`
                 #[inline]
-                pub fn set_optimize_for(&mut self) {
+                pub fn set_optimize_for(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `optimize_for`
                 #[inline]
-                pub fn clear_optimize_for(&mut self) {
+                pub fn clear_optimize_for(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `optimize_for`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3778,15 +4816,17 @@ pub mod google_ {
                 }
                 ///Set presence of `go_package`
                 #[inline]
-                pub fn set_go_package(&mut self) {
+                pub fn set_go_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 64;
+                    self
                 }
                 ///Clear presence of `go_package`
                 #[inline]
-                pub fn clear_go_package(&mut self) {
+                pub fn clear_go_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !64;
+                    self
                 }
                 ///Builder method that sets the presence of `go_package`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3801,15 +4841,17 @@ pub mod google_ {
                 }
                 ///Set presence of `cc_generic_services`
                 #[inline]
-                pub fn set_cc_generic_services(&mut self) {
+                pub fn set_cc_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 128;
+                    self
                 }
                 ///Clear presence of `cc_generic_services`
                 #[inline]
-                pub fn clear_cc_generic_services(&mut self) {
+                pub fn clear_cc_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !128;
+                    self
                 }
                 ///Builder method that sets the presence of `cc_generic_services`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3824,15 +4866,17 @@ pub mod google_ {
                 }
                 ///Set presence of `java_generic_services`
                 #[inline]
-                pub fn set_java_generic_services(&mut self) {
+                pub fn set_java_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `java_generic_services`
                 #[inline]
-                pub fn clear_java_generic_services(&mut self) {
+                pub fn clear_java_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `java_generic_services`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3847,15 +4891,17 @@ pub mod google_ {
                 }
                 ///Set presence of `py_generic_services`
                 #[inline]
-                pub fn set_py_generic_services(&mut self) {
+                pub fn set_py_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `py_generic_services`
                 #[inline]
-                pub fn clear_py_generic_services(&mut self) {
+                pub fn clear_py_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `py_generic_services`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3870,15 +4916,17 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) {
+                pub fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) {
+                pub fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3893,15 +4941,17 @@ pub mod google_ {
                 }
                 ///Set presence of `cc_enable_arenas`
                 #[inline]
-                pub fn set_cc_enable_arenas(&mut self) {
+                pub fn set_cc_enable_arenas(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `cc_enable_arenas`
                 #[inline]
-                pub fn clear_cc_enable_arenas(&mut self) {
+                pub fn clear_cc_enable_arenas(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `cc_enable_arenas`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3916,15 +4966,17 @@ pub mod google_ {
                 }
                 ///Set presence of `objc_class_prefix`
                 #[inline]
-                pub fn set_objc_class_prefix(&mut self) {
+                pub fn set_objc_class_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `objc_class_prefix`
                 #[inline]
-                pub fn clear_objc_class_prefix(&mut self) {
+                pub fn clear_objc_class_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `objc_class_prefix`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3939,15 +4991,17 @@ pub mod google_ {
                 }
                 ///Set presence of `csharp_namespace`
                 #[inline]
-                pub fn set_csharp_namespace(&mut self) {
+                pub fn set_csharp_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `csharp_namespace`
                 #[inline]
-                pub fn clear_csharp_namespace(&mut self) {
+                pub fn clear_csharp_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `csharp_namespace`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3962,15 +5016,17 @@ pub mod google_ {
                 }
                 ///Set presence of `swift_prefix`
                 #[inline]
-                pub fn set_swift_prefix(&mut self) {
+                pub fn set_swift_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 64;
+                    self
                 }
                 ///Clear presence of `swift_prefix`
                 #[inline]
-                pub fn clear_swift_prefix(&mut self) {
+                pub fn clear_swift_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !64;
+                    self
                 }
                 ///Builder method that sets the presence of `swift_prefix`. Useful for initializing the Hazzer.
                 #[inline]
@@ -3985,15 +5041,17 @@ pub mod google_ {
                 }
                 ///Set presence of `php_class_prefix`
                 #[inline]
-                pub fn set_php_class_prefix(&mut self) {
+                pub fn set_php_class_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 128;
+                    self
                 }
                 ///Clear presence of `php_class_prefix`
                 #[inline]
-                pub fn clear_php_class_prefix(&mut self) {
+                pub fn clear_php_class_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !128;
+                    self
                 }
                 ///Builder method that sets the presence of `php_class_prefix`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4008,15 +5066,17 @@ pub mod google_ {
                 }
                 ///Set presence of `php_namespace`
                 #[inline]
-                pub fn set_php_namespace(&mut self) {
+                pub fn set_php_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `php_namespace`
                 #[inline]
-                pub fn clear_php_namespace(&mut self) {
+                pub fn clear_php_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `php_namespace`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4031,15 +5091,17 @@ pub mod google_ {
                 }
                 ///Set presence of `php_metadata_namespace`
                 #[inline]
-                pub fn set_php_metadata_namespace(&mut self) {
+                pub fn set_php_metadata_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `php_metadata_namespace`
                 #[inline]
-                pub fn clear_php_metadata_namespace(&mut self) {
+                pub fn clear_php_metadata_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `php_metadata_namespace`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4054,15 +5116,17 @@ pub mod google_ {
                 }
                 ///Set presence of `ruby_package`
                 #[inline]
-                pub fn set_ruby_package(&mut self) {
+                pub fn set_ruby_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `ruby_package`
                 #[inline]
-                pub fn clear_ruby_package(&mut self) {
+                pub fn clear_ruby_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `ruby_package`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4077,15 +5141,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4165,14 +5231,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `java_package`
             #[inline]
-            pub fn set_java_package(&mut self, value: ::std::string::String) {
+            pub fn set_java_package(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_java_package();
                 self.r#java_package = value.into();
+                self
             }
             ///Clear the presence of `java_package`
             #[inline]
-            pub fn clear_java_package(&mut self) {
+            pub fn clear_java_package(&mut self) -> &mut Self {
                 self._has.clear_java_package();
+                self
+            }
+            ///Take the value of `java_package` and clear its presence
+            #[inline]
+            pub fn take_java_package(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#java_package()
+                    .then(|| ::core::mem::take(&mut self.r#java_package));
+                self._has.clear_java_package();
+                val
+            }
+            ///Builder method that sets the value of `java_package`. Useful for initializing the message.
+            #[inline]
+            pub fn init_java_package(mut self, value: ::std::string::String) -> Self {
+                self.set_java_package(value);
+                self
             }
             ///Return a reference to `java_outer_classname` as an `Option`
             #[inline]
@@ -4194,14 +5283,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `java_outer_classname`
             #[inline]
-            pub fn set_java_outer_classname(&mut self, value: ::std::string::String) {
+            pub fn set_java_outer_classname(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_java_outer_classname();
                 self.r#java_outer_classname = value.into();
+                self
             }
             ///Clear the presence of `java_outer_classname`
             #[inline]
-            pub fn clear_java_outer_classname(&mut self) {
+            pub fn clear_java_outer_classname(&mut self) -> &mut Self {
                 self._has.clear_java_outer_classname();
+                self
+            }
+            ///Take the value of `java_outer_classname` and clear its presence
+            #[inline]
+            pub fn take_java_outer_classname(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#java_outer_classname()
+                    .then(|| ::core::mem::take(&mut self.r#java_outer_classname));
+                self._has.clear_java_outer_classname();
+                val
+            }
+            ///Builder method that sets the value of `java_outer_classname`. Useful for initializing the message.
+            #[inline]
+            pub fn init_java_outer_classname(
+                mut self,
+                value: ::std::string::String,
+            ) -> Self {
+                self.set_java_outer_classname(value);
+                self
             }
             ///Return a reference to `java_multiple_files` as an `Option`
             #[inline]
@@ -4219,14 +5334,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `java_multiple_files`
             #[inline]
-            pub fn set_java_multiple_files(&mut self, value: bool) {
+            pub fn set_java_multiple_files(&mut self, value: bool) -> &mut Self {
                 self._has.set_java_multiple_files();
                 self.r#java_multiple_files = value.into();
+                self
             }
             ///Clear the presence of `java_multiple_files`
             #[inline]
-            pub fn clear_java_multiple_files(&mut self) {
+            pub fn clear_java_multiple_files(&mut self) -> &mut Self {
                 self._has.clear_java_multiple_files();
+                self
+            }
+            ///Take the value of `java_multiple_files` and clear its presence
+            #[inline]
+            pub fn take_java_multiple_files(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#java_multiple_files()
+                    .then(|| ::core::mem::take(&mut self.r#java_multiple_files));
+                self._has.clear_java_multiple_files();
+                val
+            }
+            ///Builder method that sets the value of `java_multiple_files`. Useful for initializing the message.
+            #[inline]
+            pub fn init_java_multiple_files(mut self, value: bool) -> Self {
+                self.set_java_multiple_files(value);
+                self
             }
             ///Return a reference to `java_generate_equals_and_hash` as an `Option`
             #[inline]
@@ -4248,14 +5381,39 @@ pub mod google_ {
             }
             ///Set the value and presence of `java_generate_equals_and_hash`
             #[inline]
-            pub fn set_java_generate_equals_and_hash(&mut self, value: bool) {
+            pub fn set_java_generate_equals_and_hash(
+                &mut self,
+                value: bool,
+            ) -> &mut Self {
                 self._has.set_java_generate_equals_and_hash();
                 self.r#java_generate_equals_and_hash = value.into();
+                self
             }
             ///Clear the presence of `java_generate_equals_and_hash`
             #[inline]
-            pub fn clear_java_generate_equals_and_hash(&mut self) {
+            pub fn clear_java_generate_equals_and_hash(&mut self) -> &mut Self {
                 self._has.clear_java_generate_equals_and_hash();
+                self
+            }
+            ///Take the value of `java_generate_equals_and_hash` and clear its presence
+            #[inline]
+            pub fn take_java_generate_equals_and_hash(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#java_generate_equals_and_hash()
+                    .then(|| ::core::mem::take(
+                        &mut self.r#java_generate_equals_and_hash,
+                    ));
+                self._has.clear_java_generate_equals_and_hash();
+                val
+            }
+            ///Builder method that sets the value of `java_generate_equals_and_hash`. Useful for initializing the message.
+            #[inline]
+            pub fn init_java_generate_equals_and_hash(mut self, value: bool) -> Self {
+                self.set_java_generate_equals_and_hash(value);
+                self
             }
             ///Return a reference to `java_string_check_utf8` as an `Option`
             #[inline]
@@ -4275,14 +5433,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `java_string_check_utf8`
             #[inline]
-            pub fn set_java_string_check_utf8(&mut self, value: bool) {
+            pub fn set_java_string_check_utf8(&mut self, value: bool) -> &mut Self {
                 self._has.set_java_string_check_utf8();
                 self.r#java_string_check_utf8 = value.into();
+                self
             }
             ///Clear the presence of `java_string_check_utf8`
             #[inline]
-            pub fn clear_java_string_check_utf8(&mut self) {
+            pub fn clear_java_string_check_utf8(&mut self) -> &mut Self {
                 self._has.clear_java_string_check_utf8();
+                self
+            }
+            ///Take the value of `java_string_check_utf8` and clear its presence
+            #[inline]
+            pub fn take_java_string_check_utf8(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#java_string_check_utf8()
+                    .then(|| ::core::mem::take(&mut self.r#java_string_check_utf8));
+                self._has.clear_java_string_check_utf8();
+                val
+            }
+            ///Builder method that sets the value of `java_string_check_utf8`. Useful for initializing the message.
+            #[inline]
+            pub fn init_java_string_check_utf8(mut self, value: bool) -> Self {
+                self.set_java_string_check_utf8(value);
+                self
             }
             ///Return a reference to `optimize_for` as an `Option`
             #[inline]
@@ -4300,14 +5478,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `optimize_for`
             #[inline]
-            pub fn set_optimize_for(&mut self, value: FileOptions_::OptimizeMode) {
+            pub fn set_optimize_for(
+                &mut self,
+                value: FileOptions_::OptimizeMode,
+            ) -> &mut Self {
                 self._has.set_optimize_for();
                 self.r#optimize_for = value.into();
+                self
             }
             ///Clear the presence of `optimize_for`
             #[inline]
-            pub fn clear_optimize_for(&mut self) {
+            pub fn clear_optimize_for(&mut self) -> &mut Self {
                 self._has.clear_optimize_for();
+                self
+            }
+            ///Take the value of `optimize_for` and clear its presence
+            #[inline]
+            pub fn take_optimize_for(
+                &mut self,
+            ) -> ::core::option::Option<FileOptions_::OptimizeMode> {
+                let val = self
+                    ._has
+                    .r#optimize_for()
+                    .then(|| ::core::mem::take(&mut self.r#optimize_for));
+                self._has.clear_optimize_for();
+                val
+            }
+            ///Builder method that sets the value of `optimize_for`. Useful for initializing the message.
+            #[inline]
+            pub fn init_optimize_for(
+                mut self,
+                value: FileOptions_::OptimizeMode,
+            ) -> Self {
+                self.set_optimize_for(value);
+                self
             }
             ///Return a reference to `go_package` as an `Option`
             #[inline]
@@ -4325,14 +5529,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `go_package`
             #[inline]
-            pub fn set_go_package(&mut self, value: ::std::string::String) {
+            pub fn set_go_package(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_go_package();
                 self.r#go_package = value.into();
+                self
             }
             ///Clear the presence of `go_package`
             #[inline]
-            pub fn clear_go_package(&mut self) {
+            pub fn clear_go_package(&mut self) -> &mut Self {
                 self._has.clear_go_package();
+                self
+            }
+            ///Take the value of `go_package` and clear its presence
+            #[inline]
+            pub fn take_go_package(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#go_package()
+                    .then(|| ::core::mem::take(&mut self.r#go_package));
+                self._has.clear_go_package();
+                val
+            }
+            ///Builder method that sets the value of `go_package`. Useful for initializing the message.
+            #[inline]
+            pub fn init_go_package(mut self, value: ::std::string::String) -> Self {
+                self.set_go_package(value);
+                self
             }
             ///Return a reference to `cc_generic_services` as an `Option`
             #[inline]
@@ -4350,14 +5574,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `cc_generic_services`
             #[inline]
-            pub fn set_cc_generic_services(&mut self, value: bool) {
+            pub fn set_cc_generic_services(&mut self, value: bool) -> &mut Self {
                 self._has.set_cc_generic_services();
                 self.r#cc_generic_services = value.into();
+                self
             }
             ///Clear the presence of `cc_generic_services`
             #[inline]
-            pub fn clear_cc_generic_services(&mut self) {
+            pub fn clear_cc_generic_services(&mut self) -> &mut Self {
                 self._has.clear_cc_generic_services();
+                self
+            }
+            ///Take the value of `cc_generic_services` and clear its presence
+            #[inline]
+            pub fn take_cc_generic_services(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#cc_generic_services()
+                    .then(|| ::core::mem::take(&mut self.r#cc_generic_services));
+                self._has.clear_cc_generic_services();
+                val
+            }
+            ///Builder method that sets the value of `cc_generic_services`. Useful for initializing the message.
+            #[inline]
+            pub fn init_cc_generic_services(mut self, value: bool) -> Self {
+                self.set_cc_generic_services(value);
+                self
             }
             ///Return a reference to `java_generic_services` as an `Option`
             #[inline]
@@ -4377,14 +5619,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `java_generic_services`
             #[inline]
-            pub fn set_java_generic_services(&mut self, value: bool) {
+            pub fn set_java_generic_services(&mut self, value: bool) -> &mut Self {
                 self._has.set_java_generic_services();
                 self.r#java_generic_services = value.into();
+                self
             }
             ///Clear the presence of `java_generic_services`
             #[inline]
-            pub fn clear_java_generic_services(&mut self) {
+            pub fn clear_java_generic_services(&mut self) -> &mut Self {
                 self._has.clear_java_generic_services();
+                self
+            }
+            ///Take the value of `java_generic_services` and clear its presence
+            #[inline]
+            pub fn take_java_generic_services(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#java_generic_services()
+                    .then(|| ::core::mem::take(&mut self.r#java_generic_services));
+                self._has.clear_java_generic_services();
+                val
+            }
+            ///Builder method that sets the value of `java_generic_services`. Useful for initializing the message.
+            #[inline]
+            pub fn init_java_generic_services(mut self, value: bool) -> Self {
+                self.set_java_generic_services(value);
+                self
             }
             ///Return a reference to `py_generic_services` as an `Option`
             #[inline]
@@ -4402,14 +5664,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `py_generic_services`
             #[inline]
-            pub fn set_py_generic_services(&mut self, value: bool) {
+            pub fn set_py_generic_services(&mut self, value: bool) -> &mut Self {
                 self._has.set_py_generic_services();
                 self.r#py_generic_services = value.into();
+                self
             }
             ///Clear the presence of `py_generic_services`
             #[inline]
-            pub fn clear_py_generic_services(&mut self) {
+            pub fn clear_py_generic_services(&mut self) -> &mut Self {
                 self._has.clear_py_generic_services();
+                self
+            }
+            ///Take the value of `py_generic_services` and clear its presence
+            #[inline]
+            pub fn take_py_generic_services(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#py_generic_services()
+                    .then(|| ::core::mem::take(&mut self.r#py_generic_services));
+                self._has.clear_py_generic_services();
+                val
+            }
+            ///Builder method that sets the value of `py_generic_services`. Useful for initializing the message.
+            #[inline]
+            pub fn init_py_generic_services(mut self, value: bool) -> Self {
+                self.set_py_generic_services(value);
+                self
             }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
@@ -4423,14 +5703,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated`
             #[inline]
-            pub fn set_deprecated(&mut self, value: bool) {
+            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
                 self._has.set_deprecated();
                 self.r#deprecated = value.into();
+                self
             }
             ///Clear the presence of `deprecated`
             #[inline]
-            pub fn clear_deprecated(&mut self) {
+            pub fn clear_deprecated(&mut self) -> &mut Self {
                 self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
+                self
             }
             ///Return a reference to `cc_enable_arenas` as an `Option`
             #[inline]
@@ -4444,14 +5742,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `cc_enable_arenas`
             #[inline]
-            pub fn set_cc_enable_arenas(&mut self, value: bool) {
+            pub fn set_cc_enable_arenas(&mut self, value: bool) -> &mut Self {
                 self._has.set_cc_enable_arenas();
                 self.r#cc_enable_arenas = value.into();
+                self
             }
             ///Clear the presence of `cc_enable_arenas`
             #[inline]
-            pub fn clear_cc_enable_arenas(&mut self) {
+            pub fn clear_cc_enable_arenas(&mut self) -> &mut Self {
                 self._has.clear_cc_enable_arenas();
+                self
+            }
+            ///Take the value of `cc_enable_arenas` and clear its presence
+            #[inline]
+            pub fn take_cc_enable_arenas(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#cc_enable_arenas()
+                    .then(|| ::core::mem::take(&mut self.r#cc_enable_arenas));
+                self._has.clear_cc_enable_arenas();
+                val
+            }
+            ///Builder method that sets the value of `cc_enable_arenas`. Useful for initializing the message.
+            #[inline]
+            pub fn init_cc_enable_arenas(mut self, value: bool) -> Self {
+                self.set_cc_enable_arenas(value);
+                self
             }
             ///Return a reference to `objc_class_prefix` as an `Option`
             #[inline]
@@ -4469,14 +5785,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `objc_class_prefix`
             #[inline]
-            pub fn set_objc_class_prefix(&mut self, value: ::std::string::String) {
+            pub fn set_objc_class_prefix(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_objc_class_prefix();
                 self.r#objc_class_prefix = value.into();
+                self
             }
             ///Clear the presence of `objc_class_prefix`
             #[inline]
-            pub fn clear_objc_class_prefix(&mut self) {
+            pub fn clear_objc_class_prefix(&mut self) -> &mut Self {
                 self._has.clear_objc_class_prefix();
+                self
+            }
+            ///Take the value of `objc_class_prefix` and clear its presence
+            #[inline]
+            pub fn take_objc_class_prefix(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#objc_class_prefix()
+                    .then(|| ::core::mem::take(&mut self.r#objc_class_prefix));
+                self._has.clear_objc_class_prefix();
+                val
+            }
+            ///Builder method that sets the value of `objc_class_prefix`. Useful for initializing the message.
+            #[inline]
+            pub fn init_objc_class_prefix(
+                mut self,
+                value: ::std::string::String,
+            ) -> Self {
+                self.set_objc_class_prefix(value);
+                self
             }
             ///Return a reference to `csharp_namespace` as an `Option`
             #[inline]
@@ -4494,14 +5836,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `csharp_namespace`
             #[inline]
-            pub fn set_csharp_namespace(&mut self, value: ::std::string::String) {
+            pub fn set_csharp_namespace(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_csharp_namespace();
                 self.r#csharp_namespace = value.into();
+                self
             }
             ///Clear the presence of `csharp_namespace`
             #[inline]
-            pub fn clear_csharp_namespace(&mut self) {
+            pub fn clear_csharp_namespace(&mut self) -> &mut Self {
                 self._has.clear_csharp_namespace();
+                self
+            }
+            ///Take the value of `csharp_namespace` and clear its presence
+            #[inline]
+            pub fn take_csharp_namespace(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#csharp_namespace()
+                    .then(|| ::core::mem::take(&mut self.r#csharp_namespace));
+                self._has.clear_csharp_namespace();
+                val
+            }
+            ///Builder method that sets the value of `csharp_namespace`. Useful for initializing the message.
+            #[inline]
+            pub fn init_csharp_namespace(
+                mut self,
+                value: ::std::string::String,
+            ) -> Self {
+                self.set_csharp_namespace(value);
+                self
             }
             ///Return a reference to `swift_prefix` as an `Option`
             #[inline]
@@ -4519,14 +5887,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `swift_prefix`
             #[inline]
-            pub fn set_swift_prefix(&mut self, value: ::std::string::String) {
+            pub fn set_swift_prefix(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_swift_prefix();
                 self.r#swift_prefix = value.into();
+                self
             }
             ///Clear the presence of `swift_prefix`
             #[inline]
-            pub fn clear_swift_prefix(&mut self) {
+            pub fn clear_swift_prefix(&mut self) -> &mut Self {
                 self._has.clear_swift_prefix();
+                self
+            }
+            ///Take the value of `swift_prefix` and clear its presence
+            #[inline]
+            pub fn take_swift_prefix(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#swift_prefix()
+                    .then(|| ::core::mem::take(&mut self.r#swift_prefix));
+                self._has.clear_swift_prefix();
+                val
+            }
+            ///Builder method that sets the value of `swift_prefix`. Useful for initializing the message.
+            #[inline]
+            pub fn init_swift_prefix(mut self, value: ::std::string::String) -> Self {
+                self.set_swift_prefix(value);
+                self
             }
             ///Return a reference to `php_class_prefix` as an `Option`
             #[inline]
@@ -4544,14 +5935,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `php_class_prefix`
             #[inline]
-            pub fn set_php_class_prefix(&mut self, value: ::std::string::String) {
+            pub fn set_php_class_prefix(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_php_class_prefix();
                 self.r#php_class_prefix = value.into();
+                self
             }
             ///Clear the presence of `php_class_prefix`
             #[inline]
-            pub fn clear_php_class_prefix(&mut self) {
+            pub fn clear_php_class_prefix(&mut self) -> &mut Self {
                 self._has.clear_php_class_prefix();
+                self
+            }
+            ///Take the value of `php_class_prefix` and clear its presence
+            #[inline]
+            pub fn take_php_class_prefix(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#php_class_prefix()
+                    .then(|| ::core::mem::take(&mut self.r#php_class_prefix));
+                self._has.clear_php_class_prefix();
+                val
+            }
+            ///Builder method that sets the value of `php_class_prefix`. Useful for initializing the message.
+            #[inline]
+            pub fn init_php_class_prefix(
+                mut self,
+                value: ::std::string::String,
+            ) -> Self {
+                self.set_php_class_prefix(value);
+                self
             }
             ///Return a reference to `php_namespace` as an `Option`
             #[inline]
@@ -4569,14 +5986,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `php_namespace`
             #[inline]
-            pub fn set_php_namespace(&mut self, value: ::std::string::String) {
+            pub fn set_php_namespace(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_php_namespace();
                 self.r#php_namespace = value.into();
+                self
             }
             ///Clear the presence of `php_namespace`
             #[inline]
-            pub fn clear_php_namespace(&mut self) {
+            pub fn clear_php_namespace(&mut self) -> &mut Self {
                 self._has.clear_php_namespace();
+                self
+            }
+            ///Take the value of `php_namespace` and clear its presence
+            #[inline]
+            pub fn take_php_namespace(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#php_namespace()
+                    .then(|| ::core::mem::take(&mut self.r#php_namespace));
+                self._has.clear_php_namespace();
+                val
+            }
+            ///Builder method that sets the value of `php_namespace`. Useful for initializing the message.
+            #[inline]
+            pub fn init_php_namespace(mut self, value: ::std::string::String) -> Self {
+                self.set_php_namespace(value);
+                self
             }
             ///Return a reference to `php_metadata_namespace` as an `Option`
             #[inline]
@@ -4598,14 +6038,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `php_metadata_namespace`
             #[inline]
-            pub fn set_php_metadata_namespace(&mut self, value: ::std::string::String) {
+            pub fn set_php_metadata_namespace(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_php_metadata_namespace();
                 self.r#php_metadata_namespace = value.into();
+                self
             }
             ///Clear the presence of `php_metadata_namespace`
             #[inline]
-            pub fn clear_php_metadata_namespace(&mut self) {
+            pub fn clear_php_metadata_namespace(&mut self) -> &mut Self {
                 self._has.clear_php_metadata_namespace();
+                self
+            }
+            ///Take the value of `php_metadata_namespace` and clear its presence
+            #[inline]
+            pub fn take_php_metadata_namespace(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#php_metadata_namespace()
+                    .then(|| ::core::mem::take(&mut self.r#php_metadata_namespace));
+                self._has.clear_php_metadata_namespace();
+                val
+            }
+            ///Builder method that sets the value of `php_metadata_namespace`. Useful for initializing the message.
+            #[inline]
+            pub fn init_php_metadata_namespace(
+                mut self,
+                value: ::std::string::String,
+            ) -> Self {
+                self.set_php_metadata_namespace(value);
+                self
             }
             ///Return a reference to `ruby_package` as an `Option`
             #[inline]
@@ -4623,14 +6089,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `ruby_package`
             #[inline]
-            pub fn set_ruby_package(&mut self, value: ::std::string::String) {
+            pub fn set_ruby_package(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_ruby_package();
                 self.r#ruby_package = value.into();
+                self
             }
             ///Clear the presence of `ruby_package`
             #[inline]
-            pub fn clear_ruby_package(&mut self) {
+            pub fn clear_ruby_package(&mut self) -> &mut Self {
                 self._has.clear_ruby_package();
+                self
+            }
+            ///Take the value of `ruby_package` and clear its presence
+            #[inline]
+            pub fn take_ruby_package(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#ruby_package()
+                    .then(|| ::core::mem::take(&mut self.r#ruby_package));
+                self._has.clear_ruby_package();
+                val
+            }
+            ///Builder method that sets the value of `ruby_package`. Useful for initializing the message.
+            #[inline]
+            pub fn init_ruby_package(mut self, value: ::std::string::String) -> Self {
+                self.set_ruby_package(value);
+                self
             }
             ///Return a reference to `features` as an `Option`
             #[inline]
@@ -4644,14 +6133,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for FileOptions {
@@ -4859,15 +6366,17 @@ pub mod google_ {
                 }
                 ///Set presence of `message_set_wire_format`
                 #[inline]
-                pub fn set_message_set_wire_format(&mut self) {
+                pub fn set_message_set_wire_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `message_set_wire_format`
                 #[inline]
-                pub fn clear_message_set_wire_format(&mut self) {
+                pub fn clear_message_set_wire_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `message_set_wire_format`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4882,15 +6391,17 @@ pub mod google_ {
                 }
                 ///Set presence of `no_standard_descriptor_accessor`
                 #[inline]
-                pub fn set_no_standard_descriptor_accessor(&mut self) {
+                pub fn set_no_standard_descriptor_accessor(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `no_standard_descriptor_accessor`
                 #[inline]
-                pub fn clear_no_standard_descriptor_accessor(&mut self) {
+                pub fn clear_no_standard_descriptor_accessor(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `no_standard_descriptor_accessor`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4905,15 +6416,17 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) {
+                pub fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) {
+                pub fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4928,15 +6441,17 @@ pub mod google_ {
                 }
                 ///Set presence of `map_entry`
                 #[inline]
-                pub fn set_map_entry(&mut self) {
+                pub fn set_map_entry(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `map_entry`
                 #[inline]
-                pub fn clear_map_entry(&mut self) {
+                pub fn clear_map_entry(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `map_entry`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4951,15 +6466,21 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn set_deprecated_legacy_json_field_conflicts(&mut self) {
+                pub fn set_deprecated_legacy_json_field_conflicts(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn clear_deprecated_legacy_json_field_conflicts(&mut self) {
+                pub fn clear_deprecated_legacy_json_field_conflicts(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated_legacy_json_field_conflicts`. Useful for initializing the Hazzer.
                 #[inline]
@@ -4974,15 +6495,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5036,14 +6559,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `message_set_wire_format`
             #[inline]
-            pub fn set_message_set_wire_format(&mut self, value: bool) {
+            pub fn set_message_set_wire_format(&mut self, value: bool) -> &mut Self {
                 self._has.set_message_set_wire_format();
                 self.r#message_set_wire_format = value.into();
+                self
             }
             ///Clear the presence of `message_set_wire_format`
             #[inline]
-            pub fn clear_message_set_wire_format(&mut self) {
+            pub fn clear_message_set_wire_format(&mut self) -> &mut Self {
                 self._has.clear_message_set_wire_format();
+                self
+            }
+            ///Take the value of `message_set_wire_format` and clear its presence
+            #[inline]
+            pub fn take_message_set_wire_format(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#message_set_wire_format()
+                    .then(|| ::core::mem::take(&mut self.r#message_set_wire_format));
+                self._has.clear_message_set_wire_format();
+                val
+            }
+            ///Builder method that sets the value of `message_set_wire_format`. Useful for initializing the message.
+            #[inline]
+            pub fn init_message_set_wire_format(mut self, value: bool) -> Self {
+                self.set_message_set_wire_format(value);
+                self
             }
             ///Return a reference to `no_standard_descriptor_accessor` as an `Option`
             #[inline]
@@ -5065,14 +6608,39 @@ pub mod google_ {
             }
             ///Set the value and presence of `no_standard_descriptor_accessor`
             #[inline]
-            pub fn set_no_standard_descriptor_accessor(&mut self, value: bool) {
+            pub fn set_no_standard_descriptor_accessor(
+                &mut self,
+                value: bool,
+            ) -> &mut Self {
                 self._has.set_no_standard_descriptor_accessor();
                 self.r#no_standard_descriptor_accessor = value.into();
+                self
             }
             ///Clear the presence of `no_standard_descriptor_accessor`
             #[inline]
-            pub fn clear_no_standard_descriptor_accessor(&mut self) {
+            pub fn clear_no_standard_descriptor_accessor(&mut self) -> &mut Self {
                 self._has.clear_no_standard_descriptor_accessor();
+                self
+            }
+            ///Take the value of `no_standard_descriptor_accessor` and clear its presence
+            #[inline]
+            pub fn take_no_standard_descriptor_accessor(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#no_standard_descriptor_accessor()
+                    .then(|| ::core::mem::take(
+                        &mut self.r#no_standard_descriptor_accessor,
+                    ));
+                self._has.clear_no_standard_descriptor_accessor();
+                val
+            }
+            ///Builder method that sets the value of `no_standard_descriptor_accessor`. Useful for initializing the message.
+            #[inline]
+            pub fn init_no_standard_descriptor_accessor(mut self, value: bool) -> Self {
+                self.set_no_standard_descriptor_accessor(value);
+                self
             }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
@@ -5086,14 +6654,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated`
             #[inline]
-            pub fn set_deprecated(&mut self, value: bool) {
+            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
                 self._has.set_deprecated();
                 self.r#deprecated = value.into();
+                self
             }
             ///Clear the presence of `deprecated`
             #[inline]
-            pub fn clear_deprecated(&mut self) {
+            pub fn clear_deprecated(&mut self) -> &mut Self {
                 self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
+                self
             }
             ///Return a reference to `map_entry` as an `Option`
             #[inline]
@@ -5107,14 +6693,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `map_entry`
             #[inline]
-            pub fn set_map_entry(&mut self, value: bool) {
+            pub fn set_map_entry(&mut self, value: bool) -> &mut Self {
                 self._has.set_map_entry();
                 self.r#map_entry = value.into();
+                self
             }
             ///Clear the presence of `map_entry`
             #[inline]
-            pub fn clear_map_entry(&mut self) {
+            pub fn clear_map_entry(&mut self) -> &mut Self {
                 self._has.clear_map_entry();
+                self
+            }
+            ///Take the value of `map_entry` and clear its presence
+            #[inline]
+            pub fn take_map_entry(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#map_entry()
+                    .then(|| ::core::mem::take(&mut self.r#map_entry));
+                self._has.clear_map_entry();
+                val
+            }
+            ///Builder method that sets the value of `map_entry`. Useful for initializing the message.
+            #[inline]
+            pub fn init_map_entry(mut self, value: bool) -> Self {
+                self.set_map_entry(value);
+                self
             }
             ///Return a reference to `deprecated_legacy_json_field_conflicts` as an `Option`
             #[inline]
@@ -5136,14 +6740,42 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated_legacy_json_field_conflicts`
             #[inline]
-            pub fn set_deprecated_legacy_json_field_conflicts(&mut self, value: bool) {
+            pub fn set_deprecated_legacy_json_field_conflicts(
+                &mut self,
+                value: bool,
+            ) -> &mut Self {
                 self._has.set_deprecated_legacy_json_field_conflicts();
                 self.r#deprecated_legacy_json_field_conflicts = value.into();
+                self
             }
             ///Clear the presence of `deprecated_legacy_json_field_conflicts`
             #[inline]
-            pub fn clear_deprecated_legacy_json_field_conflicts(&mut self) {
+            pub fn clear_deprecated_legacy_json_field_conflicts(&mut self) -> &mut Self {
                 self._has.clear_deprecated_legacy_json_field_conflicts();
+                self
+            }
+            ///Take the value of `deprecated_legacy_json_field_conflicts` and clear its presence
+            #[inline]
+            pub fn take_deprecated_legacy_json_field_conflicts(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated_legacy_json_field_conflicts()
+                    .then(|| ::core::mem::take(
+                        &mut self.r#deprecated_legacy_json_field_conflicts,
+                    ));
+                self._has.clear_deprecated_legacy_json_field_conflicts();
+                val
+            }
+            ///Builder method that sets the value of `deprecated_legacy_json_field_conflicts`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated_legacy_json_field_conflicts(
+                mut self,
+                value: bool,
+            ) -> Self {
+                self.set_deprecated_legacy_json_field_conflicts(value);
+                self
             }
             ///Return a reference to `features` as an `Option`
             #[inline]
@@ -5157,14 +6789,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for MessageOptions {
@@ -5260,15 +6910,17 @@ pub mod google_ {
                     }
                     ///Set presence of `edition`
                     #[inline]
-                    pub fn set_edition(&mut self) {
+                    pub fn set_edition(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `edition`
                     #[inline]
-                    pub fn clear_edition(&mut self) {
+                    pub fn clear_edition(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
                     #[inline]
@@ -5283,15 +6935,17 @@ pub mod google_ {
                     }
                     ///Set presence of `value`
                     #[inline]
-                    pub fn set_value(&mut self) {
+                    pub fn set_value(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `value`
                     #[inline]
-                    pub fn clear_value(&mut self) {
+                    pub fn clear_value(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `value`. Useful for initializing the Hazzer.
                     #[inline]
@@ -5331,14 +6985,34 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `edition`
                 #[inline]
-                pub fn set_edition(&mut self, value: super::Edition) {
+                pub fn set_edition(&mut self, value: super::Edition) -> &mut Self {
                     self._has.set_edition();
                     self.r#edition = value.into();
+                    self
                 }
                 ///Clear the presence of `edition`
                 #[inline]
-                pub fn clear_edition(&mut self) {
+                pub fn clear_edition(&mut self) -> &mut Self {
                     self._has.clear_edition();
+                    self
+                }
+                ///Take the value of `edition` and clear its presence
+                #[inline]
+                pub fn take_edition(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition()
+                        .then(|| ::core::mem::take(&mut self.r#edition));
+                    self._has.clear_edition();
+                    val
+                }
+                ///Builder method that sets the value of `edition`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition(mut self, value: super::Edition) -> Self {
+                    self.set_edition(value);
+                    self
                 }
                 ///Return a reference to `value` as an `Option`
                 #[inline]
@@ -5354,14 +7028,34 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `value`
                 #[inline]
-                pub fn set_value(&mut self, value: ::std::string::String) {
+                pub fn set_value(&mut self, value: ::std::string::String) -> &mut Self {
                     self._has.set_value();
                     self.r#value = value.into();
+                    self
                 }
                 ///Clear the presence of `value`
                 #[inline]
-                pub fn clear_value(&mut self) {
+                pub fn clear_value(&mut self) -> &mut Self {
                     self._has.clear_value();
+                    self
+                }
+                ///Take the value of `value` and clear its presence
+                #[inline]
+                pub fn take_value(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#value()
+                        .then(|| ::core::mem::take(&mut self.r#value));
+                    self._has.clear_value();
+                    val
+                }
+                ///Builder method that sets the value of `value`. Useful for initializing the message.
+                #[inline]
+                pub fn init_value(mut self, value: ::std::string::String) -> Self {
+                    self.set_value(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for EditionDefault {
@@ -5413,15 +7107,17 @@ pub mod google_ {
                     }
                     ///Set presence of `edition_introduced`
                     #[inline]
-                    pub fn set_edition_introduced(&mut self) {
+                    pub fn set_edition_introduced(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `edition_introduced`
                     #[inline]
-                    pub fn clear_edition_introduced(&mut self) {
+                    pub fn clear_edition_introduced(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `edition_introduced`. Useful for initializing the Hazzer.
                     #[inline]
@@ -5436,15 +7132,17 @@ pub mod google_ {
                     }
                     ///Set presence of `edition_deprecated`
                     #[inline]
-                    pub fn set_edition_deprecated(&mut self) {
+                    pub fn set_edition_deprecated(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `edition_deprecated`
                     #[inline]
-                    pub fn clear_edition_deprecated(&mut self) {
+                    pub fn clear_edition_deprecated(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `edition_deprecated`. Useful for initializing the Hazzer.
                     #[inline]
@@ -5459,15 +7157,17 @@ pub mod google_ {
                     }
                     ///Set presence of `deprecation_warning`
                     #[inline]
-                    pub fn set_deprecation_warning(&mut self) {
+                    pub fn set_deprecation_warning(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
+                        self
                     }
                     ///Clear presence of `deprecation_warning`
                     #[inline]
-                    pub fn clear_deprecation_warning(&mut self) {
+                    pub fn clear_deprecation_warning(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
+                        self
                     }
                     ///Builder method that sets the presence of `deprecation_warning`. Useful for initializing the Hazzer.
                     #[inline]
@@ -5482,15 +7182,17 @@ pub mod google_ {
                     }
                     ///Set presence of `edition_removed`
                     #[inline]
-                    pub fn set_edition_removed(&mut self) {
+                    pub fn set_edition_removed(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 8;
+                        self
                     }
                     ///Clear presence of `edition_removed`
                     #[inline]
-                    pub fn clear_edition_removed(&mut self) {
+                    pub fn clear_edition_removed(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !8;
+                        self
                     }
                     ///Builder method that sets the presence of `edition_removed`. Useful for initializing the Hazzer.
                     #[inline]
@@ -5540,14 +7242,37 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `edition_introduced`
                 #[inline]
-                pub fn set_edition_introduced(&mut self, value: super::Edition) {
+                pub fn set_edition_introduced(
+                    &mut self,
+                    value: super::Edition,
+                ) -> &mut Self {
                     self._has.set_edition_introduced();
                     self.r#edition_introduced = value.into();
+                    self
                 }
                 ///Clear the presence of `edition_introduced`
                 #[inline]
-                pub fn clear_edition_introduced(&mut self) {
+                pub fn clear_edition_introduced(&mut self) -> &mut Self {
                     self._has.clear_edition_introduced();
+                    self
+                }
+                ///Take the value of `edition_introduced` and clear its presence
+                #[inline]
+                pub fn take_edition_introduced(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_introduced()
+                        .then(|| ::core::mem::take(&mut self.r#edition_introduced));
+                    self._has.clear_edition_introduced();
+                    val
+                }
+                ///Builder method that sets the value of `edition_introduced`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_introduced(mut self, value: super::Edition) -> Self {
+                    self.set_edition_introduced(value);
+                    self
                 }
                 ///Return a reference to `edition_deprecated` as an `Option`
                 #[inline]
@@ -5569,14 +7294,37 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `edition_deprecated`
                 #[inline]
-                pub fn set_edition_deprecated(&mut self, value: super::Edition) {
+                pub fn set_edition_deprecated(
+                    &mut self,
+                    value: super::Edition,
+                ) -> &mut Self {
                     self._has.set_edition_deprecated();
                     self.r#edition_deprecated = value.into();
+                    self
                 }
                 ///Clear the presence of `edition_deprecated`
                 #[inline]
-                pub fn clear_edition_deprecated(&mut self) {
+                pub fn clear_edition_deprecated(&mut self) -> &mut Self {
                     self._has.clear_edition_deprecated();
+                    self
+                }
+                ///Take the value of `edition_deprecated` and clear its presence
+                #[inline]
+                pub fn take_edition_deprecated(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_deprecated()
+                        .then(|| ::core::mem::take(&mut self.r#edition_deprecated));
+                    self._has.clear_edition_deprecated();
+                    val
+                }
+                ///Builder method that sets the value of `edition_deprecated`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_deprecated(mut self, value: super::Edition) -> Self {
+                    self.set_edition_deprecated(value);
+                    self
                 }
                 ///Return a reference to `deprecation_warning` as an `Option`
                 #[inline]
@@ -5598,14 +7346,40 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `deprecation_warning`
                 #[inline]
-                pub fn set_deprecation_warning(&mut self, value: ::std::string::String) {
+                pub fn set_deprecation_warning(
+                    &mut self,
+                    value: ::std::string::String,
+                ) -> &mut Self {
                     self._has.set_deprecation_warning();
                     self.r#deprecation_warning = value.into();
+                    self
                 }
                 ///Clear the presence of `deprecation_warning`
                 #[inline]
-                pub fn clear_deprecation_warning(&mut self) {
+                pub fn clear_deprecation_warning(&mut self) -> &mut Self {
                     self._has.clear_deprecation_warning();
+                    self
+                }
+                ///Take the value of `deprecation_warning` and clear its presence
+                #[inline]
+                pub fn take_deprecation_warning(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#deprecation_warning()
+                        .then(|| ::core::mem::take(&mut self.r#deprecation_warning));
+                    self._has.clear_deprecation_warning();
+                    val
+                }
+                ///Builder method that sets the value of `deprecation_warning`. Useful for initializing the message.
+                #[inline]
+                pub fn init_deprecation_warning(
+                    mut self,
+                    value: ::std::string::String,
+                ) -> Self {
+                    self.set_deprecation_warning(value);
+                    self
                 }
                 ///Return a reference to `edition_removed` as an `Option`
                 #[inline]
@@ -5623,14 +7397,37 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `edition_removed`
                 #[inline]
-                pub fn set_edition_removed(&mut self, value: super::Edition) {
+                pub fn set_edition_removed(
+                    &mut self,
+                    value: super::Edition,
+                ) -> &mut Self {
                     self._has.set_edition_removed();
                     self.r#edition_removed = value.into();
+                    self
                 }
                 ///Clear the presence of `edition_removed`
                 #[inline]
-                pub fn clear_edition_removed(&mut self) {
+                pub fn clear_edition_removed(&mut self) -> &mut Self {
                     self._has.clear_edition_removed();
+                    self
+                }
+                ///Take the value of `edition_removed` and clear its presence
+                #[inline]
+                pub fn take_edition_removed(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_removed()
+                        .then(|| ::core::mem::take(&mut self.r#edition_removed));
+                    self._has.clear_edition_removed();
+                    val
+                }
+                ///Builder method that sets the value of `edition_removed`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_removed(mut self, value: super::Edition) -> Self {
+                    self.set_edition_removed(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for FeatureSupport {
@@ -5780,15 +7577,17 @@ pub mod google_ {
                 }
                 ///Set presence of `ctype`
                 #[inline]
-                pub fn set_ctype(&mut self) {
+                pub fn set_ctype(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `ctype`
                 #[inline]
-                pub fn clear_ctype(&mut self) {
+                pub fn clear_ctype(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `ctype`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5803,15 +7602,17 @@ pub mod google_ {
                 }
                 ///Set presence of `packed`
                 #[inline]
-                pub fn set_packed(&mut self) {
+                pub fn set_packed(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `packed`
                 #[inline]
-                pub fn clear_packed(&mut self) {
+                pub fn clear_packed(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `packed`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5826,15 +7627,17 @@ pub mod google_ {
                 }
                 ///Set presence of `jstype`
                 #[inline]
-                pub fn set_jstype(&mut self) {
+                pub fn set_jstype(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `jstype`
                 #[inline]
-                pub fn clear_jstype(&mut self) {
+                pub fn clear_jstype(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `jstype`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5849,15 +7652,17 @@ pub mod google_ {
                 }
                 ///Set presence of `lazy`
                 #[inline]
-                pub fn set_lazy(&mut self) {
+                pub fn set_lazy(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `lazy`
                 #[inline]
-                pub fn clear_lazy(&mut self) {
+                pub fn clear_lazy(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `lazy`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5872,15 +7677,17 @@ pub mod google_ {
                 }
                 ///Set presence of `unverified_lazy`
                 #[inline]
-                pub fn set_unverified_lazy(&mut self) {
+                pub fn set_unverified_lazy(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `unverified_lazy`
                 #[inline]
-                pub fn clear_unverified_lazy(&mut self) {
+                pub fn clear_unverified_lazy(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `unverified_lazy`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5895,15 +7702,17 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) {
+                pub fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) {
+                pub fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5918,15 +7727,17 @@ pub mod google_ {
                 }
                 ///Set presence of `weak`
                 #[inline]
-                pub fn set_weak(&mut self) {
+                pub fn set_weak(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 64;
+                    self
                 }
                 ///Clear presence of `weak`
                 #[inline]
-                pub fn clear_weak(&mut self) {
+                pub fn clear_weak(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !64;
+                    self
                 }
                 ///Builder method that sets the presence of `weak`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5941,15 +7752,17 @@ pub mod google_ {
                 }
                 ///Set presence of `debug_redact`
                 #[inline]
-                pub fn set_debug_redact(&mut self) {
+                pub fn set_debug_redact(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 128;
+                    self
                 }
                 ///Clear presence of `debug_redact`
                 #[inline]
-                pub fn clear_debug_redact(&mut self) {
+                pub fn clear_debug_redact(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !128;
+                    self
                 }
                 ///Builder method that sets the presence of `debug_redact`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5964,15 +7777,17 @@ pub mod google_ {
                 }
                 ///Set presence of `retention`
                 #[inline]
-                pub fn set_retention(&mut self) {
+                pub fn set_retention(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `retention`
                 #[inline]
-                pub fn clear_retention(&mut self) {
+                pub fn clear_retention(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `retention`. Useful for initializing the Hazzer.
                 #[inline]
@@ -5987,15 +7802,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6010,15 +7827,17 @@ pub mod google_ {
                 }
                 ///Set presence of `feature_support`
                 #[inline]
-                pub fn set_feature_support(&mut self) {
+                pub fn set_feature_support(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `feature_support`
                 #[inline]
-                pub fn clear_feature_support(&mut self) {
+                pub fn clear_feature_support(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `feature_support`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6082,14 +7901,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `ctype`
             #[inline]
-            pub fn set_ctype(&mut self, value: FieldOptions_::CType) {
+            pub fn set_ctype(&mut self, value: FieldOptions_::CType) -> &mut Self {
                 self._has.set_ctype();
                 self.r#ctype = value.into();
+                self
             }
             ///Clear the presence of `ctype`
             #[inline]
-            pub fn clear_ctype(&mut self) {
+            pub fn clear_ctype(&mut self) -> &mut Self {
                 self._has.clear_ctype();
+                self
+            }
+            ///Take the value of `ctype` and clear its presence
+            #[inline]
+            pub fn take_ctype(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::CType> {
+                let val = self
+                    ._has
+                    .r#ctype()
+                    .then(|| ::core::mem::take(&mut self.r#ctype));
+                self._has.clear_ctype();
+                val
+            }
+            ///Builder method that sets the value of `ctype`. Useful for initializing the message.
+            #[inline]
+            pub fn init_ctype(mut self, value: FieldOptions_::CType) -> Self {
+                self.set_ctype(value);
+                self
             }
             ///Return a reference to `packed` as an `Option`
             #[inline]
@@ -6103,14 +7942,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `packed`
             #[inline]
-            pub fn set_packed(&mut self, value: bool) {
+            pub fn set_packed(&mut self, value: bool) -> &mut Self {
                 self._has.set_packed();
                 self.r#packed = value.into();
+                self
             }
             ///Clear the presence of `packed`
             #[inline]
-            pub fn clear_packed(&mut self) {
+            pub fn clear_packed(&mut self) -> &mut Self {
                 self._has.clear_packed();
+                self
+            }
+            ///Take the value of `packed` and clear its presence
+            #[inline]
+            pub fn take_packed(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#packed()
+                    .then(|| ::core::mem::take(&mut self.r#packed));
+                self._has.clear_packed();
+                val
+            }
+            ///Builder method that sets the value of `packed`. Useful for initializing the message.
+            #[inline]
+            pub fn init_packed(mut self, value: bool) -> Self {
+                self.set_packed(value);
+                self
             }
             ///Return a reference to `jstype` as an `Option`
             #[inline]
@@ -6126,14 +7983,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `jstype`
             #[inline]
-            pub fn set_jstype(&mut self, value: FieldOptions_::JSType) {
+            pub fn set_jstype(&mut self, value: FieldOptions_::JSType) -> &mut Self {
                 self._has.set_jstype();
                 self.r#jstype = value.into();
+                self
             }
             ///Clear the presence of `jstype`
             #[inline]
-            pub fn clear_jstype(&mut self) {
+            pub fn clear_jstype(&mut self) -> &mut Self {
                 self._has.clear_jstype();
+                self
+            }
+            ///Take the value of `jstype` and clear its presence
+            #[inline]
+            pub fn take_jstype(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::JSType> {
+                let val = self
+                    ._has
+                    .r#jstype()
+                    .then(|| ::core::mem::take(&mut self.r#jstype));
+                self._has.clear_jstype();
+                val
+            }
+            ///Builder method that sets the value of `jstype`. Useful for initializing the message.
+            #[inline]
+            pub fn init_jstype(mut self, value: FieldOptions_::JSType) -> Self {
+                self.set_jstype(value);
+                self
             }
             ///Return a reference to `lazy` as an `Option`
             #[inline]
@@ -6147,14 +8024,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `lazy`
             #[inline]
-            pub fn set_lazy(&mut self, value: bool) {
+            pub fn set_lazy(&mut self, value: bool) -> &mut Self {
                 self._has.set_lazy();
                 self.r#lazy = value.into();
+                self
             }
             ///Clear the presence of `lazy`
             #[inline]
-            pub fn clear_lazy(&mut self) {
+            pub fn clear_lazy(&mut self) -> &mut Self {
                 self._has.clear_lazy();
+                self
+            }
+            ///Take the value of `lazy` and clear its presence
+            #[inline]
+            pub fn take_lazy(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#lazy()
+                    .then(|| ::core::mem::take(&mut self.r#lazy));
+                self._has.clear_lazy();
+                val
+            }
+            ///Builder method that sets the value of `lazy`. Useful for initializing the message.
+            #[inline]
+            pub fn init_lazy(mut self, value: bool) -> Self {
+                self.set_lazy(value);
+                self
             }
             ///Return a reference to `unverified_lazy` as an `Option`
             #[inline]
@@ -6168,14 +8063,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `unverified_lazy`
             #[inline]
-            pub fn set_unverified_lazy(&mut self, value: bool) {
+            pub fn set_unverified_lazy(&mut self, value: bool) -> &mut Self {
                 self._has.set_unverified_lazy();
                 self.r#unverified_lazy = value.into();
+                self
             }
             ///Clear the presence of `unverified_lazy`
             #[inline]
-            pub fn clear_unverified_lazy(&mut self) {
+            pub fn clear_unverified_lazy(&mut self) -> &mut Self {
                 self._has.clear_unverified_lazy();
+                self
+            }
+            ///Take the value of `unverified_lazy` and clear its presence
+            #[inline]
+            pub fn take_unverified_lazy(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#unverified_lazy()
+                    .then(|| ::core::mem::take(&mut self.r#unverified_lazy));
+                self._has.clear_unverified_lazy();
+                val
+            }
+            ///Builder method that sets the value of `unverified_lazy`. Useful for initializing the message.
+            #[inline]
+            pub fn init_unverified_lazy(mut self, value: bool) -> Self {
+                self.set_unverified_lazy(value);
+                self
             }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
@@ -6189,14 +8102,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated`
             #[inline]
-            pub fn set_deprecated(&mut self, value: bool) {
+            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
                 self._has.set_deprecated();
                 self.r#deprecated = value.into();
+                self
             }
             ///Clear the presence of `deprecated`
             #[inline]
-            pub fn clear_deprecated(&mut self) {
+            pub fn clear_deprecated(&mut self) -> &mut Self {
                 self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
+                self
             }
             ///Return a reference to `weak` as an `Option`
             #[inline]
@@ -6210,14 +8141,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `weak`
             #[inline]
-            pub fn set_weak(&mut self, value: bool) {
+            pub fn set_weak(&mut self, value: bool) -> &mut Self {
                 self._has.set_weak();
                 self.r#weak = value.into();
+                self
             }
             ///Clear the presence of `weak`
             #[inline]
-            pub fn clear_weak(&mut self) {
+            pub fn clear_weak(&mut self) -> &mut Self {
                 self._has.clear_weak();
+                self
+            }
+            ///Take the value of `weak` and clear its presence
+            #[inline]
+            pub fn take_weak(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#weak()
+                    .then(|| ::core::mem::take(&mut self.r#weak));
+                self._has.clear_weak();
+                val
+            }
+            ///Builder method that sets the value of `weak`. Useful for initializing the message.
+            #[inline]
+            pub fn init_weak(mut self, value: bool) -> Self {
+                self.set_weak(value);
+                self
             }
             ///Return a reference to `debug_redact` as an `Option`
             #[inline]
@@ -6231,14 +8180,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `debug_redact`
             #[inline]
-            pub fn set_debug_redact(&mut self, value: bool) {
+            pub fn set_debug_redact(&mut self, value: bool) -> &mut Self {
                 self._has.set_debug_redact();
                 self.r#debug_redact = value.into();
+                self
             }
             ///Clear the presence of `debug_redact`
             #[inline]
-            pub fn clear_debug_redact(&mut self) {
+            pub fn clear_debug_redact(&mut self) -> &mut Self {
                 self._has.clear_debug_redact();
+                self
+            }
+            ///Take the value of `debug_redact` and clear its presence
+            #[inline]
+            pub fn take_debug_redact(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#debug_redact()
+                    .then(|| ::core::mem::take(&mut self.r#debug_redact));
+                self._has.clear_debug_redact();
+                val
+            }
+            ///Builder method that sets the value of `debug_redact`. Useful for initializing the message.
+            #[inline]
+            pub fn init_debug_redact(mut self, value: bool) -> Self {
+                self.set_debug_redact(value);
+                self
             }
             ///Return a reference to `retention` as an `Option`
             #[inline]
@@ -6256,14 +8223,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `retention`
             #[inline]
-            pub fn set_retention(&mut self, value: FieldOptions_::OptionRetention) {
+            pub fn set_retention(
+                &mut self,
+                value: FieldOptions_::OptionRetention,
+            ) -> &mut Self {
                 self._has.set_retention();
                 self.r#retention = value.into();
+                self
             }
             ///Clear the presence of `retention`
             #[inline]
-            pub fn clear_retention(&mut self) {
+            pub fn clear_retention(&mut self) -> &mut Self {
                 self._has.clear_retention();
+                self
+            }
+            ///Take the value of `retention` and clear its presence
+            #[inline]
+            pub fn take_retention(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::OptionRetention> {
+                let val = self
+                    ._has
+                    .r#retention()
+                    .then(|| ::core::mem::take(&mut self.r#retention));
+                self._has.clear_retention();
+                val
+            }
+            ///Builder method that sets the value of `retention`. Useful for initializing the message.
+            #[inline]
+            pub fn init_retention(
+                mut self,
+                value: FieldOptions_::OptionRetention,
+            ) -> Self {
+                self.set_retention(value);
+                self
             }
             ///Return a reference to `features` as an `Option`
             #[inline]
@@ -6277,14 +8270,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
             ///Return a reference to `feature_support` as an `Option`
             #[inline]
@@ -6302,14 +8313,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `feature_support`
             #[inline]
-            pub fn set_feature_support(&mut self, value: FieldOptions_::FeatureSupport) {
+            pub fn set_feature_support(
+                &mut self,
+                value: FieldOptions_::FeatureSupport,
+            ) -> &mut Self {
                 self._has.set_feature_support();
                 self.r#feature_support = value.into();
+                self
             }
             ///Clear the presence of `feature_support`
             #[inline]
-            pub fn clear_feature_support(&mut self) {
+            pub fn clear_feature_support(&mut self) -> &mut Self {
                 self._has.clear_feature_support();
+                self
+            }
+            ///Take the value of `feature_support` and clear its presence
+            #[inline]
+            pub fn take_feature_support(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::FeatureSupport> {
+                let val = self
+                    ._has
+                    .r#feature_support()
+                    .then(|| ::core::mem::take(&mut self.r#feature_support));
+                self._has.clear_feature_support();
+                val
+            }
+            ///Builder method that sets the value of `feature_support`. Useful for initializing the message.
+            #[inline]
+            pub fn init_feature_support(
+                mut self,
+                value: FieldOptions_::FeatureSupport,
+            ) -> Self {
+                self.set_feature_support(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for FieldOptions {
@@ -6488,15 +8525,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6534,14 +8573,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for OneofOptions {
@@ -6595,15 +8652,17 @@ pub mod google_ {
                 }
                 ///Set presence of `allow_alias`
                 #[inline]
-                pub fn set_allow_alias(&mut self) {
+                pub fn set_allow_alias(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `allow_alias`
                 #[inline]
-                pub fn clear_allow_alias(&mut self) {
+                pub fn clear_allow_alias(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `allow_alias`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6618,15 +8677,17 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) {
+                pub fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) {
+                pub fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6641,15 +8702,21 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn set_deprecated_legacy_json_field_conflicts(&mut self) {
+                pub fn set_deprecated_legacy_json_field_conflicts(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn clear_deprecated_legacy_json_field_conflicts(&mut self) {
+                pub fn clear_deprecated_legacy_json_field_conflicts(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated_legacy_json_field_conflicts`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6664,15 +8731,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6716,14 +8785,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `allow_alias`
             #[inline]
-            pub fn set_allow_alias(&mut self, value: bool) {
+            pub fn set_allow_alias(&mut self, value: bool) -> &mut Self {
                 self._has.set_allow_alias();
                 self.r#allow_alias = value.into();
+                self
             }
             ///Clear the presence of `allow_alias`
             #[inline]
-            pub fn clear_allow_alias(&mut self) {
+            pub fn clear_allow_alias(&mut self) -> &mut Self {
                 self._has.clear_allow_alias();
+                self
+            }
+            ///Take the value of `allow_alias` and clear its presence
+            #[inline]
+            pub fn take_allow_alias(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#allow_alias()
+                    .then(|| ::core::mem::take(&mut self.r#allow_alias));
+                self._has.clear_allow_alias();
+                val
+            }
+            ///Builder method that sets the value of `allow_alias`. Useful for initializing the message.
+            #[inline]
+            pub fn init_allow_alias(mut self, value: bool) -> Self {
+                self.set_allow_alias(value);
+                self
             }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
@@ -6737,14 +8824,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated`
             #[inline]
-            pub fn set_deprecated(&mut self, value: bool) {
+            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
                 self._has.set_deprecated();
                 self.r#deprecated = value.into();
+                self
             }
             ///Clear the presence of `deprecated`
             #[inline]
-            pub fn clear_deprecated(&mut self) {
+            pub fn clear_deprecated(&mut self) -> &mut Self {
                 self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
+                self
             }
             ///Return a reference to `deprecated_legacy_json_field_conflicts` as an `Option`
             #[inline]
@@ -6766,14 +8871,42 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated_legacy_json_field_conflicts`
             #[inline]
-            pub fn set_deprecated_legacy_json_field_conflicts(&mut self, value: bool) {
+            pub fn set_deprecated_legacy_json_field_conflicts(
+                &mut self,
+                value: bool,
+            ) -> &mut Self {
                 self._has.set_deprecated_legacy_json_field_conflicts();
                 self.r#deprecated_legacy_json_field_conflicts = value.into();
+                self
             }
             ///Clear the presence of `deprecated_legacy_json_field_conflicts`
             #[inline]
-            pub fn clear_deprecated_legacy_json_field_conflicts(&mut self) {
+            pub fn clear_deprecated_legacy_json_field_conflicts(&mut self) -> &mut Self {
                 self._has.clear_deprecated_legacy_json_field_conflicts();
+                self
+            }
+            ///Take the value of `deprecated_legacy_json_field_conflicts` and clear its presence
+            #[inline]
+            pub fn take_deprecated_legacy_json_field_conflicts(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated_legacy_json_field_conflicts()
+                    .then(|| ::core::mem::take(
+                        &mut self.r#deprecated_legacy_json_field_conflicts,
+                    ));
+                self._has.clear_deprecated_legacy_json_field_conflicts();
+                val
+            }
+            ///Builder method that sets the value of `deprecated_legacy_json_field_conflicts`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated_legacy_json_field_conflicts(
+                mut self,
+                value: bool,
+            ) -> Self {
+                self.set_deprecated_legacy_json_field_conflicts(value);
+                self
             }
             ///Return a reference to `features` as an `Option`
             #[inline]
@@ -6787,14 +8920,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for EnumOptions {
@@ -6873,15 +9024,17 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) {
+                pub fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) {
+                pub fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6896,15 +9049,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6919,15 +9074,17 @@ pub mod google_ {
                 }
                 ///Set presence of `debug_redact`
                 #[inline]
-                pub fn set_debug_redact(&mut self) {
+                pub fn set_debug_redact(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `debug_redact`
                 #[inline]
-                pub fn clear_debug_redact(&mut self) {
+                pub fn clear_debug_redact(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `debug_redact`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6942,15 +9099,17 @@ pub mod google_ {
                 }
                 ///Set presence of `feature_support`
                 #[inline]
-                pub fn set_feature_support(&mut self) {
+                pub fn set_feature_support(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `feature_support`
                 #[inline]
-                pub fn clear_feature_support(&mut self) {
+                pub fn clear_feature_support(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `feature_support`. Useful for initializing the Hazzer.
                 #[inline]
@@ -6994,14 +9153,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated`
             #[inline]
-            pub fn set_deprecated(&mut self, value: bool) {
+            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
                 self._has.set_deprecated();
                 self.r#deprecated = value.into();
+                self
             }
             ///Clear the presence of `deprecated`
             #[inline]
-            pub fn clear_deprecated(&mut self) {
+            pub fn clear_deprecated(&mut self) -> &mut Self {
                 self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
+                self
             }
             ///Return a reference to `features` as an `Option`
             #[inline]
@@ -7015,14 +9192,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
             ///Return a reference to `debug_redact` as an `Option`
             #[inline]
@@ -7036,14 +9231,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `debug_redact`
             #[inline]
-            pub fn set_debug_redact(&mut self, value: bool) {
+            pub fn set_debug_redact(&mut self, value: bool) -> &mut Self {
                 self._has.set_debug_redact();
                 self.r#debug_redact = value.into();
+                self
             }
             ///Clear the presence of `debug_redact`
             #[inline]
-            pub fn clear_debug_redact(&mut self) {
+            pub fn clear_debug_redact(&mut self) -> &mut Self {
                 self._has.clear_debug_redact();
+                self
+            }
+            ///Take the value of `debug_redact` and clear its presence
+            #[inline]
+            pub fn take_debug_redact(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#debug_redact()
+                    .then(|| ::core::mem::take(&mut self.r#debug_redact));
+                self._has.clear_debug_redact();
+                val
+            }
+            ///Builder method that sets the value of `debug_redact`. Useful for initializing the message.
+            #[inline]
+            pub fn init_debug_redact(mut self, value: bool) -> Self {
+                self.set_debug_redact(value);
+                self
             }
             ///Return a reference to `feature_support` as an `Option`
             #[inline]
@@ -7061,14 +9274,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `feature_support`
             #[inline]
-            pub fn set_feature_support(&mut self, value: FieldOptions_::FeatureSupport) {
+            pub fn set_feature_support(
+                &mut self,
+                value: FieldOptions_::FeatureSupport,
+            ) -> &mut Self {
                 self._has.set_feature_support();
                 self.r#feature_support = value.into();
+                self
             }
             ///Clear the presence of `feature_support`
             #[inline]
-            pub fn clear_feature_support(&mut self) {
+            pub fn clear_feature_support(&mut self) -> &mut Self {
                 self._has.clear_feature_support();
+                self
+            }
+            ///Take the value of `feature_support` and clear its presence
+            #[inline]
+            pub fn take_feature_support(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::FeatureSupport> {
+                let val = self
+                    ._has
+                    .r#feature_support()
+                    .then(|| ::core::mem::take(&mut self.r#feature_support));
+                self._has.clear_feature_support();
+                val
+            }
+            ///Builder method that sets the value of `feature_support`. Useful for initializing the message.
+            #[inline]
+            pub fn init_feature_support(
+                mut self,
+                value: FieldOptions_::FeatureSupport,
+            ) -> Self {
+                self.set_feature_support(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for EnumValueOptions {
@@ -7145,15 +9384,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7168,15 +9409,17 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) {
+                pub fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) {
+                pub fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7216,14 +9459,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
@@ -7237,14 +9498,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated`
             #[inline]
-            pub fn set_deprecated(&mut self, value: bool) {
+            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
                 self._has.set_deprecated();
                 self.r#deprecated = value.into();
+                self
             }
             ///Clear the presence of `deprecated`
             #[inline]
-            pub fn clear_deprecated(&mut self) {
+            pub fn clear_deprecated(&mut self) -> &mut Self {
                 self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for ServiceOptions {
@@ -7324,15 +9603,17 @@ pub mod google_ {
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) {
+                pub fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) {
+                pub fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7347,15 +9628,17 @@ pub mod google_ {
                 }
                 ///Set presence of `idempotency_level`
                 #[inline]
-                pub fn set_idempotency_level(&mut self) {
+                pub fn set_idempotency_level(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `idempotency_level`
                 #[inline]
-                pub fn clear_idempotency_level(&mut self) {
+                pub fn clear_idempotency_level(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `idempotency_level`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7370,15 +9653,17 @@ pub mod google_ {
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) {
+                pub fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) {
+                pub fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7420,14 +9705,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `deprecated`
             #[inline]
-            pub fn set_deprecated(&mut self, value: bool) {
+            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
                 self._has.set_deprecated();
                 self.r#deprecated = value.into();
+                self
             }
             ///Clear the presence of `deprecated`
             #[inline]
-            pub fn clear_deprecated(&mut self) {
+            pub fn clear_deprecated(&mut self) -> &mut Self {
                 self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
+                self
             }
             ///Return a reference to `idempotency_level` as an `Option`
             #[inline]
@@ -7448,14 +9751,37 @@ pub mod google_ {
             pub fn set_idempotency_level(
                 &mut self,
                 value: MethodOptions_::IdempotencyLevel,
-            ) {
+            ) -> &mut Self {
                 self._has.set_idempotency_level();
                 self.r#idempotency_level = value.into();
+                self
             }
             ///Clear the presence of `idempotency_level`
             #[inline]
-            pub fn clear_idempotency_level(&mut self) {
+            pub fn clear_idempotency_level(&mut self) -> &mut Self {
                 self._has.clear_idempotency_level();
+                self
+            }
+            ///Take the value of `idempotency_level` and clear its presence
+            #[inline]
+            pub fn take_idempotency_level(
+                &mut self,
+            ) -> ::core::option::Option<MethodOptions_::IdempotencyLevel> {
+                let val = self
+                    ._has
+                    .r#idempotency_level()
+                    .then(|| ::core::mem::take(&mut self.r#idempotency_level));
+                self._has.clear_idempotency_level();
+                val
+            }
+            ///Builder method that sets the value of `idempotency_level`. Useful for initializing the message.
+            #[inline]
+            pub fn init_idempotency_level(
+                mut self,
+                value: MethodOptions_::IdempotencyLevel,
+            ) -> Self {
+                self.set_idempotency_level(value);
+                self
             }
             ///Return a reference to `features` as an `Option`
             #[inline]
@@ -7469,14 +9795,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `features`
             #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) {
+            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
             }
             ///Clear the presence of `features`
             #[inline]
-            pub fn clear_features(&mut self) {
+            pub fn clear_features(&mut self) -> &mut Self {
                 self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for MethodOptions {
@@ -7549,15 +9893,17 @@ pub mod google_ {
                     }
                     ///Set presence of `name_part`
                     #[inline]
-                    pub fn set_name_part(&mut self) {
+                    pub fn set_name_part(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `name_part`
                     #[inline]
-                    pub fn clear_name_part(&mut self) {
+                    pub fn clear_name_part(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `name_part`. Useful for initializing the Hazzer.
                     #[inline]
@@ -7572,15 +9918,17 @@ pub mod google_ {
                     }
                     ///Set presence of `is_extension`
                     #[inline]
-                    pub fn set_is_extension(&mut self) {
+                    pub fn set_is_extension(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `is_extension`
                     #[inline]
-                    pub fn clear_is_extension(&mut self) {
+                    pub fn clear_is_extension(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `is_extension`. Useful for initializing the Hazzer.
                     #[inline]
@@ -7622,14 +9970,37 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `name_part`
                 #[inline]
-                pub fn set_name_part(&mut self, value: ::std::string::String) {
+                pub fn set_name_part(
+                    &mut self,
+                    value: ::std::string::String,
+                ) -> &mut Self {
                     self._has.set_name_part();
                     self.r#name_part = value.into();
+                    self
                 }
                 ///Clear the presence of `name_part`
                 #[inline]
-                pub fn clear_name_part(&mut self) {
+                pub fn clear_name_part(&mut self) -> &mut Self {
                     self._has.clear_name_part();
+                    self
+                }
+                ///Take the value of `name_part` and clear its presence
+                #[inline]
+                pub fn take_name_part(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#name_part()
+                        .then(|| ::core::mem::take(&mut self.r#name_part));
+                    self._has.clear_name_part();
+                    val
+                }
+                ///Builder method that sets the value of `name_part`. Useful for initializing the message.
+                #[inline]
+                pub fn init_name_part(mut self, value: ::std::string::String) -> Self {
+                    self.set_name_part(value);
+                    self
                 }
                 ///Return a reference to `is_extension` as an `Option`
                 #[inline]
@@ -7643,14 +10014,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `is_extension`
                 #[inline]
-                pub fn set_is_extension(&mut self, value: bool) {
+                pub fn set_is_extension(&mut self, value: bool) -> &mut Self {
                     self._has.set_is_extension();
                     self.r#is_extension = value.into();
+                    self
                 }
                 ///Clear the presence of `is_extension`
                 #[inline]
-                pub fn clear_is_extension(&mut self) {
+                pub fn clear_is_extension(&mut self) -> &mut Self {
                     self._has.clear_is_extension();
+                    self
+                }
+                ///Take the value of `is_extension` and clear its presence
+                #[inline]
+                pub fn take_is_extension(&mut self) -> ::core::option::Option<bool> {
+                    let val = self
+                        ._has
+                        .r#is_extension()
+                        .then(|| ::core::mem::take(&mut self.r#is_extension));
+                    self._has.clear_is_extension();
+                    val
+                }
+                ///Builder method that sets the value of `is_extension`. Useful for initializing the message.
+                #[inline]
+                pub fn init_is_extension(mut self, value: bool) -> Self {
+                    self.set_is_extension(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for NamePart {
@@ -7699,15 +10088,17 @@ pub mod google_ {
                 }
                 ///Set presence of `identifier_value`
                 #[inline]
-                pub fn set_identifier_value(&mut self) {
+                pub fn set_identifier_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `identifier_value`
                 #[inline]
-                pub fn clear_identifier_value(&mut self) {
+                pub fn clear_identifier_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `identifier_value`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7722,15 +10113,17 @@ pub mod google_ {
                 }
                 ///Set presence of `positive_int_value`
                 #[inline]
-                pub fn set_positive_int_value(&mut self) {
+                pub fn set_positive_int_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `positive_int_value`
                 #[inline]
-                pub fn clear_positive_int_value(&mut self) {
+                pub fn clear_positive_int_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `positive_int_value`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7745,15 +10138,17 @@ pub mod google_ {
                 }
                 ///Set presence of `negative_int_value`
                 #[inline]
-                pub fn set_negative_int_value(&mut self) {
+                pub fn set_negative_int_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `negative_int_value`
                 #[inline]
-                pub fn clear_negative_int_value(&mut self) {
+                pub fn clear_negative_int_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `negative_int_value`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7768,15 +10163,17 @@ pub mod google_ {
                 }
                 ///Set presence of `double_value`
                 #[inline]
-                pub fn set_double_value(&mut self) {
+                pub fn set_double_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `double_value`
                 #[inline]
-                pub fn clear_double_value(&mut self) {
+                pub fn clear_double_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `double_value`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7791,15 +10188,17 @@ pub mod google_ {
                 }
                 ///Set presence of `string_value`
                 #[inline]
-                pub fn set_string_value(&mut self) {
+                pub fn set_string_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `string_value`
                 #[inline]
-                pub fn clear_string_value(&mut self) {
+                pub fn clear_string_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `string_value`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7814,15 +10213,17 @@ pub mod google_ {
                 }
                 ///Set presence of `aggregate_value`
                 #[inline]
-                pub fn set_aggregate_value(&mut self) {
+                pub fn set_aggregate_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `aggregate_value`
                 #[inline]
-                pub fn clear_aggregate_value(&mut self) {
+                pub fn clear_aggregate_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `aggregate_value`. Useful for initializing the Hazzer.
                 #[inline]
@@ -7874,14 +10275,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `identifier_value`
             #[inline]
-            pub fn set_identifier_value(&mut self, value: ::std::string::String) {
+            pub fn set_identifier_value(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_identifier_value();
                 self.r#identifier_value = value.into();
+                self
             }
             ///Clear the presence of `identifier_value`
             #[inline]
-            pub fn clear_identifier_value(&mut self) {
+            pub fn clear_identifier_value(&mut self) -> &mut Self {
                 self._has.clear_identifier_value();
+                self
+            }
+            ///Take the value of `identifier_value` and clear its presence
+            #[inline]
+            pub fn take_identifier_value(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#identifier_value()
+                    .then(|| ::core::mem::take(&mut self.r#identifier_value));
+                self._has.clear_identifier_value();
+                val
+            }
+            ///Builder method that sets the value of `identifier_value`. Useful for initializing the message.
+            #[inline]
+            pub fn init_identifier_value(
+                mut self,
+                value: ::std::string::String,
+            ) -> Self {
+                self.set_identifier_value(value);
+                self
             }
             ///Return a reference to `positive_int_value` as an `Option`
             #[inline]
@@ -7899,14 +10326,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `positive_int_value`
             #[inline]
-            pub fn set_positive_int_value(&mut self, value: u64) {
+            pub fn set_positive_int_value(&mut self, value: u64) -> &mut Self {
                 self._has.set_positive_int_value();
                 self.r#positive_int_value = value.into();
+                self
             }
             ///Clear the presence of `positive_int_value`
             #[inline]
-            pub fn clear_positive_int_value(&mut self) {
+            pub fn clear_positive_int_value(&mut self) -> &mut Self {
                 self._has.clear_positive_int_value();
+                self
+            }
+            ///Take the value of `positive_int_value` and clear its presence
+            #[inline]
+            pub fn take_positive_int_value(&mut self) -> ::core::option::Option<u64> {
+                let val = self
+                    ._has
+                    .r#positive_int_value()
+                    .then(|| ::core::mem::take(&mut self.r#positive_int_value));
+                self._has.clear_positive_int_value();
+                val
+            }
+            ///Builder method that sets the value of `positive_int_value`. Useful for initializing the message.
+            #[inline]
+            pub fn init_positive_int_value(mut self, value: u64) -> Self {
+                self.set_positive_int_value(value);
+                self
             }
             ///Return a reference to `negative_int_value` as an `Option`
             #[inline]
@@ -7924,14 +10369,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `negative_int_value`
             #[inline]
-            pub fn set_negative_int_value(&mut self, value: i64) {
+            pub fn set_negative_int_value(&mut self, value: i64) -> &mut Self {
                 self._has.set_negative_int_value();
                 self.r#negative_int_value = value.into();
+                self
             }
             ///Clear the presence of `negative_int_value`
             #[inline]
-            pub fn clear_negative_int_value(&mut self) {
+            pub fn clear_negative_int_value(&mut self) -> &mut Self {
                 self._has.clear_negative_int_value();
+                self
+            }
+            ///Take the value of `negative_int_value` and clear its presence
+            #[inline]
+            pub fn take_negative_int_value(&mut self) -> ::core::option::Option<i64> {
+                let val = self
+                    ._has
+                    .r#negative_int_value()
+                    .then(|| ::core::mem::take(&mut self.r#negative_int_value));
+                self._has.clear_negative_int_value();
+                val
+            }
+            ///Builder method that sets the value of `negative_int_value`. Useful for initializing the message.
+            #[inline]
+            pub fn init_negative_int_value(mut self, value: i64) -> Self {
+                self.set_negative_int_value(value);
+                self
             }
             ///Return a reference to `double_value` as an `Option`
             #[inline]
@@ -7945,14 +10408,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `double_value`
             #[inline]
-            pub fn set_double_value(&mut self, value: f64) {
+            pub fn set_double_value(&mut self, value: f64) -> &mut Self {
                 self._has.set_double_value();
                 self.r#double_value = value.into();
+                self
             }
             ///Clear the presence of `double_value`
             #[inline]
-            pub fn clear_double_value(&mut self) {
+            pub fn clear_double_value(&mut self) -> &mut Self {
                 self._has.clear_double_value();
+                self
+            }
+            ///Take the value of `double_value` and clear its presence
+            #[inline]
+            pub fn take_double_value(&mut self) -> ::core::option::Option<f64> {
+                let val = self
+                    ._has
+                    .r#double_value()
+                    .then(|| ::core::mem::take(&mut self.r#double_value));
+                self._has.clear_double_value();
+                val
+            }
+            ///Builder method that sets the value of `double_value`. Useful for initializing the message.
+            #[inline]
+            pub fn init_double_value(mut self, value: f64) -> Self {
+                self.set_double_value(value);
+                self
             }
             ///Return a reference to `string_value` as an `Option`
             #[inline]
@@ -7970,14 +10451,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `string_value`
             #[inline]
-            pub fn set_string_value(&mut self, value: ::std::vec::Vec<u8>) {
+            pub fn set_string_value(&mut self, value: ::std::vec::Vec<u8>) -> &mut Self {
                 self._has.set_string_value();
                 self.r#string_value = value.into();
+                self
             }
             ///Clear the presence of `string_value`
             #[inline]
-            pub fn clear_string_value(&mut self) {
+            pub fn clear_string_value(&mut self) -> &mut Self {
                 self._has.clear_string_value();
+                self
+            }
+            ///Take the value of `string_value` and clear its presence
+            #[inline]
+            pub fn take_string_value(
+                &mut self,
+            ) -> ::core::option::Option<::std::vec::Vec<u8>> {
+                let val = self
+                    ._has
+                    .r#string_value()
+                    .then(|| ::core::mem::take(&mut self.r#string_value));
+                self._has.clear_string_value();
+                val
+            }
+            ///Builder method that sets the value of `string_value`. Useful for initializing the message.
+            #[inline]
+            pub fn init_string_value(mut self, value: ::std::vec::Vec<u8>) -> Self {
+                self.set_string_value(value);
+                self
             }
             ///Return a reference to `aggregate_value` as an `Option`
             #[inline]
@@ -7995,14 +10496,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `aggregate_value`
             #[inline]
-            pub fn set_aggregate_value(&mut self, value: ::std::string::String) {
+            pub fn set_aggregate_value(
+                &mut self,
+                value: ::std::string::String,
+            ) -> &mut Self {
                 self._has.set_aggregate_value();
                 self.r#aggregate_value = value.into();
+                self
             }
             ///Clear the presence of `aggregate_value`
             #[inline]
-            pub fn clear_aggregate_value(&mut self) {
+            pub fn clear_aggregate_value(&mut self) -> &mut Self {
                 self._has.clear_aggregate_value();
+                self
+            }
+            ///Take the value of `aggregate_value` and clear its presence
+            #[inline]
+            pub fn take_aggregate_value(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#aggregate_value()
+                    .then(|| ::core::mem::take(&mut self.r#aggregate_value));
+                self._has.clear_aggregate_value();
+                val
+            }
+            ///Builder method that sets the value of `aggregate_value`. Useful for initializing the message.
+            #[inline]
+            pub fn init_aggregate_value(mut self, value: ::std::string::String) -> Self {
+                self.set_aggregate_value(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for UninterpretedOption {
@@ -8206,15 +10730,17 @@ pub mod google_ {
                 }
                 ///Set presence of `field_presence`
                 #[inline]
-                pub fn set_field_presence(&mut self) {
+                pub fn set_field_presence(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `field_presence`
                 #[inline]
-                pub fn clear_field_presence(&mut self) {
+                pub fn clear_field_presence(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `field_presence`. Useful for initializing the Hazzer.
                 #[inline]
@@ -8229,15 +10755,17 @@ pub mod google_ {
                 }
                 ///Set presence of `enum_type`
                 #[inline]
-                pub fn set_enum_type(&mut self) {
+                pub fn set_enum_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `enum_type`
                 #[inline]
-                pub fn clear_enum_type(&mut self) {
+                pub fn clear_enum_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `enum_type`. Useful for initializing the Hazzer.
                 #[inline]
@@ -8252,15 +10780,17 @@ pub mod google_ {
                 }
                 ///Set presence of `repeated_field_encoding`
                 #[inline]
-                pub fn set_repeated_field_encoding(&mut self) {
+                pub fn set_repeated_field_encoding(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
+                    self
                 }
                 ///Clear presence of `repeated_field_encoding`
                 #[inline]
-                pub fn clear_repeated_field_encoding(&mut self) {
+                pub fn clear_repeated_field_encoding(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
+                    self
                 }
                 ///Builder method that sets the presence of `repeated_field_encoding`. Useful for initializing the Hazzer.
                 #[inline]
@@ -8275,15 +10805,17 @@ pub mod google_ {
                 }
                 ///Set presence of `utf8_validation`
                 #[inline]
-                pub fn set_utf8_validation(&mut self) {
+                pub fn set_utf8_validation(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
+                    self
                 }
                 ///Clear presence of `utf8_validation`
                 #[inline]
-                pub fn clear_utf8_validation(&mut self) {
+                pub fn clear_utf8_validation(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
+                    self
                 }
                 ///Builder method that sets the presence of `utf8_validation`. Useful for initializing the Hazzer.
                 #[inline]
@@ -8298,15 +10830,17 @@ pub mod google_ {
                 }
                 ///Set presence of `message_encoding`
                 #[inline]
-                pub fn set_message_encoding(&mut self) {
+                pub fn set_message_encoding(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
+                    self
                 }
                 ///Clear presence of `message_encoding`
                 #[inline]
-                pub fn clear_message_encoding(&mut self) {
+                pub fn clear_message_encoding(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
+                    self
                 }
                 ///Builder method that sets the presence of `message_encoding`. Useful for initializing the Hazzer.
                 #[inline]
@@ -8321,15 +10855,17 @@ pub mod google_ {
                 }
                 ///Set presence of `json_format`
                 #[inline]
-                pub fn set_json_format(&mut self) {
+                pub fn set_json_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
+                    self
                 }
                 ///Clear presence of `json_format`
                 #[inline]
-                pub fn clear_json_format(&mut self) {
+                pub fn clear_json_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
+                    self
                 }
                 ///Builder method that sets the presence of `json_format`. Useful for initializing the Hazzer.
                 #[inline]
@@ -8379,14 +10915,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `field_presence`
             #[inline]
-            pub fn set_field_presence(&mut self, value: FeatureSet_::FieldPresence) {
+            pub fn set_field_presence(
+                &mut self,
+                value: FeatureSet_::FieldPresence,
+            ) -> &mut Self {
                 self._has.set_field_presence();
                 self.r#field_presence = value.into();
+                self
             }
             ///Clear the presence of `field_presence`
             #[inline]
-            pub fn clear_field_presence(&mut self) {
+            pub fn clear_field_presence(&mut self) -> &mut Self {
                 self._has.clear_field_presence();
+                self
+            }
+            ///Take the value of `field_presence` and clear its presence
+            #[inline]
+            pub fn take_field_presence(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::FieldPresence> {
+                let val = self
+                    ._has
+                    .r#field_presence()
+                    .then(|| ::core::mem::take(&mut self.r#field_presence));
+                self._has.clear_field_presence();
+                val
+            }
+            ///Builder method that sets the value of `field_presence`. Useful for initializing the message.
+            #[inline]
+            pub fn init_field_presence(
+                mut self,
+                value: FeatureSet_::FieldPresence,
+            ) -> Self {
+                self.set_field_presence(value);
+                self
             }
             ///Return a reference to `enum_type` as an `Option`
             #[inline]
@@ -8402,14 +10964,34 @@ pub mod google_ {
             }
             ///Set the value and presence of `enum_type`
             #[inline]
-            pub fn set_enum_type(&mut self, value: FeatureSet_::EnumType) {
+            pub fn set_enum_type(&mut self, value: FeatureSet_::EnumType) -> &mut Self {
                 self._has.set_enum_type();
                 self.r#enum_type = value.into();
+                self
             }
             ///Clear the presence of `enum_type`
             #[inline]
-            pub fn clear_enum_type(&mut self) {
+            pub fn clear_enum_type(&mut self) -> &mut Self {
                 self._has.clear_enum_type();
+                self
+            }
+            ///Take the value of `enum_type` and clear its presence
+            #[inline]
+            pub fn take_enum_type(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::EnumType> {
+                let val = self
+                    ._has
+                    .r#enum_type()
+                    .then(|| ::core::mem::take(&mut self.r#enum_type));
+                self._has.clear_enum_type();
+                val
+            }
+            ///Builder method that sets the value of `enum_type`. Useful for initializing the message.
+            #[inline]
+            pub fn init_enum_type(mut self, value: FeatureSet_::EnumType) -> Self {
+                self.set_enum_type(value);
+                self
             }
             ///Return a reference to `repeated_field_encoding` as an `Option`
             #[inline]
@@ -8434,14 +11016,37 @@ pub mod google_ {
             pub fn set_repeated_field_encoding(
                 &mut self,
                 value: FeatureSet_::RepeatedFieldEncoding,
-            ) {
+            ) -> &mut Self {
                 self._has.set_repeated_field_encoding();
                 self.r#repeated_field_encoding = value.into();
+                self
             }
             ///Clear the presence of `repeated_field_encoding`
             #[inline]
-            pub fn clear_repeated_field_encoding(&mut self) {
+            pub fn clear_repeated_field_encoding(&mut self) -> &mut Self {
                 self._has.clear_repeated_field_encoding();
+                self
+            }
+            ///Take the value of `repeated_field_encoding` and clear its presence
+            #[inline]
+            pub fn take_repeated_field_encoding(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::RepeatedFieldEncoding> {
+                let val = self
+                    ._has
+                    .r#repeated_field_encoding()
+                    .then(|| ::core::mem::take(&mut self.r#repeated_field_encoding));
+                self._has.clear_repeated_field_encoding();
+                val
+            }
+            ///Builder method that sets the value of `repeated_field_encoding`. Useful for initializing the message.
+            #[inline]
+            pub fn init_repeated_field_encoding(
+                mut self,
+                value: FeatureSet_::RepeatedFieldEncoding,
+            ) -> Self {
+                self.set_repeated_field_encoding(value);
+                self
             }
             ///Return a reference to `utf8_validation` as an `Option`
             #[inline]
@@ -8459,14 +11064,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `utf8_validation`
             #[inline]
-            pub fn set_utf8_validation(&mut self, value: FeatureSet_::Utf8Validation) {
+            pub fn set_utf8_validation(
+                &mut self,
+                value: FeatureSet_::Utf8Validation,
+            ) -> &mut Self {
                 self._has.set_utf8_validation();
                 self.r#utf8_validation = value.into();
+                self
             }
             ///Clear the presence of `utf8_validation`
             #[inline]
-            pub fn clear_utf8_validation(&mut self) {
+            pub fn clear_utf8_validation(&mut self) -> &mut Self {
                 self._has.clear_utf8_validation();
+                self
+            }
+            ///Take the value of `utf8_validation` and clear its presence
+            #[inline]
+            pub fn take_utf8_validation(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::Utf8Validation> {
+                let val = self
+                    ._has
+                    .r#utf8_validation()
+                    .then(|| ::core::mem::take(&mut self.r#utf8_validation));
+                self._has.clear_utf8_validation();
+                val
+            }
+            ///Builder method that sets the value of `utf8_validation`. Useful for initializing the message.
+            #[inline]
+            pub fn init_utf8_validation(
+                mut self,
+                value: FeatureSet_::Utf8Validation,
+            ) -> Self {
+                self.set_utf8_validation(value);
+                self
             }
             ///Return a reference to `message_encoding` as an `Option`
             #[inline]
@@ -8484,14 +11115,40 @@ pub mod google_ {
             }
             ///Set the value and presence of `message_encoding`
             #[inline]
-            pub fn set_message_encoding(&mut self, value: FeatureSet_::MessageEncoding) {
+            pub fn set_message_encoding(
+                &mut self,
+                value: FeatureSet_::MessageEncoding,
+            ) -> &mut Self {
                 self._has.set_message_encoding();
                 self.r#message_encoding = value.into();
+                self
             }
             ///Clear the presence of `message_encoding`
             #[inline]
-            pub fn clear_message_encoding(&mut self) {
+            pub fn clear_message_encoding(&mut self) -> &mut Self {
                 self._has.clear_message_encoding();
+                self
+            }
+            ///Take the value of `message_encoding` and clear its presence
+            #[inline]
+            pub fn take_message_encoding(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::MessageEncoding> {
+                let val = self
+                    ._has
+                    .r#message_encoding()
+                    .then(|| ::core::mem::take(&mut self.r#message_encoding));
+                self._has.clear_message_encoding();
+                val
+            }
+            ///Builder method that sets the value of `message_encoding`. Useful for initializing the message.
+            #[inline]
+            pub fn init_message_encoding(
+                mut self,
+                value: FeatureSet_::MessageEncoding,
+            ) -> Self {
+                self.set_message_encoding(value);
+                self
             }
             ///Return a reference to `json_format` as an `Option`
             #[inline]
@@ -8509,14 +11166,37 @@ pub mod google_ {
             }
             ///Set the value and presence of `json_format`
             #[inline]
-            pub fn set_json_format(&mut self, value: FeatureSet_::JsonFormat) {
+            pub fn set_json_format(
+                &mut self,
+                value: FeatureSet_::JsonFormat,
+            ) -> &mut Self {
                 self._has.set_json_format();
                 self.r#json_format = value.into();
+                self
             }
             ///Clear the presence of `json_format`
             #[inline]
-            pub fn clear_json_format(&mut self) {
+            pub fn clear_json_format(&mut self) -> &mut Self {
                 self._has.clear_json_format();
+                self
+            }
+            ///Take the value of `json_format` and clear its presence
+            #[inline]
+            pub fn take_json_format(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::JsonFormat> {
+                let val = self
+                    ._has
+                    .r#json_format()
+                    .then(|| ::core::mem::take(&mut self.r#json_format));
+                self._has.clear_json_format();
+                val
+            }
+            ///Builder method that sets the value of `json_format`. Useful for initializing the message.
+            #[inline]
+            pub fn init_json_format(mut self, value: FeatureSet_::JsonFormat) -> Self {
+                self.set_json_format(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for FeatureSet {
@@ -8611,15 +11291,17 @@ pub mod google_ {
                     }
                     ///Set presence of `edition`
                     #[inline]
-                    pub fn set_edition(&mut self) {
+                    pub fn set_edition(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `edition`
                     #[inline]
-                    pub fn clear_edition(&mut self) {
+                    pub fn clear_edition(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
                     #[inline]
@@ -8634,15 +11316,17 @@ pub mod google_ {
                     }
                     ///Set presence of `overridable_features`
                     #[inline]
-                    pub fn set_overridable_features(&mut self) {
+                    pub fn set_overridable_features(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `overridable_features`
                     #[inline]
-                    pub fn clear_overridable_features(&mut self) {
+                    pub fn clear_overridable_features(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `overridable_features`. Useful for initializing the Hazzer.
                     #[inline]
@@ -8657,15 +11341,17 @@ pub mod google_ {
                     }
                     ///Set presence of `fixed_features`
                     #[inline]
-                    pub fn set_fixed_features(&mut self) {
+                    pub fn set_fixed_features(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
+                        self
                     }
                     ///Clear presence of `fixed_features`
                     #[inline]
-                    pub fn clear_fixed_features(&mut self) {
+                    pub fn clear_fixed_features(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
+                        self
                     }
                     ///Builder method that sets the presence of `fixed_features`. Useful for initializing the Hazzer.
                     #[inline]
@@ -8707,14 +11393,34 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `edition`
                 #[inline]
-                pub fn set_edition(&mut self, value: super::Edition) {
+                pub fn set_edition(&mut self, value: super::Edition) -> &mut Self {
                     self._has.set_edition();
                     self.r#edition = value.into();
+                    self
                 }
                 ///Clear the presence of `edition`
                 #[inline]
-                pub fn clear_edition(&mut self) {
+                pub fn clear_edition(&mut self) -> &mut Self {
                     self._has.clear_edition();
+                    self
+                }
+                ///Take the value of `edition` and clear its presence
+                #[inline]
+                pub fn take_edition(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition()
+                        .then(|| ::core::mem::take(&mut self.r#edition));
+                    self._has.clear_edition();
+                    val
+                }
+                ///Builder method that sets the value of `edition`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition(mut self, value: super::Edition) -> Self {
+                    self.set_edition(value);
+                    self
                 }
                 ///Return a reference to `overridable_features` as an `Option`
                 #[inline]
@@ -8736,14 +11442,40 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `overridable_features`
                 #[inline]
-                pub fn set_overridable_features(&mut self, value: super::FeatureSet) {
+                pub fn set_overridable_features(
+                    &mut self,
+                    value: super::FeatureSet,
+                ) -> &mut Self {
                     self._has.set_overridable_features();
                     self.r#overridable_features = value.into();
+                    self
                 }
                 ///Clear the presence of `overridable_features`
                 #[inline]
-                pub fn clear_overridable_features(&mut self) {
+                pub fn clear_overridable_features(&mut self) -> &mut Self {
                     self._has.clear_overridable_features();
+                    self
+                }
+                ///Take the value of `overridable_features` and clear its presence
+                #[inline]
+                pub fn take_overridable_features(
+                    &mut self,
+                ) -> ::core::option::Option<super::FeatureSet> {
+                    let val = self
+                        ._has
+                        .r#overridable_features()
+                        .then(|| ::core::mem::take(&mut self.r#overridable_features));
+                    self._has.clear_overridable_features();
+                    val
+                }
+                ///Builder method that sets the value of `overridable_features`. Useful for initializing the message.
+                #[inline]
+                pub fn init_overridable_features(
+                    mut self,
+                    value: super::FeatureSet,
+                ) -> Self {
+                    self.set_overridable_features(value);
+                    self
                 }
                 ///Return a reference to `fixed_features` as an `Option`
                 #[inline]
@@ -8761,14 +11493,37 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `fixed_features`
                 #[inline]
-                pub fn set_fixed_features(&mut self, value: super::FeatureSet) {
+                pub fn set_fixed_features(
+                    &mut self,
+                    value: super::FeatureSet,
+                ) -> &mut Self {
                     self._has.set_fixed_features();
                     self.r#fixed_features = value.into();
+                    self
                 }
                 ///Clear the presence of `fixed_features`
                 #[inline]
-                pub fn clear_fixed_features(&mut self) {
+                pub fn clear_fixed_features(&mut self) -> &mut Self {
                     self._has.clear_fixed_features();
+                    self
+                }
+                ///Take the value of `fixed_features` and clear its presence
+                #[inline]
+                pub fn take_fixed_features(
+                    &mut self,
+                ) -> ::core::option::Option<super::FeatureSet> {
+                    let val = self
+                        ._has
+                        .r#fixed_features()
+                        .then(|| ::core::mem::take(&mut self.r#fixed_features));
+                    self._has.clear_fixed_features();
+                    val
+                }
+                ///Builder method that sets the value of `fixed_features`. Useful for initializing the message.
+                #[inline]
+                pub fn init_fixed_features(mut self, value: super::FeatureSet) -> Self {
+                    self.set_fixed_features(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for FeatureSetEditionDefault {
@@ -8825,15 +11580,17 @@ pub mod google_ {
                 }
                 ///Set presence of `minimum_edition`
                 #[inline]
-                pub fn set_minimum_edition(&mut self) {
+                pub fn set_minimum_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
+                    self
                 }
                 ///Clear presence of `minimum_edition`
                 #[inline]
-                pub fn clear_minimum_edition(&mut self) {
+                pub fn clear_minimum_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
+                    self
                 }
                 ///Builder method that sets the presence of `minimum_edition`. Useful for initializing the Hazzer.
                 #[inline]
@@ -8848,15 +11605,17 @@ pub mod google_ {
                 }
                 ///Set presence of `maximum_edition`
                 #[inline]
-                pub fn set_maximum_edition(&mut self) {
+                pub fn set_maximum_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
+                    self
                 }
                 ///Clear presence of `maximum_edition`
                 #[inline]
-                pub fn clear_maximum_edition(&mut self) {
+                pub fn clear_maximum_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
+                    self
                 }
                 ///Builder method that sets the presence of `maximum_edition`. Useful for initializing the Hazzer.
                 #[inline]
@@ -8900,14 +11659,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `minimum_edition`
             #[inline]
-            pub fn set_minimum_edition(&mut self, value: Edition) {
+            pub fn set_minimum_edition(&mut self, value: Edition) -> &mut Self {
                 self._has.set_minimum_edition();
                 self.r#minimum_edition = value.into();
+                self
             }
             ///Clear the presence of `minimum_edition`
             #[inline]
-            pub fn clear_minimum_edition(&mut self) {
+            pub fn clear_minimum_edition(&mut self) -> &mut Self {
                 self._has.clear_minimum_edition();
+                self
+            }
+            ///Take the value of `minimum_edition` and clear its presence
+            #[inline]
+            pub fn take_minimum_edition(&mut self) -> ::core::option::Option<Edition> {
+                let val = self
+                    ._has
+                    .r#minimum_edition()
+                    .then(|| ::core::mem::take(&mut self.r#minimum_edition));
+                self._has.clear_minimum_edition();
+                val
+            }
+            ///Builder method that sets the value of `minimum_edition`. Useful for initializing the message.
+            #[inline]
+            pub fn init_minimum_edition(mut self, value: Edition) -> Self {
+                self.set_minimum_edition(value);
+                self
             }
             ///Return a reference to `maximum_edition` as an `Option`
             #[inline]
@@ -8923,14 +11700,32 @@ pub mod google_ {
             }
             ///Set the value and presence of `maximum_edition`
             #[inline]
-            pub fn set_maximum_edition(&mut self, value: Edition) {
+            pub fn set_maximum_edition(&mut self, value: Edition) -> &mut Self {
                 self._has.set_maximum_edition();
                 self.r#maximum_edition = value.into();
+                self
             }
             ///Clear the presence of `maximum_edition`
             #[inline]
-            pub fn clear_maximum_edition(&mut self) {
+            pub fn clear_maximum_edition(&mut self) -> &mut Self {
                 self._has.clear_maximum_edition();
+                self
+            }
+            ///Take the value of `maximum_edition` and clear its presence
+            #[inline]
+            pub fn take_maximum_edition(&mut self) -> ::core::option::Option<Edition> {
+                let val = self
+                    ._has
+                    .r#maximum_edition()
+                    .then(|| ::core::mem::take(&mut self.r#maximum_edition));
+                self._has.clear_maximum_edition();
+                val
+            }
+            ///Builder method that sets the value of `maximum_edition`. Useful for initializing the message.
+            #[inline]
+            pub fn init_maximum_edition(mut self, value: Edition) -> Self {
+                self.set_maximum_edition(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for FeatureSetDefaults {
@@ -8994,15 +11789,17 @@ pub mod google_ {
                     }
                     ///Set presence of `leading_comments`
                     #[inline]
-                    pub fn set_leading_comments(&mut self) {
+                    pub fn set_leading_comments(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `leading_comments`
                     #[inline]
-                    pub fn clear_leading_comments(&mut self) {
+                    pub fn clear_leading_comments(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `leading_comments`. Useful for initializing the Hazzer.
                     #[inline]
@@ -9017,15 +11814,17 @@ pub mod google_ {
                     }
                     ///Set presence of `trailing_comments`
                     #[inline]
-                    pub fn set_trailing_comments(&mut self) {
+                    pub fn set_trailing_comments(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `trailing_comments`
                     #[inline]
-                    pub fn clear_trailing_comments(&mut self) {
+                    pub fn clear_trailing_comments(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `trailing_comments`. Useful for initializing the Hazzer.
                     #[inline]
@@ -9075,14 +11874,40 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `leading_comments`
                 #[inline]
-                pub fn set_leading_comments(&mut self, value: ::std::string::String) {
+                pub fn set_leading_comments(
+                    &mut self,
+                    value: ::std::string::String,
+                ) -> &mut Self {
                     self._has.set_leading_comments();
                     self.r#leading_comments = value.into();
+                    self
                 }
                 ///Clear the presence of `leading_comments`
                 #[inline]
-                pub fn clear_leading_comments(&mut self) {
+                pub fn clear_leading_comments(&mut self) -> &mut Self {
                     self._has.clear_leading_comments();
+                    self
+                }
+                ///Take the value of `leading_comments` and clear its presence
+                #[inline]
+                pub fn take_leading_comments(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#leading_comments()
+                        .then(|| ::core::mem::take(&mut self.r#leading_comments));
+                    self._has.clear_leading_comments();
+                    val
+                }
+                ///Builder method that sets the value of `leading_comments`. Useful for initializing the message.
+                #[inline]
+                pub fn init_leading_comments(
+                    mut self,
+                    value: ::std::string::String,
+                ) -> Self {
+                    self.set_leading_comments(value);
+                    self
                 }
                 ///Return a reference to `trailing_comments` as an `Option`
                 #[inline]
@@ -9102,14 +11927,40 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `trailing_comments`
                 #[inline]
-                pub fn set_trailing_comments(&mut self, value: ::std::string::String) {
+                pub fn set_trailing_comments(
+                    &mut self,
+                    value: ::std::string::String,
+                ) -> &mut Self {
                     self._has.set_trailing_comments();
                     self.r#trailing_comments = value.into();
+                    self
                 }
                 ///Clear the presence of `trailing_comments`
                 #[inline]
-                pub fn clear_trailing_comments(&mut self) {
+                pub fn clear_trailing_comments(&mut self) -> &mut Self {
                     self._has.clear_trailing_comments();
+                    self
+                }
+                ///Take the value of `trailing_comments` and clear its presence
+                #[inline]
+                pub fn take_trailing_comments(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#trailing_comments()
+                        .then(|| ::core::mem::take(&mut self.r#trailing_comments));
+                    self._has.clear_trailing_comments();
+                    val
+                }
+                ///Builder method that sets the value of `trailing_comments`. Useful for initializing the message.
+                #[inline]
+                pub fn init_trailing_comments(
+                    mut self,
+                    value: ::std::string::String,
+                ) -> Self {
+                    self.set_trailing_comments(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for Location {
@@ -9270,15 +12121,17 @@ pub mod google_ {
                     }
                     ///Set presence of `source_file`
                     #[inline]
-                    pub fn set_source_file(&mut self) {
+                    pub fn set_source_file(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
+                        self
                     }
                     ///Clear presence of `source_file`
                     #[inline]
-                    pub fn clear_source_file(&mut self) {
+                    pub fn clear_source_file(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
+                        self
                     }
                     ///Builder method that sets the presence of `source_file`. Useful for initializing the Hazzer.
                     #[inline]
@@ -9293,15 +12146,17 @@ pub mod google_ {
                     }
                     ///Set presence of `begin`
                     #[inline]
-                    pub fn set_begin(&mut self) {
+                    pub fn set_begin(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
+                        self
                     }
                     ///Clear presence of `begin`
                     #[inline]
-                    pub fn clear_begin(&mut self) {
+                    pub fn clear_begin(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
+                        self
                     }
                     ///Builder method that sets the presence of `begin`. Useful for initializing the Hazzer.
                     #[inline]
@@ -9316,15 +12171,17 @@ pub mod google_ {
                     }
                     ///Set presence of `end`
                     #[inline]
-                    pub fn set_end(&mut self) {
+                    pub fn set_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
+                        self
                     }
                     ///Clear presence of `end`
                     #[inline]
-                    pub fn clear_end(&mut self) {
+                    pub fn clear_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
+                        self
                     }
                     ///Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
                     #[inline]
@@ -9339,15 +12196,17 @@ pub mod google_ {
                     }
                     ///Set presence of `semantic`
                     #[inline]
-                    pub fn set_semantic(&mut self) {
+                    pub fn set_semantic(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 8;
+                        self
                     }
                     ///Clear presence of `semantic`
                     #[inline]
-                    pub fn clear_semantic(&mut self) {
+                    pub fn clear_semantic(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !8;
+                        self
                     }
                     ///Builder method that sets the presence of `semantic`. Useful for initializing the Hazzer.
                     #[inline]
@@ -9395,14 +12254,37 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `source_file`
                 #[inline]
-                pub fn set_source_file(&mut self, value: ::std::string::String) {
+                pub fn set_source_file(
+                    &mut self,
+                    value: ::std::string::String,
+                ) -> &mut Self {
                     self._has.set_source_file();
                     self.r#source_file = value.into();
+                    self
                 }
                 ///Clear the presence of `source_file`
                 #[inline]
-                pub fn clear_source_file(&mut self) {
+                pub fn clear_source_file(&mut self) -> &mut Self {
                     self._has.clear_source_file();
+                    self
+                }
+                ///Take the value of `source_file` and clear its presence
+                #[inline]
+                pub fn take_source_file(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#source_file()
+                        .then(|| ::core::mem::take(&mut self.r#source_file));
+                    self._has.clear_source_file();
+                    val
+                }
+                ///Builder method that sets the value of `source_file`. Useful for initializing the message.
+                #[inline]
+                pub fn init_source_file(mut self, value: ::std::string::String) -> Self {
+                    self.set_source_file(value);
+                    self
                 }
                 ///Return a reference to `begin` as an `Option`
                 #[inline]
@@ -9416,14 +12298,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `begin`
                 #[inline]
-                pub fn set_begin(&mut self, value: i32) {
+                pub fn set_begin(&mut self, value: i32) -> &mut Self {
                     self._has.set_begin();
                     self.r#begin = value.into();
+                    self
                 }
                 ///Clear the presence of `begin`
                 #[inline]
-                pub fn clear_begin(&mut self) {
+                pub fn clear_begin(&mut self) -> &mut Self {
                     self._has.clear_begin();
+                    self
+                }
+                ///Take the value of `begin` and clear its presence
+                #[inline]
+                pub fn take_begin(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#begin()
+                        .then(|| ::core::mem::take(&mut self.r#begin));
+                    self._has.clear_begin();
+                    val
+                }
+                ///Builder method that sets the value of `begin`. Useful for initializing the message.
+                #[inline]
+                pub fn init_begin(mut self, value: i32) -> Self {
+                    self.set_begin(value);
+                    self
                 }
                 ///Return a reference to `end` as an `Option`
                 #[inline]
@@ -9437,14 +12337,32 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `end`
                 #[inline]
-                pub fn set_end(&mut self, value: i32) {
+                pub fn set_end(&mut self, value: i32) -> &mut Self {
                     self._has.set_end();
                     self.r#end = value.into();
+                    self
                 }
                 ///Clear the presence of `end`
                 #[inline]
-                pub fn clear_end(&mut self) {
+                pub fn clear_end(&mut self) -> &mut Self {
                     self._has.clear_end();
+                    self
+                }
+                ///Take the value of `end` and clear its presence
+                #[inline]
+                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#end()
+                        .then(|| ::core::mem::take(&mut self.r#end));
+                    self._has.clear_end();
+                    val
+                }
+                ///Builder method that sets the value of `end`. Useful for initializing the message.
+                #[inline]
+                pub fn init_end(mut self, value: i32) -> Self {
+                    self.set_end(value);
+                    self
                 }
                 ///Return a reference to `semantic` as an `Option`
                 #[inline]
@@ -9462,14 +12380,37 @@ pub mod google_ {
                 }
                 ///Set the value and presence of `semantic`
                 #[inline]
-                pub fn set_semantic(&mut self, value: Annotation_::Semantic) {
+                pub fn set_semantic(
+                    &mut self,
+                    value: Annotation_::Semantic,
+                ) -> &mut Self {
                     self._has.set_semantic();
                     self.r#semantic = value.into();
+                    self
                 }
                 ///Clear the presence of `semantic`
                 #[inline]
-                pub fn clear_semantic(&mut self) {
+                pub fn clear_semantic(&mut self) -> &mut Self {
                     self._has.clear_semantic();
+                    self
+                }
+                ///Take the value of `semantic` and clear its presence
+                #[inline]
+                pub fn take_semantic(
+                    &mut self,
+                ) -> ::core::option::Option<Annotation_::Semantic> {
+                    let val = self
+                        ._has
+                        .r#semantic()
+                        .then(|| ::core::mem::take(&mut self.r#semantic));
+                    self._has.clear_semantic();
+                    val
+                }
+                ///Builder method that sets the value of `semantic`. Useful for initializing the message.
+                #[inline]
+                pub fn init_semantic(mut self, value: Annotation_::Semantic) -> Self {
+                    self.set_semantic(value);
+                    self
                 }
             }
             impl ::micropb::MessageDecode for Annotation {
