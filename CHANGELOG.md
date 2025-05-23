@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Reject Protobuf Editions .proto files instead of pretending they're proto3
+
 ## [0.1.2]
 
 ### Added
@@ -12,7 +18,7 @@
 
 - Return `&mut Self` from `set_*` and `clear_*` APIs
 
-### Fixes
+### Fixed
 
 - Improved error message when protoc is not found
 - Correct PartialEq implementations are now generated for message types

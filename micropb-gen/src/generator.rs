@@ -204,9 +204,14 @@ impl Generator {
         fdproto: &FileDescriptorProto,
     ) -> io::Result<TokenStream> {
         self.syntax = match fdproto.syntax.as_str() {
-            // If the syntax is "editions", still treat as proto3 for now
-            "proto3" | "editions" => Syntax::Proto3,
-            _ => Syntax::Proto2,
+            "proto3" => Syntax::Proto3,
+            "proto2" => Syntax::Proto2,
+            "editions" => return Err(io::Error::other("Protobuf Editions not supported")),
+            syntax => {
+                return Err(io::Error::other(format!(
+                    "Unexpected Protobuf syntax specifier {syntax}"
+                )))
+            }
         };
         self.pkg_path = fdproto
             .package()
