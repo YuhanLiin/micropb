@@ -205,7 +205,7 @@ impl Generator {
     ) -> io::Result<TokenStream> {
         self.syntax = match fdproto.syntax.as_str() {
             "proto3" => Syntax::Proto3,
-            "proto2" => Syntax::Proto2,
+            "proto2" | "" => Syntax::Proto2,
             "editions" => return Err(io::Error::other("Protobuf Editions not supported")),
             syntax => {
                 return Err(io::Error::other(format!(
