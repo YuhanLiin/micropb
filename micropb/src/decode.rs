@@ -697,6 +697,8 @@ impl<R: PbRead> PbDecoder<R> {
 
 #[cfg(test)]
 mod tests {
+    use core::ops::Range;
+
     use arrayvec::{ArrayString, ArrayVec};
 
     use crate::{FixedLenArray, FixedLenString};
@@ -1362,5 +1364,111 @@ mod tests {
                 |v, rd| rd.decode_string::<ArrayString<5>>(v, Presence::Explicit)
             )
         );
+    }
+
+    // The following proptests exercise unsafe code in micropb. Since we only care about catching
+    // UB, we only need to run the tests under miri.
+    #[cfg(miri)]
+    mod r#unsafe {
+        use super::*;
+        use proptest::prelude::*;
+
+        pub(crate) fn bytes_strat(sizes: Range<usize>) -> impl Strategy<Value = Vec<u8>> {
+            proptest::collection::vec(
+                proptest::num::u8::ANY,
+                proptest::collection::size_range(sizes),
+            )
+        }
+
+        macro_rules! check_decode {
+            (@testcase $expect_ok:expr, $reader:expr, $($op:tt)+) => {
+                let mut decoder = PbDecoder::new($reader);
+                let res = decoder.$($op)+;
+                if $expect_ok {
+                    assert!(res.is_ok());
+                } else {
+                    assert!(res.is_err());
+                }
+            };
+
+            ($expect_ok:expr, $arr:expr, $($op:tt)+) => {
+                check_decode!(@testcase $expect_ok, $arr.as_slice(), $($op)+);
+                check_decode!(@testcase $expect_ok, Multichunk($arr.as_slice()), $($op)+);
+            };
+        }
+
+        fn check_string(mut string: impl PbString + Clone, data: Vec<u8>) {
+            let mut string_cl = string.clone();
+            let mut decoder = PbDecoder::new(data.as_slice());
+            let _ = decoder.decode_string(&mut string, Presence::Implicit);
+            let mut decoder = PbDecoder::new(Multichunk(data.as_slice()));
+            let _ = decoder.decode_string(&mut string_cl, Presence::Explicit);
+        }
+
+        fn check_bytes(mut bytes: impl PbVec<u8> + Clone, data: Vec<u8>) {
+            let mut bytes_cl = bytes.clone();
+            let mut decoder = PbDecoder::new(data.as_slice());
+            let _ = decoder.decode_bytes(&mut bytes, Presence::Implicit);
+            let mut decoder = PbDecoder::new(Multichunk(data.as_slice()));
+            let _ = decoder.decode_bytes(&mut bytes_cl, Presence::Explicit);
+        }
+
+        proptest! {
+            // Need this for miri to work
+            #![proptest_config(proptest::test_runner::Config {
+                failure_persistence: None,
+                ..Default::default()
+            })]
+            #[test]
+            fn proptest_fixed32(data in bytes_strat(0..6)) {
+                check_decode!(data.len() >= 4, data, decode_fixed32());
+            }
+            #[test]
+            fn proptest_fixed64(data in bytes_strat(2..10)) {
+                check_decode!(data.len() >= 8, data, decode_fixed64());
+            }
+            #[test]
+            fn proptest_float(data in bytes_strat(0..6)) {
+                check_decode!(data.len() >= 4, data, decode_float());
+            }
+            #[test]
+            fn proptest_double(data in bytes_strat(2..10)) {
+                check_decode!(data.len() >= 8, data, decode_double());
+            }
+
+            #[test]
+            fn proptest_string(data in bytes_strat(4..32)) {
+                check_string(String::new(), data);
+            }
+            #[test]
+            fn proptest_arraystring(data in bytes_strat(4..32)) {
+                check_string(ArrayString::<16>::new(), data);
+            }
+            #[test]
+            fn proptest_hlstring(data in bytes_strat(4..32)) {
+                check_string(heapless::String::<16>::new(), data);
+            }
+            #[test]
+            fn proptest_fixedstring(data in bytes_strat(4..32)) {
+                check_string(FixedLenString::<16>::default(), data);
+            }
+
+            #[test]
+            fn proptest_vec(data in bytes_strat(4..32)) {
+                check_bytes(Vec::new(), data);
+            }
+            #[test]
+            fn proptest_arrayvec(data in bytes_strat(4..32)) {
+                check_bytes(ArrayVec::<u8, 16>::new(), data);
+            }
+            #[test]
+            fn proptest_hlvec(data in bytes_strat(4..32)) {
+                check_bytes(heapless::Vec::<u8, 16>::new(), data);
+            }
+            #[test]
+            fn proptest_fixedarray(data in bytes_strat(4..32)) {
+                check_bytes(FixedLenArray::<u8, 16>::default(), data);
+            }
+        }
     }
 }
