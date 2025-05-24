@@ -1,47 +1,105 @@
-#[cfg(test)]
-use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
-
 extern crate alloc;
 
 #[cfg(test)]
-mod proto {
-    #![allow(clippy::all)]
-    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
-    include!(concat!(env!("OUT_DIR"), "/all_types.rs"));
-}
+mod tests {
+    use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
-#[cfg(test)]
-fn bytes() -> impl proptest::strategy::Strategy<Value = Vec<u8>> {
-    proptest::collection::vec(
-        proptest::num::u8::ANY,
-        proptest::collection::size_range(0..2000),
-    )
-}
+    mod micropb_types {
+        #![allow(clippy::all)]
+        #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+        include!(concat!(env!("OUT_DIR"), "/all_types.rs"));
+    }
 
-#[cfg(test)]
-proptest::proptest! {
-    #![proptest_config(proptest::prelude::ProptestConfig::with_cases(2000))]
+    mod proto_types {
+        #![allow(clippy::all)]
+        #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+        pub mod all_types {
+            use super::*;
+            include!(concat!(env!("OUT_DIR"), "/all_types_pbrs.rs"));
+        }
+    }
 
-    // Roundtrip random message structures
-    #[test]
-    fn roundtrip(msg: proto::TestOneOf) {
+    fn bytes() -> impl proptest::strategy::Strategy<Value = Vec<u8>> {
+        proptest::collection::vec(
+            proptest::num::u8::ANY,
+            proptest::collection::size_range(0..2000),
+        )
+    }
+
+    fn test_roundtrip(msg: micropb_types::TestOneOf) {
         let mut encoder = PbEncoder::new(vec![]);
         msg.encode(&mut encoder).unwrap();
 
         let mut decoder = PbDecoder::new(encoder.as_writer().as_slice());
-        let mut output = proto::TestOneOf::default();
-        output.decode(&mut decoder, encoder.as_writer().len()).unwrap();
+        let mut output = micropb_types::TestOneOf::default();
+        output
+            .decode(&mut decoder, encoder.as_writer().len())
+            .unwrap();
         assert_eq!(msg, output);
     }
 
-    // Decode random data to ensure it doesn't crash
-    #[test]
-    fn decode_random(data in bytes()) {
-        let mut decoder = PbDecoder::new(data.as_slice());
-        let mut msg = proto::TestOneOf::default();
-        if msg.decode(&mut decoder, data.len()).is_ok() {
-            let mut encoder = PbEncoder::new(vec![]);
-            let _ = msg.encode(&mut encoder);
+    fn test_proto_roundtrip(msg: micropb_types::TestOneOf) {
+        use quick_protobuf::{deserialize_from_slice, serialize_into_vec};
+
+        let mut encoder = PbEncoder::new(vec![]);
+        msg.encode(&mut encoder).unwrap();
+
+        println!("{:0x?}", encoder.as_writer().as_slice());
+        let proto_msg: proto_types::all_types::TestOneOf =
+            deserialize_from_slice(encoder.as_writer().as_slice()).unwrap();
+        dbg!(&proto_msg);
+        let buf = serialize_into_vec(&proto_msg).unwrap();
+        println!("{:0x?}", buf);
+
+        let mut decoder = PbDecoder::new(buf.as_slice());
+        let mut output = micropb_types::TestOneOf::default();
+        output.decode(&mut decoder, buf.len()).unwrap();
+        assert_eq!(msg, output);
+    }
+
+    proptest::proptest! {
+        #![proptest_config(proptest::prelude::ProptestConfig::with_cases(2000))]
+
+        // Roundtrip random message structures
+        #[test]
+        fn roundtrip(msg: micropb_types::TestOneOf) {
+            test_roundtrip(msg);
         }
+
+        #[test]
+        fn proto_roundtrip(msg: micropb_types::TestOneOf) {
+            test_proto_roundtrip(msg);
+        }
+
+        // Decode random data to ensure it doesn't crash
+        #[test]
+        fn decode_random(data in bytes()) {
+            let mut decoder = PbDecoder::new(data.as_slice());
+            let mut msg = micropb_types::TestOneOf::default();
+            if msg.decode(&mut decoder, data.len()).is_ok() {
+                let mut encoder = PbEncoder::new(vec![]);
+                let _ = msg.encode(&mut encoder);
+            }
+        }
+    }
+
+    #[test]
+    fn negative_enum() {
+        use micropb_types::*;
+
+        let msg = TestOneOf {
+            inner: Some(TestOneOf_::Inner::Repeat2(TestTypesRepeated2 {
+                fixed32_field: vec![],
+                fixed64_field: vec![],
+                sfixed32_field: vec![],
+                sfixed64_field: vec![],
+                bool_field: vec![],
+                string_field: vec![],
+                bytes_field: vec![],
+                enum_field: vec![TestEnum(-1)],
+                message_field: vec![],
+            })),
+        };
+        test_proto_roundtrip(msg);
     }
 }

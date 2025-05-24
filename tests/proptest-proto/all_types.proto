@@ -11,6 +11,10 @@ enum TestEnum {
     GREEN = 3;
 }
 
+message Test {
+    repeated TestEnum enum_field = 16;
+}
+
 // Message structs need to have under 10 fields in order to derive Arbitrary
 
 message TestTypesSingular1 {
