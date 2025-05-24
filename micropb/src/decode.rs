@@ -697,8 +697,6 @@ impl<R: PbRead> PbDecoder<R> {
 
 #[cfg(test)]
 mod tests {
-    use core::ops::Range;
-
     use arrayvec::{ArrayString, ArrayVec};
 
     use crate::{FixedLenArray, FixedLenString};
@@ -1371,6 +1369,7 @@ mod tests {
     #[cfg(miri)]
     mod r#unsafe {
         use super::*;
+        use core::ops::Range;
         use proptest::prelude::*;
 
         pub(crate) fn bytes_strat(sizes: Range<usize>) -> impl Strategy<Value = Vec<u8>> {
