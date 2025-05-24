@@ -12,6 +12,7 @@ members = [
     "examples/file-descriptor-set",
     "examples/arm-app",
     "examples/basic",
+    "tests/proptest-proto",
 ]
 
 # For the no-panicking example

@@ -9,3 +9,5 @@ This folder contains the following test suites:
 - `encode-only`: Includes only encode logic, as well as disabling 64-bit ints. For testing encode-only and 32-bit only functionality.
 
 - `decode-only`: Includes only decode logic, as well as disabling 64-bit ints. For testing decode-only and 32-bit only functionality.
+
+- `proptest-proto`: Tests randomly-generated message structures and decoding of random bytes.
