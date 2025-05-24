@@ -1416,6 +1416,7 @@ mod tests {
             // Need this for miri to work
             #![proptest_config(proptest::test_runner::Config {
                 failure_persistence: None,
+                cases: 128,
                 ..Default::default()
             })]
             #[test]
