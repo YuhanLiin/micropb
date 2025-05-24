@@ -209,6 +209,10 @@ pub struct PbDecoder<R: PbRead> {
     /// elements on the wire. The decoder will still report capacity errors when decoding `bytes`
     /// and `string` values that exceed their fixed containers.
     pub ignore_repeated_cap_err: bool,
+    /// If this flag is set, then the decoder will never report a `WrongLen` error if a
+    /// length-delimited repeated or map field's actual length does not match its length prefix.
+    /// Note that other errors can still happen down the line if the length is wrong.
+    pub ignore_wrong_len: bool,
 }
 
 impl<R: PbRead> PbDecoder<R> {
@@ -219,6 +223,7 @@ impl<R: PbRead> PbDecoder<R> {
             reader,
             idx: 0,
             ignore_repeated_cap_err: false,
+            ignore_wrong_len: false,
         }
     }
 
@@ -530,7 +535,7 @@ impl<R: PbRead> PbDecoder<R> {
         let before = self.bytes_read();
         let val = decoder(len, before, self)?;
         let actual_len = self.bytes_read() - before;
-        if actual_len != len {
+        if actual_len != len && !self.ignore_wrong_len {
             Err(DecodeError::WrongLen)
         } else {
             Ok(val)

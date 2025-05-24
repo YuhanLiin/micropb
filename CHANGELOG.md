@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add `ignore_wrong_len` flag to decoder
+
 ### Fixed
 
 - Reject Protobuf Editions .proto files instead of pretending they're proto3
