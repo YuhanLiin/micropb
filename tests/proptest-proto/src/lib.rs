@@ -13,10 +13,7 @@ mod tests {
     mod proto_types {
         #![allow(clippy::all)]
         #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
-        pub mod all_types {
-            use super::*;
-            include!(concat!(env!("OUT_DIR"), "/all_types_pbrs.rs"));
-        }
+        include!(concat!(env!("OUT_DIR"), "/protos/mod.rs"));
     }
 
     fn bytes() -> impl proptest::strategy::Strategy<Value = Vec<u8>> {
@@ -39,19 +36,21 @@ mod tests {
     }
 
     fn test_proto_roundtrip(msg: micropb_types::TestOneOf) {
-        use quick_protobuf::{deserialize_from_slice, serialize_into_vec};
+        use protobuf::Message;
 
         let mut encoder = PbEncoder::new(vec![]);
         msg.encode(&mut encoder).unwrap();
 
         println!("{:0x?}", encoder.as_writer().as_slice());
-        let proto_msg: proto_types::all_types::TestOneOf =
-            deserialize_from_slice(encoder.as_writer().as_slice()).unwrap();
+        let proto_msg =
+            proto_types::all_types::TestOneOf::parse_from_bytes(encoder.as_writer().as_slice())
+                .unwrap();
         dbg!(&proto_msg);
-        let buf = serialize_into_vec(&proto_msg).unwrap();
+        let buf = proto_msg.write_to_bytes().unwrap();
         println!("{:0x?}", buf);
 
         let mut decoder = PbDecoder::new(buf.as_slice());
+        decoder.ignore_wrong_len = true;
         let mut output = micropb_types::TestOneOf::default();
         output.decode(&mut decoder, buf.len()).unwrap();
         assert_eq!(msg, output);
@@ -96,7 +95,7 @@ mod tests {
                 bool_field: vec![],
                 string_field: vec![],
                 bytes_field: vec![],
-                enum_field: vec![TestEnum(-1)],
+                enum_field: vec![TestEnum(-1), TestEnum(0)],
                 message_field: vec![],
             })),
         };

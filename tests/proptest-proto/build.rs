@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use micropb_gen::{Config, Generator};
 
 fn main() {
@@ -21,24 +19,10 @@ fn main() {
         )
         .unwrap();
 
-    let config = pb_rs::types::Config {
-        in_file: PathBuf::from("all_types.proto"),
-        out_file: PathBuf::from(std::env::var("OUT_DIR").unwrap() + "/all_types_pbrs.rs"),
-        single_module: true,
-        import_search_path: vec![PathBuf::from(".")],
-        no_output: false,
-        error_cycle: false,
-        headers: false,
-        dont_use_cow: false,
-        custom_struct_derive: vec![],
-        custom_repr: None,
-        custom_rpc_generator: Box::new(|_, _| Ok(())),
-        custom_includes: Vec::new(),
-        owned: false,
-        hashbrown: false,
-        nostd: false,
-        gen_info: false,
-        add_deprecated_fields: false,
-    };
-    pb_rs::types::FileDescriptor::write_proto(&config).unwrap();
+    protobuf_codegen::Codegen::new()
+        .protoc()
+        .include(".")
+        .input("all_types.proto")
+        .cargo_out_dir("protos")
+        .run_from_script();
 }
