@@ -5,6 +5,7 @@
 ### Added
 
 - Add `ignore_wrong_len` flag to decoder
+- Add convenience methods for decoding and encoding
 
 ### Fixed
 

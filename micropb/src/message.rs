@@ -17,6 +17,12 @@ pub trait MessageDecode {
         len: usize,
     ) -> Result<(), DecodeError<R::Error>>;
 
+    /// Decode an instance of the message from the provided bytes
+    fn decode_from_bytes(&mut self, bytes: &[u8]) -> Result<(), DecodeError<never::Never>> {
+        let mut decoder = PbDecoder::new(bytes);
+        self.decode(&mut decoder, bytes.len())
+    }
+
     /// Decode an instance of the message from the decoder as a length-delimited record, starting with a length
     /// prefix.
     fn decode_len_delimited<R: PbRead>(
@@ -52,6 +58,12 @@ impl<T: MessageDecode> MessageDecode for &mut T {
 pub trait MessageEncode {
     /// Encode this message using the encoder.
     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
+
+    /// Encode this message into a writer
+    fn encode_to_writer<W: PbWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
+        let mut encoder = PbEncoder::new(writer);
+        self.encode(&mut encoder)
+    }
 
     /// Encode this message as a length-delimited record, starting with a length prefix.
     fn encode_len_delimited<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
