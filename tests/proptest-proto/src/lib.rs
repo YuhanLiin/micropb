@@ -27,6 +27,7 @@ proptest::proptest! {
     fn roundtrip(msg: proto::TestOneOf) {
         let mut encoder = PbEncoder::new(vec![]);
         msg.encode(&mut encoder).unwrap();
+        assert_eq!(msg.compute_size(), encoder.as_writer().len());
 
         let mut decoder = PbDecoder::new(encoder.as_writer().as_slice());
         let mut output = proto::TestOneOf::default();
