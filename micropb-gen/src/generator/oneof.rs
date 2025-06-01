@@ -355,9 +355,12 @@ impl<'a> Oneof<'a> {
                 quote! {'oneof: {
                     let mut max_size = 0;
                     #(
-                        let ::core::option::Option::Some(size) = #variant_sizes else { break 'oneof ::core::option::Option::None };
-                        if size > max_size {
-                            max_size = size;
+                        if let ::core::option::Option::Some(size) = #variant_sizes {
+                            if size > max_size {
+                                max_size = size;
+                            }
+                        } else {
+                            break 'oneof (::core::option::Option::None);
                         }
                     )*
                     ::core::option::Option::Some(max_size)

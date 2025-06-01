@@ -336,6 +336,7 @@ impl Generator {
 
         #[cfg(feature = "format")]
         let output = if self.format {
+            dbg!(code.to_string());
             prettyplease::unparse(
                 &syn::parse2(code).expect("output code should be parseable as a file"),
             )
