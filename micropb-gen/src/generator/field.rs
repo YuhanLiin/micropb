@@ -498,6 +498,61 @@ impl<'a> Field<'a> {
         }
     }
 
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        let wire_type = self.wire_type();
+        let tag = micropb::Tag::from_parts(self.num, wire_type);
+        let tag_len = ::micropb::size::sizeof_tag(tag);
+
+        match &self.ftype {
+            FieldType::Map {
+                key, val, max_len, ..
+            } => max_len
+                .map(|len| {
+                    let len = len as usize;
+                    let key_size = key.generate_max_size(gen);
+                    let val_size = val.generate_max_size(gen);
+                    quote! {
+                        match (#key_size, #val_size) {
+                            (_, ::core::option::Option::None) => ::core::option::Option::None,
+                            (::core::option::Option::None, _) => ::core::option::Option::None,
+                            (::core::option::Option::Some(key_size), ::core::option::Option::Some(val_size)) => {
+                                let max_size = ::micropb::size::sizeof_len_record(key_size + val_size + 2) + #tag_len;
+                                ::core::option::Option::Some(max_size * #len)
+                            }
+                        }
+                    }
+                })
+                .unwrap_or(quote! {::core::option::Option::None}),
+
+            FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
+                let size = type_spec.generate_max_size(gen);
+                quote! { if let ::core::option::Option::Some(size) = #size { ::core::option::Option::Some(size + #tag_len) } else { ::core::option::Option::None } }
+            }
+
+            FieldType::Repeated {
+                typ,
+                packed,
+                max_len,
+                ..
+            } => max_len.map(|len| {
+                let len = len as usize;
+                let size = typ.generate_max_size(gen);
+                let size_expr = if *packed {
+                    quote! {
+                        ::micropb::size::sizeof_len_record(#len * size) + #tag_len
+                    }
+                } else {
+                    quote! {
+                        (size + #tag_len) * #len
+                    }
+                };
+                quote! { if let ::core::option::Option::Some(size) = #size { ::core::option::Option::Some(#size_expr) } else { ::core::option::Option::None } }
+            }).unwrap_or(quote! { ::core::option::Option::None }),
+
+            FieldType::Custom(_) => quote! { ::core::option::Option::None },
+        }
+    }
+
     pub(crate) fn generate_encode(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
         let fname = &self.san_rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
@@ -541,7 +596,7 @@ impl<'a> Field<'a> {
 
             FieldType::Single(tspec) | FieldType::Optional(tspec, _) => {
                 let check = if let FieldType::Optional(..) = self.ftype {
-                    quote! { if let Some(#val_ref) = self.#fname() }
+                    quote! { if let ::core::option::Option::Some(#val_ref) = self.#fname() }
                 } else {
                     let implicit_presence_check = tspec.generate_implicit_presence_check(&val_ref);
                     quote! {

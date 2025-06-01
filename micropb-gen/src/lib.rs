@@ -306,9 +306,10 @@ impl Generator {
             _ => e,
         })?;
         if !output.status.success() {
-            return Err(io::Error::other(
-                format!("protoc failed: {}", String::from_utf8_lossy(&output.stderr)),
-            ));
+            return Err(io::Error::other(format!(
+                "protoc failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            )));
         }
 
         self.compile_fdset_file(fdset_file, out_filename)

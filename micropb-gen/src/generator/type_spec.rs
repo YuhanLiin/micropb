@@ -1,7 +1,12 @@
+use std::i32;
+
 use convert_case::{Case, Casing};
+use micropb::size::{
+    sizeof_len_record, sizeof_sint32, sizeof_sint64, sizeof_varint32, sizeof_varint64,
+};
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::quote;
-use syn::{Ident, Lifetime};
+use syn::{Ident, Lifetime, LitInt};
 
 use crate::{
     config::IntSize,
@@ -154,6 +159,34 @@ pub(crate) enum TypeSpec {
 }
 
 impl TypeSpec {
+    fn max_size(&self) -> Option<usize> {
+        match self {
+            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),
+            TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => Some(8),
+            TypeSpec::Bool => Some(1),
+
+            // negative VARINT values will always take up 10 bytes
+            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) => Some(10),
+            TypeSpec::Enum(_) => Some(10),
+
+            // positive VARINT size depends on the max size of the represented int type
+            TypeSpec::Int(PbInt::Uint32, intsize) => Some(sizeof_varint32(
+                intsize.max_value().try_into().unwrap_or(u32::MAX),
+            )),
+            TypeSpec::Int(PbInt::Uint64, intsize) => Some(sizeof_varint64(intsize.max_value())),
+            TypeSpec::Int(PbInt::Sint32, intsize) => Some(sizeof_sint32(
+                intsize.min_value().try_into().unwrap_or(i32::MAX),
+            )),
+            TypeSpec::Int(PbInt::Sint64, intsize) => Some(sizeof_sint64(intsize.min_value())),
+
+            TypeSpec::Bytes { max_bytes, .. } | TypeSpec::String { max_bytes, .. } => {
+                max_bytes.map(|max| sizeof_len_record(max as usize))
+            }
+
+            TypeSpec::Message(_) => None,
+        }
+    }
+
     pub(crate) fn fixed_size(&self) -> Option<usize> {
         match self {
             TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),
@@ -231,6 +264,18 @@ impl TypeSpec {
                 quote! { #rust_type }
             }
         }
+    }
+
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if let TypeSpec::Message(tname) = self {
+            let rust_type = gen.resolve_type_name(tname);
+            return quote! { <#rust_type as ::micropb::MessageEncode>::MAX_SIZE };
+        }
+
+        self.max_size()
+            .map(Literal::usize_suffixed)
+            .map(|lit| quote! {::core::option::Option::Some(#lit)})
+            .unwrap_or(quote! {::core::option::Option::None})
     }
 
     pub(crate) fn generate_default(
