@@ -338,6 +338,33 @@ impl<'a> Oneof<'a> {
             } => quote! {},
         }
     }
+
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        match &self.otype {
+            OneofType::Custom { .. } => quote! { ::core::option::Option::None },
+
+            OneofType::Enum { fields, .. } => {
+                let variant_sizes = fields.iter().map(|f| {
+                    let wire_type = f.tspec.wire_type();
+                    let tag = micropb::Tag::from_parts(f.num, wire_type);
+                    let tag_len = ::micropb::size::sizeof_tag(tag);
+                    let size = f.tspec.generate_max_size(gen);
+                    quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
+                });
+
+                quote! {'oneof: {
+                    let mut max_size = 0;
+                    #(
+                        let ::core::option::Option::Some(size) = #variant_sizes else { break 'oneof ::core::option::Option::None };
+                        if size > max_size {
+                            max_size = size;
+                        }
+                    )*
+                    ::core::option::Option::Some(max_size)
+                }}
+            }
+        }
+    }
 }
 
 #[cfg(test)]

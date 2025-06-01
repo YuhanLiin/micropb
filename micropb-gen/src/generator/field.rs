@@ -526,7 +526,7 @@ impl<'a> Field<'a> {
 
             FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
                 let size = type_spec.generate_max_size(gen);
-                quote! { if let ::core::option::Option::Some(size) = #size { ::core::option::Option::Some(size + #tag_len) } else { ::core::option::Option::None } }
+                quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
             }
 
             FieldType::Repeated {
@@ -537,16 +537,11 @@ impl<'a> Field<'a> {
             } => max_len.map(|len| {
                 let len = len as usize;
                 let size = typ.generate_max_size(gen);
-                let size_expr = if *packed {
-                    quote! {
-                        ::micropb::size::sizeof_len_record(#len * size) + #tag_len
-                    }
+                if *packed {
+                    quote! { ::micropb::const_map!(#size, |size| ::micropb::size::sizeof_len_record(#len * size) + #tag_len) }
                 } else {
-                    quote! {
-                        (size + #tag_len) * #len
-                    }
-                };
-                quote! { if let ::core::option::Option::Some(size) = #size { ::core::option::Option::Some(#size_expr) } else { ::core::option::Option::None } }
+                    quote! { ::micropb::const_map!(#size, |size| (size + #tag_len) * #len) }
+                }
             }).unwrap_or(quote! { ::core::option::Option::None }),
 
             FieldType::Custom(_) => quote! { ::core::option::Option::None },
