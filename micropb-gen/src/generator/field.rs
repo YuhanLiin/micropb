@@ -513,8 +513,8 @@ impl<'a> Field<'a> {
                     let val_size = val.generate_max_size(gen);
                     quote! {
                         match (#key_size, #val_size) {
-                            (_, ::core::option::Option::None) => ::core::option::Option::None,
-                            (::core::option::Option::None, _) => ::core::option::Option::None,
+                            (_, ::core::option::Option::None) => ::core::option::Option::<usize>::None,
+                            (::core::option::Option::None, _) => ::core::option::Option::<usize>::None,
                             (::core::option::Option::Some(key_size), ::core::option::Option::Some(val_size)) => {
                                 let max_size = ::micropb::size::sizeof_len_record(key_size + val_size + 2) + #tag_len;
                                 ::core::option::Option::Some(max_size * #len)
@@ -522,7 +522,7 @@ impl<'a> Field<'a> {
                         }
                     }
                 })
-                .unwrap_or(quote! {::core::option::Option::None}),
+                .unwrap_or(quote! {::core::option::Option::<usize>::None}),
 
             FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
                 let size = type_spec.generate_max_size(gen);
@@ -542,9 +542,10 @@ impl<'a> Field<'a> {
                 } else {
                     quote! { ::micropb::const_map!(#size, |size| (size + #tag_len) * #len) }
                 }
-            }).unwrap_or(quote! { ::core::option::Option::None }),
+            }).unwrap_or(quote! { ::core::option::Option::<usize>::None }),
 
-            FieldType::Custom(_) => quote! { ::core::option::Option::None },
+            // TODO fix later
+            FieldType::Custom(_) => quote! { ::core::option::Option::<usize>::None },
         }
     }
 

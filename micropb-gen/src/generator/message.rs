@@ -472,7 +472,7 @@ impl<'a> Message<'a> {
                     if let ::core::option::Option::Some(size) = #sizes {
                         max_size += size;
                     } else {
-                        break 'msg (::core::option::Option::None);
+                        break 'msg (::core::option::Option::<usize>::None);
                     };
                 )*
                 ::core::option::Option::Some(max_size)

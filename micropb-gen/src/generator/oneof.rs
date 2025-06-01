@@ -341,7 +341,8 @@ impl<'a> Oneof<'a> {
 
     pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
         match &self.otype {
-            OneofType::Custom { .. } => quote! { ::core::option::Option::None },
+            // TODO fix later
+            OneofType::Custom { .. } => quote! { ::core::option::Option::<usize>::None },
 
             OneofType::Enum { fields, .. } => {
                 let variant_sizes = fields.iter().map(|f| {
@@ -360,7 +361,7 @@ impl<'a> Oneof<'a> {
                                 max_size = size;
                             }
                         } else {
-                            break 'oneof (::core::option::Option::None);
+                            break 'oneof (::core::option::Option::<usize>::None);
                         }
                     )*
                     ::core::option::Option::Some(max_size)

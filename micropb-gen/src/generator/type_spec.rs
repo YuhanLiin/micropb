@@ -273,7 +273,7 @@ impl TypeSpec {
         self.max_size()
             .map(Literal::usize_suffixed)
             .map(|lit| quote! {::core::option::Option::Some(#lit)})
-            .unwrap_or(quote! {::core::option::Option::None})
+            .unwrap_or(quote! {::core::option::Option::<usize>::None})
     }
 
     pub(crate) fn generate_default(
