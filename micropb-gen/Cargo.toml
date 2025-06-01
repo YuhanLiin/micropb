@@ -19,7 +19,7 @@ format = ["dep:prettyplease"]
 tempfile = "3.10"
 quote = "1"
 proc-macro2 = "1"
-syn = { version = "2.0.101", default-features = false, features = ["parsing", "derive", "printing"] }
+syn = { version = "2", default-features = false, features = ["parsing", "derive", "printing"] }
 convert_case = "0.6"
 prettyplease = { version = "0.2.17", optional = true }
 micropb = { version = "0.1.2", path = "../micropb", features = ["std"] }
