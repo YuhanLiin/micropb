@@ -330,9 +330,15 @@ fn lifetime_fields() {
 
 fn recursive() {
     let mut generator = Generator::new();
-    generator.configure(".Recursive.recursive", Config::new().boxed(true));
+    generator.configure(
+        ".Recursive.recursive",
+        Config::new().boxed(true).encoded_max_size(5),
+    );
     generator.configure(".Recursive.of", Config::new().boxed(true));
-    generator.configure(".Recursive.rec", Config::new().boxed(true));
+    generator.configure(
+        ".Recursive.rec",
+        Config::new().boxed(true).encoded_max_size(0),
+    );
     generator
         .compile_protos(
             &["proto/recursive.proto"],

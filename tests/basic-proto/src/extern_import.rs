@@ -11,6 +11,8 @@ mod proto {
 struct Empty;
 
 impl MessageEncode for Empty {
+    const MAX_SIZE: Option<usize> = Some(0);
+
     fn encode<W: micropb::PbWrite>(&self, _encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         Ok(())
     }

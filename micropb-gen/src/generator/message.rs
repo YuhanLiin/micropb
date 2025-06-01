@@ -732,6 +732,7 @@ mod tests {
                             make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
                         ]
                     },
+                    encoded_max_size: None,
                     field_attrs: vec![],
                     // Overrides the type attrs of the message
                     type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),

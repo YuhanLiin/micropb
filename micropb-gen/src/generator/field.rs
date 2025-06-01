@@ -54,6 +54,7 @@ pub(crate) struct Field<'a> {
     pub(crate) san_rust_name: Ident,
     pub(crate) default: Option<&'a str>,
     pub(crate) boxed: bool,
+    pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
 }
 
@@ -136,6 +137,7 @@ impl<'a> Field<'a> {
 
             (None, None, _) => FieldType::Single(TypeSpec::from_proto(proto, field_conf)?),
         };
+        let encoded_max_size = field_conf.config.encoded_max_size;
         let attrs = field_conf.config.field_attr_parsed()?;
 
         Ok(Some(Field {
@@ -145,6 +147,7 @@ impl<'a> Field<'a> {
             rust_name,
             san_rust_name,
             default: proto.default_value().map(String::as_str),
+            encoded_max_size,
             boxed,
             attrs,
         }))
@@ -499,6 +502,10 @@ impl<'a> Field<'a> {
     }
 
     pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if let Some(max_size) = self.encoded_max_size {
+            return quote! { ::core::option::Option::Some(#max_size) };
+        }
+
         let wire_type = self.wire_type();
         let tag = micropb::Tag::from_parts(self.num, wire_type);
         let tag_len = ::micropb::size::sizeof_tag(tag);
@@ -699,6 +706,7 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         san_rust_name: Ident::new_raw(name, proc_macro2::Span::call_site()),
         default: None,
         boxed,
+        encoded_max_size: None,
         attrs: vec![],
     }
 }
@@ -767,6 +775,7 @@ mod tests {
                 san_rust_name: Ident::new_raw("field", Span::call_site()),
                 default: None,
                 boxed: false,
+                encoded_max_size: None,
                 attrs: vec![],
             }
         );
@@ -796,6 +805,7 @@ mod tests {
                 san_rust_name: Ident::new("renamed", Span::call_site()),
                 default: Some("true"),
                 boxed: true,
+                encoded_max_size: None,
                 attrs: parse_attributes("#[attr]").unwrap(),
             }
         );

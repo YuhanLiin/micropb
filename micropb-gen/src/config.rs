@@ -363,6 +363,14 @@ config_decl! {
     /// not propagated to "children" paths.
     [no_inherit] rename_field: [deref] Option<String>,
 
+    /// Override the max size of the field on the wire.
+    ///
+    /// Instead of calculating the max size of the field, the generator will use this value instead
+    /// when determining the max size of the entire message. This is useful for fields with
+    /// "unbounded" size, such as `Vec` fields and recursive fields. Applies to normal fields,
+    /// oneof fields, and oneof variants.
+    encoded_max_size: Option<usize>,
+
     // Type configs
 
     /// Override the integer size of Protobuf enums.
