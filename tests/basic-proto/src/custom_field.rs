@@ -34,6 +34,8 @@ impl FieldDecode for MockField {
 
 // All this impl does is write out all the tags as varints
 impl FieldEncode for MockField {
+    const MAX_SIZE: Option<usize> = Some(10);
+
     fn encode_fields<W: micropb::PbWrite>(
         &self,
         encoder: &mut micropb::PbEncoder<W>,

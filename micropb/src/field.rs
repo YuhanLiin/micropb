@@ -119,6 +119,11 @@ impl<T: Default + FieldDecode> FieldDecode for Option<T> {
 /// }
 /// ```
 pub trait FieldEncode {
+    /// Maximum encoded size of the field on the wire.
+    ///
+    /// If `MAX_SIZE` is `None`, that means the field size is unbounded.
+    const MAX_SIZE: Option<usize>;
+
     /// Encode all fields, including the tags.
     ///
     /// Unlike `FieldDecode::decode_field`, this call is expected to write out complete fields,
@@ -132,6 +137,8 @@ pub trait FieldEncode {
 
 #[cfg(feature = "encode")]
 impl<T: FieldEncode> FieldEncode for &T {
+    const MAX_SIZE: Option<usize> = T::MAX_SIZE;
+
     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         (*self).encode_fields(encoder)
     }
@@ -145,6 +152,8 @@ impl<T: FieldEncode> FieldEncode for &T {
 /// Convenience implementation for fields wrapped in `Option`. If the value is `None`, then the
 /// field isn't encoded at all.
 impl<T: FieldEncode> FieldEncode for Option<T> {
+    const MAX_SIZE: Option<usize> = T::MAX_SIZE;
+
     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         if let Some(f) = self {
             f.encode_fields(encoder)?;

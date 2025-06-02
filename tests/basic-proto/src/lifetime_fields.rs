@@ -10,6 +10,8 @@ mod proto {
 struct RefField<'a>(&'a i32);
 
 impl FieldEncode for RefField<'_> {
+    const MAX_SIZE: Option<usize> = None;
+
     fn encode_fields<W: micropb::PbWrite>(
         &self,
         _encoder: &mut micropb::PbEncoder<W>,

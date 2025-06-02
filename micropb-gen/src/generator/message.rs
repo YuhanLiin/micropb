@@ -462,8 +462,11 @@ impl<'a> Message<'a> {
     fn generate_max_size(&self, gen: &Generator) -> TokenStream {
         let field_sizes = self.fields.iter().map(|f| f.generate_max_size(gen));
         let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(gen));
-        // TODO handle unknown
-        let sizes = field_sizes.chain(oneof_sizes);
+        let unknown_size = self
+            .unknown_handler
+            .as_ref()
+            .map(|handler| quote! { <#handler as ::micropb::field::FieldEncode>::MAX_SIZE });
+        let sizes = field_sizes.chain(oneof_sizes).chain(unknown_size);
 
         quote! {
             const MAX_SIZE: ::core::option::Option<usize> = 'msg: {

@@ -349,7 +349,12 @@ impl<'a> Oneof<'a> {
         }
 
         match &self.otype {
-            // TODO fix later
+            OneofType::Custom {
+                field: CustomField::Type(custom),
+                ..
+            } => {
+                quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE }
+            }
             OneofType::Custom { .. } => quote! { ::core::option::Option::<usize>::None },
 
             OneofType::Enum { fields, .. } => {
