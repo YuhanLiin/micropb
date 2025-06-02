@@ -1,3 +1,4 @@
+use micropb::MessageEncode;
 use proto::Recursive;
 
 mod proto {
@@ -20,4 +21,7 @@ fn recursive_types() {
             let _: i32 = i;
         }
     }
+
+    // Encoded max size of first recursive field (set to 5) + max size of enum (size of int32 field)
+    assert_eq!(proto::Recursive::MAX_SIZE, Some(5 + (1 + 10)))
 }

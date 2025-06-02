@@ -113,3 +113,9 @@ fn encode_64_as_32() {
     basic.encode(&mut encoder).unwrap();
     assert_eq!(encoder.into_writer(), &exp);
 }
+
+#[test]
+fn max_size() {
+    let basic_max_size = (14/* tags */) + 10 + 10 + 2 + 3 + 5 + 5 + 4 + 8 + 4 + 8 + 1 + 4 + 8 + 10;
+    assert_eq!(proto::basic_::BasicTypes::MAX_SIZE, Some(basic_max_size));
+}

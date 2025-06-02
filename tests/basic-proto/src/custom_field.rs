@@ -166,3 +166,12 @@ fn decode_custom_error() {
         Err(micropb::DecodeError::CustomField)
     );
 }
+
+#[test]
+fn max_size() {
+    // MockField is used as a custom field and an unknown handler
+    assert_eq!(
+        proto::nested_::Nested::MAX_SIZE,
+        Some(MockField::MAX_SIZE.unwrap() * 2)
+    )
+}

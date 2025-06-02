@@ -3,15 +3,16 @@ use proc_macro2::{Literal, Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
-use super::{
-    derive_msg_attr,
-    field::CustomField,
-    sanitized_ident,
-    type_spec::{find_lifetime_from_type, TypeSpec},
-    CurrentConfig, EncodeFunc, Generator,
+use crate::{
+    descriptor::{FieldDescriptorProto, OneofDescriptorProto},
+    generator::{
+        derive_msg_attr,
+        field::CustomField,
+        sanitized_ident,
+        type_spec::{find_lifetime_from_type, TypeSpec},
+        CurrentConfig, EncodeFunc, Generator,
+    },
 };
-
-use crate::descriptor::{FieldDescriptorProto, OneofDescriptorProto};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
@@ -355,7 +356,10 @@ impl<'a> Oneof<'a> {
             } => {
                 quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE }
             }
-            OneofType::Custom { .. } => quote! { ::core::option::Option::<usize>::None },
+            OneofType::Custom {
+                field: CustomField::Delegate(_),
+                ..
+            } => quote! { ::core::option::Option::Some(0) },
 
             OneofType::Enum { fields, .. } => {
                 let variant_sizes = fields.iter().map(|f| {

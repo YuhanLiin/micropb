@@ -552,7 +552,7 @@ impl<'a> Field<'a> {
             }).unwrap_or(quote! { ::core::option::Option::<usize>::None }),
 
             FieldType::Custom(CustomField::Type(custom)) => quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE },
-            FieldType::Custom(_) => quote! { ::core::option::Option::<usize>::None },
+            FieldType::Custom(CustomField::Delegate(_)) => quote! { ::core::option::Option::Some(0) },
         }
     }
 

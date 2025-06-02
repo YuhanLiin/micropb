@@ -1,5 +1,7 @@
 use std::mem::size_of;
 
+use micropb::MessageEncode;
+
 mod proto {
     #![allow(clippy::all)]
     #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
@@ -9,4 +11,5 @@ mod proto {
 #[test]
 fn empty_msg() {
     assert_eq!(size_of::<proto::nested_::Nested>(), size_of::<bool>());
+    assert_eq!(proto::nested_::Nested::MAX_SIZE, Some(1 + 1));
 }

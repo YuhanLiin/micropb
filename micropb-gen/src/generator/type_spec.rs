@@ -164,8 +164,7 @@ impl TypeSpec {
             TypeSpec::Bool => Some(1),
 
             // negative VARINT values will always take up 10 bytes
-            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) => Some(10),
-            TypeSpec::Enum(_) => Some(10),
+            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) | TypeSpec::Enum(_) => Some(10),
 
             // positive VARINT size depends on the max size of the represented int type
             TypeSpec::Int(PbInt::Uint32, intsize) => Some(sizeof_varint32(
@@ -267,7 +266,7 @@ impl TypeSpec {
     pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
         if let TypeSpec::Message(tname) = self {
             let rust_type = gen.resolve_type_name(tname);
-            return quote! { <#rust_type as ::micropb::MessageEncode>::MAX_SIZE };
+            return quote! { ::micropb::const_map!(<#rust_type as ::micropb::MessageEncode>::MAX_SIZE, |size| ::micropb::size::sizeof_len_record(size)) };
         }
 
         self.max_size()
