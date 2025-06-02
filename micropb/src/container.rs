@@ -215,6 +215,14 @@ pub(crate) mod impl_fixed_len {
             value.0
         }
     }
+
+    impl<T: Copy, const N: usize> TryFrom<&[T]> for FixedLenArray<T, N> {
+        type Error = TryFromSliceError;
+
+        fn try_from(value: &[T]) -> Result<Self, Self::Error> {
+            Ok(Self(value.try_into()?))
+        }
+    }
 }
 
 #[cfg(feature = "container-arrayvec")]

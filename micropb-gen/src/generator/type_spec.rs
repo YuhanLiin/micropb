@@ -285,7 +285,7 @@ impl TypeSpec {
                 match *max_bytes {
                     Some(max_bytes) if default.len() > max_bytes as usize =>
                         return Err(format!("String field is limited to {max_bytes} bytes, but its default value is {} bytes", default.len())),
-                    _ => quote! { ::micropb::PbString::pb_from_str(#default).unwrap_or_default() }
+                    _ => quote! { ::core::convert::TryFrom::try_from(#default).unwrap_or_default() }
                 }
             }
 
@@ -295,7 +295,7 @@ impl TypeSpec {
                 match *max_bytes {
                     Some(max_bytes) if bytes.len() > max_bytes as usize =>
                         return Err(format!("Bytes field is limited to {max_bytes} bytes, but its default value is {} bytes", bytes.len())),
-                    _ => quote! { ::micropb::PbVec::pb_from_slice(#default_bytes).unwrap_or_default() }
+                    _ => quote! { ::core::convert::TryFrom::try_from(#default_bytes.as_slice()).unwrap_or_default() }
                 }
             }
 
@@ -768,7 +768,7 @@ mod tests {
             .generate_default("abc\n\tddd", &gen)
             .unwrap()
             .to_string(),
-            quote! { ::micropb::PbString::pb_from_str("abc\n\tddd").unwrap_or_default() }
+            quote! { ::core::convert::TryFrom::try_from("abc\n\tddd".as_slice()).unwrap_or_default() }
                 .to_string()
         );
         assert_eq!(
@@ -779,7 +779,7 @@ mod tests {
             .generate_default("abc\\n\\t\\a\\xA0ddd", &gen)
             .unwrap()
             .to_string(),
-            quote! { ::micropb::PbVec::pb_from_slice(b"abc\n\t\x07\xA0ddd").unwrap_or_default() }
+            quote! { ::core::convert::TryFrom::try_from(b"abc\n\t\x07\xA0ddd").unwrap_or_default() }
                 .to_string()
         );
     }

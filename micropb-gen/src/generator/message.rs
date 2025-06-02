@@ -411,7 +411,7 @@ impl<'a> Message<'a> {
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>>
                 {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
 
                     let before = #decoder.bytes_read();
                     while #decoder.bytes_read() - before < len {
@@ -505,13 +505,13 @@ impl<'a> Message<'a> {
                     encoder: &mut ::micropb::PbEncoder<IMPL_MICROPB_WRITE>,
                 ) -> Result<(), IMPL_MICROPB_WRITE::Error>
                 {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
+                    use ::micropb::{PbMap, FieldEncode};
                     #encode
                     Ok(())
                 }
 
                 fn compute_size(&self) -> usize {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
+                    use ::micropb::{PbMap, FieldEncode};
                     let mut size = 0;
                     #sizeof
                     size
