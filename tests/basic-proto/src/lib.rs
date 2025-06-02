@@ -29,6 +29,8 @@ mod int_type;
 #[cfg(test)]
 mod keyword_fields;
 #[cfg(test)]
+mod large_field_nums;
+#[cfg(test)]
 mod lifetime_fields;
 #[cfg(test)]
 mod no_config;
