@@ -20,49 +20,69 @@ fn compile(mut gen: Generator) -> String {
 #[test]
 fn no_string() {
     let mut gen = Generator::with_warning_callback(warn_panic);
-    gen.configure(".", Config::new().vec_type("Vec").map_type("HashMap"));
+    gen.configure(
+        ".",
+        Config::new()
+            .vec_type("Vec")
+            .map_type("HashMap")
+            .bytes_type("Bytes"),
+    );
     let err = compile(gen);
     dbg!(&err);
     assert!(err.contains("(.test.Msg.st)"));
-    assert!(err.contains("string_type was not configured"));
+    assert!(err.contains("string_type not configured"));
 }
 
 #[test]
-fn no_vec_bytes() {
+fn no_bytes() {
     let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(".", Config::new().string_type("String").map_type("HashMap"));
     gen.configure(".test.Msg.list", Config::new().vec_type("Vec"));
     let err = compile(gen);
     dbg!(&err);
     assert!(err.contains("(.test.Msg.bt)"));
-    assert!(err.contains("vec_type was not configured"));
+    assert!(err.contains("bytes_type not configured"));
 }
 
 #[test]
 fn no_vec_repeated() {
     let mut gen = Generator::with_warning_callback(warn_panic);
-    gen.configure(".", Config::new().string_type("String").map_type("HashMap"));
+    gen.configure(
+        ".",
+        Config::new()
+            .string_type("String")
+            .map_type("HashMap")
+            .bytes_type("Bytes"),
+    );
     gen.configure(".test.Msg.bt", Config::new().vec_type("Vec"));
     let err = compile(gen);
     dbg!(&err);
     assert!(err.contains("(.test.Msg.list)"));
-    assert!(err.contains("vec_type was not configured"));
+    assert!(err.contains("vec_type not configured"));
 }
 
 #[test]
 fn no_map() {
     let mut gen = Generator::with_warning_callback(warn_panic);
-    gen.configure(".", Config::new().string_type("String").vec_type("Vec"));
+    gen.configure(
+        ".",
+        Config::new()
+            .string_type("String")
+            .vec_type("Vec")
+            .bytes_type("Bytes"),
+    );
     let err = compile(gen);
     dbg!(&err);
     assert!(err.contains("(.test.Msg.kv)"));
-    assert!(err.contains("map_type was not configured"));
+    assert!(err.contains("map_type not configured"));
 }
 
 #[test]
 fn long_default_string() {
     let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_heapless();
+    gen.configure(".", Config::new().max_len(4));
+    gen.configure(".test.Msg.bt", Config::new().max_bytes(4));
     gen.configure(".test.Msg.st", Config::new().max_bytes(2));
     let err = compile(gen);
     dbg!(&err);
@@ -75,7 +95,9 @@ fn long_default_string() {
 fn long_default_bytes() {
     let mut gen = Generator::with_warning_callback(warn_panic);
     gen.use_container_heapless();
+    gen.configure(".", Config::new().max_len(4));
     gen.configure(".test.Msg.bt", Config::new().max_bytes(2));
+    gen.configure(".test.Msg.st", Config::new().max_bytes(4));
     let err = compile(gen);
     dbg!(&err);
     assert!(err.contains("(.test.Msg.bt)"));
@@ -90,6 +112,7 @@ fn parse_string_type() {
         ".",
         Config::new()
             .string_type("String::")
+            .bytes_type("Bytes")
             .vec_type("Vec")
             .map_type("HashMap"),
     );
@@ -100,18 +123,36 @@ fn parse_string_type() {
 }
 
 #[test]
+fn parse_bytes_type() {
+    let mut gen = Generator::with_warning_callback(warn_panic);
+    gen.configure(
+        ".",
+        Config::new()
+            .string_type("String")
+            .bytes_type("Bytes::")
+            .vec_type("Vec")
+            .map_type("HashMap"),
+    );
+    let err = compile(gen);
+    dbg!(&err);
+    assert!(err.contains("(.test.Msg.bt)"));
+    assert!(err.contains("Failed to parse bytes_type"));
+}
+
+#[test]
 fn parse_vec_type() {
     let mut gen = Generator::with_warning_callback(warn_panic);
     gen.configure(
         ".",
         Config::new()
             .string_type("String")
+            .bytes_type("Bytes")
             .vec_type("Vec::")
             .map_type("HashMap"),
     );
     let err = compile(gen);
     dbg!(&err);
-    assert!(err.contains("(.test.Msg.bt)"));
+    assert!(err.contains("(.test.Msg.list)"));
     assert!(err.contains("Failed to parse vec_type"));
 }
 
@@ -122,6 +163,7 @@ fn parse_map_type() {
         ".",
         Config::new()
             .string_type("String")
+            .bytes_type("Bytes")
             .vec_type("Vec")
             .map_type("HashMap::"),
     );

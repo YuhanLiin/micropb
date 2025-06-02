@@ -1,6 +1,8 @@
 //! Configuration options for Protobuf types and fields.
 
-use proc_macro2::Span;
+use std::borrow::Cow;
+
+use proc_macro2::{Span, TokenStream};
 use syn::Ident;
 
 use crate::generator::sanitized_ident;
@@ -240,26 +242,25 @@ config_decl! {
     vec_type: [deref] Option<String>,
 
     /// Container type that's generated for `string` fields. The provided type must implement
-    /// `PbString`.
+    /// `PbBytes`.
     ///
-    /// If the provided type is fixed-capacity, such as `ArrayString`, then it should have type
-    /// parameter `<N: usize>`, where `N` is the capacity. If the type is dynamic-capacity, such as
-    /// `String`, it should have no type parameters.
-    ///
-    /// The string provided to this call should not include any type parameters, since they will be
-    /// filled in by the generator. Specifically, `N` will be [`max_bytes`](Config::max_bytes) if
-    /// set.
+    /// If the provided type contains the string `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field. For example, if the provided
+    /// type is `ArrayString<$N>` and `max_bytes` is 8, then the generated type of the field will
+    /// be `ArrayString<8>`.
     ///
     /// # Example
     /// ```no_run
-    /// # use micropb_gen::{Generator, Config, config::IntSize};
+    /// # use micropb_gen::{Generator, Config};
     /// # let mut gen = micropb_gen::Generator::new();
     /// // `string` field configured to `String` (dynamic-capacity)
     /// gen.configure(".pkg.Message.string_field", Config::new().string_type("String"));
     /// // `string` field configured to `ArrayString<4>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("ArrayString").max_bytes(4));
+    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("ArrayString<$N>").max_bytes(4));
     /// ```
     string_type: [deref] Option<String>,
+
+    bytes_type: [deref] Option<String>,
 
     /// Container type that's generated for `map` fields. The provided type must implement `PbMap`.
     ///
@@ -475,32 +476,62 @@ impl Config {
         }
     }
 
-    pub(crate) fn vec_type_parsed(&self) -> Result<Option<syn::Path>, String> {
-        self.vec_type
-            .as_ref()
-            .map(|t| {
-                syn::parse_str(t)
-                    .map_err(|e| format!("Failed to parse vec_type \"{t}\" as type path: {e}"))
-            })
-            .transpose()
-    }
-
-    pub(crate) fn string_type_parsed(&self) -> Result<Option<syn::Path>, String> {
+    pub(crate) fn string_type_parsed(&self, n: Option<u32>) -> Result<Option<syn::Type>, String> {
         self.string_type
             .as_ref()
             .map(|t| {
-                syn::parse_str(t)
-                    .map_err(|e| format!("Failed to parse string_type \"{t}\" as type path: {e}"))
+                let typestr = substitute_param(t.into(), "$N", n);
+                syn::parse_str(&typestr).map_err(|e| {
+                    format!("Failed to parse string_type \"{typestr}\" as type path: {e}")
+                })
             })
             .transpose()
     }
 
-    pub(crate) fn map_type_parsed(&self) -> Result<Option<syn::Path>, String> {
+    pub(crate) fn bytes_type_parsed(&self, n: Option<u32>) -> Result<Option<syn::Type>, String> {
+        self.bytes_type
+            .as_ref()
+            .map(|t| {
+                let typestr = substitute_param(t.into(), "$N", n);
+                syn::parse_str(&typestr).map_err(|e| {
+                    format!("Failed to parse bytes_type \"{typestr}\" as type path: {e}")
+                })
+            })
+            .transpose()
+    }
+
+    pub(crate) fn vec_type_parsed(
+        &self,
+        t: TokenStream,
+        n: Option<u32>,
+    ) -> Result<Option<syn::Type>, String> {
+        self.vec_type
+            .as_ref()
+            .map(|typestr| {
+                let typestr = substitute_param(typestr.into(), "$N", n);
+                let typestr = substitute_param(typestr, "$T", Some(t));
+                syn::parse_str(&typestr).map_err(|e| {
+                    format!("Failed to parse vec_type \"{typestr}\" as type path: {e}")
+                })
+            })
+            .transpose()
+    }
+
+    pub(crate) fn map_type_parsed(
+        &self,
+        k: TokenStream,
+        v: TokenStream,
+        n: Option<u32>,
+    ) -> Result<Option<syn::Path>, String> {
         self.map_type
             .as_ref()
             .map(|t| {
-                syn::parse_str(t)
-                    .map_err(|e| format!("Failed to parse map_type \"{t}\" as type path: {e}"))
+                let typestr = substitute_param(t.into(), "$N", n);
+                let typestr = substitute_param(typestr, "$K", Some(k));
+                let typestr = substitute_param(typestr, "$V", Some(v));
+                syn::parse_str(&typestr).map_err(|e| {
+                    format!("Failed to parse map_type \"{typestr}\" as type path: {e}")
+                })
             })
             .transpose()
     }
@@ -536,6 +567,20 @@ impl Config {
     }
 }
 
+fn substitute_param<'a>(
+    typestr: Cow<'a, str>,
+    pat: &str,
+    t: Option<impl ToString>,
+) -> Cow<'a, str> {
+    if let Some(t) = t {
+        if typestr.find(pat).is_some() {
+            let t = t.to_string();
+            return typestr.replace(pat, &t).into();
+        }
+    }
+    typestr
+}
+
 #[cfg(test)]
 mod tests {
     use quote::{format_ident, quote, ToTokens};
@@ -564,35 +609,45 @@ mod tests {
     #[test]
     fn parse() {
         let mut config = Config::new()
-            .vec_type("heapless::Vec")
-            .string_type("heapless::String")
-            .map_type("Map")
+            .vec_type("heapless::Vec<$T, $N>")
+            .string_type("heapless::String<$N>")
+            .map_type("Map<$K, $V, $N>")
+            .bytes_type("Bytes")
             .type_attributes("#[derive(Hash)]");
 
         assert_eq!(
             config
-                .vec_type_parsed()
+                .vec_type_parsed(quote! {u8}, Some(5))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
-            quote! { heapless::Vec }.to_string()
+            quote! { heapless::Vec<u8, 5> }.to_string()
         );
         assert_eq!(
             config
-                .string_type_parsed()
+                .string_type_parsed(Some(12))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
-            quote! { heapless::String }.to_string()
+            quote! { heapless::String<12> }.to_string()
         );
         assert_eq!(
             config
-                .map_type_parsed()
+                .map_type_parsed(quote! {u32}, quote! {bool}, Some(14))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
-            "Map"
+            quote! { Map<u32, bool, 14> }.to_string()
         );
+        assert_eq!(
+            config
+                .bytes_type_parsed(None)
+                .unwrap()
+                .to_token_stream()
+                .to_string(),
+            "Bytes"
+        );
+
         let attrs = config.type_attr_parsed().unwrap();
         assert_eq!(
             quote! { #(#attrs)* }.to_string(),

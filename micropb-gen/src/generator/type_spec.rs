@@ -147,11 +147,11 @@ pub(crate) enum TypeSpec {
     Bool,
     Int(PbInt, IntSize),
     String {
-        type_path: syn::Path,
+        type_path: syn::Type,
         max_bytes: Option<u32>,
     },
     Bytes {
-        type_path: syn::Path,
+        type_path: syn::Type,
         max_bytes: Option<u32>,
     },
 }
@@ -204,16 +204,15 @@ impl TypeSpec {
             Type::Float => TypeSpec::Float,
             Type::Bool => TypeSpec::Bool,
             Type::String => TypeSpec::String {
-                type_path: conf.string_type_parsed()?.ok_or_else(|| {
-                    "Field is of type `string`, but string_type was not configured for it"
-                        .to_owned()
-                })?,
+                type_path: conf
+                    .string_type_parsed(conf.max_bytes)?
+                    .ok_or_else(|| "string_type not configured for string field".to_owned())?,
                 max_bytes: conf.max_bytes,
             },
             Type::Bytes => TypeSpec::Bytes {
-                type_path: conf.vec_type_parsed()?.ok_or_else(|| {
-                    "Field is of type `bytes`, but vec_type was not configured for it".to_owned()
-                })?,
+                type_path: conf
+                    .bytes_type_parsed(conf.max_bytes)?
+                    .ok_or_else(|| "bytes_type not configured for bytes field".to_owned())?,
                 max_bytes: conf.max_bytes,
             },
             Type::Message => TypeSpec::Message(proto.type_name.clone()),
@@ -242,20 +241,9 @@ impl TypeSpec {
             TypeSpec::Float => quote! {f32},
             TypeSpec::Double => quote! {f64},
             TypeSpec::Bool => quote! {bool},
-            TypeSpec::String {
-                type_path,
-                max_bytes,
-            } => {
-                let max_bytes = max_bytes.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_path #(<#max_bytes>)* }
-            }
-            TypeSpec::Bytes {
-                type_path,
-                max_bytes,
-            } => {
-                let max_bytes = max_bytes.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_path <u8 #(, #max_bytes)* > }
-            }
+            TypeSpec::String { type_path, .. } => quote! { #type_path },
+            TypeSpec::Bytes { type_path, .. } => quote! { #type_path },
+
             TypeSpec::Message(tname) | TypeSpec::Enum(tname) => {
                 let rust_type = gen.resolve_type_name(tname);
                 quote! { #rust_type }
@@ -295,7 +283,7 @@ impl TypeSpec {
                 match *max_bytes {
                     Some(max_bytes) if bytes.len() > max_bytes as usize =>
                         return Err(format!("Bytes field is limited to {max_bytes} bytes, but its default value is {} bytes", bytes.len())),
-                    _ => quote! { ::core::convert::TryFrom::try_from(#default_bytes.as_slice()).unwrap_or_default() }
+                    _ => quote! { ::core::convert::TryFrom::try_from(#default_bytes).unwrap_or_default() }
                 }
             }
 
@@ -618,8 +606,8 @@ mod tests {
     fn from_proto() {
         let mut config = Box::new(
             Config::new()
-                .string_type("string::String")
-                .vec_type("vec::Vec")
+                .string_type("string::String<$N>")
+                .bytes_type("vec::Vec<u8, $N>")
                 .max_bytes(10),
         );
 
@@ -642,14 +630,14 @@ mod tests {
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::String, ""), &type_conf).unwrap(),
             TypeSpec::String {
-                type_path: syn::parse_str("string::String").unwrap(),
+                type_path: syn::parse_str("string::String<10>").unwrap(),
                 max_bytes: Some(10)
             }
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf).unwrap(),
             TypeSpec::Bytes {
-                type_path: syn::parse_str("vec::Vec").unwrap(),
+                type_path: syn::parse_str("vec::Vec<u8, 10>").unwrap(),
                 max_bytes: Some(10)
             }
         );
@@ -662,6 +650,8 @@ mod tests {
             TypeSpec::Enum(".Enum".to_owned())
         );
 
+        config.string_type = Some("string::String".to_owned());
+        config.bytes_type = Some("Bytes".to_owned());
         config.max_bytes = None;
         let type_conf = CurrentConfig {
             node: None,
@@ -677,7 +667,7 @@ mod tests {
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf).unwrap(),
             TypeSpec::Bytes {
-                type_path: syn::parse_str("vec::Vec").unwrap(),
+                type_path: syn::parse_str("Bytes").unwrap(),
                 max_bytes: None
             }
         );
@@ -768,7 +758,7 @@ mod tests {
             .generate_default("abc\n\tddd", &gen)
             .unwrap()
             .to_string(),
-            quote! { ::core::convert::TryFrom::try_from("abc\n\tddd".as_slice()).unwrap_or_default() }
+            quote! { ::core::convert::TryFrom::try_from("abc\n\tddd").unwrap_or_default() }
                 .to_string()
         );
         assert_eq!(

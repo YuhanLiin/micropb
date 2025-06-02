@@ -77,7 +77,7 @@ impl<'a> Message<'a> {
                 .map(|(_, r)| r)
                 .unwrap_or(&f.type_name);
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, gen.syntax, Some(map_msg))
+                Field::from_proto(f, &field_conf, gen, Some(map_msg))
                     .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             } else {
                 if let Some(idx) = f.oneof_index().copied() {
@@ -108,7 +108,7 @@ impl<'a> Message<'a> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, gen.syntax, None)
+                Field::from_proto(f, &field_conf, gen, None)
                     .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {
