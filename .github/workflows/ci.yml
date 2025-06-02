@@ -1,5 +1,5 @@
-name: test suite
-on: [push, pull_request]
+name: CI checks
+on: [push]
 
 jobs:
   sync-readme:
@@ -44,6 +44,8 @@ jobs:
       - uses: arduino/setup-protoc@v3
       - run: cargo build --workspace --exclude no-panicking --exclude arm-app
       - run: cargo build -p no-panicking --profile release-lto
+      # Check if descriptor.rs has been bootstrapped properly
+      - run: diff examples/file-descriptor-set/descriptor.rs micropb-gen/src/descriptor.rs
 
   build-arm-app:
     name: build arm-app with ${{matrix.toolchain}}
