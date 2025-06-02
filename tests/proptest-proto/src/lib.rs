@@ -37,8 +37,10 @@ proptest::proptest! {
 
     #[test]
     fn max_size(sin1: proto::TestTypesSingular1, opt1: proto::TestTypesOptional1) {
-        assert!(sin1.compute_size() <= const { proto::TestTypesSingular1::MAX_SIZE.unwrap() });
-        assert!(opt1.compute_size() <= const { proto::TestTypesOptional1::MAX_SIZE.unwrap() });
+        const SIN1_MAX: usize = proto::TestTypesSingular1::MAX_SIZE.unwrap();
+        assert!(sin1.compute_size() <= SIN1_MAX);
+        const OPT1_MAX: usize = proto::TestTypesOptional1::MAX_SIZE.unwrap();
+        assert!(opt1.compute_size() <= OPT1_MAX);
     }
 
     // Decode random data to ensure it doesn't crash
