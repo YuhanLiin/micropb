@@ -24,7 +24,7 @@ pub use ::arrayvec;
 pub use ::heapless;
 pub use container::impl_fixed_len::{FixedLenArray, FixedLenString};
 
-pub use container::{PbContainer, PbMap, PbString, PbVec};
+pub use container::{PbBytes, PbMap, PbVec};
 #[cfg(feature = "decode")]
 pub use decode::{DecodeError, PbDecoder, PbRead};
 #[cfg(feature = "encode")]

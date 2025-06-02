@@ -10,13 +10,12 @@
 //! For convenience, container trait implementations on existing types are provided in this module,
 //! gated by feature flags.
 //!
-//! - For `heapless`, [`PbVec`], [`PbString`], and [`PbMap`] are
-//!   implemented on `heapless::Vec`, `heapless::String`, and `heapless::IndexMap`
-//!   respectively.
-//! - For `arrayvec`, [`PbVec`] and [`PbString`] are implemented on `arrayvec::ArrayVec` and
-//!   `arrayvec::ArrayString` respectively.
-//! - For `alloc`, [`PbVec`], [`PbString`], and [`PbMap`] are implemented on `Vec`, `String`,
-//!   and `BTreeMap` respectively. If `std` is enabled, [`PbMap`] is also implemented for
+//! - For `heapless`, [`PbBytes`], [`PbVec`], and [`PbMap`] are
+//!   implemented on `heapless::String`, `heapless::Vec`, and `heapless::IndexMap`.
+//! - For `arrayvec`, [`PbBytes`] and [`PbVec`] are implemented on `arrayvec::ArrayString` and
+//!   `arrayvec::ArrayVec`.
+//! - For `alloc`, [`PbBytes`], [`PbVec`], and [`PbMap`] are implemented on `String`, `Vec`,
+//!   and `BTreeMap`. If `std` is enabled, [`PbMap`] is also implemented for
 //!   `HashMap`.
 //!
 //! It is also possible to use other types as containers if the container traits are implemented.
@@ -25,8 +24,11 @@
 
 use core::{mem::MaybeUninit, ops::Deref};
 
-/// Basic container trait required for all multi-element containers, except for maps.
-pub trait PbContainer: Sized {
+/// Container that stores sequence of bytes.
+///
+/// Represents bytes or string field. If used to store a string, then the bytes in the container
+/// must be valid UTF-8.
+pub trait PbBytes {
     /// Sets length of container (number of elements).
     ///
     /// # Safety
@@ -40,35 +42,7 @@ pub trait PbContainer: Sized {
 
     /// Clear all elements of the container
     fn pb_clear(&mut self);
-}
 
-/// Generic vector that stores multiple elements.
-///
-/// Represents repeated field. If `PbVec<u8>` is implemented, also represents `bytes` field.
-pub trait PbVec<T>: PbContainer + Deref<Target = [T]> {
-    /// Push a new element to the back of the vector.
-    ///
-    /// Returns error if the fixed capacity is already full.
-    fn pb_push(&mut self, elem: T) -> Result<(), ()>;
-
-    /// Returns the remaining spare capacity of the vector as a slice of `MaybeUninit<T>`.
-    ///
-    /// The returned slice can be filled with data before marking the data as initialized using
-    /// [`pb_set_len`](PbContainer::pb_set_len).
-    fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>];
-
-    /// Construct a vector from a slice.
-    ///
-    /// Returns error if the slice is longer than the fixed capacity of the vector type.
-    fn pb_from_slice(s: &[T]) -> Result<Self, ()>
-    where
-        T: Copy;
-}
-
-/// UTF-8 string that stores characters.
-///
-/// Represents Protobuf `string` field.
-pub trait PbString: PbContainer + Deref<Target = str> {
     /// Returns the remaining spare capacity of the string as a slice of `MaybeUninit<u8>`.
     ///
     /// The returned slice can be filled with bytes before marking the data as initialized using
@@ -78,11 +52,16 @@ pub trait PbString: PbContainer + Deref<Target = str> {
     /// When calling [`pb_set_len`](PbContainer::pb_set_len) after filling the spare capacity with
     /// bytes, the entirety of the new string must be valid UTF-8.
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
+}
 
-    /// Constructs a string from a string slice.
+/// Generic vector that stores multiple elements.
+///
+/// Represents repeated field.
+pub trait PbVec<T>: Deref<Target = [T]> {
+    /// Push a new element to the back of the vector.
     ///
-    /// Returns error if the slice is longer than the fixed capacity of the string type.
-    fn pb_from_str(s: &str) -> Result<Self, ()>;
+    /// Returns error if the fixed capacity is already full.
+    fn pb_push(&mut self, elem: T) -> Result<(), ()>;
 }
 
 /// Map that stores key-value pairs.
@@ -106,7 +85,7 @@ pub trait PbMap<K, V> {
 }
 
 pub(crate) mod impl_fixed_len {
-    use core::ops::DerefMut;
+    use core::{array::TryFromSliceError, ops::DerefMut};
 
     use super::*;
 
@@ -126,7 +105,7 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
-    impl<const N: usize> PbContainer for FixedLenString<N> {
+    impl<const N: usize> PbBytes for FixedLenString<N> {
         #[inline]
         unsafe fn pb_set_len(&mut self, _len: usize) {}
 
@@ -134,6 +113,14 @@ pub(crate) mod impl_fixed_len {
         #[inline]
         fn pb_clear(&mut self) {
             self.0 = [0; N];
+        }
+
+        #[inline]
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            // SAFETY: Converting to MaybeUninit is always safe
+            unsafe {
+                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<u8>, N)
+            }
         }
     }
 
@@ -156,32 +143,12 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
-    impl<const N: usize> PbString for FixedLenString<N> {
-        #[inline]
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
-            // SAFETY: Converting to MaybeUninit is always safe
-            unsafe {
-                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<u8>, N)
-            }
-        }
-
-        #[inline]
-        fn pb_from_str(s: &str) -> Result<Self, ()> {
-            // Throw error if length is wrong
-            if s.len() != N {
-                return Err(());
-            }
-            let bytes = s.as_bytes().try_into().unwrap();
-            Ok(Self(bytes))
-        }
-    }
-
     impl<const N: usize> TryFrom<&str> for FixedLenString<N> {
-        type Error = ();
+        type Error = TryFromSliceError;
 
         /// Return error if `s.len() != N`
         fn try_from(s: &str) -> Result<Self, Self::Error> {
-            Self::pb_from_str(s)
+            Ok(Self(s.as_bytes().try_into()?))
         }
     }
 
@@ -206,12 +173,19 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
-    impl<T: Copy, const N: usize> PbContainer for FixedLenArray<T, N> {
+    impl<T: Copy, const N: usize> PbBytes for FixedLenArray<T, N> {
         #[inline]
         unsafe fn pb_set_len(&mut self, _len: usize) {}
 
         #[inline]
         fn pb_clear(&mut self) {}
+
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            // SAFETY: Converting to MaybeUninit is always safe
+            unsafe {
+                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<u8>, N)
+            }
+        }
     }
 
     impl<T: Copy, const N: usize> Deref for FixedLenArray<T, N> {
@@ -227,27 +201,6 @@ pub(crate) mod impl_fixed_len {
         #[inline]
         fn deref_mut(&mut self) -> &mut Self::Target {
             self.0.as_mut_slice()
-        }
-    }
-
-    impl<T: Copy, const N: usize> PbVec<T> for FixedLenArray<T, N> {
-        fn pb_push(&mut self, _elem: T) -> Result<(), ()> {
-            panic!("Cannot use fixed-length array for repeated field")
-        }
-
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
-            // SAFETY: Converting to MaybeUninit is always safe
-            unsafe {
-                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<T>, N)
-            }
-        }
-
-        fn pb_from_slice(s: &[T]) -> Result<Self, ()> {
-            // Throw error if length is wrong
-            if s.len() != N {
-                return Err(());
-            }
-            Ok(Self(s.try_into().unwrap()))
         }
     }
 
@@ -272,7 +225,7 @@ mod impl_arrayvec {
 
     use arrayvec::{ArrayString, ArrayVec};
 
-    impl<T, const N: usize> PbContainer for ArrayVec<T, N> {
+    impl<const N: usize> PbBytes for ArrayVec<u8, N> {
         #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.set_len(len)
@@ -282,47 +235,30 @@ mod impl_arrayvec {
         fn pb_clear(&mut self) {
             self.clear()
         }
-    }
-
-    impl<const N: usize> PbContainer for ArrayString<N> {
-        #[inline]
-        unsafe fn pb_set_len(&mut self, len: usize) {
-            self.set_len(len)
-        }
 
         #[inline]
-        fn pb_clear(&mut self) {
-            self.clear()
-        }
-    }
-
-    impl<T, const N: usize> PbVec<T> for ArrayVec<T, N> {
-        #[inline]
-        fn pb_push(&mut self, elem: T) -> Result<(), ()> {
-            self.try_push(elem).map_err(drop)
-        }
-
-        #[inline]
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             let len = self.len();
             // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
             // of N values
             let slice = unsafe {
-                core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<T>, N)
+                core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<u8>, N)
             };
             slice.get_mut(len..).unwrap_or(&mut [])
         }
-
-        #[inline]
-        fn pb_from_slice(s: &[T]) -> Result<Self, ()>
-        where
-            T: Copy,
-        {
-            Self::try_from(s).map_err(drop)
-        }
     }
 
-    impl<const N: usize> PbString for ArrayString<N> {
+    impl<const N: usize> PbBytes for ArrayString<N> {
+        #[inline]
+        unsafe fn pb_set_len(&mut self, len: usize) {
+            self.set_len(len)
+        }
+
+        #[inline]
+        fn pb_clear(&mut self) {
+            self.clear()
+        }
+
         #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             let len = self.len();
@@ -334,10 +270,12 @@ mod impl_arrayvec {
             let slice = unsafe { core::slice::from_raw_parts_mut(s as *mut MaybeUninit<u8>, N) };
             slice.get_mut(len..).unwrap_or(&mut [])
         }
+    }
 
+    impl<T, const N: usize> PbVec<T> for ArrayVec<T, N> {
         #[inline]
-        fn pb_from_str(s: &str) -> Result<Self, ()> {
-            Self::try_from(s).map_err(drop)
+        fn pb_push(&mut self, elem: T) -> Result<(), ()> {
+            self.try_push(elem).map_err(drop)
         }
     }
 }
@@ -350,7 +288,7 @@ mod impl_heapless {
 
     use heapless::{IndexMap, IndexMapIter, String, Vec};
 
-    impl<T, const N: usize> PbContainer for Vec<T, N> {
+    impl<const N: usize> PbBytes for Vec<u8, N> {
         #[inline]
         fn pb_clear(&mut self) {
             self.clear()
@@ -360,9 +298,20 @@ mod impl_heapless {
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.set_len(len)
         }
+
+        #[inline]
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            let len = self.len();
+            // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
+            // of N values
+            let slice = unsafe {
+                core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<u8>, N)
+            };
+            slice.get_mut(len..).unwrap_or(&mut [])
+        }
     }
 
-    impl<const N: usize> PbContainer for String<N> {
+    impl<const N: usize> PbBytes for String<N> {
         #[inline]
         fn pb_clear(&mut self) {
             self.clear()
@@ -372,35 +321,7 @@ mod impl_heapless {
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.as_mut_vec().set_len(len)
         }
-    }
 
-    impl<T, const N: usize> PbVec<T> for Vec<T, N> {
-        #[inline]
-        fn pb_push(&mut self, elem: T) -> Result<(), ()> {
-            self.push(elem).map_err(drop)
-        }
-
-        #[inline]
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
-            let len = self.len();
-            // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
-            // of N values
-            let slice = unsafe {
-                core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<T>, N)
-            };
-            slice.get_mut(len..).unwrap_or(&mut [])
-        }
-
-        #[inline]
-        fn pb_from_slice(s: &[T]) -> Result<Self, ()>
-        where
-            T: Copy,
-        {
-            Self::try_from(s).map_err(drop)
-        }
-    }
-
-    impl<const N: usize> PbString for String<N> {
         #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             let len = self.len();
@@ -413,10 +334,12 @@ mod impl_heapless {
             };
             slice.get_mut(len..).unwrap_or(&mut [])
         }
+    }
 
+    impl<T, const N: usize> PbVec<T> for Vec<T, N> {
         #[inline]
-        fn pb_from_str(s: &str) -> Result<Self, ()> {
-            Self::try_from(s).map_err(drop)
+        fn pb_push(&mut self, elem: T) -> Result<(), ()> {
+            self.push(elem).map_err(drop)
         }
     }
 
@@ -446,13 +369,12 @@ mod impl_alloc {
     use super::*;
 
     use alloc::{
-        borrow::ToOwned,
         collections::{btree_map, BTreeMap},
         string::String,
         vec::Vec,
     };
 
-    impl<T> PbContainer for Vec<T> {
+    impl PbBytes for Vec<u8> {
         #[inline]
         fn pb_clear(&mut self) {
             self.clear()
@@ -466,6 +388,11 @@ mod impl_alloc {
         #[inline]
         fn pb_reserve(&mut self, additional: usize) {
             self.reserve(additional)
+        }
+
+        #[inline]
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            self.spare_capacity_mut()
         }
     }
 
@@ -486,7 +413,7 @@ mod impl_alloc {
     //}
     //}
 
-    impl PbContainer for String {
+    impl PbBytes for String {
         #[inline]
         fn pb_clear(&mut self) {
             self.clear()
@@ -500,6 +427,12 @@ mod impl_alloc {
         #[inline]
         fn pb_reserve(&mut self, additional: usize) {
             self.reserve(additional)
+        }
+
+        #[inline]
+        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+            // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
+            unsafe { self.as_mut_vec().spare_capacity_mut() }
         }
     }
 
@@ -523,19 +456,6 @@ mod impl_alloc {
             self.push(elem);
             Ok(())
         }
-
-        #[inline]
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<T>] {
-            self.spare_capacity_mut()
-        }
-
-        #[inline]
-        fn pb_from_slice(s: &[T]) -> Result<Self, ()>
-        where
-            T: Copy,
-        {
-            Ok(Self::from(s))
-        }
     }
 
     //impl<'a, T> PbVec<T> for alloc::borrow::Cow<'a, [T]>
@@ -551,19 +471,6 @@ mod impl_alloc {
     //self.to_mut().spare_capacity_mut()
     //}
     //}
-
-    impl PbString for String {
-        #[inline]
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
-            // SAFETY: spare_capacity_mut() is a safe call, since it doesn't change any bytes
-            unsafe { self.as_mut_vec().spare_capacity_mut() }
-        }
-
-        #[inline]
-        fn pb_from_str(s: &str) -> Result<Self, ()> {
-            Ok(s.to_owned())
-        }
-    }
 
     //impl<'a> PbString for alloc::borrow::Cow<'a, str> {
     //fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {

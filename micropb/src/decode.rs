@@ -4,7 +4,7 @@ use core::{
 };
 
 use crate::{
-    container::{PbString, PbVec},
+    container::{PbBytes, PbVec},
     misc::{
         maybe_uninit_slice_assume_init_ref, maybe_uninit_write_slice,
         maybe_ununit_array_assume_init,
@@ -459,7 +459,7 @@ impl<R: PbRead> PbDecoder<R> {
     /// If the length of the string on the wire exceeds the fixed capacity of the string container,
     /// return [`DecodeError::Capacity`]. If the string on the wire if not UTF-8, return
     /// [`DecodeError::Utf8`].
-    pub fn decode_string<S: PbString>(
+    pub fn decode_string<S: PbBytes>(
         &mut self,
         string: &mut S,
         presence: Presence,
@@ -504,7 +504,7 @@ impl<R: PbRead> PbDecoder<R> {
     ///
     /// If the length of the bytes on the wire exceeds the fixed capacity of the byte container,
     /// return [`DecodeError::Capacity`].
-    pub fn decode_bytes<S: PbVec<u8>>(
+    pub fn decode_bytes<S: PbBytes>(
         &mut self,
         bytes: &mut S,
         presence: Presence,
@@ -702,6 +702,8 @@ impl<R: PbRead> PbDecoder<R> {
 
 #[cfg(test)]
 mod tests {
+    use core::ops::Deref;
+
     use arrayvec::{ArrayString, ArrayVec};
 
     use crate::{FixedLenArray, FixedLenString};
@@ -1090,7 +1092,7 @@ mod tests {
         };
     }
 
-    fn string<S: PbString + Default>(fixed_cap: bool, fixed_len: bool) {
+    fn string<S: PbBytes + Deref<Target = str> + Default>(fixed_cap: bool, fixed_len: bool) {
         let mut string = S::default();
         if fixed_len {
             assert_decode_vec!(
@@ -1170,7 +1172,7 @@ mod tests {
     container_test!(string, string_alloc, String, false, false);
     container_test!(string, string_fixed_len, FixedLenString::<4>, true, true);
 
-    fn bytes<S: PbVec<u8> + Default>(fixed_cap: bool, fixed_len: bool) {
+    fn bytes<S: PbBytes + Deref<Target = [u8]> + Default>(fixed_cap: bool, fixed_len: bool) {
         let mut bytes = S::default();
         if fixed_len {
             assert_decode_vec!(Ok(&[0, 0, 0]), [0], decode_bytes(bytes, Presence::Explicit));
@@ -1231,10 +1233,10 @@ mod tests {
             [1, 0x90, 0x01],
             decode_packed(vec1 | vec2, |rd| rd.decode_varint32())
         );
-        // Reset vecs after an error
-        vec1.pb_clear();
-        vec2.pb_clear();
 
+        // Reset vecs after an error
+        let mut vec1 = S::default();
+        let mut vec2 = S::default();
         assert_decode_vec!(
             Ok(&[150, 5]),
             [3, 0x96, 0x01, 0x05],
@@ -1401,7 +1403,7 @@ mod tests {
             };
         }
 
-        fn check_string(mut string: impl PbString + Clone, data: Vec<u8>) {
+        fn check_string(mut string: impl PbBytes + Clone, data: Vec<u8>) {
             let mut string_cl = string.clone();
             let mut decoder = PbDecoder::new(data.as_slice());
             let _ = decoder.decode_string(&mut string, Presence::Implicit);
@@ -1409,7 +1411,7 @@ mod tests {
             let _ = decoder.decode_string(&mut string_cl, Presence::Explicit);
         }
 
-        fn check_bytes(mut bytes: impl PbVec<u8> + Clone, data: Vec<u8>) {
+        fn check_bytes(mut bytes: impl PbBytes + Clone, data: Vec<u8>) {
             let mut bytes_cl = bytes.clone();
             let mut decoder = PbDecoder::new(data.as_slice());
             let _ = decoder.decode_bytes(&mut bytes, Presence::Implicit);
