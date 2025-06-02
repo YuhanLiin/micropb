@@ -484,7 +484,7 @@ For more information on custom fields, see `Config::custom_field` in `micropb-ge
 
 ## MSRV
 
-The oldest version of Rust that `micropb` supports is **1.74.0**.
+The oldest version of Rust that `micropb` supports is **1.83.0**.
 
 ## License
 
