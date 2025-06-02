@@ -103,6 +103,8 @@ impl<T: Default + FieldDecode> FieldDecode for Option<T> {
 /// struct Bits(u8);
 ///
 /// impl FieldEncode for Bits {
+///     const MAX_SIZE: Option<usize> = Some(2 * 8);
+///
 ///     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
 ///         // Encode each of the 8 bits using field numbers 1 to 8
 ///         for i in 0..8 {
