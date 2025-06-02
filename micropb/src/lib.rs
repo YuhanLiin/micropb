@@ -38,6 +38,17 @@ pub use message::MessageDecode;
 #[cfg(feature = "encode")]
 pub use message::MessageEncode;
 
+#[macro_export]
+/// Const version of `Option::map`, used to generate max message sizes
+macro_rules! const_map {
+    ($opt:expr, |$val:ident| $body:expr) => {
+        match $opt {
+            ::core::option::Option::Some($val) => ::core::option::Option::Some($body),
+            _ => ::core::option::Option::None,
+        }
+    };
+}
+
 /// Protobuf wire type for varints.
 pub const WIRE_TYPE_VARINT: u8 = 0;
 /// Protobuf wire type for fixed 64-bit values.
@@ -119,5 +130,13 @@ mod tests {
         assert_eq!(tag.varint(), 0);
         assert_eq!(tag.field_num(), 0);
         assert_eq!(tag.wire_type(), 0);
+    }
+
+    #[test]
+    fn const_macro() {
+        const C1: Option<usize> = const_map!(Some(6), |n| n + 5);
+        const C2: Option<usize> = const_map!(None::<usize>, |n| n + 5);
+        assert_eq!(C1, Some(11));
+        assert_eq!(C2, None);
     }
 }

@@ -330,9 +330,15 @@ fn lifetime_fields() {
 
 fn recursive() {
     let mut generator = Generator::new();
-    generator.configure(".Recursive.recursive", Config::new().boxed(true));
+    generator.configure(
+        ".Recursive.recursive",
+        Config::new().boxed(true).encoded_max_size(5),
+    );
     generator.configure(".Recursive.of", Config::new().boxed(true));
-    generator.configure(".Recursive.rec", Config::new().boxed(true));
+    generator.configure(
+        ".Recursive.rec",
+        Config::new().boxed(true).encoded_max_size(0),
+    );
     generator
         .compile_protos(
             &["proto/recursive.proto"],
@@ -382,6 +388,16 @@ fn files_with_same_package() {
         .unwrap();
 }
 
+fn large_field_nums() {
+    let mut generator = Generator::new();
+    generator
+        .compile_protos(
+            &["proto/large_field_nums.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/large_field_nums.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -401,4 +417,5 @@ fn main() {
     extension();
     files_with_same_package();
     fixed_string_and_bytes();
+    large_field_nums();
 }

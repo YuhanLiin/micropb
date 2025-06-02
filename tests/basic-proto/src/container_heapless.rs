@@ -1,6 +1,6 @@
 use std::mem::{size_of, size_of_val};
 
-use micropb::{DecodeError, MessageDecode, PbDecoder};
+use micropb::{DecodeError, MessageDecode, MessageEncode, PbDecoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -255,4 +255,24 @@ fn decode_map_cap_inner() {
     );
     let len = decoder.as_reader().len();
     assert_eq!(map.decode(&mut decoder, len), Err(DecodeError::Capacity));
+}
+
+#[test]
+fn max_size() {
+    let data_max_size = (2/* tags */) + 4 + 6;
+    assert_eq!(proto::Data::MAX_SIZE, Some(data_max_size));
+    let list_max_size = (1/* tags */ + 1 + data_max_size) * 2;
+    assert_eq!(proto::List::MAX_SIZE, Some(list_max_size));
+    // Elements are u8, so each one has max size of 2
+    let numlist_max_size = (1/* tags */ + 2) * 2;
+    assert_eq!(proto::NumList::MAX_SIZE, Some(numlist_max_size));
+    let strlist_max_size = (1/* tags */ + 1 + 2) * 3;
+    assert_eq!(proto::StrList::MAX_SIZE, Some(strlist_max_size));
+    let fixedlist_max_size = (1) + 1 + 2 * 4;
+    assert_eq!(proto::FixedList::MAX_SIZE, Some(fixedlist_max_size));
+    let enumlist_max_size = (1) + 1 + 2 * 10;
+    assert_eq!(proto::EnumList::MAX_SIZE, Some(enumlist_max_size));
+
+    let map_max_size = 8 * (1/* tags */ + 1 + (2/* kv tags */) + 5 + 4);
+    assert_eq!(proto::Map::MAX_SIZE, Some(map_max_size));
 }

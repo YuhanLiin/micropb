@@ -459,6 +459,30 @@ impl<'a> Message<'a> {
         }
     }
 
+    fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        let field_sizes = self.fields.iter().map(|f| f.generate_max_size(gen));
+        let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(gen));
+        let unknown_size = self
+            .unknown_handler
+            .as_ref()
+            .map(|handler| quote! { <#handler as ::micropb::field::FieldEncode>::MAX_SIZE });
+        let sizes = field_sizes.chain(oneof_sizes).chain(unknown_size);
+
+        quote! {
+            const MAX_SIZE: ::core::option::Option<usize> = 'msg: {
+                let mut max_size = 0;
+                #(
+                    if let ::core::option::Option::Some(size) = #sizes {
+                        max_size += size;
+                    } else {
+                        break 'msg (::core::option::Option::<usize>::None);
+                    };
+                )*
+                ::core::option::Option::Some(max_size)
+            };
+        }
+    }
+
     pub(crate) fn generate_encode_trait(&self, gen: &Generator) -> TokenStream {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
@@ -470,9 +494,12 @@ impl<'a> Message<'a> {
             gen,
             &EncodeFunc::Encode(Ident::new("encoder", Span::call_site())),
         );
+        let max_size_decl = self.generate_max_size(gen);
 
         quote! {
             impl<#lifetime> ::micropb::MessageEncode for #name<#lifetime> {
+                #max_size_decl
+
                 fn encode<IMPL_MICROPB_WRITE: ::micropb::PbWrite>(
                     &self,
                     encoder: &mut ::micropb::PbEncoder<IMPL_MICROPB_WRITE>,
@@ -708,6 +735,7 @@ mod tests {
                             make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
                         ]
                     },
+                    encoded_max_size: None,
                     field_attrs: vec![],
                     // Overrides the type attrs of the message
                     type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),

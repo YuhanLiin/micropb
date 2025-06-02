@@ -516,3 +516,23 @@ fn decode_errors() {
     );
     assert_eq!(decoder.bytes_read(), 4);
 }
+
+#[test]
+fn max_size() {
+    let basic_max_size =
+        (14/* tags */) + 10 + 10 + 5 + 10 + 5 + 10 + 4 + 8 + 4 + 8 + 1 + 4 + 8 + 10;
+    assert_eq!(proto::basic_::BasicTypes::MAX_SIZE, Some(basic_max_size));
+
+    let optional_max_size = (3/* tags */) + 10 + 1 + 1;
+    assert_eq!(proto::basic3_::Optional::MAX_SIZE, Some(optional_max_size));
+    assert_eq!(proto::basic3_::ZST::MAX_SIZE, Some(0));
+
+    let inner_max_size = (2/* tags */) + 5 + 5;
+    assert_eq!(
+        proto::nested_::Nested_::InnerMsg::MAX_SIZE,
+        Some(inner_max_size)
+    );
+
+    let nested_max_size = (2/* tags */) + (1 + basic_max_size) + (1 + inner_max_size);
+    assert_eq!(proto::nested_::Nested::MAX_SIZE, Some(nested_max_size));
+}

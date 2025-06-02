@@ -54,6 +54,7 @@ pub(crate) struct Field<'a> {
     pub(crate) san_rust_name: Ident,
     pub(crate) default: Option<&'a str>,
     pub(crate) boxed: bool,
+    pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
 }
 
@@ -136,6 +137,7 @@ impl<'a> Field<'a> {
 
             (None, None, _) => FieldType::Single(TypeSpec::from_proto(proto, field_conf)?),
         };
+        let encoded_max_size = field_conf.config.encoded_max_size;
         let attrs = field_conf.config.field_attr_parsed()?;
 
         Ok(Some(Field {
@@ -145,6 +147,7 @@ impl<'a> Field<'a> {
             rust_name,
             san_rust_name,
             default: proto.default_value().map(String::as_str),
+            encoded_max_size,
             boxed,
             attrs,
         }))
@@ -498,6 +501,61 @@ impl<'a> Field<'a> {
         }
     }
 
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if let Some(max_size) = self.encoded_max_size {
+            return quote! { ::core::option::Option::Some(#max_size) };
+        }
+
+        let wire_type = self.wire_type();
+        let tag = micropb::Tag::from_parts(self.num, wire_type);
+        let tag_len = ::micropb::size::sizeof_tag(tag);
+
+        match &self.ftype {
+            FieldType::Map {
+                key, val, max_len, ..
+            } => max_len
+                .map(|len| {
+                    let len = len as usize;
+                    let key_size = key.generate_max_size(gen);
+                    let val_size = val.generate_max_size(gen);
+                    quote! {
+                        match (#key_size, #val_size) {
+                            (_, ::core::option::Option::None) => ::core::option::Option::<usize>::None,
+                            (::core::option::Option::None, _) => ::core::option::Option::<usize>::None,
+                            (::core::option::Option::Some(key_size), ::core::option::Option::Some(val_size)) => {
+                                let max_size = ::micropb::size::sizeof_len_record(key_size + val_size + 2) + #tag_len;
+                                ::core::option::Option::Some(max_size * #len)
+                            }
+                        }
+                    }
+                })
+                .unwrap_or(quote! {::core::option::Option::<usize>::None}),
+
+            FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
+                let size = type_spec.generate_max_size(gen);
+                quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
+            }
+
+            FieldType::Repeated {
+                typ,
+                packed,
+                max_len,
+                ..
+            } => max_len.map(|len| {
+                let len = len as usize;
+                let size = typ.generate_max_size(gen);
+                if *packed {
+                    quote! { ::micropb::const_map!(#size, |size| ::micropb::size::sizeof_len_record(#len * size) + #tag_len) }
+                } else {
+                    quote! { ::micropb::const_map!(#size, |size| (size + #tag_len) * #len) }
+                }
+            }).unwrap_or(quote! { ::core::option::Option::<usize>::None }),
+
+            FieldType::Custom(CustomField::Type(custom)) => quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE },
+            FieldType::Custom(CustomField::Delegate(_)) => quote! { ::core::option::Option::Some(0) },
+        }
+    }
+
     pub(crate) fn generate_encode(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
         let fname = &self.san_rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
@@ -541,7 +599,7 @@ impl<'a> Field<'a> {
 
             FieldType::Single(tspec) | FieldType::Optional(tspec, _) => {
                 let check = if let FieldType::Optional(..) = self.ftype {
-                    quote! { if let Some(#val_ref) = self.#fname() }
+                    quote! { if let ::core::option::Option::Some(#val_ref) = self.#fname() }
                 } else {
                     let implicit_presence_check = tspec.generate_implicit_presence_check(&val_ref);
                     quote! {
@@ -648,6 +706,7 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         san_rust_name: Ident::new_raw(name, proc_macro2::Span::call_site()),
         default: None,
         boxed,
+        encoded_max_size: None,
         attrs: vec![],
     }
 }
@@ -716,6 +775,7 @@ mod tests {
                 san_rust_name: Ident::new_raw("field", Span::call_site()),
                 default: None,
                 boxed: false,
+                encoded_max_size: None,
                 attrs: vec![],
             }
         );
@@ -745,6 +805,7 @@ mod tests {
                 san_rust_name: Ident::new("renamed", Span::call_site()),
                 default: Some("true"),
                 boxed: true,
+                encoded_max_size: None,
                 attrs: parse_attributes("#[attr]").unwrap(),
             }
         );

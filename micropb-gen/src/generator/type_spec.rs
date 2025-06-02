@@ -1,4 +1,7 @@
 use convert_case::{Case, Casing};
+use micropb::size::{
+    sizeof_len_record, sizeof_sint32, sizeof_sint64, sizeof_varint32, sizeof_varint64,
+};
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
@@ -154,6 +157,33 @@ pub(crate) enum TypeSpec {
 }
 
 impl TypeSpec {
+    fn max_size(&self) -> Option<usize> {
+        match self {
+            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),
+            TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => Some(8),
+            TypeSpec::Bool => Some(1),
+
+            // negative VARINT values will always take up 10 bytes
+            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) | TypeSpec::Enum(_) => Some(10),
+
+            // positive VARINT size depends on the max size of the represented int type
+            TypeSpec::Int(PbInt::Uint32, intsize) => Some(sizeof_varint32(
+                intsize.max_value().try_into().unwrap_or(u32::MAX),
+            )),
+            TypeSpec::Int(PbInt::Uint64, intsize) => Some(sizeof_varint64(intsize.max_value())),
+            TypeSpec::Int(PbInt::Sint32, intsize) => Some(sizeof_sint32(
+                intsize.min_value().try_into().unwrap_or(i32::MAX),
+            )),
+            TypeSpec::Int(PbInt::Sint64, intsize) => Some(sizeof_sint64(intsize.min_value())),
+
+            TypeSpec::Bytes { max_bytes, .. } | TypeSpec::String { max_bytes, .. } => {
+                max_bytes.map(|max| sizeof_len_record(max as usize))
+            }
+
+            TypeSpec::Message(_) => None,
+        }
+    }
+
     pub(crate) fn fixed_size(&self) -> Option<usize> {
         match self {
             TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),
@@ -231,6 +261,18 @@ impl TypeSpec {
                 quote! { #rust_type }
             }
         }
+    }
+
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if let TypeSpec::Message(tname) = self {
+            let rust_type = gen.resolve_type_name(tname);
+            return quote! { ::micropb::const_map!(<#rust_type as ::micropb::MessageEncode>::MAX_SIZE, |size| ::micropb::size::sizeof_len_record(size)) };
+        }
+
+        self.max_size()
+            .map(Literal::usize_suffixed)
+            .map(|lit| quote! {::core::option::Option::Some(#lit)})
+            .unwrap_or(quote! {::core::option::Option::<usize>::None})
     }
 
     pub(crate) fn generate_default(
@@ -451,6 +493,116 @@ mod tests {
         assert!(find_lifetime_from_type(&ty).is_some());
         let ty: syn::Type = syn::parse_str("std::Option<std::Vec<'a>>").unwrap();
         assert!(find_lifetime_from_type(&ty).is_some());
+    }
+
+    #[test]
+    fn max_size() {
+        assert_eq!(TypeSpec::Float.max_size(), Some(4));
+        assert_eq!(TypeSpec::Double.max_size(), Some(8));
+        assert_eq!(TypeSpec::Bool.max_size(), Some(1));
+        assert_eq!(TypeSpec::Enum("test".to_string()).max_size(), Some(10));
+        assert_eq!(
+            TypeSpec::Int(PbInt::Int32, IntSize::S8).max_size(),
+            Some(10)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Int64, IntSize::S8).max_size(),
+            Some(10)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Fixed32, IntSize::S8).max_size(),
+            Some(4)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Fixed64, IntSize::S8).max_size(),
+            Some(8)
+        );
+
+        // uint types
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint32, IntSize::S8).max_size(),
+            Some(2)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint32, IntSize::S32).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint32, IntSize::S64).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint64, IntSize::S16).max_size(),
+            Some(3)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint64, IntSize::S32).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint64, IntSize::S64).max_size(),
+            Some(10)
+        );
+
+        // sint types
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint32, IntSize::S16).max_size(),
+            Some(3)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint32, IntSize::S32).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint32, IntSize::S64).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint64, IntSize::S16).max_size(),
+            Some(3)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint64, IntSize::S32).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint64, IntSize::S64).max_size(),
+            Some(10)
+        );
+
+        assert_eq!(
+            TypeSpec::String {
+                type_path: syn::parse_str("test").unwrap(),
+                max_bytes: Some(12)
+            }
+            .max_size(),
+            Some(13)
+        );
+        assert_eq!(
+            TypeSpec::String {
+                type_path: syn::parse_str("test").unwrap(),
+                max_bytes: None
+            }
+            .max_size(),
+            None
+        );
+
+        assert_eq!(
+            TypeSpec::Bytes {
+                type_path: syn::parse_str("test").unwrap(),
+                max_bytes: Some(12)
+            }
+            .max_size(),
+            Some(13)
+        );
+        assert_eq!(
+            TypeSpec::Bytes {
+                type_path: syn::parse_str("test").unwrap(),
+                max_bytes: None
+            }
+            .max_size(),
+            None
+        );
     }
 
     fn field_proto(typ: Type, type_name: &str) -> FieldDescriptorProto {

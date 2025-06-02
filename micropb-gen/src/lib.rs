@@ -306,9 +306,10 @@ impl Generator {
             _ => e,
         })?;
         if !output.status.success() {
-            return Err(io::Error::other(
-                format!("protoc failed: {}", String::from_utf8_lossy(&output.stderr)),
-            ));
+            return Err(io::Error::other(format!(
+                "protoc failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            )));
         }
 
         self.compile_fdset_file(fdset_file, out_filename)
@@ -335,6 +336,7 @@ impl Generator {
 
         #[cfg(feature = "format")]
         let output = if self.format {
+            dbg!(code.to_string());
             prettyplease::unparse(
                 &syn::parse2(code).expect("output code should be parseable as a file"),
             )

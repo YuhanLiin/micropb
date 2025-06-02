@@ -33,6 +33,24 @@ impl IntSize {
         };
         Ident::new(t, Span::call_site())
     }
+
+    pub(crate) fn max_value(self) -> u64 {
+        match self {
+            IntSize::S8 => u8::MAX as u64,
+            IntSize::S16 => u16::MAX as u64,
+            IntSize::S32 => u32::MAX as u64,
+            IntSize::S64 => u64::MAX,
+        }
+    }
+
+    pub(crate) fn min_value(self) -> i64 {
+        match self {
+            IntSize::S8 => i8::MIN as i64,
+            IntSize::S16 => i16::MIN as i64,
+            IntSize::S32 => i32::MIN as i64,
+            IntSize::S64 => i64::MIN,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -344,6 +362,14 @@ config_decl! {
     /// This configuration is only applied to the path passed to `configure`. It is
     /// not propagated to "children" paths.
     [no_inherit] rename_field: [deref] Option<String>,
+
+    /// Override the max size of the field on the wire.
+    ///
+    /// Instead of calculating the max size of the field, the generator will use this value instead
+    /// when determining the max size of the entire message. This is useful for fields with
+    /// "unbounded" size, such as `Vec` fields and recursive fields. Applies to normal fields,
+    /// oneof fields, and oneof variants.
+    encoded_max_size: Option<usize>,
 
     // Type configs
 

@@ -34,6 +34,8 @@ impl FieldDecode for MockField {
 
 // All this impl does is write out all the tags as varints
 impl FieldEncode for MockField {
+    const MAX_SIZE: Option<usize> = Some(10);
+
     fn encode_fields<W: micropb::PbWrite>(
         &self,
         encoder: &mut micropb::PbEncoder<W>,
@@ -163,4 +165,13 @@ fn decode_custom_error() {
         list.decode(&mut decoder, len),
         Err(micropb::DecodeError::CustomField)
     );
+}
+
+#[test]
+fn max_size() {
+    // MockField is used as a custom field and an unknown handler
+    assert_eq!(
+        proto::nested_::Nested::MAX_SIZE,
+        Some(MockField::MAX_SIZE.unwrap() * 2)
+    )
 }

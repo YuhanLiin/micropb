@@ -88,6 +88,7 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
 /// # #[derive(Default)]
 /// # struct ProtoMessage(u32);
 /// # impl micropb::MessageEncode for ProtoMessage {
+/// #   const MAX_SIZE: Option<usize> = None;
 /// #   fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> { todo!() }
 /// #   fn compute_size(&self) -> usize { 0 }
 /// # }

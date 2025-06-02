@@ -3,15 +3,16 @@ use proc_macro2::{Literal, Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
-use super::{
-    derive_msg_attr,
-    field::CustomField,
-    sanitized_ident,
-    type_spec::{find_lifetime_from_type, TypeSpec},
-    CurrentConfig, EncodeFunc, Generator,
+use crate::{
+    descriptor::{FieldDescriptorProto, OneofDescriptorProto},
+    generator::{
+        derive_msg_attr,
+        field::CustomField,
+        sanitized_ident,
+        type_spec::{find_lifetime_from_type, TypeSpec},
+        CurrentConfig, EncodeFunc, Generator,
+    },
 };
-
-use crate::descriptor::{FieldDescriptorProto, OneofDescriptorProto};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
@@ -23,6 +24,7 @@ pub(crate) struct OneofField<'a> {
     /// Sanitized Rust ident after renaming, used for field name
     pub(crate) rust_name: Ident,
     pub(crate) boxed: bool,
+    pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
 }
 
@@ -53,6 +55,7 @@ impl<'a> OneofField<'a> {
             tspec,
             name,
             rust_name,
+            encoded_max_size: field_conf.config.encoded_max_size,
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs,
         }))
@@ -165,6 +168,7 @@ pub(crate) struct Oneof<'a> {
     pub(crate) derive_dbg: bool,
     pub(crate) derive_partial_eq: bool,
     pub(crate) derive_clone: bool,
+    pub(crate) encoded_max_size: Option<usize>,
     pub(crate) idx: usize,
 }
 
@@ -211,6 +215,7 @@ impl<'a> Oneof<'a> {
             idx,
             otype,
             boxed,
+            encoded_max_size: oneof_conf.config.encoded_max_size,
             derive_dbg: oneof_conf.derive_dbg(),
             derive_partial_eq: oneof_conf.derive_partial_eq(),
             derive_clone: oneof_conf.derive_clone(),
@@ -338,6 +343,53 @@ impl<'a> Oneof<'a> {
             } => quote! {},
         }
     }
+
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if let Some(max_size) = self.encoded_max_size {
+            return quote! { ::core::option::Option::Some(#max_size) };
+        }
+
+        match &self.otype {
+            OneofType::Custom {
+                field: CustomField::Type(custom),
+                ..
+            } => {
+                quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE }
+            }
+            OneofType::Custom {
+                field: CustomField::Delegate(_),
+                ..
+            } => quote! { ::core::option::Option::Some(0) },
+
+            OneofType::Enum { fields, .. } => {
+                let variant_sizes = fields.iter().map(|f| {
+                    if let Some(max_size) = f.encoded_max_size {
+                        quote! { ::core::option::Option::Some(#max_size) }
+                    } else {
+                        let wire_type = f.tspec.wire_type();
+                        let tag = micropb::Tag::from_parts(f.num, wire_type);
+                        let tag_len = ::micropb::size::sizeof_tag(tag);
+                        let size = f.tspec.generate_max_size(gen);
+                        quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
+                    }
+                });
+
+                quote! {'oneof: {
+                    let mut max_size = 0;
+                    #(
+                        if let ::core::option::Option::Some(size) = #variant_sizes {
+                            if size > max_size {
+                                max_size = size;
+                            }
+                        } else {
+                            break 'oneof (::core::option::Option::<usize>::None);
+                        }
+                    )*
+                    ::core::option::Option::Some(max_size)
+                }}
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -353,6 +405,7 @@ pub(crate) fn make_test_oneof_field(
         tspec,
         rust_name: Ident::new(&name.to_case(Case::Pascal), Span::call_site()),
         boxed,
+        encoded_max_size: None,
         attrs: vec![],
     }
 }
@@ -408,6 +461,7 @@ mod tests {
                 name: "field",
                 rust_name: Ident::new("Field", Span::call_site()),
                 boxed: false,
+                encoded_max_size: None,
                 attrs: vec![]
             }
         );
@@ -428,6 +482,7 @@ mod tests {
                 tspec: TypeSpec::Bool,
                 name: "field",
                 rust_name: Ident::new("Renamed", Span::call_site()),
+                encoded_max_size: None,
                 boxed: true,
                 attrs: parse_attributes("#[attr]").unwrap()
             }
@@ -454,6 +509,7 @@ mod tests {
                 },
                 field_attrs: vec![],
                 type_attrs: vec![],
+                encoded_max_size: None,
                 boxed: false,
                 derive_dbg: true,
                 derive_partial_eq: true,
@@ -481,6 +537,7 @@ mod tests {
                 },
                 field_attrs: parse_attributes("#[attr]").unwrap(),
                 type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+                encoded_max_size: None,
                 boxed: false,
                 derive_dbg: false,
                 derive_partial_eq: true,
@@ -503,6 +560,7 @@ mod tests {
             field_attrs: vec![],
             type_attrs: vec![],
             boxed: false,
+            encoded_max_size: None,
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,
@@ -526,6 +584,7 @@ mod tests {
             field_attrs: vec![],
             type_attrs: vec![],
             boxed: false,
+            encoded_max_size: None,
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,

@@ -6,6 +6,11 @@
 
 - Add `ignore_wrong_len` flag to decoder
 - Add convenience methods for decoding and encoding
+- Add `MAX_SIZE` associated constant to `MessageEncode` trait, which statically computes the max size of a message on the wire
+
+### Changed
+
+- Bump MSRV to 1.83 for more const functions
 
 ### Fixed
 
