@@ -18,7 +18,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -496,7 +496,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -894,7 +894,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -1088,7 +1088,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -1296,7 +1296,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -1799,7 +1799,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -2042,7 +2042,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -2943,7 +2943,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -3209,7 +3209,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -3396,7 +3396,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -3594,7 +3594,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -3892,7 +3892,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -4094,7 +4094,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -4576,7 +4576,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -6167,7 +6167,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -6823,7 +6823,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -7064,7 +7064,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -7436,7 +7436,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -8355,7 +8355,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -8607,7 +8607,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -8954,7 +8954,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -9316,7 +9316,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -9532,7 +9532,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -9829,7 +9829,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -10048,7 +10048,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -10535,7 +10535,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -11205,7 +11205,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -11532,7 +11532,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -11734,7 +11734,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -11969,7 +11969,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -12064,7 +12064,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -12419,7 +12419,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -12502,7 +12502,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
