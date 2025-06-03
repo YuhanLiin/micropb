@@ -146,12 +146,13 @@ pub(crate) enum TypeSpec {
     Double,
     Bool,
     Int(PbInt, IntSize),
+    // Box the syn::Type fields since they're taking up too much space
     String {
-        type_path: syn::Type,
+        type_path: Box<syn::Type>,
         max_bytes: Option<u32>,
     },
     Bytes {
-        type_path: syn::Type,
+        type_path: Box<syn::Type>,
         max_bytes: Option<u32>,
     },
 }
@@ -214,15 +215,17 @@ impl TypeSpec {
             Type::Float => TypeSpec::Float,
             Type::Bool => TypeSpec::Bool,
             Type::String => TypeSpec::String {
-                type_path: conf
-                    .string_type_parsed(conf.max_bytes)?
-                    .ok_or_else(|| "string_type not configured for string field".to_owned())?,
+                type_path: Box::new(
+                    conf.string_type_parsed(conf.max_bytes)?
+                        .ok_or_else(|| "string_type not configured for string field".to_owned())?,
+                ),
                 max_bytes: conf.max_bytes,
             },
             Type::Bytes => TypeSpec::Bytes {
-                type_path: conf
-                    .bytes_type_parsed(conf.max_bytes)?
-                    .ok_or_else(|| "bytes_type not configured for bytes field".to_owned())?,
+                type_path: Box::new(
+                    conf.bytes_type_parsed(conf.max_bytes)?
+                        .ok_or_else(|| "bytes_type not configured for bytes field".to_owned())?,
+                ),
                 max_bytes: conf.max_bytes,
             },
             Type::Message => {
