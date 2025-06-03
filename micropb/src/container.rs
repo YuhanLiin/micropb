@@ -45,10 +45,10 @@ pub trait PbString {
     /// Returns the remaining spare capacity of the string as a slice of `MaybeUninit<u8>`.
     ///
     /// The returned slice can be filled with bytes before marking the data as initialized using
-    /// [`pb_set_len`](PbContainer::pb_set_len).
+    /// [`pb_set_len`](PbString::pb_set_len).
     ///
     /// # Safety
-    /// When calling [`pb_set_len`](PbContainer::pb_set_len) after filling the spare capacity with
+    /// When calling [`pb_set_len`](PbString::pb_set_len) after filling the spare capacity with
     /// bytes, the entirety of the new string must be valid UTF-8.
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
 }
