@@ -306,15 +306,25 @@ fn lifetime_fields() {
         Config::new().field_lifetime("'a"),
     );
     generator.configure(".nested.Nested.basic", Config::new().skip(true));
-    generator.configure(
-        ".basic.BasicTypes.int32_num",
-        Config::new().custom_field(CustomField::Type(
-            "crate::lifetime_fields::RefField<'a>".to_owned(),
-        )),
-    );
+
+    // Configurations for collections.proto
+    generator
+        .configure(
+            ".",
+            Config::new()
+                .string_type("&'a str")
+                .bytes_type("&'a [u8]")
+                .vec_type("&'a [$T]"),
+        )
+        .configure(".List.list", Config::new().field_lifetime("'a"));
+
     generator
         .compile_protos(
-            &["proto/basic.proto", "proto/nested.proto"],
+            &[
+                "proto/basic.proto",
+                "proto/nested.proto",
+                "proto/collections.proto",
+            ],
             std::env::var("OUT_DIR").unwrap() + "/lifetime_fields.rs",
         )
         .unwrap();
