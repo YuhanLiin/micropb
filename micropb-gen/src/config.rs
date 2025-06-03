@@ -220,8 +220,8 @@ config_decl! {
 
     /// Container type that's generated for repeated fields.
     ///
-    /// For decoding, the provided type must implement `PbVec`. For encoding, the type must
-    /// implement `Deref<[T]>`.
+    /// For decoding, the provided type must implement `PbVec<T>`. For encoding, the type must
+    /// dereference into `[T]`, where `T` is the type of the element.
     ///
     /// If the provided type contains the sequence `$N`, it will be substituted for the value of
     /// [`max_bytes`](Config::max_bytes) if it's set for this field. Similarly, the sequence `$T`
@@ -243,7 +243,7 @@ config_decl! {
     /// Container type that's generated for `string` fields.
     ///
     /// For decoding, the provided type must implement `PbString + TryFrom<&str>`. For encoding,
-    /// the type must implement `Deref<str>`.
+    /// the type must dereference to `str`.
     ///
     /// If the provided type contains the sequence `$N`, it will be substituted for the value of
     /// [`max_bytes`](Config::max_bytes) if it's set for this field.
@@ -262,7 +262,7 @@ config_decl! {
     /// Container type that's generated for `bytes` fields.
     ///
     /// For decoding, the provided type must implement `PbBytes + TryFrom<&[u8]>`. For encoding,
-    /// the type must implement `Deref<[u8]>`.
+    /// the type must dereference to `[u8]`.
     ///
     /// If the provided type contains the sequence `$N`, it will be substituted for the value of
     /// [`max_bytes`](Config::max_bytes) if it's set for this field.
