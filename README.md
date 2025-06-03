@@ -211,9 +211,10 @@ gen.use_container_alloc();
 /*
 gen.configure(".",
     micropb_gen::Config::new()
-        .string_type("crate::MyString")
-        .vec_type("crate::MyVec")
-        .map_type("crate::MyMap")
+        .string_type("crate::MyString<$N>")
+        .bytes_type("crate::MyVec<u8, $N>")
+        .vec_type("crate::MyVec<$T, $N>")
+        .map_type("crate::MyMap<$K, $V, $N>")
 );
 */
 
@@ -232,7 +233,9 @@ pub struct Containers {
 }
 ```
 
-A container type is expected to implement `PbVec`, `PbString`, or `PbMap` from `micropb::container`, depending on what type of field it's used for. For convenience, `micropb` comes with built-in implementations of the container traits for types from [`heapless`](https://docs.rs/heapless/latest/heapless), [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), and [`alloc`](https://doc.rust-lang.org/alloc) (see [Feature Flags](#feature-flags) for details).
+A container type is expected to implement `PbVec`, `PbString`, `PbBytes`, or `PbMap` from `micropb::container`, depending on what type of field it's used for. For convenience, `micropb` comes with built-in implementations of the container traits for types from [`heapless`](https://docs.rs/heapless/latest/heapless), [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), and [`alloc`](https://doc.rust-lang.org/alloc) (see [Feature Flags](#feature-flags) for details).
+
+However, if only encoding logic is required, then the container traits are unnecessary. In that case, the only requirement for container types is that they dereference into `&[T]`, `&str`, and `&[u8]`, depending on what type of field it's for.
 
 ### Optional Fields
 
