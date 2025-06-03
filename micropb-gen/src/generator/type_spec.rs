@@ -283,7 +283,7 @@ impl TypeSpec {
                 match *max_bytes {
                     Some(max_bytes) if bytes.len() > max_bytes as usize =>
                         return Err(format!("Bytes field is limited to {max_bytes} bytes, but its default value is {} bytes", bytes.len())),
-                    _ => quote! { ::core::convert::TryFrom::try_from(#default_bytes).unwrap_or_default() }
+                    _ => quote! { ::core::convert::TryFrom::try_from(#default_bytes.as_slice()).unwrap_or_default() }
                 }
             }
 
@@ -769,7 +769,7 @@ mod tests {
             .generate_default("abc\\n\\t\\a\\xA0ddd", &gen)
             .unwrap()
             .to_string(),
-            quote! { ::core::convert::TryFrom::try_from(b"abc\n\t\x07\xA0ddd").unwrap_or_default() }
+            quote! { ::core::convert::TryFrom::try_from(b"abc\n\t\x07\xA0ddd".as_slice()).unwrap_or_default() }
                 .to_string()
         );
     }

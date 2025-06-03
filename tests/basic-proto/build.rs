@@ -203,13 +203,13 @@ fn fixed_string_and_bytes() {
     generator.configure(
         ".Data.s",
         Config::new()
-            .string_type("::micropb::FixedLenString")
+            .string_type("::micropb::FixedLenString<$N>")
             .max_bytes(3),
     );
     generator.configure(
         ".Data.b",
         Config::new()
-            .vec_type("::micropb::FixedLenArray")
+            .bytes_type("::micropb::FixedLenArray<u8, $N>")
             .max_bytes(2),
     );
 
