@@ -206,12 +206,7 @@ fn fixed_string_and_bytes() {
             .string_type("::micropb::FixedLenString<$N>")
             .max_bytes(3),
     );
-    generator.configure(
-        ".Data.b",
-        Config::new()
-            .bytes_type("::micropb::FixedLenArray<u8, $N>")
-            .max_bytes(2),
-    );
+    generator.configure(".Data.b", Config::new().bytes_type("[u8; $N]").max_bytes(2));
 
     generator
         .compile_protos(

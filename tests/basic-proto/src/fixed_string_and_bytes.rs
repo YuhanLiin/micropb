@@ -1,4 +1,4 @@
-use micropb::{FixedLenArray, FixedLenString, MessageDecode, MessageEncode, PbDecoder, PbEncoder};
+use micropb::{FixedLenString, MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod proto {
     #![allow(clippy::all)]
@@ -12,9 +12,9 @@ fn string_bytes() {
     assert!(data.s().is_none());
     assert!(data.b().is_none());
     assert_eq!(&*data.s, "a\n\0");
-    assert_eq!(&*data.b, &[0x0, 0xFF]);
+    assert_eq!(&data.b, &[0x0, 0xFF]);
     let _: FixedLenString<3> = data.s;
-    let _: FixedLenArray<u8, 2> = data.b;
+    let _: [u8; 2] = data.b;
 }
 
 #[test]
@@ -30,20 +30,20 @@ fn decode_string_bytes() {
     let len = decoder.as_reader().len();
     data.decode(&mut decoder, len).unwrap();
     assert_eq!(&*data.s, "abc");
-    assert_eq!(&*data.b, &[1, 2]);
+    assert_eq!(&data.b, &[1, 2]);
 
     let mut decoder = PbDecoder::new([0x0A, 0, 0x12, 0].as_slice());
     let len = decoder.as_reader().len();
     data.decode(&mut decoder, len).unwrap();
     assert_eq!(&*data.s, "\0\0\0");
-    assert_eq!(&*data.b, &[1, 2]);
+    assert_eq!(&data.b, &[1, 2]);
 }
 
 #[test]
 fn encode_string_bytes() {
     let mut data = proto::Data::default();
     data.set_s(FixedLenString::try_from("abc").unwrap());
-    data.set_b(FixedLenArray::from([1, 2]));
+    data.set_b([1, 2]);
 
     let mut encoder = PbEncoder::new(vec![]);
     data.encode(&mut encoder).unwrap();
