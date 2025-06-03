@@ -280,7 +280,8 @@ config_decl! {
 
     /// Container type that's generated for `map` fields.
     ///
-    /// The provided type must implement `PbMap`.
+    /// For decoding, the provided type must implement `PbMap`. For encoding, the type must
+    /// implement `IntoIterator<Item = (&K, &V)>` for `&T`.
     ///
     /// If the provided type contains the sequence `$N`, it will be substituted for the value of
     /// [`max_bytes`](Config::max_bytes) if it's set for this field. Similarly, the sequences `$K`

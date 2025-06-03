@@ -591,7 +591,7 @@ impl<'a> Field<'a> {
                     }
                 };
                 quote! {
-                    for (k, v) in self.#fname.pb_iter() {
+                    for (k, v) in (&#extra_deref self.#fname).into_iter() {
                         let len = ::micropb::size::sizeof_map_elem(k, v, |#val_ref| { #key_sizeof }, |#val_ref| { #val_sizeof });
                         #stmts
                     }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use micropb::{FieldEncode, MessageEncode, PbEncoder};
 
 mod proto {
@@ -67,4 +69,11 @@ fn ref_containers() {
         encoder.as_writer(),
         &[0x0A, 2, b'a', b'b', 0x0A, 2, b'c', b'd']
     );
+
+    let map = proto::Map {
+        mapping: &HashMap::from([("x", b"y".as_slice())]),
+    };
+    let mut encoder = PbEncoder::new(vec![]);
+    map.encode(&mut encoder).unwrap();
+    assert_eq!(encoder.as_writer(), &[0xA, 6, 0xA, 1, b'x', 0x12, 1, b'y']);
 }

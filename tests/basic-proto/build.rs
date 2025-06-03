@@ -314,7 +314,8 @@ fn lifetime_fields() {
             Config::new()
                 .string_type("&'a str")
                 .bytes_type("&'a [u8]")
-                .vec_type("&'a [$T]"),
+                .vec_type("&'a [$T]")
+                .map_type("&'a std::collections::HashMap<$K, $V>"),
         )
         .configure(".List.list", Config::new().field_lifetime("'a"));
 
@@ -324,6 +325,7 @@ fn lifetime_fields() {
                 "proto/basic.proto",
                 "proto/nested.proto",
                 "proto/collections.proto",
+                "proto/map.proto",
             ],
             std::env::var("OUT_DIR").unwrap() + "/lifetime_fields.rs",
         )

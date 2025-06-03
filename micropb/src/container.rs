@@ -97,36 +97,15 @@ impl<T, V: PbVec<T>> PbVec<T> for &mut V {
 
 /// Map that stores key-value pairs. Represents Protobuf `map` field.
 pub trait PbMap<K, V> {
-    /// Iterator for looping through each key-value pair in the map
-    type Iter<'a>: Iterator<Item = (&'a K, &'a V)>
-    where
-        Self: 'a,
-        K: 'a,
-        V: 'a;
-
     /// Inserts a new key-value pair into the map.
     ///
     /// Returns error if the new pair would make the map go over its fixed capacity.
     fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()>;
-
-    /// Iterates through each key-value pair in the map. Order is unspecified.
-    fn pb_iter(&self) -> Self::Iter<'_>;
 }
 
 impl<K, V, M: PbMap<K, V>> PbMap<K, V> for &mut M {
-    type Iter<'a>
-        = M::Iter<'a>
-    where
-        Self: 'a,
-        K: 'a,
-        V: 'a;
-
     fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
         (*self).pb_insert(key, val)
-    }
-
-    fn pb_iter(&self) -> Self::Iter<'_> {
-        (**self).pb_iter()
     }
 }
 
@@ -303,7 +282,7 @@ mod impl_heapless {
 
     use core::hash::{BuildHasher, Hash};
 
-    use heapless::{IndexMap, IndexMapIter, String, Vec};
+    use heapless::{IndexMap, String, Vec};
 
     impl<const N: usize> PbBytes for Vec<u8, N> {}
     impl<const N: usize> PbString for Vec<u8, N> {
@@ -362,22 +341,10 @@ mod impl_heapless {
     }
 
     impl<K: Eq + Hash, V, S: BuildHasher, const N: usize> PbMap<K, V> for IndexMap<K, V, S, N> {
-        type Iter<'a>
-            = IndexMapIter<'a, K, V>
-        where
-            S: 'a,
-            K: 'a,
-            V: 'a;
-
         #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val).map_err(drop)?;
             Ok(())
-        }
-
-        #[inline]
-        fn pb_iter(&self) -> Self::Iter<'_> {
-            self.iter()
         }
     }
 }
@@ -386,11 +353,7 @@ mod impl_heapless {
 mod impl_alloc {
     use super::*;
 
-    use alloc::{
-        collections::{btree_map, BTreeMap},
-        string::String,
-        vec::Vec,
-    };
+    use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
     impl PbBytes for Vec<u8> {}
     impl PbString for Vec<u8> {
@@ -499,41 +462,19 @@ mod impl_alloc {
     //}
 
     impl<K: Ord, V> PbMap<K, V> for BTreeMap<K, V> {
-        type Iter<'a>
-            = btree_map::Iter<'a, K, V>
-        where
-            K: 'a,
-            V: 'a;
-
         #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val);
             Ok(())
-        }
-
-        #[inline]
-        fn pb_iter(&self) -> Self::Iter<'_> {
-            self.iter()
         }
     }
 
     #[cfg(feature = "std")]
     impl<K: Eq + core::hash::Hash, V> PbMap<K, V> for std::collections::HashMap<K, V> {
-        type Iter<'a>
-            = std::collections::hash_map::Iter<'a, K, V>
-        where
-            K: 'a,
-            V: 'a;
-
         #[inline]
         fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
             self.insert(key, val);
             Ok(())
-        }
-
-        #[inline]
-        fn pb_iter(&self) -> Self::Iter<'_> {
-            self.iter()
         }
     }
 }
