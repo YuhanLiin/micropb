@@ -53,6 +53,24 @@ pub trait PbString {
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
 }
 
+impl<T: PbString> PbString for &mut T {
+    unsafe fn pb_set_len(&mut self, len: usize) {
+        (*self).pb_set_len(len);
+    }
+
+    fn pb_clear(&mut self) {
+        (*self).pb_clear();
+    }
+
+    fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+        (*self).pb_spare_cap()
+    }
+
+    fn pb_reserve(&mut self, additional: usize) {
+        (*self).pb_reserve(additional);
+    }
+}
+
 /// Container that stores a sequence of arbitrary bytes. Represents Protobuf `bytes` field.
 ///
 /// `PbBytes` is a subtrait of [`PbString`] because the set of containers that can safely hold any
@@ -61,12 +79,20 @@ pub trait PbString {
 /// Container types used for `bytes` fields will implement both `PbString` and `PbBytes`.
 pub trait PbBytes: PbString {}
 
+impl<T: PbBytes> PbBytes for &mut T {}
+
 /// Generic vector that stores multiple elements. Represents repeated field.
 pub trait PbVec<T> {
     /// Push a new element to the back of the vector.
     ///
     /// Returns error if the fixed capacity is already full.
     fn pb_push(&mut self, elem: T) -> Result<(), ()>;
+}
+
+impl<T, V: PbVec<T>> PbVec<T> for &mut V {
+    fn pb_push(&mut self, elem: T) -> Result<(), ()> {
+        (*self).pb_push(elem)
+    }
 }
 
 /// Map that stores key-value pairs. Represents Protobuf `map` field.
@@ -85,6 +111,23 @@ pub trait PbMap<K, V> {
 
     /// Iterates through each key-value pair in the map. Order is unspecified.
     fn pb_iter(&self) -> Self::Iter<'_>;
+}
+
+impl<K, V, M: PbMap<K, V>> PbMap<K, V> for &mut M {
+    type Iter<'a>
+        = M::Iter<'a>
+    where
+        Self: 'a,
+        K: 'a,
+        V: 'a;
+
+    fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
+        (*self).pb_insert(key, val)
+    }
+
+    fn pb_iter(&self) -> Self::Iter<'_> {
+        (**self).pb_iter()
+    }
 }
 
 pub(crate) mod impl_fixed_len {
