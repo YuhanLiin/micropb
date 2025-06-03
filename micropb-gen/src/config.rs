@@ -376,8 +376,8 @@ config_decl! {
     /// ```
     ///
     /// # Note
-    /// This configuration is only applied to the path passed to `configure`. It is
-    /// not propagated to "children" paths.
+    /// This configuration is only applied to the path passed to
+    /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.
     [no_inherit] rename_field: [deref] Option<String>,
 
     /// Override the max size of the field on the wire.
@@ -407,8 +407,8 @@ config_decl! {
     /// ```
     ///
     /// # Note
-    /// This configuration is only applied to the path passed to `configure`. It is
-    /// not propagated to "children" paths.
+    /// This configuration is only applied to the path passed to
+    /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.
     [no_inherit] field_lifetime: [deref] Option<String>,
 
     // Type configs
@@ -465,8 +465,8 @@ config_decl! {
     /// like with [`custom_field`](Config::custom_field).
     ///
     /// # Note
-    /// This configuration is only applied to the path passed to `configure`. It is
-    /// not propagated to "children" paths.
+    /// This configuration is only applied to the path passed to
+    /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.
     [no_inherit] unknown_handler: [deref] Option<String>,
 
     // General configs
