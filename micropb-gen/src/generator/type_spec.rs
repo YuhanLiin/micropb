@@ -140,7 +140,7 @@ pub(crate) fn find_lifetime_from_path(tpath: &syn::Path) -> Option<&Lifetime> {
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum TypeSpec {
-    Message(String),
+    Message(String, Option<syn::Lifetime>),
     Enum(String),
     Float,
     Double,
@@ -180,7 +180,7 @@ impl TypeSpec {
                 max_bytes.map(|max| sizeof_len_record(max as usize))
             }
 
-            TypeSpec::Message(_) => None,
+            TypeSpec::Message(..) => None,
         }
     }
 
@@ -215,7 +215,9 @@ impl TypeSpec {
                     .ok_or_else(|| "bytes_type not configured for bytes field".to_owned())?,
                 max_bytes: conf.max_bytes,
             },
-            Type::Message => TypeSpec::Message(proto.type_name.clone()),
+            Type::Message => {
+                TypeSpec::Message(proto.type_name.clone(), conf.field_lifetime_parsed()?)
+            }
             Type::Enum => TypeSpec::Enum(proto.type_name.clone()),
             Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_size.unwrap_or(IntSize::S32)),
             Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_size.unwrap_or(IntSize::S64)),
@@ -244,7 +246,11 @@ impl TypeSpec {
             TypeSpec::String { type_path, .. } => quote! { #type_path },
             TypeSpec::Bytes { type_path, .. } => quote! { #type_path },
 
-            TypeSpec::Message(tname) | TypeSpec::Enum(tname) => {
+            TypeSpec::Message(tname, lifetime) => {
+                let rust_type = gen.resolve_type_name(tname);
+                quote! { #rust_type<#lifetime> }
+            }
+            TypeSpec::Enum(tname) => {
                 let rust_type = gen.resolve_type_name(tname);
                 quote! { #rust_type }
             }
@@ -252,7 +258,7 @@ impl TypeSpec {
     }
 
     pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
-        if let TypeSpec::Message(tname) = self {
+        if let TypeSpec::Message(tname, _) = self {
             let rust_type = gen.resolve_type_name(tname);
             return quote! { ::micropb::const_map!(<#rust_type as ::micropb::MessageEncode>::MAX_SIZE, |size| ::micropb::size::sizeof_len_record(size)) };
         }
@@ -287,7 +293,7 @@ impl TypeSpec {
                 }
             }
 
-            TypeSpec::Message(_) => {
+            TypeSpec::Message(..) => {
                 unreachable!("message fields shouldn't have custom defaults")
             }
 
@@ -327,7 +333,7 @@ impl TypeSpec {
                 | PbInt::Sint64,
                 _,
             ) => micropb::WIRE_TYPE_VARINT,
-            TypeSpec::Message(_) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => {
+            TypeSpec::Message(..) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => {
                 micropb::WIRE_TYPE_LEN
             }
         }
@@ -335,7 +341,7 @@ impl TypeSpec {
 
     pub(crate) fn generate_implicit_presence_check(&self, val_ref: &Ident) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => quote! {},
+            TypeSpec::Message(..) => quote! {},
             TypeSpec::Enum(_) => quote! { if #val_ref.0 != 0 },
             TypeSpec::Float | TypeSpec::Double => quote! { if *#val_ref != 0.0 },
             TypeSpec::Bool => quote! { if *#val_ref },
@@ -383,7 +389,7 @@ impl TypeSpec {
         let presence_ident = Ident::new(presence, Span::call_site());
 
         match self {
-            TypeSpec::Message(_) => quote! { #mut_ref.decode_len_delimited(#decoder)?; },
+            TypeSpec::Message(..) => quote! { #mut_ref.decode_len_delimited(#decoder)?; },
             TypeSpec::Enum(_)
             | TypeSpec::Float
             | TypeSpec::Double
@@ -420,7 +426,7 @@ impl TypeSpec {
 
     pub(crate) fn generate_sizeof(&self, _gen: &Generator, val_ref: &Ident) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => {
+            TypeSpec::Message(..) => {
                 quote! { ::micropb::size::sizeof_len_record(#val_ref.compute_size()) }
             }
             TypeSpec::Enum(_) => quote! { ::micropb::size::sizeof_int32(#val_ref.0 as _) },
@@ -442,7 +448,7 @@ impl TypeSpec {
         val_ref: &Ident,
     ) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => quote! { #val_ref.encode_len_delimited(#encoder) },
+            TypeSpec::Message(..) => quote! { #val_ref.encode_len_delimited(#encoder) },
             TypeSpec::Enum(_) => quote! { #encoder.encode_int32(#val_ref.0 as _) },
             TypeSpec::Float => quote! { #encoder.encode_float(* #val_ref) },
             TypeSpec::Double => quote! { #encoder.encode_double(* #val_ref) },
@@ -643,7 +649,7 @@ mod tests {
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Message, ".msg.Message"), &type_conf).unwrap(),
-            TypeSpec::Message(".msg.Message".to_owned())
+            TypeSpec::Message(".msg.Message".to_owned(), None)
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Enum, ".Enum"), &type_conf).unwrap(),

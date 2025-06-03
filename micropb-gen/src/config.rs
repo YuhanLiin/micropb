@@ -387,6 +387,25 @@ config_decl! {
     /// oneof fields, and oneof variants.
     encoded_max_size: Option<usize>,
 
+    /// Specify lifetime parameter of a message field.
+    ///
+    /// If message type `Inner` has fields with a lifetime, its message struct will be generated
+    /// with that lifetime parameter. However, if another message type `Outer` has `Inner` as its
+    /// field, then that field must specify `field_lifetime` so that the lifetime is included in
+    /// the field declaration.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use micropb_gen::{Generator, Config};
+    /// # let mut gen = micropb_gen::Generator::new();
+    /// // `Inner` now has a lifetime param
+    /// gen.configure(".Inner.field", Config::new().string_type("MyString<'a>"));
+    /// // Make sure inner is declared as `inner: Inner<'a>`
+    /// // Will also automatically add the lifetime param to declaration of `Outer`
+    /// gen.configure(".Outer.inner", Config::new().field_lifetime("'a"));
+    /// ```
+    field_lifetime: [deref] Option<String>,
+
     // Type configs
 
     /// Override the integer size of Protobuf enums.
@@ -439,7 +458,11 @@ config_decl! {
     /// added to the message struct. This field will handle decoding of all unknown fields and will
     /// also be encoded, so the handler type must implement `FieldEncode` and `FieldDecode`,
     /// like with [`custom_field`](Config::custom_field).
-    unknown_handler: [deref] Option<String>,
+    ///
+    /// # Note
+    /// This configuration is only applied to the path passed to `configure`. It is
+    /// not propagated to "children" paths.
+    [no_inherit] unknown_handler: [deref] Option<String>,
 
     // General configs
 
@@ -579,6 +602,16 @@ impl Config {
             None => None,
         };
         Ok(res)
+    }
+
+    pub(crate) fn field_lifetime_parsed(&self) -> Result<Option<syn::Lifetime>, String> {
+        self.field_lifetime
+            .as_ref()
+            .map(|l| {
+                syn::parse_str(l)
+                    .map_err(|e| format!("Failed to parse \"{l}\" as Rust lifetime: {e}"))
+            })
+            .transpose()
     }
 }
 
