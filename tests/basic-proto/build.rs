@@ -295,20 +295,17 @@ fn lifetime_fields() {
     let mut generator = Generator::new();
     generator.encode_decode(EncodeDecode::EncodeOnly);
     generator.configure(".", Config::new().no_debug_impl(true).no_default_impl(true));
-    generator.configure(
-        ".nested.Nested.inner",
-        Config::new().custom_field(CustomField::Type(
-            "crate::lifetime_fields::RefField<'a>".to_owned(),
-        )),
-    );
-    generator.configure(
-        ".nested.Nested.basic",
-        Config::new().custom_field(CustomField::Delegate("inner".to_owned())),
-    );
+    // InnerMsg has a lifetime param
     generator.configure(
         ".nested.Nested.InnerMsg",
         Config::new().unknown_handler("Option<crate::lifetime_fields::RefField<'a>>"),
     );
+    // So the inner_msg field must have a lifetime
+    generator.configure(
+        ".nested.Nested.inner_msg",
+        Config::new().field_lifetime("'a"),
+    );
+    generator.configure(".nested.Nested.basic", Config::new().skip(true));
     generator.configure(
         ".basic.BasicTypes.int32_num",
         Config::new().custom_field(CustomField::Type(

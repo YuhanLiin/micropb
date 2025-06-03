@@ -404,7 +404,11 @@ config_decl! {
     /// // Will also automatically add the lifetime param to declaration of `Outer`
     /// gen.configure(".Outer.inner", Config::new().field_lifetime("'a"));
     /// ```
-    field_lifetime: [deref] Option<String>,
+    ///
+    /// # Note
+    /// This configuration is only applied to the path passed to `configure`. It is
+    /// not propagated to "children" paths.
+    [no_inherit] field_lifetime: [deref] Option<String>,
 
     // Type configs
 
@@ -560,7 +564,7 @@ impl Config {
         k: TokenStream,
         v: TokenStream,
         n: Option<u32>,
-    ) -> Result<Option<syn::Path>, String> {
+    ) -> Result<Option<syn::Type>, String> {
         self.map_type
             .as_ref()
             .map(|t| {

@@ -142,6 +142,11 @@ impl<'a> OneofField<'a> {
     }
 }
 
+fn find_oneof_field_lifetime<'a, 'b: 'a>(fields: &'b [OneofField<'a>]) -> Option<&'a Lifetime> {
+    // Only need to find the first lifetime
+    fields.iter().find_map(|of| of.tspec.find_lifetime())
+}
+
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum OneofType<'a> {
     Enum {
@@ -152,6 +157,23 @@ pub(crate) enum OneofType<'a> {
         field: CustomField,
         nums: Vec<i32>,
     },
+}
+
+impl OneofType<'_> {
+    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
+        match self {
+            OneofType::Custom {
+                field: CustomField::Type(ty),
+                ..
+            } => find_lifetime_from_type(ty),
+            OneofType::Custom {
+                field: CustomField::Delegate(..),
+                ..
+            } => None,
+
+            OneofType::Enum { fields, .. } => find_oneof_field_lifetime(fields),
+        }
+    }
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -169,20 +191,11 @@ pub(crate) struct Oneof<'a> {
     pub(crate) derive_partial_eq: bool,
     pub(crate) derive_clone: bool,
     pub(crate) encoded_max_size: Option<usize>,
+    pub(crate) lifetime: Option<Lifetime>,
     pub(crate) idx: usize,
 }
 
 impl<'a> Oneof<'a> {
-    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
-        match &self.otype {
-            OneofType::Custom {
-                field: CustomField::Type(ty),
-                ..
-            } => find_lifetime_from_type(ty),
-            _ => None,
-        }
-    }
-
     pub(crate) fn from_proto(
         proto: &'a OneofDescriptorProto,
         oneof_conf: CurrentConfig,
@@ -219,9 +232,16 @@ impl<'a> Oneof<'a> {
             derive_dbg: oneof_conf.derive_dbg(),
             derive_partial_eq: oneof_conf.derive_partial_eq(),
             derive_clone: oneof_conf.derive_clone(),
+            lifetime: None,
             field_attrs,
             type_attrs,
         }))
+    }
+
+    /// Find lifetime and set the oneof's lifetime field
+    pub(crate) fn find_lifetime(&mut self) -> Option<&Lifetime> {
+        self.lifetime = self.otype.find_lifetime().cloned();
+        self.lifetime.as_ref()
     }
 
     pub(crate) fn generate_decl(&self, gen: &Generator) -> TokenStream {
@@ -235,11 +255,12 @@ impl<'a> Oneof<'a> {
                 self.derive_clone,
             );
             let attrs = &self.type_attrs;
+            let lifetime = &self.lifetime;
 
             quote! {
                 #derive_msg
                 #(#attrs)*
-                pub enum #type_name {
+                pub enum #type_name<#lifetime> {
                     #(#fields)*
                 }
             }
@@ -252,8 +273,14 @@ impl<'a> Oneof<'a> {
         let name = &self.san_rust_name;
         let oneof_type = match &self.otype {
             OneofType::Enum { type_name, .. } => {
-                gen.wrapped_type(quote! { #msg_mod_name::#type_name }, self.boxed, true)
+                let lifetime = &self.lifetime;
+                gen.wrapped_type(
+                    quote! { #msg_mod_name::#type_name<#lifetime> },
+                    self.boxed,
+                    true,
+                )
             }
+            // Don't explicitly write lifetime for custom types, since it's already included
             OneofType::Custom {
                 field: CustomField::Type(type_path),
                 ..
@@ -514,6 +541,7 @@ mod tests {
                 derive_dbg: true,
                 derive_partial_eq: true,
                 derive_clone: true,
+                lifetime: None,
                 idx: 0
             }
         );
@@ -542,6 +570,7 @@ mod tests {
                 derive_dbg: false,
                 derive_partial_eq: true,
                 derive_clone: true,
+                lifetime: None,
                 idx: 0
             }
         );
@@ -564,6 +593,7 @@ mod tests {
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,
+            lifetime: None,
             idx: 0,
         };
         assert!(oneof.generate_decl(&gen).is_empty());
@@ -588,6 +618,7 @@ mod tests {
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,
+            lifetime: None,
             idx: 0,
         };
         assert!(oneof.generate_decl(&gen).is_empty());

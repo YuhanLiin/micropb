@@ -26,11 +26,6 @@ impl FieldEncode for RefField<'_> {
 
 #[test]
 fn type_check() {
-    let nested = proto::nested_::Nested::<'_> {
-        inner: RefField(&5),
-    };
-    let _: RefField = nested.inner;
-
     let inner = proto::nested_::Nested_::InnerMsg {
         val: Default::default(),
         val2: Default::default(),
@@ -38,4 +33,7 @@ fn type_check() {
         _unknown: Some(RefField(&12)),
     };
     let _: Option<RefField> = inner._unknown;
+
+    let nested = proto::nested_::Nested::<'_> { inner: None };
+    let _: Option<proto::nested_::Nested_::Inner<'_>> = nested.inner;
 }

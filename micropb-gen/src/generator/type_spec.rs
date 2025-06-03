@@ -157,6 +157,16 @@ pub(crate) enum TypeSpec {
 }
 
 impl TypeSpec {
+    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
+        match self {
+            TypeSpec::Message(_, lifetime) => lifetime.as_ref(),
+            TypeSpec::Bytes { type_path, .. } | TypeSpec::String { type_path, .. } => {
+                find_lifetime_from_type(type_path)
+            }
+            _ => None,
+        }
+    }
+
     fn max_size(&self) -> Option<usize> {
         match self {
             TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),

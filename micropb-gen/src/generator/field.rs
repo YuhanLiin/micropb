@@ -26,7 +26,7 @@ pub(crate) enum FieldType {
     Map {
         key: TypeSpec,
         val: TypeSpec,
-        type_path: syn::Path,
+        type_path: syn::Type,
         max_len: Option<u32>,
     },
     // Implicit presence
@@ -70,6 +70,18 @@ impl<'a> Field<'a> {
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match &self.ftype {
             FieldType::Custom(CustomField::Type(ty)) => find_lifetime_from_type(ty),
+            FieldType::Single(tspec) | FieldType::Optional(tspec, _) => tspec.find_lifetime(),
+            FieldType::Repeated { typ, type_path, .. } => {
+                find_lifetime_from_type(type_path).or_else(|| typ.find_lifetime())
+            }
+            FieldType::Map {
+                key,
+                val,
+                type_path,
+                ..
+            } => find_lifetime_from_type(type_path)
+                .or_else(|| key.find_lifetime())
+                .or_else(|| val.find_lifetime()),
             _ => None,
         }
     }

@@ -117,7 +117,7 @@ impl<'a> Message<'a> {
         }
 
         // Remove all oneofs that are empty enums or synthetic oneofs
-        let oneofs: Vec<_> = oneofs
+        let mut oneofs: Vec<_> = oneofs
             .into_iter()
             .filter(|o| !matches!(&o.otype, OneofType::Enum { fields, .. } if fields.is_empty()))
             .filter(|o| !synthetic_oneof_idx.contains(&o.idx))
@@ -136,7 +136,7 @@ impl<'a> Message<'a> {
         let lifetime = fields
             .iter()
             .find_map(|f| f.find_lifetime())
-            .or_else(|| oneofs.iter().find_map(|o| o.find_lifetime()))
+            .or_else(|| oneofs.iter_mut().find_map(|o| o.find_lifetime()))
             .or_else(|| unknown_handler.as_ref().and_then(find_lifetime_from_type))
             .cloned();
 
@@ -744,6 +744,7 @@ mod tests {
                     derive_dbg: false,
                     derive_partial_eq: true,
                     derive_clone: true,
+                    lifetime: None,
                     idx: 0
                 }],
                 fields: vec![
