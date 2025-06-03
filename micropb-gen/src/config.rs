@@ -218,36 +218,35 @@ config_decl! {
     /// This config not apply to elements of repeated and `map` fields.
     boxed: Option<bool>,
 
-    /// Container type that's generated for `bytes` and repeated fields. The provided type must
-    /// implement `PbVec`.
+    /// Container type that's generated for repeated fields.
     ///
-    /// If the provided type is fixed-capacity, such as `ArrayVec`, then it should have type
-    /// parameters `<T, N: usize>`, where `T` is the element type and `N` is the capacity. If the
-    /// type is dynamic-capacity, such as `Vec`, it should have a type parameter `<T>`.
+    /// For decoding, the provided type must implement `PbVec`. For encoding, the type must
+    /// implement `Deref<[T]>`.
     ///
-    /// The string provided to this call should not include any type parameters, since they will be
-    /// filled in by the generator. Specifically, `T` will be the element type for repeated fields
-    /// or `u8` for `bytes` fields, and `N` will be [`max_len`](Config::max_len) or
-    /// [`max_bytes`](Config::max_bytes) if set.
+    /// If the provided type contains the sequence `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field. Similarly, the sequence `$T`
+    /// will be substituted for the type of the repeated element.
     ///
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::IntSize};
     /// # let mut gen = micropb_gen::Generator::new();
-    /// // `bytes` field configured to `Vec<u8>` (dynamic-capacity)
-    /// gen.configure(".pkg.Message.bytes_field", Config::new().vec_type("Vec"));
-    /// // repeated field configured to `arrayvec::ArrayVec<T, 5>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.list", Config::new().vec_type("arrayvec::ArrayVec").max_len(5));
+    /// // assuming that .pkg.Message.list is a repeated field of booleans:
+    ///
+    /// // repeated field configured to `Vec<bool>` (dynamic-capacity)
+    /// gen.configure(".pkg.Message.list", Config::new().vec_type("Vec<$T>"));
+    /// // repeated field configured to `arrayvec::ArrayVec<bool, 5>` (fixed-capacity)
+    /// gen.configure(".pkg.Message.list", Config::new().vec_type("arrayvec::ArrayVec<$T, $N>").max_len(5));
     /// ```
     vec_type: [deref] Option<String>,
 
-    /// Container type that's generated for `string` fields. The provided type must implement
-    /// `PbBytes`.
+    /// Container type that's generated for `string` fields.
     ///
-    /// If the provided type contains the string `$N`, it will be substituted for the value of
-    /// [`max_bytes`](Config::max_bytes) if it's set for this field. For example, if the provided
-    /// type is `ArrayString<$N>` and `max_bytes` is 8, then the generated type of the field will
-    /// be `ArrayString<8>`.
+    /// For decoding, the provided type must implement `PbBytes`. For encoding, the type must
+    /// implement `Deref<str>`.
+    ///
+    /// If the provided type contains the sequence `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field.
     ///
     /// # Example
     /// ```no_run
@@ -260,27 +259,43 @@ config_decl! {
     /// ```
     string_type: [deref] Option<String>,
 
+    /// Container type that's generated for `bytes` fields.
+    ///
+    /// For decoding, the provided type must implement `PbBytes`. For encoding, the type must
+    /// implement `Deref<[u8]>`.
+    ///
+    /// If the provided type contains the sequence `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use micropb_gen::{Generator, Config};
+    /// # let mut gen = micropb_gen::Generator::new();
+    /// // `bytes` field configured to `Vec<u8>` (dynamic-capacity)
+    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("Vec<u8>"));
+    /// // `bytes` field configured to `Vec<u8, 4>` (fixed-capacity)
+    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("Vec<u8, $N>").max_bytes(4));
+    /// ```
     bytes_type: [deref] Option<String>,
 
-    /// Container type that's generated for `map` fields. The provided type must implement `PbMap`.
+    /// Container type that's generated for `map` fields.
     ///
-    /// If the provided type is fixed-capacity, such as `FnvIndexMap`, then it should have type
-    /// parameters `<K, V, N: usize>`, where `K` is the key type, `V` is the value type, and `N` is
-    /// the capacity. If the type is dynamic-capacity, such as `BTreeMap`, it should have a type
-    /// parameters `<K, V>`.
+    /// The provided type must implement `PbMap`.
     ///
-    /// The string provided to this call should not include any type parameters, since they will be
-    /// filled in by the generator. Specifically, `K` and `V` will be the key and value types, and
-    /// `N` will be [`max_len`](Config::max_len) if set.
+    /// If the provided type contains the sequence `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field. Similarly, the sequences `$K`
+    /// and `$V` will be substituted for the types of the map key and value respectively.
     ///
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::IntSize};
     /// # let mut gen = micropb_gen::Generator::new();
-    /// // `map` field configured to `BTreeMap<K, V>` (dynamic-capacity)
-    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("BTreeMap"));
-    /// // `map` field configured to `FnvIndexMap<K, V, 4>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap").max_len(4));
+    /// // assume that .pkg.Message.map_field is a `map<int32, float>`:
+    ///
+    /// // `map` field configured to `BTreeMap<i32, f32>` (dynamic-capacity)
+    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("BTreeMap<$K, $V>"));
+    /// // `map` field configured to `FnvIndexMap<i32, f32, 4>` (fixed-capacity)
+    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap<$K, $V, $N>").max_len(4));
     /// ```
     map_type: [deref] Option<String>,
 
