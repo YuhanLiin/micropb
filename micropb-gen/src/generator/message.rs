@@ -411,7 +411,7 @@ impl<'a> Message<'a> {
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>>
                 {
-                    use ::micropb::{PbBytes, PbVec, PbMap, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
 
                     let before = #decoder.bytes_read();
                     while #decoder.bytes_read() - before < len {
