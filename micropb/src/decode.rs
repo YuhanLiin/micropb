@@ -1472,7 +1472,7 @@ mod tests {
             }
             #[test]
             fn proptest_fixedarray(data in bytes_strat(4..32)) {
-                check_bytes([u8; 16], data);
+                check_bytes([0u8; 16], data);
             }
         }
     }
