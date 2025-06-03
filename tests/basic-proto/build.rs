@@ -197,6 +197,26 @@ fn container_alloc() {
         .unwrap();
 }
 
+fn container_cow() {
+    let mut generator = Generator::new();
+    generator
+        .configure(
+            ".",
+            Config::new()
+                .string_type("::alloc::borrow::Cow<'a, str>")
+                .vec_type("::alloc::borrow::Cow<'a, [$T]>")
+                .bytes_type("::alloc::borrow::Cow<'a, [u8]>"),
+        )
+        .configure(".List.list", Config::new().field_lifetime("'a"));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/container_cow.rs",
+        )
+        .unwrap();
+}
+
 fn fixed_string_and_bytes() {
     let mut generator = Generator::new();
     generator.use_container_alloc();
@@ -411,6 +431,7 @@ fn main() {
     container_heapless();
     container_arrayvec();
     container_alloc();
+    container_cow();
     custom_field();
     implicit_presence();
     extern_import();

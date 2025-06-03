@@ -702,6 +702,8 @@ impl<R: PbRead> PbDecoder<R> {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use arrayvec::{ArrayString, ArrayVec};
 
     use crate::FixedLenString;
@@ -1169,6 +1171,7 @@ mod tests {
     container_test!(string, string_heapless, heapless::String::<4>, true, false);
     container_test!(string, string_alloc, String, false, false);
     container_test!(string, string_fixed_len, FixedLenString::<4>, true, true);
+    container_test!(string, string_cow, Cow::<'static, str>, true, true);
 
     fn bytes<S: PbBytes + AsRef<[u8]> + Default>(fixed_cap: bool, fixed_len: bool) {
         let mut bytes = S::default();
@@ -1217,6 +1220,7 @@ mod tests {
     container_test!(bytes, bytes_heapless, heapless::Vec::<_, 3>, true, false);
     container_test!(bytes, bytes_alloc, Vec<_>, false, false);
     container_test!(bytes, bytes_fixed, [u8; 3], true, true);
+    container_test!(bytes, bytes_cow, Cow::<'static, [u8]>, true, true);
 
     fn packed<S: PbVec<u32> + AsRef<[u32]> + Default>(fixed_cap: bool, _fixed_len: bool) {
         let mut vec1 = S::default();
@@ -1257,6 +1261,7 @@ mod tests {
     container_test!(packed, packed_arrayvec, ArrayVec::<_, 5>, true, false);
     container_test!(packed, packed_heapless, heapless::Vec::<_, 5>, true, false);
     container_test!(packed, packed_alloc, Vec<_>, false, false);
+    container_test!(packed, packed_cow, Cow::<'static, [_]>, true, true);
 
     //#[cfg(target_endian = "little")]
     //fn packed_fixed<S: PbVec<u32>>(fixed_cap: bool) {
@@ -1457,6 +1462,10 @@ mod tests {
             fn proptest_fixedstring(data in bytes_strat(4..32)) {
                 check_string(FixedLenString::<16>::default(), data);
             }
+            #[test]
+            fn proptest_cowstr(data in bytes_strat(4..32)) {
+                check_string(Cow::<str>::from(""), data);
+            }
 
             #[test]
             fn proptest_vec(data in bytes_strat(4..32)) {
@@ -1473,6 +1482,10 @@ mod tests {
             #[test]
             fn proptest_fixedarray(data in bytes_strat(4..32)) {
                 check_bytes([0u8; 16], data);
+            }
+            #[test]
+            fn proptest_cowarray(data in bytes_strat(4..32)) {
+                check_bytes(Cow::<[u8]>::from(b""), data);
             }
         }
     }

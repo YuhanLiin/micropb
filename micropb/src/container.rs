@@ -457,7 +457,7 @@ mod impl_alloc {
 
     impl<T> PbVec<T> for Cow<'_, [T]>
     where
-        [T]: ToOwned<Owned = Vec<T>>,
+        [T]: alloc::borrow::ToOwned<Owned = Vec<T>>,
     {
         fn pb_push(&mut self, elem: T) -> Result<(), ()> {
             self.to_mut().push(elem);
