@@ -4,7 +4,7 @@ use core::{
 };
 
 use crate::{
-    container::{PbBytes, PbVec},
+    container::{PbBytes, PbString, PbVec},
     misc::{
         maybe_uninit_slice_assume_init_ref, maybe_uninit_write_slice,
         maybe_ununit_array_assume_init,
@@ -459,7 +459,7 @@ impl<R: PbRead> PbDecoder<R> {
     /// If the length of the string on the wire exceeds the fixed capacity of the string container,
     /// return [`DecodeError::Capacity`]. If the string on the wire if not UTF-8, return
     /// [`DecodeError::Utf8`].
-    pub fn decode_string<S: PbBytes>(
+    pub fn decode_string<S: PbString>(
         &mut self,
         string: &mut S,
         presence: Presence,
@@ -702,11 +702,9 @@ impl<R: PbRead> PbDecoder<R> {
 
 #[cfg(test)]
 mod tests {
-    use core::ops::Deref;
-
     use arrayvec::{ArrayString, ArrayVec};
 
-    use crate::{FixedLenArray, FixedLenString};
+    use crate::FixedLenString;
 
     use super::*;
 
@@ -1061,7 +1059,7 @@ mod tests {
         (@testcase $pattern:pat $(if $guard:expr)?, $reader:expr, $func:ident ($container:ident $(, $($args:tt)+)?)) => {
             let mut decoder = PbDecoder::new($reader);
             let total = decoder.reader.len();
-            let res = decoder.$func(&mut $container, $($($args)+)?).map(|_| $container.deref());
+            let res = decoder.$func(&mut $container, $($($args)+)?).map(|_| $container.as_ref());
             println!("{} output = {res:?}", stringify!($reader));
             assert!(matches!(res, $pattern $(if $guard)?));
             // Check that the decoder is empty only when the decoding is successful
@@ -1092,7 +1090,7 @@ mod tests {
         };
     }
 
-    fn string<S: PbBytes + Deref<Target = str> + Default>(fixed_cap: bool, fixed_len: bool) {
+    fn string<S: PbString + AsRef<str> + Default>(fixed_cap: bool, fixed_len: bool) {
         let mut string = S::default();
         if fixed_len {
             assert_decode_vec!(
@@ -1137,7 +1135,7 @@ mod tests {
             decode_string(string, Presence::Explicit)
         );
         if fixed_len {
-            assert_eq!(string.deref(), "\0\0\0\0");
+            assert_eq!(string.as_ref(), "\0\0\0\0");
         }
         assert_decode_vec!(
             Err(DecodeError::UnexpectedEof),
@@ -1145,7 +1143,7 @@ mod tests {
             decode_string(string, Presence::Explicit)
         );
         if fixed_len {
-            assert_eq!(string.deref(), "\0\0\0\0");
+            assert_eq!(string.as_ref(), "\0\0\0\0");
         }
         if fixed_cap {
             assert_decode_vec!(
@@ -1155,7 +1153,7 @@ mod tests {
             );
         }
         if fixed_len {
-            assert_eq!(string.deref(), "\0\0\0\0");
+            assert_eq!(string.as_ref(), "\0\0\0\0");
         }
         assert_decode_vec!(
             Err(DecodeError::Utf8),
@@ -1163,7 +1161,7 @@ mod tests {
             decode_string(string, Presence::Explicit)
         );
         if fixed_len {
-            assert_eq!(string.deref(), "\0\0\0\0");
+            assert_eq!(string.as_ref(), "\0\0\0\0");
         }
     }
 
@@ -1172,7 +1170,7 @@ mod tests {
     container_test!(string, string_alloc, String, false, false);
     container_test!(string, string_fixed_len, FixedLenString::<4>, true, true);
 
-    fn bytes<S: PbBytes + Deref<Target = [u8]> + Default>(fixed_cap: bool, fixed_len: bool) {
+    fn bytes<S: PbBytes + AsRef<[u8]> + Default>(fixed_cap: bool, fixed_len: bool) {
         let mut bytes = S::default();
         if fixed_len {
             assert_decode_vec!(Ok(&[0, 0, 0]), [0], decode_bytes(bytes, Presence::Explicit));
@@ -1218,9 +1216,9 @@ mod tests {
     container_test!(bytes, bytes_arrayvec, ArrayVec::<_, 3>, true, false);
     container_test!(bytes, bytes_heapless, heapless::Vec::<_, 3>, true, false);
     container_test!(bytes, bytes_alloc, Vec<_>, false, false);
-    container_test!(bytes, bytes_fixed, FixedLenArray<u8, 3>, true, true);
+    container_test!(bytes, bytes_fixed, [u8; 3], true, true);
 
-    fn packed<S: PbVec<u32> + Default>(fixed_cap: bool, _fixed_len: bool) {
+    fn packed<S: PbVec<u32> + AsRef<[u32]> + Default>(fixed_cap: bool, _fixed_len: bool) {
         let mut vec1 = S::default();
         let mut vec2 = S::default();
         assert_decode_vec!(
@@ -1403,7 +1401,7 @@ mod tests {
             };
         }
 
-        fn check_string(mut string: impl PbBytes + Clone, data: Vec<u8>) {
+        fn check_string(mut string: impl PbString + Clone, data: Vec<u8>) {
             let mut string_cl = string.clone();
             let mut decoder = PbDecoder::new(data.as_slice());
             let _ = decoder.decode_string(&mut string, Presence::Implicit);

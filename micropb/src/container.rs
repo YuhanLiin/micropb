@@ -10,13 +10,12 @@
 //! For convenience, container trait implementations on existing types are provided in this module,
 //! gated by feature flags.
 //!
-//! - For `heapless`, [`PbBytes`], [`PbVec`], and [`PbMap`] are
+//! - For `heapless`, [`PbString`], [`PbBytes`], [`PbVec`], and [`PbMap`] are
 //!   implemented on `heapless::String`, `heapless::Vec`, and `heapless::IndexMap`.
-//! - For `arrayvec`, [`PbBytes`] and [`PbVec`] are implemented on `arrayvec::ArrayString` and
-//!   `arrayvec::ArrayVec`.
-//! - For `alloc`, [`PbBytes`], [`PbVec`], and [`PbMap`] are implemented on `String`, `Vec`,
-//!   and `BTreeMap`. If `std` is enabled, [`PbMap`] is also implemented for
-//!   `HashMap`.
+//! - For `arrayvec`, [`PbString`], [`PbBytes`], and [`PbVec`] are implemented on
+//!   `arrayvec::ArrayString` and `arrayvec::ArrayVec`.
+//! - For `alloc`, [`PbString`], [`PbBytes`], [`PbVec`], and [`PbMap`] are implemented on `String`,
+//!   `Vec`, and `BTreeMap`. If `std` is enabled, [`PbMap`] is also implemented for `HashMap`.
 //!
 //! It is also possible to use other types as containers if the container traits are implemented.
 
@@ -24,16 +23,16 @@
 
 use core::{mem::MaybeUninit, ops::Deref};
 
-/// Container that stores sequence of bytes.
+/// Container that stores a string. Represents Protobuf `string` field.
 ///
-/// Represents bytes or string field. If used to store a string, then the bytes in the container
-/// must be valid UTF-8.
-pub trait PbBytes {
+/// # Safety
+/// The bytes in the container must be valid UTF-8.
+pub trait PbString {
     /// Sets length of container (number of elements).
     ///
     /// # Safety
     /// New length must be smaller than the total capacity, and the elements between the old and
-    /// new lengths must be initialized and valid.
+    /// new lengths must be initialized and valid UTF-8.
     unsafe fn pb_set_len(&mut self, len: usize);
 
     /// Reserves capacity for at least `additional` more elements to be inserted. No-op for
@@ -54,19 +53,23 @@ pub trait PbBytes {
     fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>];
 }
 
-/// Generic vector that stores multiple elements.
+/// Container that stores a sequence of arbitrary bytes. Represents Protobuf `bytes` field.
 ///
-/// Represents repeated field.
-pub trait PbVec<T>: Deref<Target = [T]> {
+/// `PbBytes` is a subtrait of [`PbString`] because the set of containers that can safely hold any
+/// byte pattern is a subset of the set of containers that can safely hold a UTF-8 byte pattern.
+/// **As such, this trait essentially "lifts" the UTF-8 safety constraint from `PbString`.**
+/// Container types used for `bytes` fields will implement both `PbString` and `PbBytes`.
+pub trait PbBytes: PbString {}
+
+/// Generic vector that stores multiple elements. Represents repeated field.
+pub trait PbVec<T> {
     /// Push a new element to the back of the vector.
     ///
     /// Returns error if the fixed capacity is already full.
     fn pb_push(&mut self, elem: T) -> Result<(), ()>;
 }
 
-/// Map that stores key-value pairs.
-///
-/// Represents Protobuf `map` field.
+/// Map that stores key-value pairs. Represents Protobuf `map` field.
 pub trait PbMap<K, V> {
     /// Iterator for looping through each key-value pair in the map
     type Iter<'a>: Iterator<Item = (&'a K, &'a V)>
@@ -105,7 +108,7 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
-    impl<const N: usize> PbBytes for FixedLenString<N> {
+    impl<const N: usize> PbString for FixedLenString<N> {
         #[inline]
         unsafe fn pb_set_len(&mut self, _len: usize) {}
 
@@ -143,6 +146,18 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
+    impl<const N: usize> AsRef<str> for FixedLenString<N> {
+        fn as_ref(&self) -> &str {
+            self
+        }
+    }
+
+    impl<const N: usize> AsMut<str> for FixedLenString<N> {
+        fn as_mut(&mut self) -> &mut str {
+            self
+        }
+    }
+
     impl<const N: usize> TryFrom<&str> for FixedLenString<N> {
         type Error = TryFromSliceError;
 
@@ -158,69 +173,19 @@ pub(crate) mod impl_fixed_len {
         }
     }
 
-    /// Array with fixed length, used for representing Protobuf `bytes` fields with constant size.
-    ///
-    /// Essentially a wrapper over `[T; N]`. Length information is not included in the array, so
-    /// this type saves memory compared to dynamically-sized arrays, even those with fixed capacity.     
-    ///
-    /// Default value is all zeroes.
-    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
-    pub struct FixedLenArray<T: Copy, const N: usize>([T; N]);
-
-    impl<T: Copy + Default, const N: usize> Default for FixedLenArray<T, N> {
-        fn default() -> Self {
-            Self([T::default(); N])
-        }
-    }
-
-    impl<T: Copy, const N: usize> PbBytes for FixedLenArray<T, N> {
+    /// Allow byte array to be used for `bytes` fields with fixed length
+    impl<const N: usize> PbBytes for [u8; N] {}
+    impl<const N: usize> PbString for [u8; N] {
         #[inline]
         unsafe fn pb_set_len(&mut self, _len: usize) {}
 
         #[inline]
         fn pb_clear(&mut self) {}
 
+        #[inline]
         fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
             // SAFETY: Converting to MaybeUninit is always safe
-            unsafe {
-                core::slice::from_raw_parts_mut(self.0.as_mut_ptr() as *mut MaybeUninit<u8>, N)
-            }
-        }
-    }
-
-    impl<T: Copy, const N: usize> Deref for FixedLenArray<T, N> {
-        type Target = [T];
-
-        #[inline]
-        fn deref(&self) -> &Self::Target {
-            self.0.as_slice()
-        }
-    }
-
-    impl<T: Copy, const N: usize> DerefMut for FixedLenArray<T, N> {
-        #[inline]
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            self.0.as_mut_slice()
-        }
-    }
-
-    impl<T: Copy, const N: usize> From<[T; N]> for FixedLenArray<T, N> {
-        fn from(value: [T; N]) -> Self {
-            Self(value)
-        }
-    }
-
-    impl<T: Copy, const N: usize> From<FixedLenArray<T, N>> for [T; N] {
-        fn from(value: FixedLenArray<T, N>) -> Self {
-            value.0
-        }
-    }
-
-    impl<T: Copy, const N: usize> TryFrom<&[T]> for FixedLenArray<T, N> {
-        type Error = TryFromSliceError;
-
-        fn try_from(value: &[T]) -> Result<Self, Self::Error> {
-            Ok(Self(value.try_into()?))
+            unsafe { core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<u8>, N) }
         }
     }
 }
@@ -233,7 +198,8 @@ mod impl_arrayvec {
 
     use arrayvec::{ArrayString, ArrayVec};
 
-    impl<const N: usize> PbBytes for ArrayVec<u8, N> {
+    impl<const N: usize> PbBytes for ArrayVec<u8, N> {}
+    impl<const N: usize> PbString for ArrayVec<u8, N> {
         #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.set_len(len)
@@ -256,7 +222,7 @@ mod impl_arrayvec {
         }
     }
 
-    impl<const N: usize> PbBytes for ArrayString<N> {
+    impl<const N: usize> PbString for ArrayString<N> {
         #[inline]
         unsafe fn pb_set_len(&mut self, len: usize) {
             self.set_len(len)
@@ -296,7 +262,8 @@ mod impl_heapless {
 
     use heapless::{IndexMap, IndexMapIter, String, Vec};
 
-    impl<const N: usize> PbBytes for Vec<u8, N> {
+    impl<const N: usize> PbBytes for Vec<u8, N> {}
+    impl<const N: usize> PbString for Vec<u8, N> {
         #[inline]
         fn pb_clear(&mut self) {
             self.clear()
@@ -319,7 +286,7 @@ mod impl_heapless {
         }
     }
 
-    impl<const N: usize> PbBytes for String<N> {
+    impl<const N: usize> PbString for String<N> {
         #[inline]
         fn pb_clear(&mut self) {
             self.clear()
@@ -382,7 +349,8 @@ mod impl_alloc {
         vec::Vec,
     };
 
-    impl PbBytes for Vec<u8> {
+    impl PbBytes for Vec<u8> {}
+    impl PbString for Vec<u8> {
         #[inline]
         fn pb_clear(&mut self) {
             self.clear()
@@ -421,7 +389,7 @@ mod impl_alloc {
     //}
     //}
 
-    impl PbBytes for String {
+    impl PbString for String {
         #[inline]
         fn pb_clear(&mut self) {
             self.clear()
