@@ -54,7 +54,7 @@ impl EncodeDecode {
 type WarningCb = fn(fmt::Arguments);
 
 fn warn_cargo_build(args: fmt::Arguments) {
-    println!("cargo:warning={args}");
+    println!("cargo::warning={args}");
 }
 
 #[allow(clippy::new_without_default)]
