@@ -9,6 +9,8 @@
 - Add `MAX_SIZE` associated constant to `MessageEncode` trait, which statically computes the max size of a message on the wire
 - Add `PbBytes` trait and `bytes_type` configuration
 - Add `field_lifetime` configuration to set lifetime of message fields
+- Add container trait impls for `Cow`
+- Add const constructor `_new` to hazzer structs and add const to all hazzer methods
 
 ### Changed
 
