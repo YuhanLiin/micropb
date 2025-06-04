@@ -1171,7 +1171,7 @@ mod tests {
     container_test!(string, string_heapless, heapless::String::<4>, true, false);
     container_test!(string, string_alloc, String, false, false);
     container_test!(string, string_fixed_len, FixedLenString::<4>, true, true);
-    container_test!(string, string_cow, Cow::<'static, str>, true, true);
+    container_test!(string, string_cow, Cow::<'static, str>, false, false);
 
     fn bytes<S: PbBytes + AsRef<[u8]> + Default>(fixed_cap: bool, fixed_len: bool) {
         let mut bytes = S::default();
@@ -1220,7 +1220,7 @@ mod tests {
     container_test!(bytes, bytes_heapless, heapless::Vec::<_, 3>, true, false);
     container_test!(bytes, bytes_alloc, Vec<_>, false, false);
     container_test!(bytes, bytes_fixed, [u8; 3], true, true);
-    container_test!(bytes, bytes_cow, Cow::<'static, [u8]>, true, true);
+    container_test!(bytes, bytes_cow, Cow::<'static, [u8]>, false, false);
 
     fn packed<S: PbVec<u32> + AsRef<[u32]> + Default>(fixed_cap: bool, _fixed_len: bool) {
         let mut vec1 = S::default();
@@ -1261,7 +1261,7 @@ mod tests {
     container_test!(packed, packed_arrayvec, ArrayVec::<_, 5>, true, false);
     container_test!(packed, packed_heapless, heapless::Vec::<_, 5>, true, false);
     container_test!(packed, packed_alloc, Vec<_>, false, false);
-    container_test!(packed, packed_cow, Cow::<'static, [_]>, true, true);
+    container_test!(packed, packed_cow, Cow::<'static, [_]>, false, false);
 
     //#[cfg(target_endian = "little")]
     //fn packed_fixed<S: PbVec<u32>>(fixed_cap: bool) {
