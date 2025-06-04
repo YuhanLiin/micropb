@@ -9,6 +9,8 @@ mod container_alloc;
 #[cfg(test)]
 mod container_arrayvec;
 #[cfg(test)]
+mod container_cow;
+#[cfg(test)]
 mod container_heapless;
 #[cfg(test)]
 mod custom_field;
@@ -38,3 +40,5 @@ mod no_config;
 mod recursive;
 #[cfg(test)]
 mod skip;
+#[cfg(test)]
+mod static_lifetime_fields;

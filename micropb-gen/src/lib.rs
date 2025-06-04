@@ -172,10 +172,10 @@ impl Generator {
     ///
     /// If using this option, `micropb` should have the `container-heapless` feature enabled.
     ///
-    /// Specifically, `heapless::String` is generated for `string` fields, `heapless::Vec` is
-    /// generated for `bytes` and repeated fields, and `heapless::FnvIndexMap` is generated for
-    /// `map` fields. This uses [`configure`](Self::configure) under the hood, so configurations
-    /// set by this call can all be overriden by future configurations.
+    /// Specifically, `heapless::String<N>` is generated for `string` fields, `heapless::Vec<u8, N>`
+    /// for `bytes` fields, `heapless::Vec<T, N>` for repeated fields, and
+    /// `heapless::FnvIndexMap<K, V, N>` for `map` fields. This uses [`configure`](Self::configure)
+    /// under the hood, so configurations set by this call can all be overriden.
     ///
     /// # Note
     /// Since `heapless` containers are fixed size, [`max_len`](Config::max_len) or
@@ -184,9 +184,10 @@ impl Generator {
         self.configure(
             ".",
             Config::new()
-                .vec_type("::micropb::heapless::Vec")
-                .string_type("::micropb::heapless::String")
-                .map_type("::micropb::heapless::FnvIndexMap"),
+                .vec_type("::micropb::heapless::Vec<$T, $N>")
+                .string_type("::micropb::heapless::String<$N>")
+                .bytes_type("::micropb::heapless::Vec<u8, $N>")
+                .map_type("::micropb::heapless::FnvIndexMap<$K, $V, $N>"),
         );
         self
     }
@@ -196,15 +197,15 @@ impl Generator {
     ///
     /// If using this option, `micropb` should have the `container-arrayvec` feature enabled.
     ///
-    /// Specifically, `arrayvec::ArrayString` is generated for `string` fields, and
-    /// `arrayvec::ArrayVec` is generated for `bytes` and repeated fields. This uses
-    /// [`configure`](Self::configure) under the hood, so configurations set by this call can all
-    /// be overriden by future configurations.
+    /// Specifically, `arrayvec::ArrayString<N>` is generated for `string` fields,
+    /// `arrayvec::ArrayVec<u8, N>` for `bytes` fields, and `arrayvec::ArrayVec<T, N>` for repeated
+    /// fields. This uses [`configure`](Self::configure) under the hood, so configurations set by
+    /// this call can all be overriden.
     ///
     /// # Note
     /// No container is configured for `map` fields, since `arrayvec` doesn't have a suitable map
-    /// type. If the .proto files contain `map` fields, [`map_type`](Config::map_type) needs to be
-    /// configured separately.
+    /// type. If the .proto files contain `map` fields, [`map_type`](Config::map_type) will need to
+    /// be configured separately.
     ///
     /// Since `arrayvec` containers are fixed size, [`max_len`](Config::max_len) or
     /// [`max_bytes`](Config::max_bytes) must be set for all fields that generate these containers.
@@ -212,8 +213,9 @@ impl Generator {
         self.configure(
             ".",
             Config::new()
-                .vec_type("::micropb::arrayvec::ArrayVec")
-                .string_type("::micropb::arrayvec::ArrayString"),
+                .vec_type("::micropb::arrayvec::ArrayVec<$T, $N>")
+                .bytes_type("::micropb::arrayvec::ArrayVec<u8, $N>")
+                .string_type("::micropb::arrayvec::ArrayString<$N>"),
         );
         self
     }
@@ -223,22 +225,19 @@ impl Generator {
     ///
     /// If using this option, `micropb` should have the `alloc` feature enabled.
     ///
-    /// Specifically, `alloc::string::String` is generated for `string` fields, `alloc::vec::Vec`
-    /// is generated for `bytes` and repeated fields, and `alloc::collections::BTreeMap` is
-    /// generated for `map` fields. This uses [`configure`](Self::configure) under the hood, so
-    /// configurations set by this call can all be overriden by future configurations.
-    ///
-    /// # Note
-    /// Since `alloc` containers are dynamic size, [`max_len`](Config::max_bytes) and
-    /// [`max_bytes`](Config::max_bytes) must NOT be set for all fields that generate these
-    /// containers.
+    /// Specifically, `alloc::string::String` is generated for `string` fields,
+    /// `alloc::vec::Vec<u8>` is for `bytes` fields, `alloc::vec::Vec<T>` for repeated fields, and
+    /// `alloc::collections::BTreeMap<K, V>` for `map` fields. This uses
+    /// [`configure`](Self::configure) under the hood, so configurations set by this call can all
+    /// be overriden by future configurations.
     pub fn use_container_alloc(&mut self) -> &mut Self {
         self.configure(
             ".",
             Config::new()
-                .vec_type("::alloc::vec::Vec")
+                .vec_type("::alloc::vec::Vec<$T>")
+                .bytes_type("::alloc::vec::Vec::<u8>")
                 .string_type("::alloc::string::String")
-                .map_type("::alloc::collections::BTreeMap"),
+                .map_type("::alloc::collections::BTreeMap<$K, $V>"),
         );
         self
     }
@@ -248,22 +247,19 @@ impl Generator {
     ///
     /// If using this option, `micropb` should have the `std` feature enabled.
     ///
-    /// Specifically, `std::string::String` is generated for `string` fields, `std::vec::Vec`
-    /// is generated for `bytes` and repeated fields, and `std::collections::HashMap` is
-    /// generated for `map` fields. This uses [`configure`](Self::configure) under the hood, so
-    /// configurations set by this call can all be overriden by future configurations.
-    ///
-    /// # Note
-    /// Since `std` containers are dynamic size, [`max_len`](Config::max_bytes) and
-    /// [`max_bytes`](Config::max_bytes) must NOT be set for all fields that generate these
-    /// containers.
+    /// Specifically, `std::string::String` is generated for `string` fields, `std::vec::Vec<u8>`
+    /// for `bytes` fields, `std::vec::Vec<T>` for repeated fields, and
+    /// `std::collections::HashMap<K, V>` for `map` fields. This uses
+    /// [`configure`](Self::configure) under the hood, so configurations set by this call can all
+    /// be overriden by future configurations.
     pub fn use_container_std(&mut self) -> &mut Self {
         self.configure(
             ".",
             Config::new()
-                .vec_type("::std::vec::Vec")
+                .vec_type("::std::vec::Vec<$T>")
+                .bytes_type("::std::vec::Vec::<u8>")
                 .string_type("::std::string::String")
-                .map_type("::std::collections::HashMap"),
+                .map_type("::std::collections::HashMap<$K, $V>"),
         );
         self
     }

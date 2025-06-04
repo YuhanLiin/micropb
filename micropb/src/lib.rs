@@ -22,9 +22,9 @@ pub mod size;
 pub use ::arrayvec;
 #[cfg(feature = "container-heapless")]
 pub use ::heapless;
-pub use container::impl_fixed_len::{FixedLenArray, FixedLenString};
+pub use container::impl_fixed_len::FixedLenString;
 
-pub use container::{PbContainer, PbMap, PbString, PbVec};
+pub use container::{PbBytes, PbMap, PbString, PbVec};
 #[cfg(feature = "decode")]
 pub use decode::{DecodeError, PbDecoder, PbRead};
 #[cfg(feature = "encode")]

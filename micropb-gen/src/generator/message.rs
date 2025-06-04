@@ -77,7 +77,7 @@ impl<'a> Message<'a> {
                 .map(|(_, r)| r)
                 .unwrap_or(&f.type_name);
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, gen.syntax, Some(map_msg))
+                Field::from_proto(f, &field_conf, gen, Some(map_msg))
                     .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             } else {
                 if let Some(idx) = f.oneof_index().copied() {
@@ -108,7 +108,7 @@ impl<'a> Message<'a> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, gen.syntax, None)
+                Field::from_proto(f, &field_conf, gen, None)
                     .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {
@@ -117,7 +117,7 @@ impl<'a> Message<'a> {
         }
 
         // Remove all oneofs that are empty enums or synthetic oneofs
-        let oneofs: Vec<_> = oneofs
+        let mut oneofs: Vec<_> = oneofs
             .into_iter()
             .filter(|o| !matches!(&o.otype, OneofType::Enum { fields, .. } if fields.is_empty()))
             .filter(|o| !synthetic_oneof_idx.contains(&o.idx))
@@ -136,7 +136,7 @@ impl<'a> Message<'a> {
         let lifetime = fields
             .iter()
             .find_map(|f| f.find_lifetime())
-            .or_else(|| oneofs.iter().find_map(|o| o.find_lifetime()))
+            .or_else(|| oneofs.iter_mut().find_map(|o| o.find_lifetime()))
             .or_else(|| unknown_handler.as_ref().and_then(find_lifetime_from_type))
             .cloned();
 
@@ -185,13 +185,13 @@ impl<'a> Message<'a> {
             quote! {
                 #[doc = #getter_doc]
                 #[inline]
-                pub fn #fname(&self) -> bool {
+                pub const fn #fname(&self) -> bool {
                     (self.0[#idx] & #mask) != 0
                 }
 
                 #[doc = #setter_doc]
                 #[inline]
-                pub fn #setter(&mut self) -> &mut Self {
+                pub const fn #setter(&mut self) -> &mut Self {
                     let elem = &mut self.0[#idx];
                     *elem |= #mask;
                     self
@@ -199,7 +199,7 @@ impl<'a> Message<'a> {
 
                 #[doc = #clearer_doc]
                 #[inline]
-                pub fn #clearer(&mut self) -> &mut Self {
+                pub const fn #clearer(&mut self) -> &mut Self {
                     let elem = &mut self.0[#idx];
                     *elem &= !#mask;
                     self
@@ -207,7 +207,7 @@ impl<'a> Message<'a> {
 
                 #[doc = #init_doc]
                 #[inline]
-                pub fn #init(mut self) -> Self {
+                pub const fn #init(mut self) -> Self {
                     self.#setter();
                     self
                 }
@@ -221,6 +221,12 @@ impl<'a> Message<'a> {
             pub struct #hazzer_name([u8; #bytes]);
 
             impl #hazzer_name {
+                #[doc = "New hazzer with all fields set to off"]
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; #bytes])
+                }
+
                 #(#methods)*
             }
         };
@@ -411,7 +417,7 @@ impl<'a> Message<'a> {
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>>
                 {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
 
                     let before = #decoder.bytes_read();
                     while #decoder.bytes_read() - before < len {
@@ -505,13 +511,13 @@ impl<'a> Message<'a> {
                     encoder: &mut ::micropb::PbEncoder<IMPL_MICROPB_WRITE>,
                 ) -> Result<(), IMPL_MICROPB_WRITE::Error>
                 {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
+                    use ::micropb::{PbMap, FieldEncode};
                     #encode
                     Ok(())
                 }
 
                 fn compute_size(&self) -> usize {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldEncode};
+                    use ::micropb::{PbMap, FieldEncode};
                     let mut size = 0;
                     #sizeof
                     size
@@ -744,6 +750,7 @@ mod tests {
                     derive_dbg: false,
                     derive_partial_eq: true,
                     derive_clone: true,
+                    lifetime: None,
                     idx: 0
                 }],
                 fields: vec![

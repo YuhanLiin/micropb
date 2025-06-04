@@ -3,6 +3,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     ffi::OsString,
+    fmt::Display,
     io,
     path::PathBuf,
 };
@@ -92,12 +93,12 @@ fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
     }
 }
 
-fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: &str) -> io::Error {
+fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> io::Error {
     let dot = if pkg.is_empty() { "" } else { "." };
     io::Error::other(format!("({dot}{pkg}.{msg_name}.{field_name}) {err_text}"))
 }
 
-fn msg_error(pkg: &str, msg_name: &str, err_text: &str) -> io::Error {
+fn msg_error(pkg: &str, msg_name: &str, err_text: impl Display) -> io::Error {
     let dot = if pkg.is_empty() { "" } else { "." };
     io::Error::other(format!("({dot}{pkg}.{msg_name}) {err_text}"))
 }

@@ -197,21 +197,36 @@ fn container_alloc() {
         .unwrap();
 }
 
+fn container_cow() {
+    let mut generator = Generator::new();
+    generator
+        .configure(
+            ".",
+            Config::new()
+                .string_type("::alloc::borrow::Cow<'a, str>")
+                .vec_type("::alloc::borrow::Cow<'a, [$T]>")
+                .bytes_type("::alloc::borrow::Cow<'a, [u8]>"),
+        )
+        .configure(".List.list", Config::new().field_lifetime("'a"));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/container_cow.rs",
+        )
+        .unwrap();
+}
+
 fn fixed_string_and_bytes() {
     let mut generator = Generator::new();
     generator.use_container_alloc();
     generator.configure(
         ".Data.s",
         Config::new()
-            .string_type("::micropb::FixedLenString")
+            .string_type("::micropb::FixedLenString<$N>")
             .max_bytes(3),
     );
-    generator.configure(
-        ".Data.b",
-        Config::new()
-            .vec_type("::micropb::FixedLenArray")
-            .max_bytes(2),
-    );
+    generator.configure(".Data.b", Config::new().bytes_type("[u8; $N]").max_bytes(2));
 
     generator
         .compile_protos(
@@ -300,30 +315,64 @@ fn lifetime_fields() {
     let mut generator = Generator::new();
     generator.encode_decode(EncodeDecode::EncodeOnly);
     generator.configure(".", Config::new().no_debug_impl(true).no_default_impl(true));
-    generator.configure(
-        ".nested.Nested.inner",
-        Config::new().custom_field(CustomField::Type(
-            "crate::lifetime_fields::RefField<'a>".to_owned(),
-        )),
-    );
-    generator.configure(
-        ".nested.Nested.basic",
-        Config::new().custom_field(CustomField::Delegate("inner".to_owned())),
-    );
+    // InnerMsg has a lifetime param
     generator.configure(
         ".nested.Nested.InnerMsg",
         Config::new().unknown_handler("Option<crate::lifetime_fields::RefField<'a>>"),
     );
+    // So the inner_msg field must have a lifetime
     generator.configure(
-        ".basic.BasicTypes.int32_num",
-        Config::new().custom_field(CustomField::Type(
-            "crate::lifetime_fields::RefField<'a>".to_owned(),
-        )),
+        ".nested.Nested.inner_msg",
+        Config::new().field_lifetime("'a"),
     );
+    generator.configure(".nested.Nested.basic", Config::new().skip(true));
+
+    // Configurations for collections.proto
+    generator
+        .configure(
+            ".",
+            Config::new()
+                .string_type("&'a str")
+                .bytes_type("&'a [u8]")
+                .vec_type("&'a [$T]")
+                .map_type("&'a std::collections::HashMap<$K, $V>"),
+        )
+        .configure(".List.list", Config::new().field_lifetime("'a"));
+
     generator
         .compile_protos(
-            &["proto/basic.proto", "proto/nested.proto"],
+            &[
+                "proto/basic.proto",
+                "proto/nested.proto",
+                "proto/collections.proto",
+                "proto/map.proto",
+            ],
             std::env::var("OUT_DIR").unwrap() + "/lifetime_fields.rs",
+        )
+        .unwrap();
+}
+
+fn static_lifetime_fields() {
+    let mut generator = Generator::new();
+    generator.encode_decode(EncodeDecode::EncodeOnly);
+    generator.configure(
+        ".",
+        Config::new()
+            .no_default_impl(true)
+            .string_type("&'static str")
+            .bytes_type("&'static [u8]")
+            .vec_type("&'static [$T]")
+            .map_type("&'static std::collections::HashMap<$K, $V>"),
+    );
+    // Use non-static lifetime for Data.b, so Data should have a lifetime param
+    generator.configure(".Data.b", Config::new().bytes_type("&'a [u8]"));
+    // Force List.list to use Data<'static>, so List shouldn't have a lifetime param
+    generator.configure(".List.list", Config::new().field_lifetime("'static"));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto", "proto/map.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/static_lifetime_fields.rs",
         )
         .unwrap();
 }
@@ -407,10 +456,12 @@ fn main() {
     container_heapless();
     container_arrayvec();
     container_alloc();
+    container_cow();
     custom_field();
     implicit_presence();
     extern_import();
     lifetime_fields();
+    static_lifetime_fields();
     recursive();
     conflicting_names();
     default_str_escape();

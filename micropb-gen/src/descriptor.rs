@@ -18,7 +18,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -49,153 +49,158 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `name`
                 #[inline]
-                pub fn r#name(&self) -> bool {
+                pub const fn r#name(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) -> &mut Self {
+                pub const fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) -> &mut Self {
+                pub const fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_name(mut self) -> Self {
+                pub const fn init_name(mut self) -> Self {
                     self.set_name();
                     self
                 }
                 ///Query presence of `package`
                 #[inline]
-                pub fn r#package(&self) -> bool {
+                pub const fn r#package(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `package`
                 #[inline]
-                pub fn set_package(&mut self) -> &mut Self {
+                pub const fn set_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `package`
                 #[inline]
-                pub fn clear_package(&mut self) -> &mut Self {
+                pub const fn clear_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `package`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_package(mut self) -> Self {
+                pub const fn init_package(mut self) -> Self {
                     self.set_package();
                     self
                 }
                 ///Query presence of `options`
                 #[inline]
-                pub fn r#options(&self) -> bool {
+                pub const fn r#options(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) -> &mut Self {
+                pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
+                pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_options(mut self) -> Self {
+                pub const fn init_options(mut self) -> Self {
                     self.set_options();
                     self
                 }
                 ///Query presence of `source_code_info`
                 #[inline]
-                pub fn r#source_code_info(&self) -> bool {
+                pub const fn r#source_code_info(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `source_code_info`
                 #[inline]
-                pub fn set_source_code_info(&mut self) -> &mut Self {
+                pub const fn set_source_code_info(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `source_code_info`
                 #[inline]
-                pub fn clear_source_code_info(&mut self) -> &mut Self {
+                pub const fn clear_source_code_info(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `source_code_info`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_source_code_info(mut self) -> Self {
+                pub const fn init_source_code_info(mut self) -> Self {
                     self.set_source_code_info();
                     self
                 }
                 ///Query presence of `syntax`
                 #[inline]
-                pub fn r#syntax(&self) -> bool {
+                pub const fn r#syntax(&self) -> bool {
                     (self.0[0] & 16) != 0
                 }
                 ///Set presence of `syntax`
                 #[inline]
-                pub fn set_syntax(&mut self) -> &mut Self {
+                pub const fn set_syntax(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
                     self
                 }
                 ///Clear presence of `syntax`
                 #[inline]
-                pub fn clear_syntax(&mut self) -> &mut Self {
+                pub const fn clear_syntax(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
                     self
                 }
                 ///Builder method that sets the presence of `syntax`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_syntax(mut self) -> Self {
+                pub const fn init_syntax(mut self) -> Self {
                     self.set_syntax();
                     self
                 }
                 ///Query presence of `edition`
                 #[inline]
-                pub fn r#edition(&self) -> bool {
+                pub const fn r#edition(&self) -> bool {
                     (self.0[0] & 32) != 0
                 }
                 ///Set presence of `edition`
                 #[inline]
-                pub fn set_edition(&mut self) -> &mut Self {
+                pub const fn set_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `edition`
                 #[inline]
-                pub fn clear_edition(&mut self) -> &mut Self {
+                pub const fn clear_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_edition(mut self) -> Self {
+                pub const fn init_edition(mut self) -> Self {
                     self.set_edition();
                     self
                 }
@@ -496,7 +501,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -663,78 +668,83 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `start`
                     #[inline]
-                    pub fn r#start(&self) -> bool {
+                    pub const fn r#start(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `start`
                     #[inline]
-                    pub fn set_start(&mut self) -> &mut Self {
+                    pub const fn set_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `start`
                     #[inline]
-                    pub fn clear_start(&mut self) -> &mut Self {
+                    pub const fn clear_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_start(mut self) -> Self {
+                    pub const fn init_start(mut self) -> Self {
                         self.set_start();
                         self
                     }
                     ///Query presence of `end`
                     #[inline]
-                    pub fn r#end(&self) -> bool {
+                    pub const fn r#end(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `end`
                     #[inline]
-                    pub fn set_end(&mut self) -> &mut Self {
+                    pub const fn set_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `end`
                     #[inline]
-                    pub fn clear_end(&mut self) -> &mut Self {
+                    pub const fn clear_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_end(mut self) -> Self {
+                    pub const fn init_end(mut self) -> Self {
                         self.set_end();
                         self
                     }
                     ///Query presence of `options`
                     #[inline]
-                    pub fn r#options(&self) -> bool {
+                    pub const fn r#options(&self) -> bool {
                         (self.0[0] & 4) != 0
                     }
                     ///Set presence of `options`
                     #[inline]
-                    pub fn set_options(&mut self) -> &mut Self {
+                    pub const fn set_options(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
                         self
                     }
                     ///Clear presence of `options`
                     #[inline]
-                    pub fn clear_options(&mut self) -> &mut Self {
+                    pub const fn clear_options(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
                         self
                     }
                     ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_options(mut self) -> Self {
+                    pub const fn init_options(mut self) -> Self {
                         self.set_options();
                         self
                     }
@@ -894,7 +904,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -935,53 +945,58 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `start`
                     #[inline]
-                    pub fn r#start(&self) -> bool {
+                    pub const fn r#start(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `start`
                     #[inline]
-                    pub fn set_start(&mut self) -> &mut Self {
+                    pub const fn set_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `start`
                     #[inline]
-                    pub fn clear_start(&mut self) -> &mut Self {
+                    pub const fn clear_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_start(mut self) -> Self {
+                    pub const fn init_start(mut self) -> Self {
                         self.set_start();
                         self
                     }
                     ///Query presence of `end`
                     #[inline]
-                    pub fn r#end(&self) -> bool {
+                    pub const fn r#end(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `end`
                     #[inline]
-                    pub fn set_end(&mut self) -> &mut Self {
+                    pub const fn set_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `end`
                     #[inline]
-                    pub fn clear_end(&mut self) -> &mut Self {
+                    pub const fn clear_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_end(mut self) -> Self {
+                    pub const fn init_end(mut self) -> Self {
                         self.set_end();
                         self
                     }
@@ -1088,7 +1103,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -1121,53 +1136,58 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `name`
                 #[inline]
-                pub fn r#name(&self) -> bool {
+                pub const fn r#name(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) -> &mut Self {
+                pub const fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) -> &mut Self {
+                pub const fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_name(mut self) -> Self {
+                pub const fn init_name(mut self) -> Self {
                     self.set_name();
                     self
                 }
                 ///Query presence of `options`
                 #[inline]
-                pub fn r#options(&self) -> bool {
+                pub const fn r#options(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) -> &mut Self {
+                pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
+                pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_options(mut self) -> Self {
+                pub const fn init_options(mut self) -> Self {
                     self.set_options();
                     self
                 }
@@ -1296,7 +1316,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -1435,128 +1455,133 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `number`
                     #[inline]
-                    pub fn r#number(&self) -> bool {
+                    pub const fn r#number(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `number`
                     #[inline]
-                    pub fn set_number(&mut self) -> &mut Self {
+                    pub const fn set_number(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `number`
                     #[inline]
-                    pub fn clear_number(&mut self) -> &mut Self {
+                    pub const fn clear_number(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_number(mut self) -> Self {
+                    pub const fn init_number(mut self) -> Self {
                         self.set_number();
                         self
                     }
                     ///Query presence of `full_name`
                     #[inline]
-                    pub fn r#full_name(&self) -> bool {
+                    pub const fn r#full_name(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `full_name`
                     #[inline]
-                    pub fn set_full_name(&mut self) -> &mut Self {
+                    pub const fn set_full_name(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `full_name`
                     #[inline]
-                    pub fn clear_full_name(&mut self) -> &mut Self {
+                    pub const fn clear_full_name(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `full_name`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_full_name(mut self) -> Self {
+                    pub const fn init_full_name(mut self) -> Self {
                         self.set_full_name();
                         self
                     }
                     ///Query presence of `type`
                     #[inline]
-                    pub fn r#type(&self) -> bool {
+                    pub const fn r#type(&self) -> bool {
                         (self.0[0] & 4) != 0
                     }
                     ///Set presence of `type`
                     #[inline]
-                    pub fn set_type(&mut self) -> &mut Self {
+                    pub const fn set_type(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
                         self
                     }
                     ///Clear presence of `type`
                     #[inline]
-                    pub fn clear_type(&mut self) -> &mut Self {
+                    pub const fn clear_type(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
                         self
                     }
                     ///Builder method that sets the presence of `type`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_type(mut self) -> Self {
+                    pub const fn init_type(mut self) -> Self {
                         self.set_type();
                         self
                     }
                     ///Query presence of `reserved`
                     #[inline]
-                    pub fn r#reserved(&self) -> bool {
+                    pub const fn r#reserved(&self) -> bool {
                         (self.0[0] & 8) != 0
                     }
                     ///Set presence of `reserved`
                     #[inline]
-                    pub fn set_reserved(&mut self) -> &mut Self {
+                    pub const fn set_reserved(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 8;
                         self
                     }
                     ///Clear presence of `reserved`
                     #[inline]
-                    pub fn clear_reserved(&mut self) -> &mut Self {
+                    pub const fn clear_reserved(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !8;
                         self
                     }
                     ///Builder method that sets the presence of `reserved`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_reserved(mut self) -> Self {
+                    pub const fn init_reserved(mut self) -> Self {
                         self.set_reserved();
                         self
                     }
                     ///Query presence of `repeated`
                     #[inline]
-                    pub fn r#repeated(&self) -> bool {
+                    pub const fn r#repeated(&self) -> bool {
                         (self.0[0] & 16) != 0
                     }
                     ///Set presence of `repeated`
                     #[inline]
-                    pub fn set_repeated(&mut self) -> &mut Self {
+                    pub const fn set_repeated(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 16;
                         self
                     }
                     ///Clear presence of `repeated`
                     #[inline]
-                    pub fn clear_repeated(&mut self) -> &mut Self {
+                    pub const fn clear_repeated(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !16;
                         self
                     }
                     ///Builder method that sets the presence of `repeated`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_repeated(mut self) -> Self {
+                    pub const fn init_repeated(mut self) -> Self {
                         self.set_repeated();
                         self
                     }
@@ -1799,7 +1824,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -1873,53 +1898,58 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
                 ///Query presence of `verification`
                 #[inline]
-                pub fn r#verification(&self) -> bool {
+                pub const fn r#verification(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `verification`
                 #[inline]
-                pub fn set_verification(&mut self) -> &mut Self {
+                pub const fn set_verification(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `verification`
                 #[inline]
-                pub fn clear_verification(&mut self) -> &mut Self {
+                pub const fn clear_verification(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `verification`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_verification(mut self) -> Self {
+                pub const fn init_verification(mut self) -> Self {
                     self.set_verification();
                     self
                 }
@@ -2042,7 +2072,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -2156,278 +2186,283 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 2]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 2])
+                }
                 ///Query presence of `name`
                 #[inline]
-                pub fn r#name(&self) -> bool {
+                pub const fn r#name(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) -> &mut Self {
+                pub const fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) -> &mut Self {
+                pub const fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_name(mut self) -> Self {
+                pub const fn init_name(mut self) -> Self {
                     self.set_name();
                     self
                 }
                 ///Query presence of `number`
                 #[inline]
-                pub fn r#number(&self) -> bool {
+                pub const fn r#number(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `number`
                 #[inline]
-                pub fn set_number(&mut self) -> &mut Self {
+                pub const fn set_number(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `number`
                 #[inline]
-                pub fn clear_number(&mut self) -> &mut Self {
+                pub const fn clear_number(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_number(mut self) -> Self {
+                pub const fn init_number(mut self) -> Self {
                     self.set_number();
                     self
                 }
                 ///Query presence of `label`
                 #[inline]
-                pub fn r#label(&self) -> bool {
+                pub const fn r#label(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `label`
                 #[inline]
-                pub fn set_label(&mut self) -> &mut Self {
+                pub const fn set_label(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `label`
                 #[inline]
-                pub fn clear_label(&mut self) -> &mut Self {
+                pub const fn clear_label(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `label`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_label(mut self) -> Self {
+                pub const fn init_label(mut self) -> Self {
                     self.set_label();
                     self
                 }
                 ///Query presence of `type`
                 #[inline]
-                pub fn r#type(&self) -> bool {
+                pub const fn r#type(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `type`
                 #[inline]
-                pub fn set_type(&mut self) -> &mut Self {
+                pub const fn set_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `type`
                 #[inline]
-                pub fn clear_type(&mut self) -> &mut Self {
+                pub const fn clear_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `type`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_type(mut self) -> Self {
+                pub const fn init_type(mut self) -> Self {
                     self.set_type();
                     self
                 }
                 ///Query presence of `type_name`
                 #[inline]
-                pub fn r#type_name(&self) -> bool {
+                pub const fn r#type_name(&self) -> bool {
                     (self.0[0] & 16) != 0
                 }
                 ///Set presence of `type_name`
                 #[inline]
-                pub fn set_type_name(&mut self) -> &mut Self {
+                pub const fn set_type_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
                     self
                 }
                 ///Clear presence of `type_name`
                 #[inline]
-                pub fn clear_type_name(&mut self) -> &mut Self {
+                pub const fn clear_type_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
                     self
                 }
                 ///Builder method that sets the presence of `type_name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_type_name(mut self) -> Self {
+                pub const fn init_type_name(mut self) -> Self {
                     self.set_type_name();
                     self
                 }
                 ///Query presence of `extendee`
                 #[inline]
-                pub fn r#extendee(&self) -> bool {
+                pub const fn r#extendee(&self) -> bool {
                     (self.0[0] & 32) != 0
                 }
                 ///Set presence of `extendee`
                 #[inline]
-                pub fn set_extendee(&mut self) -> &mut Self {
+                pub const fn set_extendee(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `extendee`
                 #[inline]
-                pub fn clear_extendee(&mut self) -> &mut Self {
+                pub const fn clear_extendee(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `extendee`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_extendee(mut self) -> Self {
+                pub const fn init_extendee(mut self) -> Self {
                     self.set_extendee();
                     self
                 }
                 ///Query presence of `default_value`
                 #[inline]
-                pub fn r#default_value(&self) -> bool {
+                pub const fn r#default_value(&self) -> bool {
                     (self.0[0] & 64) != 0
                 }
                 ///Set presence of `default_value`
                 #[inline]
-                pub fn set_default_value(&mut self) -> &mut Self {
+                pub const fn set_default_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 64;
                     self
                 }
                 ///Clear presence of `default_value`
                 #[inline]
-                pub fn clear_default_value(&mut self) -> &mut Self {
+                pub const fn clear_default_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !64;
                     self
                 }
                 ///Builder method that sets the presence of `default_value`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_default_value(mut self) -> Self {
+                pub const fn init_default_value(mut self) -> Self {
                     self.set_default_value();
                     self
                 }
                 ///Query presence of `oneof_index`
                 #[inline]
-                pub fn r#oneof_index(&self) -> bool {
+                pub const fn r#oneof_index(&self) -> bool {
                     (self.0[0] & 128) != 0
                 }
                 ///Set presence of `oneof_index`
                 #[inline]
-                pub fn set_oneof_index(&mut self) -> &mut Self {
+                pub const fn set_oneof_index(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 128;
                     self
                 }
                 ///Clear presence of `oneof_index`
                 #[inline]
-                pub fn clear_oneof_index(&mut self) -> &mut Self {
+                pub const fn clear_oneof_index(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !128;
                     self
                 }
                 ///Builder method that sets the presence of `oneof_index`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_oneof_index(mut self) -> Self {
+                pub const fn init_oneof_index(mut self) -> Self {
                     self.set_oneof_index();
                     self
                 }
                 ///Query presence of `json_name`
                 #[inline]
-                pub fn r#json_name(&self) -> bool {
+                pub const fn r#json_name(&self) -> bool {
                     (self.0[1] & 1) != 0
                 }
                 ///Set presence of `json_name`
                 #[inline]
-                pub fn set_json_name(&mut self) -> &mut Self {
+                pub const fn set_json_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `json_name`
                 #[inline]
-                pub fn clear_json_name(&mut self) -> &mut Self {
+                pub const fn clear_json_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `json_name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_json_name(mut self) -> Self {
+                pub const fn init_json_name(mut self) -> Self {
                     self.set_json_name();
                     self
                 }
                 ///Query presence of `options`
                 #[inline]
-                pub fn r#options(&self) -> bool {
+                pub const fn r#options(&self) -> bool {
                     (self.0[1] & 2) != 0
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) -> &mut Self {
+                pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
+                pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_options(mut self) -> Self {
+                pub const fn init_options(mut self) -> Self {
                     self.set_options();
                     self
                 }
                 ///Query presence of `proto3_optional`
                 #[inline]
-                pub fn r#proto3_optional(&self) -> bool {
+                pub const fn r#proto3_optional(&self) -> bool {
                     (self.0[1] & 4) != 0
                 }
                 ///Set presence of `proto3_optional`
                 #[inline]
-                pub fn set_proto3_optional(&mut self) -> &mut Self {
+                pub const fn set_proto3_optional(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `proto3_optional`
                 #[inline]
-                pub fn clear_proto3_optional(&mut self) -> &mut Self {
+                pub const fn clear_proto3_optional(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `proto3_optional`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_proto3_optional(mut self) -> Self {
+                pub const fn init_proto3_optional(mut self) -> Self {
                     self.set_proto3_optional();
                     self
                 }
@@ -2943,7 +2978,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -3052,53 +3087,58 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `name`
                 #[inline]
-                pub fn r#name(&self) -> bool {
+                pub const fn r#name(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) -> &mut Self {
+                pub const fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) -> &mut Self {
+                pub const fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_name(mut self) -> Self {
+                pub const fn init_name(mut self) -> Self {
                     self.set_name();
                     self
                 }
                 ///Query presence of `options`
                 #[inline]
-                pub fn r#options(&self) -> bool {
+                pub const fn r#options(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) -> &mut Self {
+                pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
+                pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_options(mut self) -> Self {
+                pub const fn init_options(mut self) -> Self {
                     self.set_options();
                     self
                 }
@@ -3209,7 +3249,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -3243,53 +3283,58 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `start`
                     #[inline]
-                    pub fn r#start(&self) -> bool {
+                    pub const fn r#start(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `start`
                     #[inline]
-                    pub fn set_start(&mut self) -> &mut Self {
+                    pub const fn set_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `start`
                     #[inline]
-                    pub fn clear_start(&mut self) -> &mut Self {
+                    pub const fn clear_start(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_start(mut self) -> Self {
+                    pub const fn init_start(mut self) -> Self {
                         self.set_start();
                         self
                     }
                     ///Query presence of `end`
                     #[inline]
-                    pub fn r#end(&self) -> bool {
+                    pub const fn r#end(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `end`
                     #[inline]
-                    pub fn set_end(&mut self) -> &mut Self {
+                    pub const fn set_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `end`
                     #[inline]
-                    pub fn clear_end(&mut self) -> &mut Self {
+                    pub const fn clear_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_end(mut self) -> Self {
+                    pub const fn init_end(mut self) -> Self {
                         self.set_end();
                         self
                     }
@@ -3396,7 +3441,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -3429,53 +3474,58 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `name`
                 #[inline]
-                pub fn r#name(&self) -> bool {
+                pub const fn r#name(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) -> &mut Self {
+                pub const fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) -> &mut Self {
+                pub const fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_name(mut self) -> Self {
+                pub const fn init_name(mut self) -> Self {
                     self.set_name();
                     self
                 }
                 ///Query presence of `options`
                 #[inline]
-                pub fn r#options(&self) -> bool {
+                pub const fn r#options(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) -> &mut Self {
+                pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
+                pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_options(mut self) -> Self {
+                pub const fn init_options(mut self) -> Self {
                     self.set_options();
                     self
                 }
@@ -3594,7 +3644,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -3667,78 +3717,83 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `name`
                 #[inline]
-                pub fn r#name(&self) -> bool {
+                pub const fn r#name(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) -> &mut Self {
+                pub const fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) -> &mut Self {
+                pub const fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_name(mut self) -> Self {
+                pub const fn init_name(mut self) -> Self {
                     self.set_name();
                     self
                 }
                 ///Query presence of `number`
                 #[inline]
-                pub fn r#number(&self) -> bool {
+                pub const fn r#number(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `number`
                 #[inline]
-                pub fn set_number(&mut self) -> &mut Self {
+                pub const fn set_number(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `number`
                 #[inline]
-                pub fn clear_number(&mut self) -> &mut Self {
+                pub const fn clear_number(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_number(mut self) -> Self {
+                pub const fn init_number(mut self) -> Self {
                     self.set_number();
                     self
                 }
                 ///Query presence of `options`
                 #[inline]
-                pub fn r#options(&self) -> bool {
+                pub const fn r#options(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) -> &mut Self {
+                pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
+                pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_options(mut self) -> Self {
+                pub const fn init_options(mut self) -> Self {
                     self.set_options();
                     self
                 }
@@ -3892,7 +3947,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -3933,53 +3988,58 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `name`
                 #[inline]
-                pub fn r#name(&self) -> bool {
+                pub const fn r#name(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) -> &mut Self {
+                pub const fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) -> &mut Self {
+                pub const fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_name(mut self) -> Self {
+                pub const fn init_name(mut self) -> Self {
                     self.set_name();
                     self
                 }
                 ///Query presence of `options`
                 #[inline]
-                pub fn r#options(&self) -> bool {
+                pub const fn r#options(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) -> &mut Self {
+                pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
+                pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_options(mut self) -> Self {
+                pub const fn init_options(mut self) -> Self {
                     self.set_options();
                     self
                 }
@@ -4094,7 +4154,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -4140,153 +4200,158 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `name`
                 #[inline]
-                pub fn r#name(&self) -> bool {
+                pub const fn r#name(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `name`
                 #[inline]
-                pub fn set_name(&mut self) -> &mut Self {
+                pub const fn set_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `name`
                 #[inline]
-                pub fn clear_name(&mut self) -> &mut Self {
+                pub const fn clear_name(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_name(mut self) -> Self {
+                pub const fn init_name(mut self) -> Self {
                     self.set_name();
                     self
                 }
                 ///Query presence of `input_type`
                 #[inline]
-                pub fn r#input_type(&self) -> bool {
+                pub const fn r#input_type(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `input_type`
                 #[inline]
-                pub fn set_input_type(&mut self) -> &mut Self {
+                pub const fn set_input_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `input_type`
                 #[inline]
-                pub fn clear_input_type(&mut self) -> &mut Self {
+                pub const fn clear_input_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `input_type`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_input_type(mut self) -> Self {
+                pub const fn init_input_type(mut self) -> Self {
                     self.set_input_type();
                     self
                 }
                 ///Query presence of `output_type`
                 #[inline]
-                pub fn r#output_type(&self) -> bool {
+                pub const fn r#output_type(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `output_type`
                 #[inline]
-                pub fn set_output_type(&mut self) -> &mut Self {
+                pub const fn set_output_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `output_type`
                 #[inline]
-                pub fn clear_output_type(&mut self) -> &mut Self {
+                pub const fn clear_output_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `output_type`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_output_type(mut self) -> Self {
+                pub const fn init_output_type(mut self) -> Self {
                     self.set_output_type();
                     self
                 }
                 ///Query presence of `options`
                 #[inline]
-                pub fn r#options(&self) -> bool {
+                pub const fn r#options(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `options`
                 #[inline]
-                pub fn set_options(&mut self) -> &mut Self {
+                pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `options`
                 #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
+                pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_options(mut self) -> Self {
+                pub const fn init_options(mut self) -> Self {
                     self.set_options();
                     self
                 }
                 ///Query presence of `client_streaming`
                 #[inline]
-                pub fn r#client_streaming(&self) -> bool {
+                pub const fn r#client_streaming(&self) -> bool {
                     (self.0[0] & 16) != 0
                 }
                 ///Set presence of `client_streaming`
                 #[inline]
-                pub fn set_client_streaming(&mut self) -> &mut Self {
+                pub const fn set_client_streaming(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
                     self
                 }
                 ///Clear presence of `client_streaming`
                 #[inline]
-                pub fn clear_client_streaming(&mut self) -> &mut Self {
+                pub const fn clear_client_streaming(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
                     self
                 }
                 ///Builder method that sets the presence of `client_streaming`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_client_streaming(mut self) -> Self {
+                pub const fn init_client_streaming(mut self) -> Self {
                     self.set_client_streaming();
                     self
                 }
                 ///Query presence of `server_streaming`
                 #[inline]
-                pub fn r#server_streaming(&self) -> bool {
+                pub const fn r#server_streaming(&self) -> bool {
                     (self.0[0] & 32) != 0
                 }
                 ///Set presence of `server_streaming`
                 #[inline]
-                pub fn set_server_streaming(&mut self) -> &mut Self {
+                pub const fn set_server_streaming(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `server_streaming`
                 #[inline]
-                pub fn clear_server_streaming(&mut self) -> &mut Self {
+                pub const fn clear_server_streaming(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `server_streaming`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_server_streaming(mut self) -> Self {
+                pub const fn init_server_streaming(mut self) -> Self {
                     self.set_server_streaming();
                     self
                 }
@@ -4576,7 +4641,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -4659,503 +4724,510 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 3]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 3])
+                }
                 ///Query presence of `java_package`
                 #[inline]
-                pub fn r#java_package(&self) -> bool {
+                pub const fn r#java_package(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `java_package`
                 #[inline]
-                pub fn set_java_package(&mut self) -> &mut Self {
+                pub const fn set_java_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `java_package`
                 #[inline]
-                pub fn clear_java_package(&mut self) -> &mut Self {
+                pub const fn clear_java_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `java_package`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_java_package(mut self) -> Self {
+                pub const fn init_java_package(mut self) -> Self {
                     self.set_java_package();
                     self
                 }
                 ///Query presence of `java_outer_classname`
                 #[inline]
-                pub fn r#java_outer_classname(&self) -> bool {
+                pub const fn r#java_outer_classname(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `java_outer_classname`
                 #[inline]
-                pub fn set_java_outer_classname(&mut self) -> &mut Self {
+                pub const fn set_java_outer_classname(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `java_outer_classname`
                 #[inline]
-                pub fn clear_java_outer_classname(&mut self) -> &mut Self {
+                pub const fn clear_java_outer_classname(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `java_outer_classname`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_java_outer_classname(mut self) -> Self {
+                pub const fn init_java_outer_classname(mut self) -> Self {
                     self.set_java_outer_classname();
                     self
                 }
                 ///Query presence of `java_multiple_files`
                 #[inline]
-                pub fn r#java_multiple_files(&self) -> bool {
+                pub const fn r#java_multiple_files(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `java_multiple_files`
                 #[inline]
-                pub fn set_java_multiple_files(&mut self) -> &mut Self {
+                pub const fn set_java_multiple_files(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `java_multiple_files`
                 #[inline]
-                pub fn clear_java_multiple_files(&mut self) -> &mut Self {
+                pub const fn clear_java_multiple_files(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `java_multiple_files`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_java_multiple_files(mut self) -> Self {
+                pub const fn init_java_multiple_files(mut self) -> Self {
                     self.set_java_multiple_files();
                     self
                 }
                 ///Query presence of `java_generate_equals_and_hash`
                 #[inline]
-                pub fn r#java_generate_equals_and_hash(&self) -> bool {
+                pub const fn r#java_generate_equals_and_hash(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `java_generate_equals_and_hash`
                 #[inline]
-                pub fn set_java_generate_equals_and_hash(&mut self) -> &mut Self {
+                pub const fn set_java_generate_equals_and_hash(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `java_generate_equals_and_hash`
                 #[inline]
-                pub fn clear_java_generate_equals_and_hash(&mut self) -> &mut Self {
+                pub const fn clear_java_generate_equals_and_hash(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `java_generate_equals_and_hash`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_java_generate_equals_and_hash(mut self) -> Self {
+                pub const fn init_java_generate_equals_and_hash(mut self) -> Self {
                     self.set_java_generate_equals_and_hash();
                     self
                 }
                 ///Query presence of `java_string_check_utf8`
                 #[inline]
-                pub fn r#java_string_check_utf8(&self) -> bool {
+                pub const fn r#java_string_check_utf8(&self) -> bool {
                     (self.0[0] & 16) != 0
                 }
                 ///Set presence of `java_string_check_utf8`
                 #[inline]
-                pub fn set_java_string_check_utf8(&mut self) -> &mut Self {
+                pub const fn set_java_string_check_utf8(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
                     self
                 }
                 ///Clear presence of `java_string_check_utf8`
                 #[inline]
-                pub fn clear_java_string_check_utf8(&mut self) -> &mut Self {
+                pub const fn clear_java_string_check_utf8(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
                     self
                 }
                 ///Builder method that sets the presence of `java_string_check_utf8`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_java_string_check_utf8(mut self) -> Self {
+                pub const fn init_java_string_check_utf8(mut self) -> Self {
                     self.set_java_string_check_utf8();
                     self
                 }
                 ///Query presence of `optimize_for`
                 #[inline]
-                pub fn r#optimize_for(&self) -> bool {
+                pub const fn r#optimize_for(&self) -> bool {
                     (self.0[0] & 32) != 0
                 }
                 ///Set presence of `optimize_for`
                 #[inline]
-                pub fn set_optimize_for(&mut self) -> &mut Self {
+                pub const fn set_optimize_for(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `optimize_for`
                 #[inline]
-                pub fn clear_optimize_for(&mut self) -> &mut Self {
+                pub const fn clear_optimize_for(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `optimize_for`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_optimize_for(mut self) -> Self {
+                pub const fn init_optimize_for(mut self) -> Self {
                     self.set_optimize_for();
                     self
                 }
                 ///Query presence of `go_package`
                 #[inline]
-                pub fn r#go_package(&self) -> bool {
+                pub const fn r#go_package(&self) -> bool {
                     (self.0[0] & 64) != 0
                 }
                 ///Set presence of `go_package`
                 #[inline]
-                pub fn set_go_package(&mut self) -> &mut Self {
+                pub const fn set_go_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 64;
                     self
                 }
                 ///Clear presence of `go_package`
                 #[inline]
-                pub fn clear_go_package(&mut self) -> &mut Self {
+                pub const fn clear_go_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !64;
                     self
                 }
                 ///Builder method that sets the presence of `go_package`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_go_package(mut self) -> Self {
+                pub const fn init_go_package(mut self) -> Self {
                     self.set_go_package();
                     self
                 }
                 ///Query presence of `cc_generic_services`
                 #[inline]
-                pub fn r#cc_generic_services(&self) -> bool {
+                pub const fn r#cc_generic_services(&self) -> bool {
                     (self.0[0] & 128) != 0
                 }
                 ///Set presence of `cc_generic_services`
                 #[inline]
-                pub fn set_cc_generic_services(&mut self) -> &mut Self {
+                pub const fn set_cc_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 128;
                     self
                 }
                 ///Clear presence of `cc_generic_services`
                 #[inline]
-                pub fn clear_cc_generic_services(&mut self) -> &mut Self {
+                pub const fn clear_cc_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !128;
                     self
                 }
                 ///Builder method that sets the presence of `cc_generic_services`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_cc_generic_services(mut self) -> Self {
+                pub const fn init_cc_generic_services(mut self) -> Self {
                     self.set_cc_generic_services();
                     self
                 }
                 ///Query presence of `java_generic_services`
                 #[inline]
-                pub fn r#java_generic_services(&self) -> bool {
+                pub const fn r#java_generic_services(&self) -> bool {
                     (self.0[1] & 1) != 0
                 }
                 ///Set presence of `java_generic_services`
                 #[inline]
-                pub fn set_java_generic_services(&mut self) -> &mut Self {
+                pub const fn set_java_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `java_generic_services`
                 #[inline]
-                pub fn clear_java_generic_services(&mut self) -> &mut Self {
+                pub const fn clear_java_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `java_generic_services`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_java_generic_services(mut self) -> Self {
+                pub const fn init_java_generic_services(mut self) -> Self {
                     self.set_java_generic_services();
                     self
                 }
                 ///Query presence of `py_generic_services`
                 #[inline]
-                pub fn r#py_generic_services(&self) -> bool {
+                pub const fn r#py_generic_services(&self) -> bool {
                     (self.0[1] & 2) != 0
                 }
                 ///Set presence of `py_generic_services`
                 #[inline]
-                pub fn set_py_generic_services(&mut self) -> &mut Self {
+                pub const fn set_py_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `py_generic_services`
                 #[inline]
-                pub fn clear_py_generic_services(&mut self) -> &mut Self {
+                pub const fn clear_py_generic_services(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `py_generic_services`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_py_generic_services(mut self) -> Self {
+                pub const fn init_py_generic_services(mut self) -> Self {
                     self.set_py_generic_services();
                     self
                 }
                 ///Query presence of `deprecated`
                 #[inline]
-                pub fn r#deprecated(&self) -> bool {
+                pub const fn r#deprecated(&self) -> bool {
                     (self.0[1] & 4) != 0
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) -> &mut Self {
+                pub const fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) -> &mut Self {
+                pub const fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated(mut self) -> Self {
+                pub const fn init_deprecated(mut self) -> Self {
                     self.set_deprecated();
                     self
                 }
                 ///Query presence of `cc_enable_arenas`
                 #[inline]
-                pub fn r#cc_enable_arenas(&self) -> bool {
+                pub const fn r#cc_enable_arenas(&self) -> bool {
                     (self.0[1] & 8) != 0
                 }
                 ///Set presence of `cc_enable_arenas`
                 #[inline]
-                pub fn set_cc_enable_arenas(&mut self) -> &mut Self {
+                pub const fn set_cc_enable_arenas(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `cc_enable_arenas`
                 #[inline]
-                pub fn clear_cc_enable_arenas(&mut self) -> &mut Self {
+                pub const fn clear_cc_enable_arenas(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `cc_enable_arenas`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_cc_enable_arenas(mut self) -> Self {
+                pub const fn init_cc_enable_arenas(mut self) -> Self {
                     self.set_cc_enable_arenas();
                     self
                 }
                 ///Query presence of `objc_class_prefix`
                 #[inline]
-                pub fn r#objc_class_prefix(&self) -> bool {
+                pub const fn r#objc_class_prefix(&self) -> bool {
                     (self.0[1] & 16) != 0
                 }
                 ///Set presence of `objc_class_prefix`
                 #[inline]
-                pub fn set_objc_class_prefix(&mut self) -> &mut Self {
+                pub const fn set_objc_class_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 16;
                     self
                 }
                 ///Clear presence of `objc_class_prefix`
                 #[inline]
-                pub fn clear_objc_class_prefix(&mut self) -> &mut Self {
+                pub const fn clear_objc_class_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !16;
                     self
                 }
                 ///Builder method that sets the presence of `objc_class_prefix`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_objc_class_prefix(mut self) -> Self {
+                pub const fn init_objc_class_prefix(mut self) -> Self {
                     self.set_objc_class_prefix();
                     self
                 }
                 ///Query presence of `csharp_namespace`
                 #[inline]
-                pub fn r#csharp_namespace(&self) -> bool {
+                pub const fn r#csharp_namespace(&self) -> bool {
                     (self.0[1] & 32) != 0
                 }
                 ///Set presence of `csharp_namespace`
                 #[inline]
-                pub fn set_csharp_namespace(&mut self) -> &mut Self {
+                pub const fn set_csharp_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `csharp_namespace`
                 #[inline]
-                pub fn clear_csharp_namespace(&mut self) -> &mut Self {
+                pub const fn clear_csharp_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `csharp_namespace`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_csharp_namespace(mut self) -> Self {
+                pub const fn init_csharp_namespace(mut self) -> Self {
                     self.set_csharp_namespace();
                     self
                 }
                 ///Query presence of `swift_prefix`
                 #[inline]
-                pub fn r#swift_prefix(&self) -> bool {
+                pub const fn r#swift_prefix(&self) -> bool {
                     (self.0[1] & 64) != 0
                 }
                 ///Set presence of `swift_prefix`
                 #[inline]
-                pub fn set_swift_prefix(&mut self) -> &mut Self {
+                pub const fn set_swift_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 64;
                     self
                 }
                 ///Clear presence of `swift_prefix`
                 #[inline]
-                pub fn clear_swift_prefix(&mut self) -> &mut Self {
+                pub const fn clear_swift_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !64;
                     self
                 }
                 ///Builder method that sets the presence of `swift_prefix`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_swift_prefix(mut self) -> Self {
+                pub const fn init_swift_prefix(mut self) -> Self {
                     self.set_swift_prefix();
                     self
                 }
                 ///Query presence of `php_class_prefix`
                 #[inline]
-                pub fn r#php_class_prefix(&self) -> bool {
+                pub const fn r#php_class_prefix(&self) -> bool {
                     (self.0[1] & 128) != 0
                 }
                 ///Set presence of `php_class_prefix`
                 #[inline]
-                pub fn set_php_class_prefix(&mut self) -> &mut Self {
+                pub const fn set_php_class_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 128;
                     self
                 }
                 ///Clear presence of `php_class_prefix`
                 #[inline]
-                pub fn clear_php_class_prefix(&mut self) -> &mut Self {
+                pub const fn clear_php_class_prefix(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !128;
                     self
                 }
                 ///Builder method that sets the presence of `php_class_prefix`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_php_class_prefix(mut self) -> Self {
+                pub const fn init_php_class_prefix(mut self) -> Self {
                     self.set_php_class_prefix();
                     self
                 }
                 ///Query presence of `php_namespace`
                 #[inline]
-                pub fn r#php_namespace(&self) -> bool {
+                pub const fn r#php_namespace(&self) -> bool {
                     (self.0[2] & 1) != 0
                 }
                 ///Set presence of `php_namespace`
                 #[inline]
-                pub fn set_php_namespace(&mut self) -> &mut Self {
+                pub const fn set_php_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `php_namespace`
                 #[inline]
-                pub fn clear_php_namespace(&mut self) -> &mut Self {
+                pub const fn clear_php_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `php_namespace`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_php_namespace(mut self) -> Self {
+                pub const fn init_php_namespace(mut self) -> Self {
                     self.set_php_namespace();
                     self
                 }
                 ///Query presence of `php_metadata_namespace`
                 #[inline]
-                pub fn r#php_metadata_namespace(&self) -> bool {
+                pub const fn r#php_metadata_namespace(&self) -> bool {
                     (self.0[2] & 2) != 0
                 }
                 ///Set presence of `php_metadata_namespace`
                 #[inline]
-                pub fn set_php_metadata_namespace(&mut self) -> &mut Self {
+                pub const fn set_php_metadata_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `php_metadata_namespace`
                 #[inline]
-                pub fn clear_php_metadata_namespace(&mut self) -> &mut Self {
+                pub const fn clear_php_metadata_namespace(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `php_metadata_namespace`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_php_metadata_namespace(mut self) -> Self {
+                pub const fn init_php_metadata_namespace(mut self) -> Self {
                     self.set_php_metadata_namespace();
                     self
                 }
                 ///Query presence of `ruby_package`
                 #[inline]
-                pub fn r#ruby_package(&self) -> bool {
+                pub const fn r#ruby_package(&self) -> bool {
                     (self.0[2] & 4) != 0
                 }
                 ///Set presence of `ruby_package`
                 #[inline]
-                pub fn set_ruby_package(&mut self) -> &mut Self {
+                pub const fn set_ruby_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `ruby_package`
                 #[inline]
-                pub fn clear_ruby_package(&mut self) -> &mut Self {
+                pub const fn clear_ruby_package(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `ruby_package`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_ruby_package(mut self) -> Self {
+                pub const fn init_ruby_package(mut self) -> Self {
                     self.set_ruby_package();
                     self
                 }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[2] & 8) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[2];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
@@ -6167,7 +6239,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -6359,114 +6431,123 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `message_set_wire_format`
                 #[inline]
-                pub fn r#message_set_wire_format(&self) -> bool {
+                pub const fn r#message_set_wire_format(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `message_set_wire_format`
                 #[inline]
-                pub fn set_message_set_wire_format(&mut self) -> &mut Self {
+                pub const fn set_message_set_wire_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `message_set_wire_format`
                 #[inline]
-                pub fn clear_message_set_wire_format(&mut self) -> &mut Self {
+                pub const fn clear_message_set_wire_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `message_set_wire_format`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_message_set_wire_format(mut self) -> Self {
+                pub const fn init_message_set_wire_format(mut self) -> Self {
                     self.set_message_set_wire_format();
                     self
                 }
                 ///Query presence of `no_standard_descriptor_accessor`
                 #[inline]
-                pub fn r#no_standard_descriptor_accessor(&self) -> bool {
+                pub const fn r#no_standard_descriptor_accessor(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `no_standard_descriptor_accessor`
                 #[inline]
-                pub fn set_no_standard_descriptor_accessor(&mut self) -> &mut Self {
+                pub const fn set_no_standard_descriptor_accessor(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `no_standard_descriptor_accessor`
                 #[inline]
-                pub fn clear_no_standard_descriptor_accessor(&mut self) -> &mut Self {
+                pub const fn clear_no_standard_descriptor_accessor(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `no_standard_descriptor_accessor`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_no_standard_descriptor_accessor(mut self) -> Self {
+                pub const fn init_no_standard_descriptor_accessor(mut self) -> Self {
                     self.set_no_standard_descriptor_accessor();
                     self
                 }
                 ///Query presence of `deprecated`
                 #[inline]
-                pub fn r#deprecated(&self) -> bool {
+                pub const fn r#deprecated(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) -> &mut Self {
+                pub const fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) -> &mut Self {
+                pub const fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated(mut self) -> Self {
+                pub const fn init_deprecated(mut self) -> Self {
                     self.set_deprecated();
                     self
                 }
                 ///Query presence of `map_entry`
                 #[inline]
-                pub fn r#map_entry(&self) -> bool {
+                pub const fn r#map_entry(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `map_entry`
                 #[inline]
-                pub fn set_map_entry(&mut self) -> &mut Self {
+                pub const fn set_map_entry(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `map_entry`
                 #[inline]
-                pub fn clear_map_entry(&mut self) -> &mut Self {
+                pub const fn clear_map_entry(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `map_entry`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_map_entry(mut self) -> Self {
+                pub const fn init_map_entry(mut self) -> Self {
                     self.set_map_entry();
                     self
                 }
                 ///Query presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn r#deprecated_legacy_json_field_conflicts(&self) -> bool {
+                pub const fn r#deprecated_legacy_json_field_conflicts(&self) -> bool {
                     (self.0[0] & 16) != 0
                 }
                 ///Set presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn set_deprecated_legacy_json_field_conflicts(
+                pub const fn set_deprecated_legacy_json_field_conflicts(
                     &mut self,
                 ) -> &mut Self {
                     let elem = &mut self.0[0];
@@ -6475,7 +6556,7 @@ pub mod google_ {
                 }
                 ///Clear presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn clear_deprecated_legacy_json_field_conflicts(
+                pub const fn clear_deprecated_legacy_json_field_conflicts(
                     &mut self,
                 ) -> &mut Self {
                     let elem = &mut self.0[0];
@@ -6484,32 +6565,34 @@ pub mod google_ {
                 }
                 ///Builder method that sets the presence of `deprecated_legacy_json_field_conflicts`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated_legacy_json_field_conflicts(mut self) -> Self {
+                pub const fn init_deprecated_legacy_json_field_conflicts(
+                    mut self,
+                ) -> Self {
                     self.set_deprecated_legacy_json_field_conflicts();
                     self
                 }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[0] & 32) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
@@ -6823,7 +6906,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -6903,53 +6986,58 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `edition`
                     #[inline]
-                    pub fn r#edition(&self) -> bool {
+                    pub const fn r#edition(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `edition`
                     #[inline]
-                    pub fn set_edition(&mut self) -> &mut Self {
+                    pub const fn set_edition(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `edition`
                     #[inline]
-                    pub fn clear_edition(&mut self) -> &mut Self {
+                    pub const fn clear_edition(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_edition(mut self) -> Self {
+                    pub const fn init_edition(mut self) -> Self {
                         self.set_edition();
                         self
                     }
                     ///Query presence of `value`
                     #[inline]
-                    pub fn r#value(&self) -> bool {
+                    pub const fn r#value(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `value`
                     #[inline]
-                    pub fn set_value(&mut self) -> &mut Self {
+                    pub const fn set_value(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `value`
                     #[inline]
-                    pub fn clear_value(&mut self) -> &mut Self {
+                    pub const fn clear_value(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `value`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_value(mut self) -> Self {
+                    pub const fn init_value(mut self) -> Self {
                         self.set_value();
                         self
                     }
@@ -7064,7 +7152,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -7100,103 +7188,108 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `edition_introduced`
                     #[inline]
-                    pub fn r#edition_introduced(&self) -> bool {
+                    pub const fn r#edition_introduced(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `edition_introduced`
                     #[inline]
-                    pub fn set_edition_introduced(&mut self) -> &mut Self {
+                    pub const fn set_edition_introduced(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `edition_introduced`
                     #[inline]
-                    pub fn clear_edition_introduced(&mut self) -> &mut Self {
+                    pub const fn clear_edition_introduced(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `edition_introduced`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_edition_introduced(mut self) -> Self {
+                    pub const fn init_edition_introduced(mut self) -> Self {
                         self.set_edition_introduced();
                         self
                     }
                     ///Query presence of `edition_deprecated`
                     #[inline]
-                    pub fn r#edition_deprecated(&self) -> bool {
+                    pub const fn r#edition_deprecated(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `edition_deprecated`
                     #[inline]
-                    pub fn set_edition_deprecated(&mut self) -> &mut Self {
+                    pub const fn set_edition_deprecated(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `edition_deprecated`
                     #[inline]
-                    pub fn clear_edition_deprecated(&mut self) -> &mut Self {
+                    pub const fn clear_edition_deprecated(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `edition_deprecated`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_edition_deprecated(mut self) -> Self {
+                    pub const fn init_edition_deprecated(mut self) -> Self {
                         self.set_edition_deprecated();
                         self
                     }
                     ///Query presence of `deprecation_warning`
                     #[inline]
-                    pub fn r#deprecation_warning(&self) -> bool {
+                    pub const fn r#deprecation_warning(&self) -> bool {
                         (self.0[0] & 4) != 0
                     }
                     ///Set presence of `deprecation_warning`
                     #[inline]
-                    pub fn set_deprecation_warning(&mut self) -> &mut Self {
+                    pub const fn set_deprecation_warning(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
                         self
                     }
                     ///Clear presence of `deprecation_warning`
                     #[inline]
-                    pub fn clear_deprecation_warning(&mut self) -> &mut Self {
+                    pub const fn clear_deprecation_warning(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
                         self
                     }
                     ///Builder method that sets the presence of `deprecation_warning`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_deprecation_warning(mut self) -> Self {
+                    pub const fn init_deprecation_warning(mut self) -> Self {
                         self.set_deprecation_warning();
                         self
                     }
                     ///Query presence of `edition_removed`
                     #[inline]
-                    pub fn r#edition_removed(&self) -> bool {
+                    pub const fn r#edition_removed(&self) -> bool {
                         (self.0[0] & 8) != 0
                     }
                     ///Set presence of `edition_removed`
                     #[inline]
-                    pub fn set_edition_removed(&mut self) -> &mut Self {
+                    pub const fn set_edition_removed(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 8;
                         self
                     }
                     ///Clear presence of `edition_removed`
                     #[inline]
-                    pub fn clear_edition_removed(&mut self) -> &mut Self {
+                    pub const fn clear_edition_removed(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !8;
                         self
                     }
                     ///Builder method that sets the presence of `edition_removed`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_edition_removed(mut self) -> Self {
+                    pub const fn init_edition_removed(mut self) -> Self {
                         self.set_edition_removed();
                         self
                     }
@@ -7436,7 +7529,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -7570,278 +7663,283 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 2]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 2])
+                }
                 ///Query presence of `ctype`
                 #[inline]
-                pub fn r#ctype(&self) -> bool {
+                pub const fn r#ctype(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `ctype`
                 #[inline]
-                pub fn set_ctype(&mut self) -> &mut Self {
+                pub const fn set_ctype(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `ctype`
                 #[inline]
-                pub fn clear_ctype(&mut self) -> &mut Self {
+                pub const fn clear_ctype(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `ctype`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_ctype(mut self) -> Self {
+                pub const fn init_ctype(mut self) -> Self {
                     self.set_ctype();
                     self
                 }
                 ///Query presence of `packed`
                 #[inline]
-                pub fn r#packed(&self) -> bool {
+                pub const fn r#packed(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `packed`
                 #[inline]
-                pub fn set_packed(&mut self) -> &mut Self {
+                pub const fn set_packed(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `packed`
                 #[inline]
-                pub fn clear_packed(&mut self) -> &mut Self {
+                pub const fn clear_packed(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `packed`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_packed(mut self) -> Self {
+                pub const fn init_packed(mut self) -> Self {
                     self.set_packed();
                     self
                 }
                 ///Query presence of `jstype`
                 #[inline]
-                pub fn r#jstype(&self) -> bool {
+                pub const fn r#jstype(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `jstype`
                 #[inline]
-                pub fn set_jstype(&mut self) -> &mut Self {
+                pub const fn set_jstype(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `jstype`
                 #[inline]
-                pub fn clear_jstype(&mut self) -> &mut Self {
+                pub const fn clear_jstype(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `jstype`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_jstype(mut self) -> Self {
+                pub const fn init_jstype(mut self) -> Self {
                     self.set_jstype();
                     self
                 }
                 ///Query presence of `lazy`
                 #[inline]
-                pub fn r#lazy(&self) -> bool {
+                pub const fn r#lazy(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `lazy`
                 #[inline]
-                pub fn set_lazy(&mut self) -> &mut Self {
+                pub const fn set_lazy(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `lazy`
                 #[inline]
-                pub fn clear_lazy(&mut self) -> &mut Self {
+                pub const fn clear_lazy(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `lazy`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_lazy(mut self) -> Self {
+                pub const fn init_lazy(mut self) -> Self {
                     self.set_lazy();
                     self
                 }
                 ///Query presence of `unverified_lazy`
                 #[inline]
-                pub fn r#unverified_lazy(&self) -> bool {
+                pub const fn r#unverified_lazy(&self) -> bool {
                     (self.0[0] & 16) != 0
                 }
                 ///Set presence of `unverified_lazy`
                 #[inline]
-                pub fn set_unverified_lazy(&mut self) -> &mut Self {
+                pub const fn set_unverified_lazy(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
                     self
                 }
                 ///Clear presence of `unverified_lazy`
                 #[inline]
-                pub fn clear_unverified_lazy(&mut self) -> &mut Self {
+                pub const fn clear_unverified_lazy(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
                     self
                 }
                 ///Builder method that sets the presence of `unverified_lazy`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_unverified_lazy(mut self) -> Self {
+                pub const fn init_unverified_lazy(mut self) -> Self {
                     self.set_unverified_lazy();
                     self
                 }
                 ///Query presence of `deprecated`
                 #[inline]
-                pub fn r#deprecated(&self) -> bool {
+                pub const fn r#deprecated(&self) -> bool {
                     (self.0[0] & 32) != 0
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) -> &mut Self {
+                pub const fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) -> &mut Self {
+                pub const fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated(mut self) -> Self {
+                pub const fn init_deprecated(mut self) -> Self {
                     self.set_deprecated();
                     self
                 }
                 ///Query presence of `weak`
                 #[inline]
-                pub fn r#weak(&self) -> bool {
+                pub const fn r#weak(&self) -> bool {
                     (self.0[0] & 64) != 0
                 }
                 ///Set presence of `weak`
                 #[inline]
-                pub fn set_weak(&mut self) -> &mut Self {
+                pub const fn set_weak(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 64;
                     self
                 }
                 ///Clear presence of `weak`
                 #[inline]
-                pub fn clear_weak(&mut self) -> &mut Self {
+                pub const fn clear_weak(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !64;
                     self
                 }
                 ///Builder method that sets the presence of `weak`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_weak(mut self) -> Self {
+                pub const fn init_weak(mut self) -> Self {
                     self.set_weak();
                     self
                 }
                 ///Query presence of `debug_redact`
                 #[inline]
-                pub fn r#debug_redact(&self) -> bool {
+                pub const fn r#debug_redact(&self) -> bool {
                     (self.0[0] & 128) != 0
                 }
                 ///Set presence of `debug_redact`
                 #[inline]
-                pub fn set_debug_redact(&mut self) -> &mut Self {
+                pub const fn set_debug_redact(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 128;
                     self
                 }
                 ///Clear presence of `debug_redact`
                 #[inline]
-                pub fn clear_debug_redact(&mut self) -> &mut Self {
+                pub const fn clear_debug_redact(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !128;
                     self
                 }
                 ///Builder method that sets the presence of `debug_redact`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_debug_redact(mut self) -> Self {
+                pub const fn init_debug_redact(mut self) -> Self {
                     self.set_debug_redact();
                     self
                 }
                 ///Query presence of `retention`
                 #[inline]
-                pub fn r#retention(&self) -> bool {
+                pub const fn r#retention(&self) -> bool {
                     (self.0[1] & 1) != 0
                 }
                 ///Set presence of `retention`
                 #[inline]
-                pub fn set_retention(&mut self) -> &mut Self {
+                pub const fn set_retention(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `retention`
                 #[inline]
-                pub fn clear_retention(&mut self) -> &mut Self {
+                pub const fn clear_retention(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `retention`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_retention(mut self) -> Self {
+                pub const fn init_retention(mut self) -> Self {
                     self.set_retention();
                     self
                 }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[1] & 2) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
                 ///Query presence of `feature_support`
                 #[inline]
-                pub fn r#feature_support(&self) -> bool {
+                pub const fn r#feature_support(&self) -> bool {
                     (self.0[1] & 4) != 0
                 }
                 ///Set presence of `feature_support`
                 #[inline]
-                pub fn set_feature_support(&mut self) -> &mut Self {
+                pub const fn set_feature_support(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `feature_support`
                 #[inline]
-                pub fn clear_feature_support(&mut self) -> &mut Self {
+                pub const fn clear_feature_support(&mut self) -> &mut Self {
                     let elem = &mut self.0[1];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `feature_support`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_feature_support(mut self) -> Self {
+                pub const fn init_feature_support(mut self) -> Self {
                     self.set_feature_support();
                     self
                 }
@@ -8355,7 +8453,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -8518,28 +8616,33 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
@@ -8607,7 +8710,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -8645,64 +8748,69 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `allow_alias`
                 #[inline]
-                pub fn r#allow_alias(&self) -> bool {
+                pub const fn r#allow_alias(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `allow_alias`
                 #[inline]
-                pub fn set_allow_alias(&mut self) -> &mut Self {
+                pub const fn set_allow_alias(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `allow_alias`
                 #[inline]
-                pub fn clear_allow_alias(&mut self) -> &mut Self {
+                pub const fn clear_allow_alias(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `allow_alias`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_allow_alias(mut self) -> Self {
+                pub const fn init_allow_alias(mut self) -> Self {
                     self.set_allow_alias();
                     self
                 }
                 ///Query presence of `deprecated`
                 #[inline]
-                pub fn r#deprecated(&self) -> bool {
+                pub const fn r#deprecated(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) -> &mut Self {
+                pub const fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) -> &mut Self {
+                pub const fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated(mut self) -> Self {
+                pub const fn init_deprecated(mut self) -> Self {
                     self.set_deprecated();
                     self
                 }
                 ///Query presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn r#deprecated_legacy_json_field_conflicts(&self) -> bool {
+                pub const fn r#deprecated_legacy_json_field_conflicts(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn set_deprecated_legacy_json_field_conflicts(
+                pub const fn set_deprecated_legacy_json_field_conflicts(
                     &mut self,
                 ) -> &mut Self {
                     let elem = &mut self.0[0];
@@ -8711,7 +8819,7 @@ pub mod google_ {
                 }
                 ///Clear presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub fn clear_deprecated_legacy_json_field_conflicts(
+                pub const fn clear_deprecated_legacy_json_field_conflicts(
                     &mut self,
                 ) -> &mut Self {
                     let elem = &mut self.0[0];
@@ -8720,32 +8828,34 @@ pub mod google_ {
                 }
                 ///Builder method that sets the presence of `deprecated_legacy_json_field_conflicts`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated_legacy_json_field_conflicts(mut self) -> Self {
+                pub const fn init_deprecated_legacy_json_field_conflicts(
+                    mut self,
+                ) -> Self {
                     self.set_deprecated_legacy_json_field_conflicts();
                     self
                 }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
@@ -8954,7 +9064,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -9017,103 +9127,108 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `deprecated`
                 #[inline]
-                pub fn r#deprecated(&self) -> bool {
+                pub const fn r#deprecated(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) -> &mut Self {
+                pub const fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) -> &mut Self {
+                pub const fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated(mut self) -> Self {
+                pub const fn init_deprecated(mut self) -> Self {
                     self.set_deprecated();
                     self
                 }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
                 ///Query presence of `debug_redact`
                 #[inline]
-                pub fn r#debug_redact(&self) -> bool {
+                pub const fn r#debug_redact(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `debug_redact`
                 #[inline]
-                pub fn set_debug_redact(&mut self) -> &mut Self {
+                pub const fn set_debug_redact(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `debug_redact`
                 #[inline]
-                pub fn clear_debug_redact(&mut self) -> &mut Self {
+                pub const fn clear_debug_redact(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `debug_redact`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_debug_redact(mut self) -> Self {
+                pub const fn init_debug_redact(mut self) -> Self {
                     self.set_debug_redact();
                     self
                 }
                 ///Query presence of `feature_support`
                 #[inline]
-                pub fn r#feature_support(&self) -> bool {
+                pub const fn r#feature_support(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `feature_support`
                 #[inline]
-                pub fn set_feature_support(&mut self) -> &mut Self {
+                pub const fn set_feature_support(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `feature_support`
                 #[inline]
-                pub fn clear_feature_support(&mut self) -> &mut Self {
+                pub const fn clear_feature_support(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `feature_support`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_feature_support(mut self) -> Self {
+                pub const fn init_feature_support(mut self) -> Self {
                     self.set_feature_support();
                     self
                 }
@@ -9316,7 +9431,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -9377,53 +9492,58 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
                 ///Query presence of `deprecated`
                 #[inline]
-                pub fn r#deprecated(&self) -> bool {
+                pub const fn r#deprecated(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) -> &mut Self {
+                pub const fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) -> &mut Self {
+                pub const fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated(mut self) -> Self {
+                pub const fn init_deprecated(mut self) -> Self {
                     self.set_deprecated();
                     self
                 }
@@ -9532,7 +9652,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -9596,78 +9716,83 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `deprecated`
                 #[inline]
-                pub fn r#deprecated(&self) -> bool {
+                pub const fn r#deprecated(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `deprecated`
                 #[inline]
-                pub fn set_deprecated(&mut self) -> &mut Self {
+                pub const fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `deprecated`
                 #[inline]
-                pub fn clear_deprecated(&mut self) -> &mut Self {
+                pub const fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_deprecated(mut self) -> Self {
+                pub const fn init_deprecated(mut self) -> Self {
                     self.set_deprecated();
                     self
                 }
                 ///Query presence of `idempotency_level`
                 #[inline]
-                pub fn r#idempotency_level(&self) -> bool {
+                pub const fn r#idempotency_level(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `idempotency_level`
                 #[inline]
-                pub fn set_idempotency_level(&mut self) -> &mut Self {
+                pub const fn set_idempotency_level(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `idempotency_level`
                 #[inline]
-                pub fn clear_idempotency_level(&mut self) -> &mut Self {
+                pub const fn clear_idempotency_level(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `idempotency_level`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_idempotency_level(mut self) -> Self {
+                pub const fn init_idempotency_level(mut self) -> Self {
                     self.set_idempotency_level();
                     self
                 }
                 ///Query presence of `features`
                 #[inline]
-                pub fn r#features(&self) -> bool {
+                pub const fn r#features(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `features`
                 #[inline]
-                pub fn set_features(&mut self) -> &mut Self {
+                pub const fn set_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `features`
                 #[inline]
-                pub fn clear_features(&mut self) -> &mut Self {
+                pub const fn clear_features(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_features(mut self) -> Self {
+                pub const fn init_features(mut self) -> Self {
                     self.set_features();
                     self
                 }
@@ -9829,7 +9954,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -9886,53 +10011,58 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `name_part`
                     #[inline]
-                    pub fn r#name_part(&self) -> bool {
+                    pub const fn r#name_part(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `name_part`
                     #[inline]
-                    pub fn set_name_part(&mut self) -> &mut Self {
+                    pub const fn set_name_part(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `name_part`
                     #[inline]
-                    pub fn clear_name_part(&mut self) -> &mut Self {
+                    pub const fn clear_name_part(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `name_part`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_name_part(mut self) -> Self {
+                    pub const fn init_name_part(mut self) -> Self {
                         self.set_name_part();
                         self
                     }
                     ///Query presence of `is_extension`
                     #[inline]
-                    pub fn r#is_extension(&self) -> bool {
+                    pub const fn r#is_extension(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `is_extension`
                     #[inline]
-                    pub fn set_is_extension(&mut self) -> &mut Self {
+                    pub const fn set_is_extension(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `is_extension`
                     #[inline]
-                    pub fn clear_is_extension(&mut self) -> &mut Self {
+                    pub const fn clear_is_extension(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `is_extension`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_is_extension(mut self) -> Self {
+                    pub const fn init_is_extension(mut self) -> Self {
                         self.set_is_extension();
                         self
                     }
@@ -10048,7 +10178,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -10081,153 +10211,158 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `identifier_value`
                 #[inline]
-                pub fn r#identifier_value(&self) -> bool {
+                pub const fn r#identifier_value(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `identifier_value`
                 #[inline]
-                pub fn set_identifier_value(&mut self) -> &mut Self {
+                pub const fn set_identifier_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `identifier_value`
                 #[inline]
-                pub fn clear_identifier_value(&mut self) -> &mut Self {
+                pub const fn clear_identifier_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `identifier_value`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_identifier_value(mut self) -> Self {
+                pub const fn init_identifier_value(mut self) -> Self {
                     self.set_identifier_value();
                     self
                 }
                 ///Query presence of `positive_int_value`
                 #[inline]
-                pub fn r#positive_int_value(&self) -> bool {
+                pub const fn r#positive_int_value(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `positive_int_value`
                 #[inline]
-                pub fn set_positive_int_value(&mut self) -> &mut Self {
+                pub const fn set_positive_int_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `positive_int_value`
                 #[inline]
-                pub fn clear_positive_int_value(&mut self) -> &mut Self {
+                pub const fn clear_positive_int_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `positive_int_value`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_positive_int_value(mut self) -> Self {
+                pub const fn init_positive_int_value(mut self) -> Self {
                     self.set_positive_int_value();
                     self
                 }
                 ///Query presence of `negative_int_value`
                 #[inline]
-                pub fn r#negative_int_value(&self) -> bool {
+                pub const fn r#negative_int_value(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `negative_int_value`
                 #[inline]
-                pub fn set_negative_int_value(&mut self) -> &mut Self {
+                pub const fn set_negative_int_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `negative_int_value`
                 #[inline]
-                pub fn clear_negative_int_value(&mut self) -> &mut Self {
+                pub const fn clear_negative_int_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `negative_int_value`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_negative_int_value(mut self) -> Self {
+                pub const fn init_negative_int_value(mut self) -> Self {
                     self.set_negative_int_value();
                     self
                 }
                 ///Query presence of `double_value`
                 #[inline]
-                pub fn r#double_value(&self) -> bool {
+                pub const fn r#double_value(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `double_value`
                 #[inline]
-                pub fn set_double_value(&mut self) -> &mut Self {
+                pub const fn set_double_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `double_value`
                 #[inline]
-                pub fn clear_double_value(&mut self) -> &mut Self {
+                pub const fn clear_double_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `double_value`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_double_value(mut self) -> Self {
+                pub const fn init_double_value(mut self) -> Self {
                     self.set_double_value();
                     self
                 }
                 ///Query presence of `string_value`
                 #[inline]
-                pub fn r#string_value(&self) -> bool {
+                pub const fn r#string_value(&self) -> bool {
                     (self.0[0] & 16) != 0
                 }
                 ///Set presence of `string_value`
                 #[inline]
-                pub fn set_string_value(&mut self) -> &mut Self {
+                pub const fn set_string_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
                     self
                 }
                 ///Clear presence of `string_value`
                 #[inline]
-                pub fn clear_string_value(&mut self) -> &mut Self {
+                pub const fn clear_string_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
                     self
                 }
                 ///Builder method that sets the presence of `string_value`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_string_value(mut self) -> Self {
+                pub const fn init_string_value(mut self) -> Self {
                     self.set_string_value();
                     self
                 }
                 ///Query presence of `aggregate_value`
                 #[inline]
-                pub fn r#aggregate_value(&self) -> bool {
+                pub const fn r#aggregate_value(&self) -> bool {
                     (self.0[0] & 32) != 0
                 }
                 ///Set presence of `aggregate_value`
                 #[inline]
-                pub fn set_aggregate_value(&mut self) -> &mut Self {
+                pub const fn set_aggregate_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `aggregate_value`
                 #[inline]
-                pub fn clear_aggregate_value(&mut self) -> &mut Self {
+                pub const fn clear_aggregate_value(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `aggregate_value`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_aggregate_value(mut self) -> Self {
+                pub const fn init_aggregate_value(mut self) -> Self {
                     self.set_aggregate_value();
                     self
                 }
@@ -10535,7 +10670,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -10723,153 +10858,158 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `field_presence`
                 #[inline]
-                pub fn r#field_presence(&self) -> bool {
+                pub const fn r#field_presence(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `field_presence`
                 #[inline]
-                pub fn set_field_presence(&mut self) -> &mut Self {
+                pub const fn set_field_presence(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `field_presence`
                 #[inline]
-                pub fn clear_field_presence(&mut self) -> &mut Self {
+                pub const fn clear_field_presence(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `field_presence`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_field_presence(mut self) -> Self {
+                pub const fn init_field_presence(mut self) -> Self {
                     self.set_field_presence();
                     self
                 }
                 ///Query presence of `enum_type`
                 #[inline]
-                pub fn r#enum_type(&self) -> bool {
+                pub const fn r#enum_type(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `enum_type`
                 #[inline]
-                pub fn set_enum_type(&mut self) -> &mut Self {
+                pub const fn set_enum_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `enum_type`
                 #[inline]
-                pub fn clear_enum_type(&mut self) -> &mut Self {
+                pub const fn clear_enum_type(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `enum_type`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_enum_type(mut self) -> Self {
+                pub const fn init_enum_type(mut self) -> Self {
                     self.set_enum_type();
                     self
                 }
                 ///Query presence of `repeated_field_encoding`
                 #[inline]
-                pub fn r#repeated_field_encoding(&self) -> bool {
+                pub const fn r#repeated_field_encoding(&self) -> bool {
                     (self.0[0] & 4) != 0
                 }
                 ///Set presence of `repeated_field_encoding`
                 #[inline]
-                pub fn set_repeated_field_encoding(&mut self) -> &mut Self {
+                pub const fn set_repeated_field_encoding(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 4;
                     self
                 }
                 ///Clear presence of `repeated_field_encoding`
                 #[inline]
-                pub fn clear_repeated_field_encoding(&mut self) -> &mut Self {
+                pub const fn clear_repeated_field_encoding(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !4;
                     self
                 }
                 ///Builder method that sets the presence of `repeated_field_encoding`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_repeated_field_encoding(mut self) -> Self {
+                pub const fn init_repeated_field_encoding(mut self) -> Self {
                     self.set_repeated_field_encoding();
                     self
                 }
                 ///Query presence of `utf8_validation`
                 #[inline]
-                pub fn r#utf8_validation(&self) -> bool {
+                pub const fn r#utf8_validation(&self) -> bool {
                     (self.0[0] & 8) != 0
                 }
                 ///Set presence of `utf8_validation`
                 #[inline]
-                pub fn set_utf8_validation(&mut self) -> &mut Self {
+                pub const fn set_utf8_validation(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 8;
                     self
                 }
                 ///Clear presence of `utf8_validation`
                 #[inline]
-                pub fn clear_utf8_validation(&mut self) -> &mut Self {
+                pub const fn clear_utf8_validation(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !8;
                     self
                 }
                 ///Builder method that sets the presence of `utf8_validation`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_utf8_validation(mut self) -> Self {
+                pub const fn init_utf8_validation(mut self) -> Self {
                     self.set_utf8_validation();
                     self
                 }
                 ///Query presence of `message_encoding`
                 #[inline]
-                pub fn r#message_encoding(&self) -> bool {
+                pub const fn r#message_encoding(&self) -> bool {
                     (self.0[0] & 16) != 0
                 }
                 ///Set presence of `message_encoding`
                 #[inline]
-                pub fn set_message_encoding(&mut self) -> &mut Self {
+                pub const fn set_message_encoding(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 16;
                     self
                 }
                 ///Clear presence of `message_encoding`
                 #[inline]
-                pub fn clear_message_encoding(&mut self) -> &mut Self {
+                pub const fn clear_message_encoding(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !16;
                     self
                 }
                 ///Builder method that sets the presence of `message_encoding`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_message_encoding(mut self) -> Self {
+                pub const fn init_message_encoding(mut self) -> Self {
                     self.set_message_encoding();
                     self
                 }
                 ///Query presence of `json_format`
                 #[inline]
-                pub fn r#json_format(&self) -> bool {
+                pub const fn r#json_format(&self) -> bool {
                     (self.0[0] & 32) != 0
                 }
                 ///Set presence of `json_format`
                 #[inline]
-                pub fn set_json_format(&mut self) -> &mut Self {
+                pub const fn set_json_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 32;
                     self
                 }
                 ///Clear presence of `json_format`
                 #[inline]
-                pub fn clear_json_format(&mut self) -> &mut Self {
+                pub const fn clear_json_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !32;
                     self
                 }
                 ///Builder method that sets the presence of `json_format`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_json_format(mut self) -> Self {
+                pub const fn init_json_format(mut self) -> Self {
                     self.set_json_format();
                     self
                 }
@@ -11205,7 +11345,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -11284,78 +11424,83 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `edition`
                     #[inline]
-                    pub fn r#edition(&self) -> bool {
+                    pub const fn r#edition(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `edition`
                     #[inline]
-                    pub fn set_edition(&mut self) -> &mut Self {
+                    pub const fn set_edition(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `edition`
                     #[inline]
-                    pub fn clear_edition(&mut self) -> &mut Self {
+                    pub const fn clear_edition(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_edition(mut self) -> Self {
+                    pub const fn init_edition(mut self) -> Self {
                         self.set_edition();
                         self
                     }
                     ///Query presence of `overridable_features`
                     #[inline]
-                    pub fn r#overridable_features(&self) -> bool {
+                    pub const fn r#overridable_features(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `overridable_features`
                     #[inline]
-                    pub fn set_overridable_features(&mut self) -> &mut Self {
+                    pub const fn set_overridable_features(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `overridable_features`
                     #[inline]
-                    pub fn clear_overridable_features(&mut self) -> &mut Self {
+                    pub const fn clear_overridable_features(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `overridable_features`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_overridable_features(mut self) -> Self {
+                    pub const fn init_overridable_features(mut self) -> Self {
                         self.set_overridable_features();
                         self
                     }
                     ///Query presence of `fixed_features`
                     #[inline]
-                    pub fn r#fixed_features(&self) -> bool {
+                    pub const fn r#fixed_features(&self) -> bool {
                         (self.0[0] & 4) != 0
                     }
                     ///Set presence of `fixed_features`
                     #[inline]
-                    pub fn set_fixed_features(&mut self) -> &mut Self {
+                    pub const fn set_fixed_features(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
                         self
                     }
                     ///Clear presence of `fixed_features`
                     #[inline]
-                    pub fn clear_fixed_features(&mut self) -> &mut Self {
+                    pub const fn clear_fixed_features(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
                         self
                     }
                     ///Builder method that sets the presence of `fixed_features`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_fixed_features(mut self) -> Self {
+                    pub const fn init_fixed_features(mut self) -> Self {
                         self.set_fixed_features();
                         self
                     }
@@ -11532,7 +11677,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -11573,53 +11718,58 @@ pub mod google_ {
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
+                ///New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
                 ///Query presence of `minimum_edition`
                 #[inline]
-                pub fn r#minimum_edition(&self) -> bool {
+                pub const fn r#minimum_edition(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
                 ///Set presence of `minimum_edition`
                 #[inline]
-                pub fn set_minimum_edition(&mut self) -> &mut Self {
+                pub const fn set_minimum_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
                 ///Clear presence of `minimum_edition`
                 #[inline]
-                pub fn clear_minimum_edition(&mut self) -> &mut Self {
+                pub const fn clear_minimum_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
                 ///Builder method that sets the presence of `minimum_edition`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_minimum_edition(mut self) -> Self {
+                pub const fn init_minimum_edition(mut self) -> Self {
                     self.set_minimum_edition();
                     self
                 }
                 ///Query presence of `maximum_edition`
                 #[inline]
-                pub fn r#maximum_edition(&self) -> bool {
+                pub const fn r#maximum_edition(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
                 ///Set presence of `maximum_edition`
                 #[inline]
-                pub fn set_maximum_edition(&mut self) -> &mut Self {
+                pub const fn set_maximum_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
                 ///Clear presence of `maximum_edition`
                 #[inline]
-                pub fn clear_maximum_edition(&mut self) -> &mut Self {
+                pub const fn clear_maximum_edition(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
                 ///Builder method that sets the presence of `maximum_edition`. Useful for initializing the Hazzer.
                 #[inline]
-                pub fn init_maximum_edition(mut self) -> Self {
+                pub const fn init_maximum_edition(mut self) -> Self {
                     self.set_maximum_edition();
                     self
                 }
@@ -11734,7 +11884,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -11782,53 +11932,58 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `leading_comments`
                     #[inline]
-                    pub fn r#leading_comments(&self) -> bool {
+                    pub const fn r#leading_comments(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `leading_comments`
                     #[inline]
-                    pub fn set_leading_comments(&mut self) -> &mut Self {
+                    pub const fn set_leading_comments(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `leading_comments`
                     #[inline]
-                    pub fn clear_leading_comments(&mut self) -> &mut Self {
+                    pub const fn clear_leading_comments(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `leading_comments`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_leading_comments(mut self) -> Self {
+                    pub const fn init_leading_comments(mut self) -> Self {
                         self.set_leading_comments();
                         self
                     }
                     ///Query presence of `trailing_comments`
                     #[inline]
-                    pub fn r#trailing_comments(&self) -> bool {
+                    pub const fn r#trailing_comments(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `trailing_comments`
                     #[inline]
-                    pub fn set_trailing_comments(&mut self) -> &mut Self {
+                    pub const fn set_trailing_comments(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `trailing_comments`
                     #[inline]
-                    pub fn clear_trailing_comments(&mut self) -> &mut Self {
+                    pub const fn clear_trailing_comments(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `trailing_comments`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_trailing_comments(mut self) -> Self {
+                    pub const fn init_trailing_comments(mut self) -> Self {
                         self.set_trailing_comments();
                         self
                     }
@@ -11969,7 +12124,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -12064,7 +12219,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
@@ -12114,103 +12269,108 @@ pub mod google_ {
                 #[derive(Debug, Default, PartialEq, Clone)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
+                    ///New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
                     ///Query presence of `source_file`
                     #[inline]
-                    pub fn r#source_file(&self) -> bool {
+                    pub const fn r#source_file(&self) -> bool {
                         (self.0[0] & 1) != 0
                     }
                     ///Set presence of `source_file`
                     #[inline]
-                    pub fn set_source_file(&mut self) -> &mut Self {
+                    pub const fn set_source_file(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 1;
                         self
                     }
                     ///Clear presence of `source_file`
                     #[inline]
-                    pub fn clear_source_file(&mut self) -> &mut Self {
+                    pub const fn clear_source_file(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !1;
                         self
                     }
                     ///Builder method that sets the presence of `source_file`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_source_file(mut self) -> Self {
+                    pub const fn init_source_file(mut self) -> Self {
                         self.set_source_file();
                         self
                     }
                     ///Query presence of `begin`
                     #[inline]
-                    pub fn r#begin(&self) -> bool {
+                    pub const fn r#begin(&self) -> bool {
                         (self.0[0] & 2) != 0
                     }
                     ///Set presence of `begin`
                     #[inline]
-                    pub fn set_begin(&mut self) -> &mut Self {
+                    pub const fn set_begin(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 2;
                         self
                     }
                     ///Clear presence of `begin`
                     #[inline]
-                    pub fn clear_begin(&mut self) -> &mut Self {
+                    pub const fn clear_begin(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !2;
                         self
                     }
                     ///Builder method that sets the presence of `begin`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_begin(mut self) -> Self {
+                    pub const fn init_begin(mut self) -> Self {
                         self.set_begin();
                         self
                     }
                     ///Query presence of `end`
                     #[inline]
-                    pub fn r#end(&self) -> bool {
+                    pub const fn r#end(&self) -> bool {
                         (self.0[0] & 4) != 0
                     }
                     ///Set presence of `end`
                     #[inline]
-                    pub fn set_end(&mut self) -> &mut Self {
+                    pub const fn set_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 4;
                         self
                     }
                     ///Clear presence of `end`
                     #[inline]
-                    pub fn clear_end(&mut self) -> &mut Self {
+                    pub const fn clear_end(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !4;
                         self
                     }
                     ///Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_end(mut self) -> Self {
+                    pub const fn init_end(mut self) -> Self {
                         self.set_end();
                         self
                     }
                     ///Query presence of `semantic`
                     #[inline]
-                    pub fn r#semantic(&self) -> bool {
+                    pub const fn r#semantic(&self) -> bool {
                         (self.0[0] & 8) != 0
                     }
                     ///Set presence of `semantic`
                     #[inline]
-                    pub fn set_semantic(&mut self) -> &mut Self {
+                    pub const fn set_semantic(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem |= 8;
                         self
                     }
                     ///Clear presence of `semantic`
                     #[inline]
-                    pub fn clear_semantic(&mut self) -> &mut Self {
+                    pub const fn clear_semantic(&mut self) -> &mut Self {
                         let elem = &mut self.0[0];
                         *elem &= !8;
                         self
                     }
                     ///Builder method that sets the presence of `semantic`. Useful for initializing the Hazzer.
                     #[inline]
-                    pub fn init_semantic(mut self) -> Self {
+                    pub const fn init_semantic(mut self) -> Self {
                         self.set_semantic();
                         self
                     }
@@ -12419,7 +12579,7 @@ pub mod google_ {
                     decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                     len: usize,
                 ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                     let before = decoder.bytes_read();
                     while decoder.bytes_read() - before < len {
                         let tag = decoder.decode_tag()?;
@@ -12502,7 +12662,7 @@ pub mod google_ {
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
                 len: usize,
             ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbVec, PbMap, PbString, FieldDecode};
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
                 let before = decoder.bytes_read();
                 while decoder.bytes_read() - before < len {
                     let tag = decoder.decode_tag()?;
