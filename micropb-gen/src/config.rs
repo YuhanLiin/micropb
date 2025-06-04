@@ -405,11 +405,7 @@ config_decl! {
     /// // Will also automatically add the lifetime param to declaration of `Outer`
     /// gen.configure(".Outer.inner", Config::new().field_lifetime("'a"));
     /// ```
-    ///
-    /// # Note
-    /// This configuration is only applied to the path passed to
-    /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.
-    [no_inherit] field_lifetime: [deref] Option<String>,
+    field_lifetime: [deref] Option<String>,
 
     // Type configs
 

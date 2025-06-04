@@ -352,6 +352,31 @@ fn lifetime_fields() {
         .unwrap();
 }
 
+fn static_lifetime_fields() {
+    let mut generator = Generator::new();
+    generator.encode_decode(EncodeDecode::EncodeOnly);
+    generator.configure(
+        ".",
+        Config::new()
+            .no_default_impl(true)
+            .string_type("&'static str")
+            .bytes_type("&'static [u8]")
+            .vec_type("&'static [$T]")
+            .map_type("&'static std::collections::HashMap<$K, $V>"),
+    );
+    // Use non-static lifetime for Data.b, so Data should have a lifetime param
+    generator.configure(".Data.b", Config::new().bytes_type("&'a [u8]"));
+    // Force List.list to use Data<'static>, so List shouldn't have a lifetime param
+    generator.configure(".List.list", Config::new().field_lifetime("'static"));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto", "proto/map.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/static_lifetime_fields.rs",
+        )
+        .unwrap();
+}
+
 fn recursive() {
     let mut generator = Generator::new();
     generator.configure(
@@ -436,6 +461,7 @@ fn main() {
     implicit_presence();
     extern_import();
     lifetime_fields();
+    static_lifetime_fields();
     recursive();
     conflicting_names();
     default_str_escape();

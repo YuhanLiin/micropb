@@ -110,13 +110,28 @@ impl PbInt {
     }
 }
 
+/// Ignore static and _ lifetimes
+fn filter_lifetime(lt: &Lifetime) -> Option<&Lifetime> {
+    if lt.ident == "static" || lt.ident == "_" {
+        None
+    } else {
+        Some(lt)
+    }
+}
+
 /// Find the first lifetime embedded in a type
 pub(crate) fn find_lifetime_from_type(ty: &syn::Type) -> Option<&Lifetime> {
     match ty {
         syn::Type::Array(tarr) => find_lifetime_from_type(&tarr.elem),
         syn::Type::Group(t) => find_lifetime_from_type(&t.elem),
         syn::Type::Paren(t) => find_lifetime_from_type(&t.elem),
-        syn::Type::Reference(tref) => tref.lifetime.as_ref(),
+        syn::Type::Reference(tref) => tref
+            .lifetime
+            .as_ref()
+            .and_then(filter_lifetime)
+            .or_else(|| find_lifetime_from_type(&tref.elem)),
+        syn::Type::Slice(tslice) => find_lifetime_from_type(&tslice.elem),
+        syn::Type::Tuple(tuple) => tuple.elems.iter().find_map(find_lifetime_from_type),
         syn::Type::Path(tpath) => find_lifetime_from_path(&tpath.path),
         _ => None,
     }
@@ -127,15 +142,14 @@ pub(crate) fn find_lifetime_from_path(tpath: &syn::Path) -> Option<&Lifetime> {
     if let syn::PathArguments::AngleBracketed(args) =
         &tpath.segments.last().expect("empty type path").arguments
     {
-        for arg in &args.args {
-            match arg {
-                syn::GenericArgument::Lifetime(lt) => return Some(lt),
-                syn::GenericArgument::Type(ty) => return find_lifetime_from_type(ty),
-                _ => (),
-            }
-        }
+        args.args.iter().find_map(|arg| match arg {
+            syn::GenericArgument::Lifetime(lt) => filter_lifetime(lt),
+            syn::GenericArgument::Type(ty) => find_lifetime_from_type(ty),
+            _ => None,
+        })
+    } else {
+        None
     }
-    None
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -160,7 +174,7 @@ pub(crate) enum TypeSpec {
 impl TypeSpec {
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match self {
-            TypeSpec::Message(_, lifetime) => lifetime.as_ref(),
+            TypeSpec::Message(_, lifetime) => lifetime.as_ref().and_then(filter_lifetime),
             TypeSpec::Bytes { type_path, .. } | TypeSpec::String { type_path, .. } => {
                 find_lifetime_from_type(type_path)
             }
@@ -490,6 +504,7 @@ mod tests {
         assert!(find_lifetime_from_type(&ty).is_none());
         let ty: syn::Type = syn::parse_str("Vec<u8>").unwrap();
         assert!(find_lifetime_from_type(&ty).is_none());
+
         let ty: syn::Type = syn::parse_str("std::Vec<'a>").unwrap();
         assert!(find_lifetime_from_type(&ty).is_some());
         let ty: syn::Type = syn::parse_str("&'a [u8]").unwrap();
@@ -499,6 +514,35 @@ mod tests {
         let ty: syn::Type = syn::parse_str("([&'a u8; 10])").unwrap();
         assert!(find_lifetime_from_type(&ty).is_some());
         let ty: syn::Type = syn::parse_str("std::Option<std::Vec<'a>>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("([&'a u8])").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("(u32, u8, &'a bool)").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+
+        let ty: syn::Type = syn::parse_str("std::Vec<'static>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("&'static [u8]").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("[&'static u8; 10]").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("([&'static u8; 10])").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("std::Option<std::Vec<'static>>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("([&'static u8])").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("(u32, u8, &'static bool)").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+
+        let ty: syn::Type = syn::parse_str("&'static std::Option<std::Vec<'a>>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type =
+            syn::parse_str("&'static std::Option<std::Vec<'static, Ref<'a>>>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("&'static [&'a u8]").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("(&'static u32, &'a u64)").unwrap();
         assert!(find_lifetime_from_type(&ty).is_some());
     }
 
