@@ -27,7 +27,7 @@ fn ref_containers() {
     static LIST: &[proto::Data] = &[proto::Data {
         b: b"123",
         s: "abc",
-        _has: proto::Data_::_Hazzer::default().init_b().init_s(),
+        _has: proto::Data_::_Hazzer::_new().init_b().init_s(),
     }];
     let list = proto::List { list: LIST };
     let _: &'static [proto::Data<'static>] = list.list;

@@ -185,13 +185,13 @@ impl<'a> Message<'a> {
             quote! {
                 #[doc = #getter_doc]
                 #[inline]
-                pub fn #fname(&self) -> bool {
+                pub const fn #fname(&self) -> bool {
                     (self.0[#idx] & #mask) != 0
                 }
 
                 #[doc = #setter_doc]
                 #[inline]
-                pub fn #setter(&mut self) -> &mut Self {
+                pub const fn #setter(&mut self) -> &mut Self {
                     let elem = &mut self.0[#idx];
                     *elem |= #mask;
                     self
@@ -199,7 +199,7 @@ impl<'a> Message<'a> {
 
                 #[doc = #clearer_doc]
                 #[inline]
-                pub fn #clearer(&mut self) -> &mut Self {
+                pub const fn #clearer(&mut self) -> &mut Self {
                     let elem = &mut self.0[#idx];
                     *elem &= !#mask;
                     self
@@ -207,7 +207,7 @@ impl<'a> Message<'a> {
 
                 #[doc = #init_doc]
                 #[inline]
-                pub fn #init(mut self) -> Self {
+                pub const fn #init(mut self) -> Self {
                     self.#setter();
                     self
                 }
@@ -221,6 +221,12 @@ impl<'a> Message<'a> {
             pub struct #hazzer_name([u8; #bytes]);
 
             impl #hazzer_name {
+                #[doc = "New hazzer with all fields set to off"]
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; #bytes])
+                }
+
                 #(#methods)*
             }
         };
