@@ -44,7 +44,7 @@
 //! Finally, include the generated file in your code:
 //! ```rust,ignore
 //! // main.rs
-//! use micropb::{MessageDecode, MessageEncode};
+//! use micropb::{MessageDecode, MessageEncode, PbEncoder};
 //!
 //! mod example {
 //!     #![allow(clippy::all)]
@@ -65,17 +65,18 @@
 //! // For the example message above we can use a smaller capacity
 //! // const CAPACITY: usize = 32;
 //!
-//! // Use heapless::Vec as the output stream
-//! let mut data = heapless::Vec::<u8, CAPACITY>::new();
+//! // Use heapless::Vec as the output stream and build an encoder around it
+//! let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, CAPACITY>::new());
 //!
 //! // Compute the size of the `Example` on the wire
 //! let _size = example.compute_size();
 //! // Encode the `Example` to the data stream
-//! example.encode_to_writer(&mut data).expect("Vec over capacity");
+//! example.encode(&mut encoder).expect("Vec over capacity");
 //!
 //! // Decode a new instance of `Example` into a new struct
 //! let mut new = example::Example::default();
-//! new.decode_from_bytes(&mut decoder, data.as_slice()).expect("decoding failed");
+//! let data = encoder.as_writer().as_slice();
+//! new.decode_from_bytes(data).expect("decoding failed");
 //! assert_eq!(example, new);
 //! ```
 //!

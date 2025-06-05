@@ -69,12 +69,6 @@ pub trait MessageEncode {
     /// Encode this message using the encoder.
     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
 
-    /// Encode this message into a writer
-    fn encode_to_writer<W: PbWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
-        let mut encoder = PbEncoder::new(writer);
-        self.encode(&mut encoder)
-    }
-
     /// Encode this message as a length-delimited record, starting with a length prefix.
     fn encode_len_delimited<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         encoder.encode_varint32(self.compute_size() as u32)?;
@@ -99,9 +93,5 @@ impl<T: MessageEncode> MessageEncode for &T {
 
     fn encode_len_delimited<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         (*self).encode_len_delimited(encoder)
-    }
-
-    fn encode_to_writer<W: PbWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
-        (*self).encode_to_writer(writer)
     }
 }
