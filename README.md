@@ -30,9 +30,11 @@ The `micropb` project consists of two crates:
 
 - [`micropb-gen`](https://crates.io/crates/micropb-gen): Code generation tool that generates a Rust module from a set of `.proto` files. Include this as a build dependency.
 
-For more detailed info, take a look at the [`micropb-gen` docs](https://docs.rs/micropb-gen/latest/micropb-gen).
-
 For a concrete example of `micropb` on an embedded application, see [`arm-app`](https://github.com/YuhanLiin/micropb/tree/main/examples/arm-app).
+
+## Documentation
+
+Documentation is at [docs.rs](https://docs.rs/micropb-gen/latest/micropb_gen/).
 
 ## MSRV
 
