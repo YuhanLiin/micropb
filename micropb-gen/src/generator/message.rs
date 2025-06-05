@@ -34,6 +34,7 @@ pub(crate) struct Message<'a> {
     pub(crate) impl_default: bool,
     pub(crate) impl_partial_eq: bool,
     pub(crate) derive_clone: bool,
+    pub(crate) minimal_accessors: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
     pub(crate) unknown_handler: Option<syn::Type>,
     pub(crate) lifetime: Option<syn::Lifetime>,
@@ -149,6 +150,7 @@ impl<'a> Message<'a> {
             impl_default: msg_conf.impl_default(),
             impl_partial_eq: msg_conf.derive_partial_eq(),
             derive_clone: msg_conf.derive_clone(),
+            minimal_accessors: msg_conf.config.minimal_accessors.unwrap_or(false),
             attrs,
             unknown_handler,
             lifetime,
@@ -386,7 +388,10 @@ impl<'a> Message<'a> {
     }
 
     pub(crate) fn generate_impl(&self, gen: &Generator) -> TokenStream {
-        let accessors = self.fields.iter().map(|f| f.generate_accessors(gen));
+        let accessors = self
+            .fields
+            .iter()
+            .map(|f| f.generate_accessors(gen, self.minimal_accessors));
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
         quote! {
@@ -654,6 +659,7 @@ mod tests {
             impl_default: true,
             impl_partial_eq: true,
             derive_clone: true,
+            minimal_accessors: false,
             attrs: vec![],
             unknown_handler: None,
             lifetime: None,
@@ -786,6 +792,7 @@ mod tests {
                 impl_default: false,
                 impl_partial_eq: true,
                 derive_clone: true,
+                minimal_accessors: false,
                 attrs: parse_attributes("#[derive(Self)]").unwrap(),
                 unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
                 lifetime: None
@@ -837,6 +844,7 @@ mod tests {
                 impl_default: true,
                 impl_partial_eq: true,
                 derive_clone: true,
+                minimal_accessors: false,
                 attrs: vec![],
                 unknown_handler: None,
                 lifetime: None
@@ -867,6 +875,7 @@ mod tests {
             impl_default: true,
             impl_partial_eq: true,
             derive_clone: true,
+            minimal_accessors: false,
             attrs: vec![],
             unknown_handler: None,
             lifetime: None,

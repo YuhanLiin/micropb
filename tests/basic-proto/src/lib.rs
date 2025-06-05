@@ -35,6 +35,8 @@ mod large_field_nums;
 #[cfg(test)]
 mod lifetime_fields;
 #[cfg(test)]
+mod minimal_accessors;
+#[cfg(test)]
 mod no_config;
 #[cfg(test)]
 mod recursive;

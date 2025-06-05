@@ -481,6 +481,13 @@ config_decl! {
     /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.
     [no_inherit] unknown_handler: [deref] Option<String>,
 
+    /// Only generate minimal accessors for message types.
+    ///
+    /// If enabled, the only accessors that will be generated for this message type will be the
+    /// getter and setter methods on optional fields. This won't reduce the compiled code size, but
+    /// it will significantly reduce the size of the output source file.
+    minimal_accessors: Option<bool>,
+
     // General configs
 
     /// Skip generating a type or field

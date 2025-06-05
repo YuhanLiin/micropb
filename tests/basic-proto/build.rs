@@ -443,6 +443,26 @@ fn large_field_nums() {
         .unwrap();
 }
 
+fn minimal_accessors() {
+    let mut generator = Generator::new();
+    generator.configure(".", Config::new().minimal_accessors(true));
+    // Test what happens when there's a message that doesn't use hazzers
+    generator.configure(
+        ".nested.Nested",
+        Config::new().optional_repr(OptionalRepr::Option),
+    );
+    generator
+        .compile_protos(
+            &[
+                "proto/basic.proto",
+                "proto/basic3.proto",
+                "proto/nested.proto",
+            ],
+            std::env::var("OUT_DIR").unwrap() + "/minimal_accessors.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -465,4 +485,5 @@ fn main() {
     files_with_same_package();
     fixed_string_and_bytes();
     large_field_nums();
+    minimal_accessors();
 }
