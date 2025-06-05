@@ -11,12 +11,15 @@
 - Add `field_lifetime` configuration to set lifetime of message fields
 - Add container trait impls for `Cow`
 - Add const constructor `_new` to hazzer structs and add const to all hazzer methods
+- Add `Generator::configure_many`
+- Add `Config::recursive_field`
 
 ### Changed
 
 - Bump MSRV to 1.83 for const `Option::unwrap`
 - Remove `PbContainer` and change definitions of all container traits
 - Use string substitution for type and const params when configuring container types
+- Revamped documentation
 
 ### Fixed
 

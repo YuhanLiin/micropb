@@ -2,13 +2,6 @@ name: CI checks
 on: [push]
 
 jobs:
-  sync-readme:
-    name: check that README.md files are synced
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: diff README.md micropb/README.md
-
   check-and-test:
     name: check and test workspace with ${{matrix.toolchain}}
     runs-on: ubuntu-latest
