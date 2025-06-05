@@ -12,6 +12,7 @@
 - Add container trait impls for `Cow`
 - Add const constructor `_new` to hazzer structs and add const to all hazzer methods
 - Add `Generator::configure_many`
+- Add `Config::recursive_field`
 
 ### Changed
 
