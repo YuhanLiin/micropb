@@ -7,6 +7,8 @@
 //!
 //! The entry point of this crate is the [`Generator`] type.
 //!
+//! For info on the "library layer" of `micropb-gen`, see [`micropb`].
+//!
 //! # Getting Started
 //!
 //! Add `micropb` crates to your `Cargo.toml`:
