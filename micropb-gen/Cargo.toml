@@ -26,3 +26,5 @@ micropb = { version = "0.1.2", path = "../micropb", features = ["std"] }
 
 [dev-dependencies]
 syn = { version = "2", default-features = false, features = ["extra-traits"] }
+# Used for doc examples
+micropb = { version = "0.1.2", path = "../micropb", features = ["std", "container-heapless"] }

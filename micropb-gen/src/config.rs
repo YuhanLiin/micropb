@@ -69,6 +69,18 @@ pub enum CustomField {
     Delegate(String),
 }
 
+impl CustomField {
+    /// Constructs a [`CustomField::Type`]
+    pub fn from_type(s: &str) -> Self {
+        Self::Type(s.to_owned())
+    }
+
+    /// Constructs a [`CustomField::Delegate`]
+    pub fn from_delegate(s: &str) -> Self {
+        Self::Delegate(s.to_owned())
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
 /// Representation of optional fields in the generated code
@@ -221,7 +233,8 @@ config_decl! {
     /// Container type that's generated for repeated fields.
     ///
     /// For decoding, the provided type must implement `PbVec<T>`. For encoding, the type must
-    /// dereference into `[T]`, where `T` is the type of the element.
+    /// dereference into `[T]`, where `T` is the type of the element. Moreover, the type must
+    /// implement `Default` in order to generate default values.
     ///
     /// If the provided type contains the sequence `$N`, it will be substituted for the value of
     /// [`max_bytes`](Config::max_bytes) if it's set for this field. Similarly, the sequence `$T`
@@ -242,8 +255,9 @@ config_decl! {
 
     /// Container type that's generated for `string` fields.
     ///
-    /// For decoding, the provided type must implement `PbString + TryFrom<&str>`. For encoding,
-    /// the type must dereference to `str`.
+    /// For decoding, the provided type must implement `PbString`. For encoding, the type must
+    /// dereference to `str`. Moreover, the type must implement `Default + TryFrom<&str>` in order
+    /// to generate default values.
     ///
     /// If the provided type contains the sequence `$N`, it will be substituted for the value of
     /// [`max_bytes`](Config::max_bytes) if it's set for this field.
@@ -261,8 +275,9 @@ config_decl! {
 
     /// Container type that's generated for `bytes` fields.
     ///
-    /// For decoding, the provided type must implement `PbBytes + TryFrom<&[u8]>`. For encoding,
-    /// the type must dereference to `[u8]`.
+    /// For decoding, the provided type must implement `PbBytes`. For encoding, the type must
+    /// dereference to `[u8]`. Moreover, the type must implement `Default + TryFrom<&[u8]>` in
+    /// order to generate default values.
     ///
     /// If the provided type contains the sequence `$N`, it will be substituted for the value of
     /// [`max_bytes`](Config::max_bytes) if it's set for this field.
@@ -281,7 +296,8 @@ config_decl! {
     /// Container type that's generated for `map` fields.
     ///
     /// For decoding, the provided type must implement `PbMap`. For encoding, the type must
-    /// implement `IntoIterator<Item = (&K, &V)>` for `&T`.
+    /// implement `IntoIterator<Item = (&K, &V)>` for `&T`. Moreover, the type must implement
+    /// `Default` in order to generate default values.
     ///
     /// If the provided type contains the sequence `$N`, it will be substituted for the value of
     /// [`max_bytes`](Config::max_bytes) if it's set for this field. Similarly, the sequences `$K`
@@ -350,12 +366,12 @@ config_decl! {
     /// // Make the generator generate `foo: crate::CustomHandler` for field `foo`
     /// gen.configure(
     ///     ".Message.foo",
-    ///     Config::new().custom_field(CustomField::Type("crate::CustomHandler".to_owned()))
+    ///     Config::new().custom_field(CustomField::from_type("crate::CustomHandler"))
     /// );
     /// // Decoding and encoding of `bar` will also be handled by the `CustomHandler` assigned to `foo`
     /// gen.configure(
     ///     ".Message.bar",
-    ///     Config::new().custom_field(CustomField::Delegate("foo".to_owned()))
+    ///     Config::new().custom_field(CustomField::from_delegate("foo"))
     /// );
     /// ```
     custom_field: Option<CustomField>,

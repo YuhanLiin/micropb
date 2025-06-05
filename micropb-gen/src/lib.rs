@@ -1,5 +1,471 @@
-#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
+//! `micropb-gen` compiles `.proto` files into Rust. It is intended to be used inside `build.rs` for build-time code generation.
+//!
+//! The entry point of this crate is the [`Generator`] type. Configuration of code generator behaviour is handled by the [`Config`] type.
+//!
+//! # Getting Started
+//!
+//! Add `micropb` crates to your `Cargo.toml`:
+//! ```protobuf
+//! [dependencies]
+//! # Allow types from `heapless` to be used for container fields
+//! micropb = { version = "0.2.0", features = ["container-heapless"] }
+//!
+//! [build-dependencies]
+//! micropb-gen = "0.2.0"
+//! ```
+//!
+//! Then, place your `.proto` file into the project's root directory:
+//! ```proto
+//! // example.proto
+//! message Example {
+//!     int32 field1 = 1;
+//!     bool field2 = 2;
+//!     double field3 = 3;
+//! }
+//! ```
+//!
+//! `micropb-gen` requires `protoc` to build `.proto` files, so [install
+//! `protoc`](https://grpc.io/docs/protoc-installation) and add it to your PATH, then invoke the
+//! code generator in `build.rs`:
+//!
+//! ```rust,no_run
+//! let mut gen = micropb_gen::Generator::new();
+//! // Compile example.proto into a Rust module
+//! gen.compile_protos(&["example.proto"], std::env::var("OUT_DIR").unwrap() + "/example.rs").unwrap();
+//! ```
+//!
+//! Finally, include the generated file in your code:
+//! ```rust,ignore
+//! // main.rs
+//! use micropb::{MessageDecode, MessageEncode};
+//!
+//! mod example {
+//!     #![allow(clippy::all)]
+//!     #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+//!     // Let's assume that Example is the only message define in the .proto file that has been
+//!     // converted into a Rust struct
+//!     include!(concat!(env!("OUT_DIR"), "/example.rs"));
+//! }
+//!
+//! let example = example::Example {
+//!     field1: 12,
+//!     field2: true,
+//!     field3: 0.234,
+//! };
+//!
+//! // Maximum size of the message type on the wire, scaled to the next power of 2 for heapless::Vec
+//! const CAPACITY: usize = example::Example::MAX_SIZE.unwrap().next_power_of_two();
+//! // For the example message above we can use a smaller capacity
+//! // const CAPACITY: usize = 32;
+//!
+//! // Use heapless::Vec as the output stream
+//! let mut data = heapless::Vec::<u8, CAPACITY>::new();
+//!
+//! // Compute the size of the `Example` on the wire
+//! let _size = example.compute_size();
+//! // Encode the `Example` to the data stream
+//! example.encode_to_writer(&mut data).expect("Vec over capacity");
+//!
+//! // Decode a new instance of `Example` into a new struct
+//! let mut new = example::Example::default();
+//! new.decode_from_bytes(&mut decoder, data.as_slice()).expect("decoding failed");
+//! assert_eq!(example, new);
+//! ```
+//!
+//! # Messages
+//!
+//! Protobuf messages are translated directly into Rust structs, and each message field translates into a Rust field.
+//!
+//! Given the following Protobuf definition:
+//! ```proto
+//! syntax = "proto3";
+//!
+//! package example;
+//!
+//! message Example {
+//!     int32 f_int32 = 1;
+//!     int64 f_int64 = 2;
+//!     uint32 f_uint32 = 3;
+//!     uint64 f_uint64 = 4;
+//!     sint32 f_sint32 = 5;
+//!     sint64 f_sint64 = 6;
+//!     bool f_bool = 7;
+//!     fixed32 f_fixed32 = 8;
+//!     fixed64 f_fixed64 = 9;
+//!     sfixed32 f_sfixed32 = 10;
+//!     sfixed64 f_sfixed64 = 11;
+//!     float f_float = 12;
+//!     double f_double = 13;
+//! }
+//! ```
+//!
+//! `micropb-gen` will generate the following Rust structs and APIs:
+//! ```rust,ignore
+//! pub mod example_ {
+//!     #[derive(Debug, Clone)]
+//!     pub struct Example {
+//!         pub f_int32: i32,
+//!         pub f_int64: i64,
+//!         pub f_uint32: u32,
+//!         pub f_uint64: u64,
+//!         pub f_sint32: i32,
+//!         pub f_sint64: i64,
+//!         pub f_bool: bool,
+//!         pub f_fixed32: u32,
+//!         pub f_fixed64: u64,
+//!         pub f_sfixed32: u32,
+//!         pub f_sfixed64: u64,
+//!         pub f_float: f32,
+//!         pub f_double: f64,
+//!     }
+//!
+//!     impl Example {
+//!         /// Return reference to f_int32
+//!         pub fn f_int32(&self) -> &i32;
+//!         /// Return mutable reference to f_int32
+//!         pub fn mut_f_int32(&mut self) -> &mut i32;
+//!         /// Set value of f_int32
+//!         pub fn set_f_int32(&mut self, val: i32) -> &mut Self;
+//!         /// Builder method that sets f_int32. Useful for initializing the message.
+//!         pub fn init_f_int32(mut self, val: i32) -> Self;
+//!
+//!         // Same APIs for the other singular fields
+//!     }
+//!
+//!     impl Default for Example { /* ... */ }
+//!
+//!     impl PartialEq for Example { /* ... */ }
+//!
+//!     impl micropb::MessageEncode for Example { /* ... */ }
+//!
+//!     impl micropb::MessageDecode for Example { /* ... */ }
+//! }
+//! ```
+//!
+//! The generated [`MessageDecode`](micropb::MessageEncode) and
+//! [`MessageEncode`](micropb::MessageDecode) implementations provide APIs for decoding, encoding,
+//! and computing the size of `Example`.
+//!
+//! ## Optional Fields
+//!
+//! While the obvious choice for representing optional fields is [`Option`], this is not actually
+//! ideal in embedded systems because `Option<T>` actually takes up twice as much space as `T` for
+//! many types, such as `u32` and `i32`. Instead, **`micropb` tracks the presence of all optional
+//! fields of a message in a separate bitfield called a _hazzer_**, which is usually small enough to
+//! fit into the padding. Field presence can either be queried directly from the hazzer or from
+//! message APIs that return `Option`.
+//!
+//! For example, given the following Protobuf message:
+//! ```proto
+//! message Example {
+//!     optional int32 f_int32 = 1;
+//!     optional int64 f_int64 = 2;
+//!     optional bool f_bool = 3;
+//! }
+//! ```
+//!
+//! `micropb-gen` generates the following Rust struct and APIs:
+//! ```rust,ignore
+//! pub struct Example {
+//!     pub f_int32: i32,
+//!     pub f_int64: i64,
+//!     pub f_bool: bool,
+//!
+//!     pub _has: Example_::_Hazzer,
+//! }
+//!
+//! impl Example {
+//!     /// Return reference to f_int32 as an Option
+//!     pub fn f_int32(&self) -> Option<&i32>;
+//!     /// Return mutable reference to f_int32 as an Option
+//!     pub fn mut_f_int32(&mut self) -> Option<&mut i32>;
+//!     /// Set value and presence of f_int32
+//!     pub fn set_f_int32(&mut self, val: i32) -> &mut Self;
+//!     /// Clear presence of f_int32
+//!     pub fn clear_f_int32(&mut self) -> &mut Self;
+//!     /// Take f_int32 and return it
+//!     pub fn take_f_int32(&mut self) -> Option<i32>;
+//!     /// Builder method that sets f_int32. Useful for initializing the message.
+//!     pub fn init_f_int32(mut self, val: i32) -> Self;
+//!
+//!     // Same APIs for other optional fields
+//! }
+//!
+//! pub mod Example_ {
+//!     /// Tracks whether the optional fields are present
+//!     #[derive(Debug, Default, Clone, PartialEq)]
+//!     pub struct _Hazzer([u8; 1]);
+//!
+//!     impl _Hazzer {
+//!         /// Create an empty Hazzer with all fields cleared
+//!         pub const fn _new() -> Self;
+//!         /// Query presence of f_int32
+//!         pub const fn f_int32(&self) -> bool;
+//!         /// Set presence of f_int32
+//!         pub const fn set_f_int32(&mut self) -> &mut Self;
+//!         /// Clear presence of f_int32
+//!         pub const fn clear_f_int32(&mut self) -> &mut Self;
+//!         /// Builder method that toggles on the presence of f_int32. Useful for initializing the Hazzer.
+//!         pub const fn init_f_int32(mut self) -> Self;
+//!
+//!         // Same APIs for other optional fields
+//!     }
+//! }
+//!
+//! // trait impls, decode/encode logic, etc
+//! ```
+//!
+//! ### Note on Initialization
+//!
+//! **A field will be considered empty (and ignored by the encoder) if its bit in the hazzer is not
+//! set, _even if the field itself has been written_.** The following is an easy way to initialize a
+//! message with all optional fields set:
+//! ```rust,ignore
+//! Example::default().init_f_int32(4).init_f_int64(-5).init_f_bool(true)
+//! ```
+//!
+//! Alternatively, we can initialize the message using the constructor:
+//! ```rust,ignore
+//! Example {
+//!     f_int32: 4,
+//!     f_int64: -5,
+//!     f_bool: true,
+//!     // initialize the hazzer with all fields set to true
+//!     // without initializing the hazzer, all fields in Example will be considered unset
+//!     _has: Example_::_Hazzer::default()
+//!             .init_f_int32()
+//!             .init_f_int64()
+//!             .init_f_bool()
+//! }
+//! ```
+//!
+//! ### Fallback to [`Option`]
+//!
+//! By default, optional fields are represented by bitfields, as shown above. If an optional field
+//! is configured to be boxed via [`Config::boxed`], it will instead be represented as an `Option`,
+//! because `Option<Box<T>>` doesn't take up extra space compared to `Box<T>`. To override these default
+//! behaviours, see [`Config::optional_repr`].
+//!
+//! ### Required fields
+//!
+//! The generator treats required fields exactly the same way it treats optional fields.
+//!
+//! ## Oneof Fields
+//!
+//! Protobuf oneofs are translated into Rust enums. The enum type is defined in an internal
+//! module under the message, and its type name is the same as the name of the oneof field.
+//!
+//! For example, given this Protobuf definition:
+//! ```proto
+//! message Example {
+//!     oneof number {
+//!         int32 int = 1;
+//!         float decimal = 2;
+//!     }
+//! }
+//! ```
+//!
+//! `micropb-gen` generates the following definition:
+//! ```rust,no_run
+//! #[derive(Debug, Clone, PartialEq)]
+//! pub struct Example {
+//!     pub number: Option<Example_::Number>,
+//! }
+//!
+//! pub mod Example_ {
+//!     #[derive(Debug, Clone, PartialEq)]
+//!     pub enum Number {
+//!         Int(i32),
+//!         Decimal(f32),
+//!     }
+//! }
+//! ```
+//!
+//! ## Repeated, `map`, `string`, and `bytes` Fields
+//!
+//! Repeated, `map`, `string`, and `bytes` fields need to be represented as Rust "container" types,
+//! since they contain multiple elements or bytes. Normally standard types like `String` and `Vec`
+//! are used, but they aren't available in no-alloc environments. Instead, we need stack-allocated
+//! containers with fixed capacity. Since there is no defacto standard for such containers in Rust,
+//! **users are expected to configure the code generator with their own container types** (see
+//! [`Config`] for more details).
+//!
+//! For example, given the following Protobuf definition:
+//! ```proto
+//! message Containers {
+//!     string f_string = 1;
+//!     bytes f_bytes = 2;
+//!     repeated int32 f_repeated = 3;
+//!     map<int32, int64> f_map = 4;
+//! }
+//! ```
+//!
+//! and the following configuration in `build.rs`:
+//! ```rust,no_run
+//! let mut gen = micropb_gen::Generator::new();
+//! // Configure our own container types
+//! gen.configure(".",
+//!     micropb_gen::Config::new()
+//!         .string_type("crate::MyString<$N>")
+//!         .bytes_type("crate::MyVec<u8, $N>")
+//!         .vec_type("crate::MyVec<$T, $N>")
+//!         .map_type("crate::MyMap<$K, $V, $N>")
+//! );
+//!
+//! // We can also use container types from `heapless`, which have fixed capacity
+//! gen.use_container_heapless();
+//!
+//! // Same shorthand exists for containers from `arrayvec` or `alloc`
+//! // gen.use_container_arrayvec();
+//! // gen.use_container_alloc();
+//!
+//!
+//! // Since we're using fixed containers, we need to specify the max capacity of each field.
+//! // For simplicity, configure capacity of all repeated/map fields to 4 and string/bytes to 8.
+//! gen.configure(".", micropb_gen::Config::new().max_len(4).max_bytes(8));
+//! ```
+//!
+//! The following Rust struct will be generated:
+//! ```rust,no_run
+//! # use micropb::heapless as heapless;
+//! pub struct Containers {
+//!     f_string: heapless::String<8>,
+//!     f_bytes: heapless::Vec<u8, 8>,
+//!     f_repeated: heapless::Vec<i32, 4>,
+//!     f_map: heapless::FnvIndexMap<i32, i64, 4>,
+//! }
+//! ```
+//!
+//! For **decoding**, container types should implement [`PbVec`](micropb::PbVec) (repeated fields),
+//! [`PbString`](micropb::PbString), [`PbBytes`](micropb::PbBytes), or [`PbMap`](micropb::PbMap)
+//! For convenience, [`micropb`] comes with built-in implementations of the container traits for
+//! types from [`heapless`](https://docs.rs/heapless/latest/heapless),
+//! [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), and
+//! [`alloc`](https://doc.rust-lang.org/alloc), as well as implementations on `[u8; N]` arrays and
+//! [`FixedLenString`](micropb::FixedLenString).
+//!
+//! For **encoding**, container types need to dereference into `&[T]` (repeated fields), `&str`, or
+//! `&[u8]`. Maps just need to iterate through key-value pairs.
+//!
+//! ## Message Lifetime
+//!
+//! A message struct may have up to one lifetime parameter. `micropb-gen` automatically generates
+//! the lifetime parameter for each message by checking if there's a lifetime in any of the fields.
+//!
+//! For example, given the Protobuf file from the previous section and the following `build.rs`
+//! config:
+//! ```rust,no_run
+//! # use micropb_gen::{Generator, Config, config::CustomField};
+//! # let mut gen = Generator::new();
+//! // Use `Cow` as container type with lifetime of 'a
+//! gen.configure(".",
+//!     Config::new()
+//!         .string_type("alloc::borrow::Cow<'a, str>")
+//!         .bytes_type("alloc::borrow::Cow<'a, [u8]>")
+//!         .vec_type("alloc::borrow::Cow<'a, [$T]>")
+//! );
+//! // Use a custom type for the `f_map` field, also with lifetime of 'a
+//! gen.configure(".Containers.f_map",
+//!     Config::new().custom_field(CustomField::from_type("MyField<'a>"))
+//! );
+//! ```
+//!
+//! `micropb-gen` generates the following struct:
+//! ```rust,no_run
+//! # extern crate alloc;
+//! # struct MyField<'a>(&'a u8);
+//! pub struct Containers<'a> {
+//!     f_string: alloc::borrow::Cow<'a, str>,
+//!     f_bytes: alloc::borrow::Cow<'a, [u8]>,
+//!     f_repeated: alloc::borrow::Cow<'a, [i32]>,
+//!     f_map: MyField<'a>,
+//! }
+//! ```
+//!
+//! ### Note
+//! `micropb-gen` cannot detect if a message field contains a lifetime or not, so any field that's
+//! a message with a lifetime must be configured with [`field_lifetime`](Config::field_lifetime).
+//!
+//! # Enums
+//!
+//! Protobuf enums are translated into "open" enums in Rust, rather than normal Rust enums. This is
+//! because proto3 requires enums to store unrecognized values, which is only possible with open
+//! enums.
+//!
+//! For example, given this Protobuf enum:
+//! ```proto
+//! enum Language {
+//!     RUST = 0,
+//!     C = 1,
+//!     CPP = 2,
+//! }
+//! ```
+//!
+//! `micropb-gen` generates the following Rust definition:
+//! ```rust,ignore
+//! #[derive(Debug, Clone, Default, Copy, PartialEq, Eq, Hash)]
+//! #[repr(transparent)]
+//! pub struct Language(pub i32);
+//!
+//! impl Language {
+//!     // Default value
+//!     pub const Rust: Self = Self(0);
+//!     pub const C: Self = Self(1);
+//!     pub const Cpp: Self = Self(2);
+//! }
+//!
+//! impl From<i32> for Language { /* .. */ }
+//! ```
+//!
+//! # Packages and Modules
+//!
+//! `micropb-gen` translates Protobuf package names into Rust modules by appending an underscore.
+//!
+//! For example, given the following Protobuf file:
+//! ```proto
+//! package foo.bar;
+//!
+//! // Protobuf contents
+//! ```
+//!
+//! The generated Rust file will look like:
+//! ```rust,ignore
+//! pub mod foo_ {
+//!     pub mod bar_ {
+//!         // Generated code lives here
+//!     }
+//! }
+//! ```
+//!
+//! If a Protobuf file does not have a package specifier, the generated code will instead live in
+//! the root module
+//!
+//! Message names are also translated into Rust modules by appending an underscore. For example,
+//! code generated from oneofs and nested messages within the `Name` message will live in the
+//! `Name_` module.
+//!
+//! # Configuring the Generator
+//!
+//! One of `micropb-gen`'s main features is its granular configuration system, which allows users
+//! to control how code is generated at the level of the module, message, or even individual
+//! fields. See [`Generator::configure`] and [`Config`] for more info on the configuration system.
+//!
+//! ## Notable Configurations
+//!
+//! - **Integer size**: Controls the width of the integer types used to represent [integer
+//! fields](Config::int_size). This can also be done for [enums](Config::enum_int_size).
+//!
+//! - **Attributes**: Apply custom attributes to [fields](Config::field_attributes) and
+//! [messages](Config::type_attributes).
+//!
+//! - **Custom fields**: Substitute your own type into the generated code, allowing complete
+//! control over the encode and decode behaviour. Can be applied to [normal
+//! fields](Config::custom_field) or [unknown fields](Config::unknown_handler).
+//!
+//! - **Max container size**: Specify the max capacity of [`string`/`bytes`
+//! fields](Config::max_bytes) as well as [repeated fields](Config::max_len), which is necessary
+//! when using fixed-capacity containers like `ArrayVec`.
 
 pub mod config;
 mod generator;
