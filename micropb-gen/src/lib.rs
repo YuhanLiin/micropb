@@ -1,7 +1,11 @@
 #![warn(missing_docs)]
-//! `micropb-gen` compiles `.proto` files into Rust. It is intended to be used inside `build.rs` for build-time code generation.
+//! `micropb-gen` compiles `.proto` files into Rust code. It is intended to be used inside
+//! `build.rs` for build-time code generation.
 //!
-//! The entry point of this crate is the [`Generator`] type. Configuration of code generator behaviour is handled by the [`Config`] type.
+//! Unlike other Protobuf code generators in the Rust ecosystem, `micropb` is aimed for constrained
+//! environments without an allocator.
+//!
+//! The entry point of this crate is the [`Generator`] type.
 //!
 //! # Getting Started
 //!
