@@ -639,6 +639,16 @@ impl Generator {
         self
     }
 
+    /// Apply one set of configurations to all provided Protobuf paths.
+    ///
+    /// See [`configure`](Self::configure) for how configurations are applied.
+    pub fn configure_many(&mut self, proto_paths: &[&str], config: Config) -> &mut Self {
+        for path in proto_paths {
+            self.configure(path, config.clone());
+        }
+        self
+    }
+
     /// Configure the generator to generate `heapless` containers for Protobuf `string`, `bytes`,
     /// repeated, and `map` fields.
     ///
