@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## 0.2.0
 
 ### Added
 
@@ -26,7 +26,7 @@
 - Reject Protobuf Editions .proto files instead of pretending they're proto3
 - Fix lifetime detection for messages and oneofs
 
-## [0.1.2]
+## 0.1.2
 
 ### Added
 
