@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add `minimal_accessors` configuration to reduce generated file size
+
+### Changed
+
+- Use derives for `PartialEq` and `Default` when possible
+
 ## 0.2.0
 
 ### Added
@@ -11,8 +21,8 @@
 - Add `field_lifetime` configuration to set lifetime of message fields
 - Add container trait impls for `Cow`
 - Add const constructor `_new` to hazzer structs and add const to all hazzer methods
-- Add `Generator::configure_many`
-- Add `Config::recursive_field`
+- Add `Generator::configure_many` method for configuring multiple paths at once
+- Add `recursive_field` configuration to box and handle max size for recursive fields
 
 ### Changed
 
