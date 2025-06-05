@@ -43,6 +43,10 @@ impl<T: MessageDecode> MessageDecode for &mut T {
         (*self).decode(decoder, len)
     }
 
+    fn decode_from_bytes(&mut self, bytes: &[u8]) -> Result<(), DecodeError<never::Never>> {
+        (*self).decode_from_bytes(bytes)
+    }
+
     fn decode_len_delimited<R: PbRead>(
         &mut self,
         decoder: &mut PbDecoder<R>,
@@ -95,5 +99,9 @@ impl<T: MessageEncode> MessageEncode for &T {
 
     fn encode_len_delimited<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         (*self).encode_len_delimited(encoder)
+    }
+
+    fn encode_to_writer<W: PbWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
+        (*self).encode_to_writer(writer)
     }
 }
