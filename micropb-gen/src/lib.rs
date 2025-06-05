@@ -460,18 +460,18 @@
 //! ## Notable Configurations
 //!
 //! - **Integer size**: Controls the width of the integer types used to represent [integer
-//! fields](Config::int_size). This can also be done for [enums](Config::enum_int_size).
+//!   fields](Config::int_size). This can also be done for [enums](Config::enum_int_size).
 //!
 //! - **Attributes**: Apply custom attributes to [fields](Config::field_attributes) and
-//! [messages](Config::type_attributes).
+//!   [messages](Config::type_attributes).
 //!
 //! - **Custom fields**: Substitute your own type into the generated code, allowing complete
-//! control over the encode and decode behaviour. Can be applied to [normal
-//! fields](Config::custom_field) or [unknown fields](Config::unknown_handler).
+//!   control over the encode and decode behaviour. Can be applied to [normal
+//!   fields](Config::custom_field) or [unknown fields](Config::unknown_handler).
 //!
 //! - **Max container size**: Specify the max capacity of [`string`/`bytes`
-//! fields](Config::max_bytes) as well as [repeated fields](Config::max_len), which is necessary
-//! when using fixed-capacity containers like `ArrayVec`.
+//!   fields](Config::max_bytes) as well as [repeated fields](Config::max_len), which is necessary
+//!   when using fixed-capacity containers like `ArrayVec`.
 
 pub mod config;
 mod generator;

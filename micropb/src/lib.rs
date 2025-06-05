@@ -83,42 +83,42 @@
 //! # Feature Flags
 //!
 //! - **encode**: Enable support for encoding and computing the size of messages. If disabled, the
-//! generator should be configured to not generate encoding logic via
-//! [`Generator::encode_decode`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.encode_decode).
-//! Enabled by default.
+//!   generator should be configured to not generate encoding logic via
+//!   [`Generator::encode_decode`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.encode_decode).
+//!   Enabled by default.
 //!
 //! - **decode**: Enable support for decoding messages. If disabled, the generator should be
-//! configured to not generate decoding logic via
-//! [`Generator::encode_decode`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.encode_decode).
-//! Enabled by default.
+//!   configured to not generate decoding logic via
+//!   [`Generator::encode_decode`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.encode_decode).
+//!   Enabled by default.
 //!
 //! - **enable-64bit**: Enable 64-bit integer operations. If disabled, then 64-bit fields such as
-//! `int64` or `sint64` should have
-//! [`Config::int_size`](https://docs.rs/micropb-gen/latest/micropb_gen/config/struct.Config.html#method.int_size)
-//! set to 32 bits or less. Has no effect on `double` fields. Enabled by default.
+//!   `int64` or `sint64` should have
+//!   [`Config::int_size`](https://docs.rs/micropb-gen/latest/micropb_gen/config/struct.Config.html#method.int_size)
+//!   set to 32 bits or less. Has no effect on `double` fields. Enabled by default.
 //!
 //! - **alloc**: Implements container traits on `Vec`, `String`, and `BTreeMap` from
-//! [`alloc`](https://doc.rust-lang.org/alloc), allowing them to be used as container fields.
-//! Corresponds with
-//! [`Generator::use_container_alloc`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_alloc)
-//! from `micropb-gen`.
+//!   [`alloc`](https://doc.rust-lang.org/alloc), allowing them to be used as container fields.
+//!   Corresponds with
+//!   [`Generator::use_container_alloc`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_alloc)
+//!   from `micropb-gen`.
 //!
 //! - **std**: Enables standard library and implements [`PbMap`] on `HashMap`.
-//! Corresponds with
-//! [`Generator::use_container_std`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_std)
-//! from `micropb-gen`.
+//!   Corresponds with
+//!   [`Generator::use_container_std`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_std)
+//!   from `micropb-gen`.
 //!
 //! - **container-heapless**: Implements container traits on `Vec`, `String`, and `IndexMap` from
-//! [`heapless`](https://docs.rs/heapless/latest/heapless), allowing them to be used as container
-//! fields. Corresponds with
-//! [`Generator::use_container_heapless`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_heapless)
-//! from `micropb-gen`.
+//!   [`heapless`](https://docs.rs/heapless/latest/heapless), allowing them to be used as container
+//!   fields. Corresponds with
+//!   [`Generator::use_container_heapless`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_heapless)
+//!   from `micropb-gen`.
 //!
 //! - **container-arrayvec**: Implements container traits on `ArrayVec` and `ArrayString` from
-//! [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), allowing them to be used as container
-//! fields. Corresponds with
-//! [`Generator::use_container_arrayvec`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_arrayvec)
-//! from `micropb-gen`.
+//!   [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), allowing them to be used as container
+//!   fields. Corresponds with
+//!   [`Generator::use_container_arrayvec`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_arrayvec)
+//!   from `micropb-gen`.
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
