@@ -6,7 +6,6 @@ authors = ["Yuhan Lin <yuhanliin@protonmail.com>"]
 description = "Rust Protobuf library targetting embedded systems and no_std environments"
 keywords = ["protobuf", "no_std", "embedded", "serialization"]
 categories = ["embedded", "no-std::no-alloc", "encoding"]
-readme = "README.md"
 repository = "https://github.com/YuhanLiin/micropb"
 rust-version = "1.83.0"
 license = "MIT OR Apache-2.0"
