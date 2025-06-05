@@ -222,72 +222,30 @@ pub mod google_ {
             pub fn r#name(&self) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#name().then_some(&self.r#name)
             }
-            ///Set the value and presence of `name`
-            #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
-                self._has.set_name();
-                self.r#name = value.into();
-                self
-            }
             ///Return a reference to `package` as an `Option`
             #[inline]
             pub fn r#package(&self) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#package().then_some(&self.r#package)
-            }
-            ///Set the value and presence of `package`
-            #[inline]
-            pub fn set_package(&mut self, value: ::std::string::String) -> &mut Self {
-                self._has.set_package();
-                self.r#package = value.into();
-                self
             }
             ///Return a reference to `options` as an `Option`
             #[inline]
             pub fn r#options(&self) -> ::core::option::Option<&FileOptions> {
                 self._has.r#options().then_some(&self.r#options)
             }
-            ///Set the value and presence of `options`
-            #[inline]
-            pub fn set_options(&mut self, value: FileOptions) -> &mut Self {
-                self._has.set_options();
-                self.r#options = value.into();
-                self
-            }
             ///Return a reference to `source_code_info` as an `Option`
             #[inline]
             pub fn r#source_code_info(&self) -> ::core::option::Option<&SourceCodeInfo> {
                 self._has.r#source_code_info().then_some(&self.r#source_code_info)
-            }
-            ///Set the value and presence of `source_code_info`
-            #[inline]
-            pub fn set_source_code_info(&mut self, value: SourceCodeInfo) -> &mut Self {
-                self._has.set_source_code_info();
-                self.r#source_code_info = value.into();
-                self
             }
             ///Return a reference to `syntax` as an `Option`
             #[inline]
             pub fn r#syntax(&self) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#syntax().then_some(&self.r#syntax)
             }
-            ///Set the value and presence of `syntax`
-            #[inline]
-            pub fn set_syntax(&mut self, value: ::std::string::String) -> &mut Self {
-                self._has.set_syntax();
-                self.r#syntax = value.into();
-                self
-            }
             ///Return a reference to `edition` as an `Option`
             #[inline]
             pub fn r#edition(&self) -> ::core::option::Option<&Edition> {
                 self._has.r#edition().then_some(&self.r#edition)
-            }
-            ///Set the value and presence of `edition`
-            #[inline]
-            pub fn set_edition(&mut self, value: Edition) -> &mut Self {
-                self._has.set_edition();
-                self.r#edition = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for FileDescriptorProto {
@@ -565,6 +523,33 @@ pub mod google_ {
                     self.r#start = value.into();
                     self
                 }
+                ///Return a mutable reference to `start` as an `Option`
+                #[inline]
+                pub fn mut_start(&mut self) -> ::core::option::Option<&mut i32> {
+                    self._has.r#start().then_some(&mut self.r#start)
+                }
+                ///Clear the presence of `start`
+                #[inline]
+                pub fn clear_start(&mut self) -> &mut Self {
+                    self._has.clear_start();
+                    self
+                }
+                ///Take the value of `start` and clear its presence
+                #[inline]
+                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#start()
+                        .then(|| ::core::mem::take(&mut self.r#start));
+                    self._has.clear_start();
+                    val
+                }
+                ///Builder method that sets the value of `start`. Useful for initializing the message.
+                #[inline]
+                pub fn init_start(mut self, value: i32) -> Self {
+                    self.set_start(value);
+                    self
+                }
                 ///Return a reference to `end` as an `Option`
                 #[inline]
                 pub fn r#end(&self) -> ::core::option::Option<&i32> {
@@ -575,6 +560,33 @@ pub mod google_ {
                 pub fn set_end(&mut self, value: i32) -> &mut Self {
                     self._has.set_end();
                     self.r#end = value.into();
+                    self
+                }
+                ///Return a mutable reference to `end` as an `Option`
+                #[inline]
+                pub fn mut_end(&mut self) -> ::core::option::Option<&mut i32> {
+                    self._has.r#end().then_some(&mut self.r#end)
+                }
+                ///Clear the presence of `end`
+                #[inline]
+                pub fn clear_end(&mut self) -> &mut Self {
+                    self._has.clear_end();
+                    self
+                }
+                ///Take the value of `end` and clear its presence
+                #[inline]
+                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#end()
+                        .then(|| ::core::mem::take(&mut self.r#end));
+                    self._has.clear_end();
+                    val
+                }
+                ///Builder method that sets the value of `end`. Useful for initializing the message.
+                #[inline]
+                pub fn init_end(mut self, value: i32) -> Self {
+                    self.set_end(value);
                     self
                 }
                 ///Return a reference to `options` as an `Option`
@@ -592,6 +604,40 @@ pub mod google_ {
                 ) -> &mut Self {
                     self._has.set_options();
                     self.r#options = value.into();
+                    self
+                }
+                ///Return a mutable reference to `options` as an `Option`
+                #[inline]
+                pub fn mut_options(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::ExtensionRangeOptions> {
+                    self._has.r#options().then_some(&mut self.r#options)
+                }
+                ///Clear the presence of `options`
+                #[inline]
+                pub fn clear_options(&mut self) -> &mut Self {
+                    self._has.clear_options();
+                    self
+                }
+                ///Take the value of `options` and clear its presence
+                #[inline]
+                pub fn take_options(
+                    &mut self,
+                ) -> ::core::option::Option<super::ExtensionRangeOptions> {
+                    let val = self
+                        ._has
+                        .r#options()
+                        .then(|| ::core::mem::take(&mut self.r#options));
+                    self._has.clear_options();
+                    val
+                }
+                ///Builder method that sets the value of `options`. Useful for initializing the message.
+                #[inline]
+                pub fn init_options(
+                    mut self,
+                    value: super::ExtensionRangeOptions,
+                ) -> Self {
+                    self.set_options(value);
                     self
                 }
             }
@@ -718,6 +764,33 @@ pub mod google_ {
                     self.r#start = value.into();
                     self
                 }
+                ///Return a mutable reference to `start` as an `Option`
+                #[inline]
+                pub fn mut_start(&mut self) -> ::core::option::Option<&mut i32> {
+                    self._has.r#start().then_some(&mut self.r#start)
+                }
+                ///Clear the presence of `start`
+                #[inline]
+                pub fn clear_start(&mut self) -> &mut Self {
+                    self._has.clear_start();
+                    self
+                }
+                ///Take the value of `start` and clear its presence
+                #[inline]
+                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#start()
+                        .then(|| ::core::mem::take(&mut self.r#start));
+                    self._has.clear_start();
+                    val
+                }
+                ///Builder method that sets the value of `start`. Useful for initializing the message.
+                #[inline]
+                pub fn init_start(mut self, value: i32) -> Self {
+                    self.set_start(value);
+                    self
+                }
                 ///Return a reference to `end` as an `Option`
                 #[inline]
                 pub fn r#end(&self) -> ::core::option::Option<&i32> {
@@ -728,6 +801,33 @@ pub mod google_ {
                 pub fn set_end(&mut self, value: i32) -> &mut Self {
                     self._has.set_end();
                     self.r#end = value.into();
+                    self
+                }
+                ///Return a mutable reference to `end` as an `Option`
+                #[inline]
+                pub fn mut_end(&mut self) -> ::core::option::Option<&mut i32> {
+                    self._has.r#end().then_some(&mut self.r#end)
+                }
+                ///Clear the presence of `end`
+                #[inline]
+                pub fn clear_end(&mut self) -> &mut Self {
+                    self._has.clear_end();
+                    self
+                }
+                ///Take the value of `end` and clear its presence
+                #[inline]
+                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#end()
+                        .then(|| ::core::mem::take(&mut self.r#end));
+                    self._has.clear_end();
+                    val
+                }
+                ///Builder method that sets the value of `end`. Useful for initializing the message.
+                #[inline]
+                pub fn init_end(mut self, value: i32) -> Self {
+                    self.set_end(value);
                     self
                 }
             }
@@ -854,6 +954,37 @@ pub mod google_ {
                 self.r#name = value.into();
                 self
             }
+            ///Return a mutable reference to `name` as an `Option`
+            #[inline]
+            pub fn mut_name(
+                &mut self,
+            ) -> ::core::option::Option<&mut ::std::string::String> {
+                self._has.r#name().then_some(&mut self.r#name)
+            }
+            ///Clear the presence of `name`
+            #[inline]
+            pub fn clear_name(&mut self) -> &mut Self {
+                self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
+            }
             ///Return a reference to `options` as an `Option`
             #[inline]
             pub fn r#options(&self) -> ::core::option::Option<&MessageOptions> {
@@ -864,6 +995,35 @@ pub mod google_ {
             pub fn set_options(&mut self, value: MessageOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
+            }
+            ///Return a mutable reference to `options` as an `Option`
+            #[inline]
+            pub fn mut_options(
+                &mut self,
+            ) -> ::core::option::Option<&mut MessageOptions> {
+                self._has.r#options().then_some(&mut self.r#options)
+            }
+            ///Clear the presence of `options`
+            #[inline]
+            pub fn clear_options(&mut self) -> &mut Self {
+                self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<MessageOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: MessageOptions) -> Self {
+                self.set_options(value);
                 self
             }
         }
@@ -1159,13 +1319,6 @@ pub mod google_ {
                 pub fn r#number(&self) -> ::core::option::Option<&i32> {
                     self._has.r#number().then_some(&self.r#number)
                 }
-                ///Set the value and presence of `number`
-                #[inline]
-                pub fn set_number(&mut self, value: i32) -> &mut Self {
-                    self._has.set_number();
-                    self.r#number = value.into();
-                    self
-                }
                 ///Return a reference to `full_name` as an `Option`
                 #[inline]
                 pub fn r#full_name(
@@ -1173,51 +1326,20 @@ pub mod google_ {
                 ) -> ::core::option::Option<&::std::string::String> {
                     self._has.r#full_name().then_some(&self.r#full_name)
                 }
-                ///Set the value and presence of `full_name`
-                #[inline]
-                pub fn set_full_name(
-                    &mut self,
-                    value: ::std::string::String,
-                ) -> &mut Self {
-                    self._has.set_full_name();
-                    self.r#full_name = value.into();
-                    self
-                }
                 ///Return a reference to `type` as an `Option`
                 #[inline]
                 pub fn r#type(&self) -> ::core::option::Option<&::std::string::String> {
                     self._has.r#type().then_some(&self.r#type)
-                }
-                ///Set the value and presence of `type`
-                #[inline]
-                pub fn set_type(&mut self, value: ::std::string::String) -> &mut Self {
-                    self._has.set_type();
-                    self.r#type = value.into();
-                    self
                 }
                 ///Return a reference to `reserved` as an `Option`
                 #[inline]
                 pub fn r#reserved(&self) -> ::core::option::Option<&bool> {
                     self._has.r#reserved().then_some(&self.r#reserved)
                 }
-                ///Set the value and presence of `reserved`
-                #[inline]
-                pub fn set_reserved(&mut self, value: bool) -> &mut Self {
-                    self._has.set_reserved();
-                    self.r#reserved = value.into();
-                    self
-                }
                 ///Return a reference to `repeated` as an `Option`
                 #[inline]
                 pub fn r#repeated(&self) -> ::core::option::Option<&bool> {
                     self._has.r#repeated().then_some(&self.r#repeated)
-                }
-                ///Set the value and presence of `repeated`
-                #[inline]
-                pub fn set_repeated(&mut self, value: bool) -> &mut Self {
-                    self._has.set_repeated();
-                    self.r#repeated = value.into();
-                    self
                 }
             }
             impl ::micropb::MessageDecode for Declaration {
@@ -1382,29 +1504,12 @@ pub mod google_ {
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
             }
-            ///Set the value and presence of `features`
-            #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
-                self._has.set_features();
-                self.r#features = value.into();
-                self
-            }
             ///Return a reference to `verification` as an `Option`
             #[inline]
             pub fn r#verification(
                 &self,
             ) -> ::core::option::Option<&ExtensionRangeOptions_::VerificationState> {
                 self._has.r#verification().then_some(&self.r#verification)
-            }
-            ///Set the value and presence of `verification`
-            #[inline]
-            pub fn set_verification(
-                &mut self,
-                value: ExtensionRangeOptions_::VerificationState,
-            ) -> &mut Self {
-                self._has.set_verification();
-                self.r#verification = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for ExtensionRangeOptions {
@@ -1837,6 +1942,37 @@ pub mod google_ {
                 self.r#name = value.into();
                 self
             }
+            ///Return a mutable reference to `name` as an `Option`
+            #[inline]
+            pub fn mut_name(
+                &mut self,
+            ) -> ::core::option::Option<&mut ::std::string::String> {
+                self._has.r#name().then_some(&mut self.r#name)
+            }
+            ///Clear the presence of `name`
+            #[inline]
+            pub fn clear_name(&mut self) -> &mut Self {
+                self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
+            }
             ///Return a reference to `number` as an `Option`
             #[inline]
             pub fn r#number(&self) -> ::core::option::Option<&i32> {
@@ -1847,6 +1983,33 @@ pub mod google_ {
             pub fn set_number(&mut self, value: i32) -> &mut Self {
                 self._has.set_number();
                 self.r#number = value.into();
+                self
+            }
+            ///Return a mutable reference to `number` as an `Option`
+            #[inline]
+            pub fn mut_number(&mut self) -> ::core::option::Option<&mut i32> {
+                self._has.r#number().then_some(&mut self.r#number)
+            }
+            ///Clear the presence of `number`
+            #[inline]
+            pub fn clear_number(&mut self) -> &mut Self {
+                self._has.clear_number();
+                self
+            }
+            ///Take the value of `number` and clear its presence
+            #[inline]
+            pub fn take_number(&mut self) -> ::core::option::Option<i32> {
+                let val = self
+                    ._has
+                    .r#number()
+                    .then(|| ::core::mem::take(&mut self.r#number));
+                self._has.clear_number();
+                val
+            }
+            ///Builder method that sets the value of `number`. Useful for initializing the message.
+            #[inline]
+            pub fn init_number(mut self, value: i32) -> Self {
+                self.set_number(value);
                 self
             }
             ///Return a reference to `label` as an `Option`
@@ -1866,6 +2029,37 @@ pub mod google_ {
                 self.r#label = value.into();
                 self
             }
+            ///Return a mutable reference to `label` as an `Option`
+            #[inline]
+            pub fn mut_label(
+                &mut self,
+            ) -> ::core::option::Option<&mut FieldDescriptorProto_::Label> {
+                self._has.r#label().then_some(&mut self.r#label)
+            }
+            ///Clear the presence of `label`
+            #[inline]
+            pub fn clear_label(&mut self) -> &mut Self {
+                self._has.clear_label();
+                self
+            }
+            ///Take the value of `label` and clear its presence
+            #[inline]
+            pub fn take_label(
+                &mut self,
+            ) -> ::core::option::Option<FieldDescriptorProto_::Label> {
+                let val = self
+                    ._has
+                    .r#label()
+                    .then(|| ::core::mem::take(&mut self.r#label));
+                self._has.clear_label();
+                val
+            }
+            ///Builder method that sets the value of `label`. Useful for initializing the message.
+            #[inline]
+            pub fn init_label(mut self, value: FieldDescriptorProto_::Label) -> Self {
+                self.set_label(value);
+                self
+            }
             ///Return a reference to `type` as an `Option`
             #[inline]
             pub fn r#type(
@@ -1880,6 +2074,37 @@ pub mod google_ {
                 self.r#type = value.into();
                 self
             }
+            ///Return a mutable reference to `type` as an `Option`
+            #[inline]
+            pub fn mut_type(
+                &mut self,
+            ) -> ::core::option::Option<&mut FieldDescriptorProto_::Type> {
+                self._has.r#type().then_some(&mut self.r#type)
+            }
+            ///Clear the presence of `type`
+            #[inline]
+            pub fn clear_type(&mut self) -> &mut Self {
+                self._has.clear_type();
+                self
+            }
+            ///Take the value of `type` and clear its presence
+            #[inline]
+            pub fn take_type(
+                &mut self,
+            ) -> ::core::option::Option<FieldDescriptorProto_::Type> {
+                let val = self
+                    ._has
+                    .r#type()
+                    .then(|| ::core::mem::take(&mut self.r#type));
+                self._has.clear_type();
+                val
+            }
+            ///Builder method that sets the value of `type`. Useful for initializing the message.
+            #[inline]
+            pub fn init_type(mut self, value: FieldDescriptorProto_::Type) -> Self {
+                self.set_type(value);
+                self
+            }
             ///Return a reference to `type_name` as an `Option`
             #[inline]
             pub fn r#type_name(&self) -> ::core::option::Option<&::std::string::String> {
@@ -1892,6 +2117,37 @@ pub mod google_ {
                 self.r#type_name = value.into();
                 self
             }
+            ///Return a mutable reference to `type_name` as an `Option`
+            #[inline]
+            pub fn mut_type_name(
+                &mut self,
+            ) -> ::core::option::Option<&mut ::std::string::String> {
+                self._has.r#type_name().then_some(&mut self.r#type_name)
+            }
+            ///Clear the presence of `type_name`
+            #[inline]
+            pub fn clear_type_name(&mut self) -> &mut Self {
+                self._has.clear_type_name();
+                self
+            }
+            ///Take the value of `type_name` and clear its presence
+            #[inline]
+            pub fn take_type_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#type_name()
+                    .then(|| ::core::mem::take(&mut self.r#type_name));
+                self._has.clear_type_name();
+                val
+            }
+            ///Builder method that sets the value of `type_name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_type_name(mut self, value: ::std::string::String) -> Self {
+                self.set_type_name(value);
+                self
+            }
             ///Return a reference to `extendee` as an `Option`
             #[inline]
             pub fn r#extendee(&self) -> ::core::option::Option<&::std::string::String> {
@@ -1902,6 +2158,37 @@ pub mod google_ {
             pub fn set_extendee(&mut self, value: ::std::string::String) -> &mut Self {
                 self._has.set_extendee();
                 self.r#extendee = value.into();
+                self
+            }
+            ///Return a mutable reference to `extendee` as an `Option`
+            #[inline]
+            pub fn mut_extendee(
+                &mut self,
+            ) -> ::core::option::Option<&mut ::std::string::String> {
+                self._has.r#extendee().then_some(&mut self.r#extendee)
+            }
+            ///Clear the presence of `extendee`
+            #[inline]
+            pub fn clear_extendee(&mut self) -> &mut Self {
+                self._has.clear_extendee();
+                self
+            }
+            ///Take the value of `extendee` and clear its presence
+            #[inline]
+            pub fn take_extendee(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#extendee()
+                    .then(|| ::core::mem::take(&mut self.r#extendee));
+                self._has.clear_extendee();
+                val
+            }
+            ///Builder method that sets the value of `extendee`. Useful for initializing the message.
+            #[inline]
+            pub fn init_extendee(mut self, value: ::std::string::String) -> Self {
+                self.set_extendee(value);
                 self
             }
             ///Return a reference to `default_value` as an `Option`
@@ -1921,6 +2208,37 @@ pub mod google_ {
                 self.r#default_value = value.into();
                 self
             }
+            ///Return a mutable reference to `default_value` as an `Option`
+            #[inline]
+            pub fn mut_default_value(
+                &mut self,
+            ) -> ::core::option::Option<&mut ::std::string::String> {
+                self._has.r#default_value().then_some(&mut self.r#default_value)
+            }
+            ///Clear the presence of `default_value`
+            #[inline]
+            pub fn clear_default_value(&mut self) -> &mut Self {
+                self._has.clear_default_value();
+                self
+            }
+            ///Take the value of `default_value` and clear its presence
+            #[inline]
+            pub fn take_default_value(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#default_value()
+                    .then(|| ::core::mem::take(&mut self.r#default_value));
+                self._has.clear_default_value();
+                val
+            }
+            ///Builder method that sets the value of `default_value`. Useful for initializing the message.
+            #[inline]
+            pub fn init_default_value(mut self, value: ::std::string::String) -> Self {
+                self.set_default_value(value);
+                self
+            }
             ///Return a reference to `oneof_index` as an `Option`
             #[inline]
             pub fn r#oneof_index(&self) -> ::core::option::Option<&i32> {
@@ -1931,6 +2249,33 @@ pub mod google_ {
             pub fn set_oneof_index(&mut self, value: i32) -> &mut Self {
                 self._has.set_oneof_index();
                 self.r#oneof_index = value.into();
+                self
+            }
+            ///Return a mutable reference to `oneof_index` as an `Option`
+            #[inline]
+            pub fn mut_oneof_index(&mut self) -> ::core::option::Option<&mut i32> {
+                self._has.r#oneof_index().then_some(&mut self.r#oneof_index)
+            }
+            ///Clear the presence of `oneof_index`
+            #[inline]
+            pub fn clear_oneof_index(&mut self) -> &mut Self {
+                self._has.clear_oneof_index();
+                self
+            }
+            ///Take the value of `oneof_index` and clear its presence
+            #[inline]
+            pub fn take_oneof_index(&mut self) -> ::core::option::Option<i32> {
+                let val = self
+                    ._has
+                    .r#oneof_index()
+                    .then(|| ::core::mem::take(&mut self.r#oneof_index));
+                self._has.clear_oneof_index();
+                val
+            }
+            ///Builder method that sets the value of `oneof_index`. Useful for initializing the message.
+            #[inline]
+            pub fn init_oneof_index(mut self, value: i32) -> Self {
+                self.set_oneof_index(value);
                 self
             }
             ///Return a reference to `json_name` as an `Option`
@@ -1945,6 +2290,37 @@ pub mod google_ {
                 self.r#json_name = value.into();
                 self
             }
+            ///Return a mutable reference to `json_name` as an `Option`
+            #[inline]
+            pub fn mut_json_name(
+                &mut self,
+            ) -> ::core::option::Option<&mut ::std::string::String> {
+                self._has.r#json_name().then_some(&mut self.r#json_name)
+            }
+            ///Clear the presence of `json_name`
+            #[inline]
+            pub fn clear_json_name(&mut self) -> &mut Self {
+                self._has.clear_json_name();
+                self
+            }
+            ///Take the value of `json_name` and clear its presence
+            #[inline]
+            pub fn take_json_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#json_name()
+                    .then(|| ::core::mem::take(&mut self.r#json_name));
+                self._has.clear_json_name();
+                val
+            }
+            ///Builder method that sets the value of `json_name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_json_name(mut self, value: ::std::string::String) -> Self {
+                self.set_json_name(value);
+                self
+            }
             ///Return a reference to `options` as an `Option`
             #[inline]
             pub fn r#options(&self) -> ::core::option::Option<&FieldOptions> {
@@ -1957,6 +2333,33 @@ pub mod google_ {
                 self.r#options = value.into();
                 self
             }
+            ///Return a mutable reference to `options` as an `Option`
+            #[inline]
+            pub fn mut_options(&mut self) -> ::core::option::Option<&mut FieldOptions> {
+                self._has.r#options().then_some(&mut self.r#options)
+            }
+            ///Clear the presence of `options`
+            #[inline]
+            pub fn clear_options(&mut self) -> &mut Self {
+                self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<FieldOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: FieldOptions) -> Self {
+                self.set_options(value);
+                self
+            }
             ///Return a reference to `proto3_optional` as an `Option`
             #[inline]
             pub fn r#proto3_optional(&self) -> ::core::option::Option<&bool> {
@@ -1967,6 +2370,33 @@ pub mod google_ {
             pub fn set_proto3_optional(&mut self, value: bool) -> &mut Self {
                 self._has.set_proto3_optional();
                 self.r#proto3_optional = value.into();
+                self
+            }
+            ///Return a mutable reference to `proto3_optional` as an `Option`
+            #[inline]
+            pub fn mut_proto3_optional(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#proto3_optional().then_some(&mut self.r#proto3_optional)
+            }
+            ///Clear the presence of `proto3_optional`
+            #[inline]
+            pub fn clear_proto3_optional(&mut self) -> &mut Self {
+                self._has.clear_proto3_optional();
+                self
+            }
+            ///Take the value of `proto3_optional` and clear its presence
+            #[inline]
+            pub fn take_proto3_optional(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#proto3_optional()
+                    .then(|| ::core::mem::take(&mut self.r#proto3_optional));
+                self._has.clear_proto3_optional();
+                val
+            }
+            ///Builder method that sets the value of `proto3_optional`. Useful for initializing the message.
+            #[inline]
+            pub fn init_proto3_optional(mut self, value: bool) -> Self {
+                self.set_proto3_optional(value);
                 self
             }
         }
@@ -2161,6 +2591,37 @@ pub mod google_ {
                 self.r#name = value.into();
                 self
             }
+            ///Return a mutable reference to `name` as an `Option`
+            #[inline]
+            pub fn mut_name(
+                &mut self,
+            ) -> ::core::option::Option<&mut ::std::string::String> {
+                self._has.r#name().then_some(&mut self.r#name)
+            }
+            ///Clear the presence of `name`
+            #[inline]
+            pub fn clear_name(&mut self) -> &mut Self {
+                self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
+            }
             ///Return a reference to `options` as an `Option`
             #[inline]
             pub fn r#options(&self) -> ::core::option::Option<&OneofOptions> {
@@ -2171,6 +2632,33 @@ pub mod google_ {
             pub fn set_options(&mut self, value: OneofOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
+            }
+            ///Return a mutable reference to `options` as an `Option`
+            #[inline]
+            pub fn mut_options(&mut self) -> ::core::option::Option<&mut OneofOptions> {
+                self._has.r#options().then_some(&mut self.r#options)
+            }
+            ///Clear the presence of `options`
+            #[inline]
+            pub fn clear_options(&mut self) -> &mut Self {
+                self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<OneofOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: OneofOptions) -> Self {
+                self.set_options(value);
                 self
             }
         }
@@ -2283,24 +2771,10 @@ pub mod google_ {
                 pub fn r#start(&self) -> ::core::option::Option<&i32> {
                     self._has.r#start().then_some(&self.r#start)
                 }
-                ///Set the value and presence of `start`
-                #[inline]
-                pub fn set_start(&mut self, value: i32) -> &mut Self {
-                    self._has.set_start();
-                    self.r#start = value.into();
-                    self
-                }
                 ///Return a reference to `end` as an `Option`
                 #[inline]
                 pub fn r#end(&self) -> ::core::option::Option<&i32> {
                     self._has.r#end().then_some(&self.r#end)
-                }
-                ///Set the value and presence of `end`
-                #[inline]
-                pub fn set_end(&mut self, value: i32) -> &mut Self {
-                    self._has.set_end();
-                    self.r#end = value.into();
-                    self
                 }
             }
             impl ::micropb::MessageDecode for EnumReservedRange {
@@ -2416,24 +2890,10 @@ pub mod google_ {
             pub fn r#name(&self) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#name().then_some(&self.r#name)
             }
-            ///Set the value and presence of `name`
-            #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
-                self._has.set_name();
-                self.r#name = value.into();
-                self
-            }
             ///Return a reference to `options` as an `Option`
             #[inline]
             pub fn r#options(&self) -> ::core::option::Option<&EnumOptions> {
                 self._has.r#options().then_some(&self.r#options)
-            }
-            ///Set the value and presence of `options`
-            #[inline]
-            pub fn set_options(&mut self, value: EnumOptions) -> &mut Self {
-                self._has.set_options();
-                self.r#options = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for EnumDescriptorProto {
@@ -2617,6 +3077,37 @@ pub mod google_ {
                 self.r#name = value.into();
                 self
             }
+            ///Return a mutable reference to `name` as an `Option`
+            #[inline]
+            pub fn mut_name(
+                &mut self,
+            ) -> ::core::option::Option<&mut ::std::string::String> {
+                self._has.r#name().then_some(&mut self.r#name)
+            }
+            ///Clear the presence of `name`
+            #[inline]
+            pub fn clear_name(&mut self) -> &mut Self {
+                self._has.clear_name();
+                self
+            }
+            ///Take the value of `name` and clear its presence
+            #[inline]
+            pub fn take_name(
+                &mut self,
+            ) -> ::core::option::Option<::std::string::String> {
+                let val = self
+                    ._has
+                    .r#name()
+                    .then(|| ::core::mem::take(&mut self.r#name));
+                self._has.clear_name();
+                val
+            }
+            ///Builder method that sets the value of `name`. Useful for initializing the message.
+            #[inline]
+            pub fn init_name(mut self, value: ::std::string::String) -> Self {
+                self.set_name(value);
+                self
+            }
             ///Return a reference to `number` as an `Option`
             #[inline]
             pub fn r#number(&self) -> ::core::option::Option<&i32> {
@@ -2629,6 +3120,33 @@ pub mod google_ {
                 self.r#number = value.into();
                 self
             }
+            ///Return a mutable reference to `number` as an `Option`
+            #[inline]
+            pub fn mut_number(&mut self) -> ::core::option::Option<&mut i32> {
+                self._has.r#number().then_some(&mut self.r#number)
+            }
+            ///Clear the presence of `number`
+            #[inline]
+            pub fn clear_number(&mut self) -> &mut Self {
+                self._has.clear_number();
+                self
+            }
+            ///Take the value of `number` and clear its presence
+            #[inline]
+            pub fn take_number(&mut self) -> ::core::option::Option<i32> {
+                let val = self
+                    ._has
+                    .r#number()
+                    .then(|| ::core::mem::take(&mut self.r#number));
+                self._has.clear_number();
+                val
+            }
+            ///Builder method that sets the value of `number`. Useful for initializing the message.
+            #[inline]
+            pub fn init_number(mut self, value: i32) -> Self {
+                self.set_number(value);
+                self
+            }
             ///Return a reference to `options` as an `Option`
             #[inline]
             pub fn r#options(&self) -> ::core::option::Option<&EnumValueOptions> {
@@ -2639,6 +3157,35 @@ pub mod google_ {
             pub fn set_options(&mut self, value: EnumValueOptions) -> &mut Self {
                 self._has.set_options();
                 self.r#options = value.into();
+                self
+            }
+            ///Return a mutable reference to `options` as an `Option`
+            #[inline]
+            pub fn mut_options(
+                &mut self,
+            ) -> ::core::option::Option<&mut EnumValueOptions> {
+                self._has.r#options().then_some(&mut self.r#options)
+            }
+            ///Clear the presence of `options`
+            #[inline]
+            pub fn clear_options(&mut self) -> &mut Self {
+                self._has.clear_options();
+                self
+            }
+            ///Take the value of `options` and clear its presence
+            #[inline]
+            pub fn take_options(&mut self) -> ::core::option::Option<EnumValueOptions> {
+                let val = self
+                    ._has
+                    .r#options()
+                    .then(|| ::core::mem::take(&mut self.r#options));
+                self._has.clear_options();
+                val
+            }
+            ///Builder method that sets the value of `options`. Useful for initializing the message.
+            #[inline]
+            pub fn init_options(mut self, value: EnumValueOptions) -> Self {
+                self.set_options(value);
                 self
             }
         }
@@ -2759,24 +3306,10 @@ pub mod google_ {
             pub fn r#name(&self) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#name().then_some(&self.r#name)
             }
-            ///Set the value and presence of `name`
-            #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
-                self._has.set_name();
-                self.r#name = value.into();
-                self
-            }
             ///Return a reference to `options` as an `Option`
             #[inline]
             pub fn r#options(&self) -> ::core::option::Option<&ServiceOptions> {
                 self._has.r#options().then_some(&self.r#options)
-            }
-            ///Set the value and presence of `options`
-            #[inline]
-            pub fn set_options(&mut self, value: ServiceOptions) -> &mut Self {
-                self._has.set_options();
-                self.r#options = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for ServiceDescriptorProto {
@@ -3017,26 +3550,12 @@ pub mod google_ {
             pub fn r#name(&self) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#name().then_some(&self.r#name)
             }
-            ///Set the value and presence of `name`
-            #[inline]
-            pub fn set_name(&mut self, value: ::std::string::String) -> &mut Self {
-                self._has.set_name();
-                self.r#name = value.into();
-                self
-            }
             ///Return a reference to `input_type` as an `Option`
             #[inline]
             pub fn r#input_type(
                 &self,
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#input_type().then_some(&self.r#input_type)
-            }
-            ///Set the value and presence of `input_type`
-            #[inline]
-            pub fn set_input_type(&mut self, value: ::std::string::String) -> &mut Self {
-                self._has.set_input_type();
-                self.r#input_type = value.into();
-                self
             }
             ///Return a reference to `output_type` as an `Option`
             #[inline]
@@ -3045,51 +3564,20 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#output_type().then_some(&self.r#output_type)
             }
-            ///Set the value and presence of `output_type`
-            #[inline]
-            pub fn set_output_type(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_output_type();
-                self.r#output_type = value.into();
-                self
-            }
             ///Return a reference to `options` as an `Option`
             #[inline]
             pub fn r#options(&self) -> ::core::option::Option<&MethodOptions> {
                 self._has.r#options().then_some(&self.r#options)
-            }
-            ///Set the value and presence of `options`
-            #[inline]
-            pub fn set_options(&mut self, value: MethodOptions) -> &mut Self {
-                self._has.set_options();
-                self.r#options = value.into();
-                self
             }
             ///Return a reference to `client_streaming` as an `Option`
             #[inline]
             pub fn r#client_streaming(&self) -> ::core::option::Option<&bool> {
                 self._has.r#client_streaming().then_some(&self.r#client_streaming)
             }
-            ///Set the value and presence of `client_streaming`
-            #[inline]
-            pub fn set_client_streaming(&mut self, value: bool) -> &mut Self {
-                self._has.set_client_streaming();
-                self.r#client_streaming = value.into();
-                self
-            }
             ///Return a reference to `server_streaming` as an `Option`
             #[inline]
             pub fn r#server_streaming(&self) -> ::core::option::Option<&bool> {
                 self._has.r#server_streaming().then_some(&self.r#server_streaming)
-            }
-            ///Set the value and presence of `server_streaming`
-            #[inline]
-            pub fn set_server_streaming(&mut self, value: bool) -> &mut Self {
-                self._has.set_server_streaming();
-                self.r#server_streaming = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for MethodDescriptorProto {
@@ -3751,16 +4239,6 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#java_package().then_some(&self.r#java_package)
             }
-            ///Set the value and presence of `java_package`
-            #[inline]
-            pub fn set_java_package(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_java_package();
-                self.r#java_package = value.into();
-                self
-            }
             ///Return a reference to `java_outer_classname` as an `Option`
             #[inline]
             pub fn r#java_outer_classname(
@@ -3770,27 +4248,10 @@ pub mod google_ {
                     .r#java_outer_classname()
                     .then_some(&self.r#java_outer_classname)
             }
-            ///Set the value and presence of `java_outer_classname`
-            #[inline]
-            pub fn set_java_outer_classname(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_java_outer_classname();
-                self.r#java_outer_classname = value.into();
-                self
-            }
             ///Return a reference to `java_multiple_files` as an `Option`
             #[inline]
             pub fn r#java_multiple_files(&self) -> ::core::option::Option<&bool> {
                 self._has.r#java_multiple_files().then_some(&self.r#java_multiple_files)
-            }
-            ///Set the value and presence of `java_multiple_files`
-            #[inline]
-            pub fn set_java_multiple_files(&mut self, value: bool) -> &mut Self {
-                self._has.set_java_multiple_files();
-                self.r#java_multiple_files = value.into();
-                self
             }
             ///Return a reference to `java_generate_equals_and_hash` as an `Option`
             #[inline]
@@ -3801,29 +4262,12 @@ pub mod google_ {
                     .r#java_generate_equals_and_hash()
                     .then_some(&self.r#java_generate_equals_and_hash)
             }
-            ///Set the value and presence of `java_generate_equals_and_hash`
-            #[inline]
-            pub fn set_java_generate_equals_and_hash(
-                &mut self,
-                value: bool,
-            ) -> &mut Self {
-                self._has.set_java_generate_equals_and_hash();
-                self.r#java_generate_equals_and_hash = value.into();
-                self
-            }
             ///Return a reference to `java_string_check_utf8` as an `Option`
             #[inline]
             pub fn r#java_string_check_utf8(&self) -> ::core::option::Option<&bool> {
                 self._has
                     .r#java_string_check_utf8()
                     .then_some(&self.r#java_string_check_utf8)
-            }
-            ///Set the value and presence of `java_string_check_utf8`
-            #[inline]
-            pub fn set_java_string_check_utf8(&mut self, value: bool) -> &mut Self {
-                self._has.set_java_string_check_utf8();
-                self.r#java_string_check_utf8 = value.into();
-                self
             }
             ///Return a reference to `optimize_for` as an `Option`
             #[inline]
@@ -3832,16 +4276,6 @@ pub mod google_ {
             ) -> ::core::option::Option<&FileOptions_::OptimizeMode> {
                 self._has.r#optimize_for().then_some(&self.r#optimize_for)
             }
-            ///Set the value and presence of `optimize_for`
-            #[inline]
-            pub fn set_optimize_for(
-                &mut self,
-                value: FileOptions_::OptimizeMode,
-            ) -> &mut Self {
-                self._has.set_optimize_for();
-                self.r#optimize_for = value.into();
-                self
-            }
             ///Return a reference to `go_package` as an `Option`
             #[inline]
             pub fn r#go_package(
@@ -3849,24 +4283,10 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#go_package().then_some(&self.r#go_package)
             }
-            ///Set the value and presence of `go_package`
-            #[inline]
-            pub fn set_go_package(&mut self, value: ::std::string::String) -> &mut Self {
-                self._has.set_go_package();
-                self.r#go_package = value.into();
-                self
-            }
             ///Return a reference to `cc_generic_services` as an `Option`
             #[inline]
             pub fn r#cc_generic_services(&self) -> ::core::option::Option<&bool> {
                 self._has.r#cc_generic_services().then_some(&self.r#cc_generic_services)
-            }
-            ///Set the value and presence of `cc_generic_services`
-            #[inline]
-            pub fn set_cc_generic_services(&mut self, value: bool) -> &mut Self {
-                self._has.set_cc_generic_services();
-                self.r#cc_generic_services = value.into();
-                self
             }
             ///Return a reference to `java_generic_services` as an `Option`
             #[inline]
@@ -3875,48 +4295,20 @@ pub mod google_ {
                     .r#java_generic_services()
                     .then_some(&self.r#java_generic_services)
             }
-            ///Set the value and presence of `java_generic_services`
-            #[inline]
-            pub fn set_java_generic_services(&mut self, value: bool) -> &mut Self {
-                self._has.set_java_generic_services();
-                self.r#java_generic_services = value.into();
-                self
-            }
             ///Return a reference to `py_generic_services` as an `Option`
             #[inline]
             pub fn r#py_generic_services(&self) -> ::core::option::Option<&bool> {
                 self._has.r#py_generic_services().then_some(&self.r#py_generic_services)
-            }
-            ///Set the value and presence of `py_generic_services`
-            #[inline]
-            pub fn set_py_generic_services(&mut self, value: bool) -> &mut Self {
-                self._has.set_py_generic_services();
-                self.r#py_generic_services = value.into();
-                self
             }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
                 self._has.r#deprecated().then_some(&self.r#deprecated)
             }
-            ///Set the value and presence of `deprecated`
-            #[inline]
-            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
-                self._has.set_deprecated();
-                self.r#deprecated = value.into();
-                self
-            }
             ///Return a reference to `cc_enable_arenas` as an `Option`
             #[inline]
             pub fn r#cc_enable_arenas(&self) -> ::core::option::Option<&bool> {
                 self._has.r#cc_enable_arenas().then_some(&self.r#cc_enable_arenas)
-            }
-            ///Set the value and presence of `cc_enable_arenas`
-            #[inline]
-            pub fn set_cc_enable_arenas(&mut self, value: bool) -> &mut Self {
-                self._has.set_cc_enable_arenas();
-                self.r#cc_enable_arenas = value.into();
-                self
             }
             ///Return a reference to `objc_class_prefix` as an `Option`
             #[inline]
@@ -3925,32 +4317,12 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#objc_class_prefix().then_some(&self.r#objc_class_prefix)
             }
-            ///Set the value and presence of `objc_class_prefix`
-            #[inline]
-            pub fn set_objc_class_prefix(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_objc_class_prefix();
-                self.r#objc_class_prefix = value.into();
-                self
-            }
             ///Return a reference to `csharp_namespace` as an `Option`
             #[inline]
             pub fn r#csharp_namespace(
                 &self,
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#csharp_namespace().then_some(&self.r#csharp_namespace)
-            }
-            ///Set the value and presence of `csharp_namespace`
-            #[inline]
-            pub fn set_csharp_namespace(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_csharp_namespace();
-                self.r#csharp_namespace = value.into();
-                self
             }
             ///Return a reference to `swift_prefix` as an `Option`
             #[inline]
@@ -3959,16 +4331,6 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#swift_prefix().then_some(&self.r#swift_prefix)
             }
-            ///Set the value and presence of `swift_prefix`
-            #[inline]
-            pub fn set_swift_prefix(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_swift_prefix();
-                self.r#swift_prefix = value.into();
-                self
-            }
             ///Return a reference to `php_class_prefix` as an `Option`
             #[inline]
             pub fn r#php_class_prefix(
@@ -3976,32 +4338,12 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#php_class_prefix().then_some(&self.r#php_class_prefix)
             }
-            ///Set the value and presence of `php_class_prefix`
-            #[inline]
-            pub fn set_php_class_prefix(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_php_class_prefix();
-                self.r#php_class_prefix = value.into();
-                self
-            }
             ///Return a reference to `php_namespace` as an `Option`
             #[inline]
             pub fn r#php_namespace(
                 &self,
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#php_namespace().then_some(&self.r#php_namespace)
-            }
-            ///Set the value and presence of `php_namespace`
-            #[inline]
-            pub fn set_php_namespace(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_php_namespace();
-                self.r#php_namespace = value.into();
-                self
             }
             ///Return a reference to `php_metadata_namespace` as an `Option`
             #[inline]
@@ -4012,16 +4354,6 @@ pub mod google_ {
                     .r#php_metadata_namespace()
                     .then_some(&self.r#php_metadata_namespace)
             }
-            ///Set the value and presence of `php_metadata_namespace`
-            #[inline]
-            pub fn set_php_metadata_namespace(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_php_metadata_namespace();
-                self.r#php_metadata_namespace = value.into();
-                self
-            }
             ///Return a reference to `ruby_package` as an `Option`
             #[inline]
             pub fn r#ruby_package(
@@ -4029,27 +4361,10 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#ruby_package().then_some(&self.r#ruby_package)
             }
-            ///Set the value and presence of `ruby_package`
-            #[inline]
-            pub fn set_ruby_package(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_ruby_package();
-                self.r#ruby_package = value.into();
-                self
-            }
             ///Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
-            }
-            ///Set the value and presence of `features`
-            #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
-                self._has.set_features();
-                self.r#features = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for FileOptions {
@@ -4457,6 +4772,39 @@ pub mod google_ {
                 self.r#message_set_wire_format = value.into();
                 self
             }
+            ///Return a mutable reference to `message_set_wire_format` as an `Option`
+            #[inline]
+            pub fn mut_message_set_wire_format(
+                &mut self,
+            ) -> ::core::option::Option<&mut bool> {
+                self._has
+                    .r#message_set_wire_format()
+                    .then_some(&mut self.r#message_set_wire_format)
+            }
+            ///Clear the presence of `message_set_wire_format`
+            #[inline]
+            pub fn clear_message_set_wire_format(&mut self) -> &mut Self {
+                self._has.clear_message_set_wire_format();
+                self
+            }
+            ///Take the value of `message_set_wire_format` and clear its presence
+            #[inline]
+            pub fn take_message_set_wire_format(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#message_set_wire_format()
+                    .then(|| ::core::mem::take(&mut self.r#message_set_wire_format));
+                self._has.clear_message_set_wire_format();
+                val
+            }
+            ///Builder method that sets the value of `message_set_wire_format`. Useful for initializing the message.
+            #[inline]
+            pub fn init_message_set_wire_format(mut self, value: bool) -> Self {
+                self.set_message_set_wire_format(value);
+                self
+            }
             ///Return a reference to `no_standard_descriptor_accessor` as an `Option`
             #[inline]
             pub fn r#no_standard_descriptor_accessor(
@@ -4476,6 +4824,41 @@ pub mod google_ {
                 self.r#no_standard_descriptor_accessor = value.into();
                 self
             }
+            ///Return a mutable reference to `no_standard_descriptor_accessor` as an `Option`
+            #[inline]
+            pub fn mut_no_standard_descriptor_accessor(
+                &mut self,
+            ) -> ::core::option::Option<&mut bool> {
+                self._has
+                    .r#no_standard_descriptor_accessor()
+                    .then_some(&mut self.r#no_standard_descriptor_accessor)
+            }
+            ///Clear the presence of `no_standard_descriptor_accessor`
+            #[inline]
+            pub fn clear_no_standard_descriptor_accessor(&mut self) -> &mut Self {
+                self._has.clear_no_standard_descriptor_accessor();
+                self
+            }
+            ///Take the value of `no_standard_descriptor_accessor` and clear its presence
+            #[inline]
+            pub fn take_no_standard_descriptor_accessor(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#no_standard_descriptor_accessor()
+                    .then(|| ::core::mem::take(
+                        &mut self.r#no_standard_descriptor_accessor,
+                    ));
+                self._has.clear_no_standard_descriptor_accessor();
+                val
+            }
+            ///Builder method that sets the value of `no_standard_descriptor_accessor`. Useful for initializing the message.
+            #[inline]
+            pub fn init_no_standard_descriptor_accessor(mut self, value: bool) -> Self {
+                self.set_no_standard_descriptor_accessor(value);
+                self
+            }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
@@ -4488,6 +4871,33 @@ pub mod google_ {
                 self.r#deprecated = value.into();
                 self
             }
+            ///Return a mutable reference to `deprecated` as an `Option`
+            #[inline]
+            pub fn mut_deprecated(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#deprecated().then_some(&mut self.r#deprecated)
+            }
+            ///Clear the presence of `deprecated`
+            #[inline]
+            pub fn clear_deprecated(&mut self) -> &mut Self {
+                self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
+                self
+            }
             ///Return a reference to `map_entry` as an `Option`
             #[inline]
             pub fn r#map_entry(&self) -> ::core::option::Option<&bool> {
@@ -4498,6 +4908,33 @@ pub mod google_ {
             pub fn set_map_entry(&mut self, value: bool) -> &mut Self {
                 self._has.set_map_entry();
                 self.r#map_entry = value.into();
+                self
+            }
+            ///Return a mutable reference to `map_entry` as an `Option`
+            #[inline]
+            pub fn mut_map_entry(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#map_entry().then_some(&mut self.r#map_entry)
+            }
+            ///Clear the presence of `map_entry`
+            #[inline]
+            pub fn clear_map_entry(&mut self) -> &mut Self {
+                self._has.clear_map_entry();
+                self
+            }
+            ///Take the value of `map_entry` and clear its presence
+            #[inline]
+            pub fn take_map_entry(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#map_entry()
+                    .then(|| ::core::mem::take(&mut self.r#map_entry));
+                self._has.clear_map_entry();
+                val
+            }
+            ///Builder method that sets the value of `map_entry`. Useful for initializing the message.
+            #[inline]
+            pub fn init_map_entry(mut self, value: bool) -> Self {
+                self.set_map_entry(value);
                 self
             }
             ///Return a reference to `deprecated_legacy_json_field_conflicts` as an `Option`
@@ -4519,6 +4956,44 @@ pub mod google_ {
                 self.r#deprecated_legacy_json_field_conflicts = value.into();
                 self
             }
+            ///Return a mutable reference to `deprecated_legacy_json_field_conflicts` as an `Option`
+            #[inline]
+            pub fn mut_deprecated_legacy_json_field_conflicts(
+                &mut self,
+            ) -> ::core::option::Option<&mut bool> {
+                self._has
+                    .r#deprecated_legacy_json_field_conflicts()
+                    .then_some(&mut self.r#deprecated_legacy_json_field_conflicts)
+            }
+            ///Clear the presence of `deprecated_legacy_json_field_conflicts`
+            #[inline]
+            pub fn clear_deprecated_legacy_json_field_conflicts(&mut self) -> &mut Self {
+                self._has.clear_deprecated_legacy_json_field_conflicts();
+                self
+            }
+            ///Take the value of `deprecated_legacy_json_field_conflicts` and clear its presence
+            #[inline]
+            pub fn take_deprecated_legacy_json_field_conflicts(
+                &mut self,
+            ) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated_legacy_json_field_conflicts()
+                    .then(|| ::core::mem::take(
+                        &mut self.r#deprecated_legacy_json_field_conflicts,
+                    ));
+                self._has.clear_deprecated_legacy_json_field_conflicts();
+                val
+            }
+            ///Builder method that sets the value of `deprecated_legacy_json_field_conflicts`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated_legacy_json_field_conflicts(
+                mut self,
+                value: bool,
+            ) -> Self {
+                self.set_deprecated_legacy_json_field_conflicts(value);
+                self
+            }
             ///Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
@@ -4529,6 +5004,33 @@ pub mod google_ {
             pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
+            }
+            ///Return a mutable reference to `features` as an `Option`
+            #[inline]
+            pub fn mut_features(&mut self) -> ::core::option::Option<&mut FeatureSet> {
+                self._has.r#features().then_some(&mut self.r#features)
+            }
+            ///Clear the presence of `features`
+            #[inline]
+            pub fn clear_features(&mut self) -> &mut Self {
+                self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
                 self
             }
         }
@@ -4694,6 +5196,37 @@ pub mod google_ {
                     self.r#edition = value.into();
                     self
                 }
+                ///Return a mutable reference to `edition` as an `Option`
+                #[inline]
+                pub fn mut_edition(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::Edition> {
+                    self._has.r#edition().then_some(&mut self.r#edition)
+                }
+                ///Clear the presence of `edition`
+                #[inline]
+                pub fn clear_edition(&mut self) -> &mut Self {
+                    self._has.clear_edition();
+                    self
+                }
+                ///Take the value of `edition` and clear its presence
+                #[inline]
+                pub fn take_edition(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition()
+                        .then(|| ::core::mem::take(&mut self.r#edition));
+                    self._has.clear_edition();
+                    val
+                }
+                ///Builder method that sets the value of `edition`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition(mut self, value: super::Edition) -> Self {
+                    self.set_edition(value);
+                    self
+                }
                 ///Return a reference to `value` as an `Option`
                 #[inline]
                 pub fn r#value(&self) -> ::core::option::Option<&::std::string::String> {
@@ -4704,6 +5237,37 @@ pub mod google_ {
                 pub fn set_value(&mut self, value: ::std::string::String) -> &mut Self {
                     self._has.set_value();
                     self.r#value = value.into();
+                    self
+                }
+                ///Return a mutable reference to `value` as an `Option`
+                #[inline]
+                pub fn mut_value(
+                    &mut self,
+                ) -> ::core::option::Option<&mut ::std::string::String> {
+                    self._has.r#value().then_some(&mut self.r#value)
+                }
+                ///Clear the presence of `value`
+                #[inline]
+                pub fn clear_value(&mut self) -> &mut Self {
+                    self._has.clear_value();
+                    self
+                }
+                ///Take the value of `value` and clear its presence
+                #[inline]
+                pub fn take_value(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#value()
+                        .then(|| ::core::mem::take(&mut self.r#value));
+                    self._has.clear_value();
+                    val
+                }
+                ///Builder method that sets the value of `value`. Useful for initializing the message.
+                #[inline]
+                pub fn init_value(mut self, value: ::std::string::String) -> Self {
+                    self.set_value(value);
                     self
                 }
             }
@@ -4884,6 +5448,39 @@ pub mod google_ {
                     self.r#edition_introduced = value.into();
                     self
                 }
+                ///Return a mutable reference to `edition_introduced` as an `Option`
+                #[inline]
+                pub fn mut_edition_introduced(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::Edition> {
+                    self._has
+                        .r#edition_introduced()
+                        .then_some(&mut self.r#edition_introduced)
+                }
+                ///Clear the presence of `edition_introduced`
+                #[inline]
+                pub fn clear_edition_introduced(&mut self) -> &mut Self {
+                    self._has.clear_edition_introduced();
+                    self
+                }
+                ///Take the value of `edition_introduced` and clear its presence
+                #[inline]
+                pub fn take_edition_introduced(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_introduced()
+                        .then(|| ::core::mem::take(&mut self.r#edition_introduced));
+                    self._has.clear_edition_introduced();
+                    val
+                }
+                ///Builder method that sets the value of `edition_introduced`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_introduced(mut self, value: super::Edition) -> Self {
+                    self.set_edition_introduced(value);
+                    self
+                }
                 ///Return a reference to `edition_deprecated` as an `Option`
                 #[inline]
                 pub fn r#edition_deprecated(
@@ -4901,6 +5498,39 @@ pub mod google_ {
                 ) -> &mut Self {
                     self._has.set_edition_deprecated();
                     self.r#edition_deprecated = value.into();
+                    self
+                }
+                ///Return a mutable reference to `edition_deprecated` as an `Option`
+                #[inline]
+                pub fn mut_edition_deprecated(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::Edition> {
+                    self._has
+                        .r#edition_deprecated()
+                        .then_some(&mut self.r#edition_deprecated)
+                }
+                ///Clear the presence of `edition_deprecated`
+                #[inline]
+                pub fn clear_edition_deprecated(&mut self) -> &mut Self {
+                    self._has.clear_edition_deprecated();
+                    self
+                }
+                ///Take the value of `edition_deprecated` and clear its presence
+                #[inline]
+                pub fn take_edition_deprecated(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_deprecated()
+                        .then(|| ::core::mem::take(&mut self.r#edition_deprecated));
+                    self._has.clear_edition_deprecated();
+                    val
+                }
+                ///Builder method that sets the value of `edition_deprecated`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_deprecated(mut self, value: super::Edition) -> Self {
+                    self.set_edition_deprecated(value);
                     self
                 }
                 ///Return a reference to `deprecation_warning` as an `Option`
@@ -4922,6 +5552,42 @@ pub mod google_ {
                     self.r#deprecation_warning = value.into();
                     self
                 }
+                ///Return a mutable reference to `deprecation_warning` as an `Option`
+                #[inline]
+                pub fn mut_deprecation_warning(
+                    &mut self,
+                ) -> ::core::option::Option<&mut ::std::string::String> {
+                    self._has
+                        .r#deprecation_warning()
+                        .then_some(&mut self.r#deprecation_warning)
+                }
+                ///Clear the presence of `deprecation_warning`
+                #[inline]
+                pub fn clear_deprecation_warning(&mut self) -> &mut Self {
+                    self._has.clear_deprecation_warning();
+                    self
+                }
+                ///Take the value of `deprecation_warning` and clear its presence
+                #[inline]
+                pub fn take_deprecation_warning(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#deprecation_warning()
+                        .then(|| ::core::mem::take(&mut self.r#deprecation_warning));
+                    self._has.clear_deprecation_warning();
+                    val
+                }
+                ///Builder method that sets the value of `deprecation_warning`. Useful for initializing the message.
+                #[inline]
+                pub fn init_deprecation_warning(
+                    mut self,
+                    value: ::std::string::String,
+                ) -> Self {
+                    self.set_deprecation_warning(value);
+                    self
+                }
                 ///Return a reference to `edition_removed` as an `Option`
                 #[inline]
                 pub fn r#edition_removed(
@@ -4937,6 +5603,37 @@ pub mod google_ {
                 ) -> &mut Self {
                     self._has.set_edition_removed();
                     self.r#edition_removed = value.into();
+                    self
+                }
+                ///Return a mutable reference to `edition_removed` as an `Option`
+                #[inline]
+                pub fn mut_edition_removed(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::Edition> {
+                    self._has.r#edition_removed().then_some(&mut self.r#edition_removed)
+                }
+                ///Clear the presence of `edition_removed`
+                #[inline]
+                pub fn clear_edition_removed(&mut self) -> &mut Self {
+                    self._has.clear_edition_removed();
+                    self
+                }
+                ///Take the value of `edition_removed` and clear its presence
+                #[inline]
+                pub fn take_edition_removed(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_removed()
+                        .then(|| ::core::mem::take(&mut self.r#edition_removed));
+                    self._has.clear_edition_removed();
+                    val
+                }
+                ///Builder method that sets the value of `edition_removed`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_removed(mut self, value: super::Edition) -> Self {
+                    self.set_edition_removed(value);
                     self
                 }
             }
@@ -5414,6 +6111,37 @@ pub mod google_ {
                 self.r#ctype = value.into();
                 self
             }
+            ///Return a mutable reference to `ctype` as an `Option`
+            #[inline]
+            pub fn mut_ctype(
+                &mut self,
+            ) -> ::core::option::Option<&mut FieldOptions_::CType> {
+                self._has.r#ctype().then_some(&mut self.r#ctype)
+            }
+            ///Clear the presence of `ctype`
+            #[inline]
+            pub fn clear_ctype(&mut self) -> &mut Self {
+                self._has.clear_ctype();
+                self
+            }
+            ///Take the value of `ctype` and clear its presence
+            #[inline]
+            pub fn take_ctype(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::CType> {
+                let val = self
+                    ._has
+                    .r#ctype()
+                    .then(|| ::core::mem::take(&mut self.r#ctype));
+                self._has.clear_ctype();
+                val
+            }
+            ///Builder method that sets the value of `ctype`. Useful for initializing the message.
+            #[inline]
+            pub fn init_ctype(mut self, value: FieldOptions_::CType) -> Self {
+                self.set_ctype(value);
+                self
+            }
             ///Return a reference to `packed` as an `Option`
             #[inline]
             pub fn r#packed(&self) -> ::core::option::Option<&bool> {
@@ -5424,6 +6152,33 @@ pub mod google_ {
             pub fn set_packed(&mut self, value: bool) -> &mut Self {
                 self._has.set_packed();
                 self.r#packed = value.into();
+                self
+            }
+            ///Return a mutable reference to `packed` as an `Option`
+            #[inline]
+            pub fn mut_packed(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#packed().then_some(&mut self.r#packed)
+            }
+            ///Clear the presence of `packed`
+            #[inline]
+            pub fn clear_packed(&mut self) -> &mut Self {
+                self._has.clear_packed();
+                self
+            }
+            ///Take the value of `packed` and clear its presence
+            #[inline]
+            pub fn take_packed(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#packed()
+                    .then(|| ::core::mem::take(&mut self.r#packed));
+                self._has.clear_packed();
+                val
+            }
+            ///Builder method that sets the value of `packed`. Useful for initializing the message.
+            #[inline]
+            pub fn init_packed(mut self, value: bool) -> Self {
+                self.set_packed(value);
                 self
             }
             ///Return a reference to `jstype` as an `Option`
@@ -5438,6 +6193,37 @@ pub mod google_ {
                 self.r#jstype = value.into();
                 self
             }
+            ///Return a mutable reference to `jstype` as an `Option`
+            #[inline]
+            pub fn mut_jstype(
+                &mut self,
+            ) -> ::core::option::Option<&mut FieldOptions_::JSType> {
+                self._has.r#jstype().then_some(&mut self.r#jstype)
+            }
+            ///Clear the presence of `jstype`
+            #[inline]
+            pub fn clear_jstype(&mut self) -> &mut Self {
+                self._has.clear_jstype();
+                self
+            }
+            ///Take the value of `jstype` and clear its presence
+            #[inline]
+            pub fn take_jstype(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::JSType> {
+                let val = self
+                    ._has
+                    .r#jstype()
+                    .then(|| ::core::mem::take(&mut self.r#jstype));
+                self._has.clear_jstype();
+                val
+            }
+            ///Builder method that sets the value of `jstype`. Useful for initializing the message.
+            #[inline]
+            pub fn init_jstype(mut self, value: FieldOptions_::JSType) -> Self {
+                self.set_jstype(value);
+                self
+            }
             ///Return a reference to `lazy` as an `Option`
             #[inline]
             pub fn r#lazy(&self) -> ::core::option::Option<&bool> {
@@ -5448,6 +6234,33 @@ pub mod google_ {
             pub fn set_lazy(&mut self, value: bool) -> &mut Self {
                 self._has.set_lazy();
                 self.r#lazy = value.into();
+                self
+            }
+            ///Return a mutable reference to `lazy` as an `Option`
+            #[inline]
+            pub fn mut_lazy(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#lazy().then_some(&mut self.r#lazy)
+            }
+            ///Clear the presence of `lazy`
+            #[inline]
+            pub fn clear_lazy(&mut self) -> &mut Self {
+                self._has.clear_lazy();
+                self
+            }
+            ///Take the value of `lazy` and clear its presence
+            #[inline]
+            pub fn take_lazy(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#lazy()
+                    .then(|| ::core::mem::take(&mut self.r#lazy));
+                self._has.clear_lazy();
+                val
+            }
+            ///Builder method that sets the value of `lazy`. Useful for initializing the message.
+            #[inline]
+            pub fn init_lazy(mut self, value: bool) -> Self {
+                self.set_lazy(value);
                 self
             }
             ///Return a reference to `unverified_lazy` as an `Option`
@@ -5462,6 +6275,33 @@ pub mod google_ {
                 self.r#unverified_lazy = value.into();
                 self
             }
+            ///Return a mutable reference to `unverified_lazy` as an `Option`
+            #[inline]
+            pub fn mut_unverified_lazy(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#unverified_lazy().then_some(&mut self.r#unverified_lazy)
+            }
+            ///Clear the presence of `unverified_lazy`
+            #[inline]
+            pub fn clear_unverified_lazy(&mut self) -> &mut Self {
+                self._has.clear_unverified_lazy();
+                self
+            }
+            ///Take the value of `unverified_lazy` and clear its presence
+            #[inline]
+            pub fn take_unverified_lazy(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#unverified_lazy()
+                    .then(|| ::core::mem::take(&mut self.r#unverified_lazy));
+                self._has.clear_unverified_lazy();
+                val
+            }
+            ///Builder method that sets the value of `unverified_lazy`. Useful for initializing the message.
+            #[inline]
+            pub fn init_unverified_lazy(mut self, value: bool) -> Self {
+                self.set_unverified_lazy(value);
+                self
+            }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
@@ -5472,6 +6312,33 @@ pub mod google_ {
             pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
                 self._has.set_deprecated();
                 self.r#deprecated = value.into();
+                self
+            }
+            ///Return a mutable reference to `deprecated` as an `Option`
+            #[inline]
+            pub fn mut_deprecated(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#deprecated().then_some(&mut self.r#deprecated)
+            }
+            ///Clear the presence of `deprecated`
+            #[inline]
+            pub fn clear_deprecated(&mut self) -> &mut Self {
+                self._has.clear_deprecated();
+                self
+            }
+            ///Take the value of `deprecated` and clear its presence
+            #[inline]
+            pub fn take_deprecated(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#deprecated()
+                    .then(|| ::core::mem::take(&mut self.r#deprecated));
+                self._has.clear_deprecated();
+                val
+            }
+            ///Builder method that sets the value of `deprecated`. Useful for initializing the message.
+            #[inline]
+            pub fn init_deprecated(mut self, value: bool) -> Self {
+                self.set_deprecated(value);
                 self
             }
             ///Return a reference to `weak` as an `Option`
@@ -5486,6 +6353,33 @@ pub mod google_ {
                 self.r#weak = value.into();
                 self
             }
+            ///Return a mutable reference to `weak` as an `Option`
+            #[inline]
+            pub fn mut_weak(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#weak().then_some(&mut self.r#weak)
+            }
+            ///Clear the presence of `weak`
+            #[inline]
+            pub fn clear_weak(&mut self) -> &mut Self {
+                self._has.clear_weak();
+                self
+            }
+            ///Take the value of `weak` and clear its presence
+            #[inline]
+            pub fn take_weak(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#weak()
+                    .then(|| ::core::mem::take(&mut self.r#weak));
+                self._has.clear_weak();
+                val
+            }
+            ///Builder method that sets the value of `weak`. Useful for initializing the message.
+            #[inline]
+            pub fn init_weak(mut self, value: bool) -> Self {
+                self.set_weak(value);
+                self
+            }
             ///Return a reference to `debug_redact` as an `Option`
             #[inline]
             pub fn r#debug_redact(&self) -> ::core::option::Option<&bool> {
@@ -5496,6 +6390,33 @@ pub mod google_ {
             pub fn set_debug_redact(&mut self, value: bool) -> &mut Self {
                 self._has.set_debug_redact();
                 self.r#debug_redact = value.into();
+                self
+            }
+            ///Return a mutable reference to `debug_redact` as an `Option`
+            #[inline]
+            pub fn mut_debug_redact(&mut self) -> ::core::option::Option<&mut bool> {
+                self._has.r#debug_redact().then_some(&mut self.r#debug_redact)
+            }
+            ///Clear the presence of `debug_redact`
+            #[inline]
+            pub fn clear_debug_redact(&mut self) -> &mut Self {
+                self._has.clear_debug_redact();
+                self
+            }
+            ///Take the value of `debug_redact` and clear its presence
+            #[inline]
+            pub fn take_debug_redact(&mut self) -> ::core::option::Option<bool> {
+                let val = self
+                    ._has
+                    .r#debug_redact()
+                    .then(|| ::core::mem::take(&mut self.r#debug_redact));
+                self._has.clear_debug_redact();
+                val
+            }
+            ///Builder method that sets the value of `debug_redact`. Useful for initializing the message.
+            #[inline]
+            pub fn init_debug_redact(mut self, value: bool) -> Self {
+                self.set_debug_redact(value);
                 self
             }
             ///Return a reference to `retention` as an `Option`
@@ -5515,6 +6436,40 @@ pub mod google_ {
                 self.r#retention = value.into();
                 self
             }
+            ///Return a mutable reference to `retention` as an `Option`
+            #[inline]
+            pub fn mut_retention(
+                &mut self,
+            ) -> ::core::option::Option<&mut FieldOptions_::OptionRetention> {
+                self._has.r#retention().then_some(&mut self.r#retention)
+            }
+            ///Clear the presence of `retention`
+            #[inline]
+            pub fn clear_retention(&mut self) -> &mut Self {
+                self._has.clear_retention();
+                self
+            }
+            ///Take the value of `retention` and clear its presence
+            #[inline]
+            pub fn take_retention(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::OptionRetention> {
+                let val = self
+                    ._has
+                    .r#retention()
+                    .then(|| ::core::mem::take(&mut self.r#retention));
+                self._has.clear_retention();
+                val
+            }
+            ///Builder method that sets the value of `retention`. Useful for initializing the message.
+            #[inline]
+            pub fn init_retention(
+                mut self,
+                value: FieldOptions_::OptionRetention,
+            ) -> Self {
+                self.set_retention(value);
+                self
+            }
             ///Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
@@ -5525,6 +6480,33 @@ pub mod google_ {
             pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
                 self._has.set_features();
                 self.r#features = value.into();
+                self
+            }
+            ///Return a mutable reference to `features` as an `Option`
+            #[inline]
+            pub fn mut_features(&mut self) -> ::core::option::Option<&mut FeatureSet> {
+                self._has.r#features().then_some(&mut self.r#features)
+            }
+            ///Clear the presence of `features`
+            #[inline]
+            pub fn clear_features(&mut self) -> &mut Self {
+                self._has.clear_features();
+                self
+            }
+            ///Take the value of `features` and clear its presence
+            #[inline]
+            pub fn take_features(&mut self) -> ::core::option::Option<FeatureSet> {
+                let val = self
+                    ._has
+                    .r#features()
+                    .then(|| ::core::mem::take(&mut self.r#features));
+                self._has.clear_features();
+                val
+            }
+            ///Builder method that sets the value of `features`. Useful for initializing the message.
+            #[inline]
+            pub fn init_features(mut self, value: FeatureSet) -> Self {
+                self.set_features(value);
                 self
             }
             ///Return a reference to `feature_support` as an `Option`
@@ -5542,6 +6524,40 @@ pub mod google_ {
             ) -> &mut Self {
                 self._has.set_feature_support();
                 self.r#feature_support = value.into();
+                self
+            }
+            ///Return a mutable reference to `feature_support` as an `Option`
+            #[inline]
+            pub fn mut_feature_support(
+                &mut self,
+            ) -> ::core::option::Option<&mut FieldOptions_::FeatureSupport> {
+                self._has.r#feature_support().then_some(&mut self.r#feature_support)
+            }
+            ///Clear the presence of `feature_support`
+            #[inline]
+            pub fn clear_feature_support(&mut self) -> &mut Self {
+                self._has.clear_feature_support();
+                self
+            }
+            ///Take the value of `feature_support` and clear its presence
+            #[inline]
+            pub fn take_feature_support(
+                &mut self,
+            ) -> ::core::option::Option<FieldOptions_::FeatureSupport> {
+                let val = self
+                    ._has
+                    .r#feature_support()
+                    .then(|| ::core::mem::take(&mut self.r#feature_support));
+                self._has.clear_feature_support();
+                val
+            }
+            ///Builder method that sets the value of `feature_support`. Useful for initializing the message.
+            #[inline]
+            pub fn init_feature_support(
+                mut self,
+                value: FieldOptions_::FeatureSupport,
+            ) -> Self {
+                self.set_feature_support(value);
                 self
             }
         }
@@ -5758,13 +6774,6 @@ pub mod google_ {
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
             }
-            ///Set the value and presence of `features`
-            #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
-                self._has.set_features();
-                self.r#features = value.into();
-                self
-            }
         }
         impl ::micropb::MessageDecode for OneofOptions {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
@@ -5950,24 +6959,10 @@ pub mod google_ {
             pub fn r#allow_alias(&self) -> ::core::option::Option<&bool> {
                 self._has.r#allow_alias().then_some(&self.r#allow_alias)
             }
-            ///Set the value and presence of `allow_alias`
-            #[inline]
-            pub fn set_allow_alias(&mut self, value: bool) -> &mut Self {
-                self._has.set_allow_alias();
-                self.r#allow_alias = value.into();
-                self
-            }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
                 self._has.r#deprecated().then_some(&self.r#deprecated)
-            }
-            ///Set the value and presence of `deprecated`
-            #[inline]
-            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
-                self._has.set_deprecated();
-                self.r#deprecated = value.into();
-                self
             }
             ///Return a reference to `deprecated_legacy_json_field_conflicts` as an `Option`
             #[inline]
@@ -5978,27 +6973,10 @@ pub mod google_ {
                     .r#deprecated_legacy_json_field_conflicts()
                     .then_some(&self.r#deprecated_legacy_json_field_conflicts)
             }
-            ///Set the value and presence of `deprecated_legacy_json_field_conflicts`
-            #[inline]
-            pub fn set_deprecated_legacy_json_field_conflicts(
-                &mut self,
-                value: bool,
-            ) -> &mut Self {
-                self._has.set_deprecated_legacy_json_field_conflicts();
-                self.r#deprecated_legacy_json_field_conflicts = value.into();
-                self
-            }
             ///Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
-            }
-            ///Set the value and presence of `features`
-            #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
-                self._has.set_features();
-                self.r#features = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for EnumOptions {
@@ -6204,36 +7182,15 @@ pub mod google_ {
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
                 self._has.r#deprecated().then_some(&self.r#deprecated)
             }
-            ///Set the value and presence of `deprecated`
-            #[inline]
-            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
-                self._has.set_deprecated();
-                self.r#deprecated = value.into();
-                self
-            }
             ///Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
             }
-            ///Set the value and presence of `features`
-            #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
-                self._has.set_features();
-                self.r#features = value.into();
-                self
-            }
             ///Return a reference to `debug_redact` as an `Option`
             #[inline]
             pub fn r#debug_redact(&self) -> ::core::option::Option<&bool> {
                 self._has.r#debug_redact().then_some(&self.r#debug_redact)
-            }
-            ///Set the value and presence of `debug_redact`
-            #[inline]
-            pub fn set_debug_redact(&mut self, value: bool) -> &mut Self {
-                self._has.set_debug_redact();
-                self.r#debug_redact = value.into();
-                self
             }
             ///Return a reference to `feature_support` as an `Option`
             #[inline]
@@ -6241,16 +7198,6 @@ pub mod google_ {
                 &self,
             ) -> ::core::option::Option<&FieldOptions_::FeatureSupport> {
                 self._has.r#feature_support().then_some(&self.r#feature_support)
-            }
-            ///Set the value and presence of `feature_support`
-            #[inline]
-            pub fn set_feature_support(
-                &mut self,
-                value: FieldOptions_::FeatureSupport,
-            ) -> &mut Self {
-                self._has.set_feature_support();
-                self.r#feature_support = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for EnumValueOptions {
@@ -6400,24 +7347,10 @@ pub mod google_ {
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
             }
-            ///Set the value and presence of `features`
-            #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
-                self._has.set_features();
-                self.r#features = value.into();
-                self
-            }
             ///Return a reference to `deprecated` as an `Option`
             #[inline]
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
                 self._has.r#deprecated().then_some(&self.r#deprecated)
-            }
-            ///Set the value and presence of `deprecated`
-            #[inline]
-            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
-                self._has.set_deprecated();
-                self.r#deprecated = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for ServiceOptions {
@@ -6597,13 +7530,6 @@ pub mod google_ {
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
                 self._has.r#deprecated().then_some(&self.r#deprecated)
             }
-            ///Set the value and presence of `deprecated`
-            #[inline]
-            pub fn set_deprecated(&mut self, value: bool) -> &mut Self {
-                self._has.set_deprecated();
-                self.r#deprecated = value.into();
-                self
-            }
             ///Return a reference to `idempotency_level` as an `Option`
             #[inline]
             pub fn r#idempotency_level(
@@ -6611,27 +7537,10 @@ pub mod google_ {
             ) -> ::core::option::Option<&MethodOptions_::IdempotencyLevel> {
                 self._has.r#idempotency_level().then_some(&self.r#idempotency_level)
             }
-            ///Set the value and presence of `idempotency_level`
-            #[inline]
-            pub fn set_idempotency_level(
-                &mut self,
-                value: MethodOptions_::IdempotencyLevel,
-            ) -> &mut Self {
-                self._has.set_idempotency_level();
-                self.r#idempotency_level = value.into();
-                self
-            }
             ///Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
-            }
-            ///Set the value and presence of `features`
-            #[inline]
-            pub fn set_features(&mut self, value: FeatureSet) -> &mut Self {
-                self._has.set_features();
-                self.r#features = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for MethodOptions {
@@ -6768,27 +7677,10 @@ pub mod google_ {
                 ) -> ::core::option::Option<&::std::string::String> {
                     self._has.r#name_part().then_some(&self.r#name_part)
                 }
-                ///Set the value and presence of `name_part`
-                #[inline]
-                pub fn set_name_part(
-                    &mut self,
-                    value: ::std::string::String,
-                ) -> &mut Self {
-                    self._has.set_name_part();
-                    self.r#name_part = value.into();
-                    self
-                }
                 ///Return a reference to `is_extension` as an `Option`
                 #[inline]
                 pub fn r#is_extension(&self) -> ::core::option::Option<&bool> {
                     self._has.r#is_extension().then_some(&self.r#is_extension)
-                }
-                ///Set the value and presence of `is_extension`
-                #[inline]
-                pub fn set_is_extension(&mut self, value: bool) -> &mut Self {
-                    self._has.set_is_extension();
-                    self.r#is_extension = value.into();
-                    self
                 }
             }
             impl ::micropb::MessageDecode for NamePart {
@@ -7006,51 +7898,20 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#identifier_value().then_some(&self.r#identifier_value)
             }
-            ///Set the value and presence of `identifier_value`
-            #[inline]
-            pub fn set_identifier_value(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_identifier_value();
-                self.r#identifier_value = value.into();
-                self
-            }
             ///Return a reference to `positive_int_value` as an `Option`
             #[inline]
             pub fn r#positive_int_value(&self) -> ::core::option::Option<&u64> {
                 self._has.r#positive_int_value().then_some(&self.r#positive_int_value)
-            }
-            ///Set the value and presence of `positive_int_value`
-            #[inline]
-            pub fn set_positive_int_value(&mut self, value: u64) -> &mut Self {
-                self._has.set_positive_int_value();
-                self.r#positive_int_value = value.into();
-                self
             }
             ///Return a reference to `negative_int_value` as an `Option`
             #[inline]
             pub fn r#negative_int_value(&self) -> ::core::option::Option<&i64> {
                 self._has.r#negative_int_value().then_some(&self.r#negative_int_value)
             }
-            ///Set the value and presence of `negative_int_value`
-            #[inline]
-            pub fn set_negative_int_value(&mut self, value: i64) -> &mut Self {
-                self._has.set_negative_int_value();
-                self.r#negative_int_value = value.into();
-                self
-            }
             ///Return a reference to `double_value` as an `Option`
             #[inline]
             pub fn r#double_value(&self) -> ::core::option::Option<&f64> {
                 self._has.r#double_value().then_some(&self.r#double_value)
-            }
-            ///Set the value and presence of `double_value`
-            #[inline]
-            pub fn set_double_value(&mut self, value: f64) -> &mut Self {
-                self._has.set_double_value();
-                self.r#double_value = value.into();
-                self
             }
             ///Return a reference to `string_value` as an `Option`
             #[inline]
@@ -7059,29 +7920,12 @@ pub mod google_ {
             ) -> ::core::option::Option<&::std::vec::Vec<u8>> {
                 self._has.r#string_value().then_some(&self.r#string_value)
             }
-            ///Set the value and presence of `string_value`
-            #[inline]
-            pub fn set_string_value(&mut self, value: ::std::vec::Vec<u8>) -> &mut Self {
-                self._has.set_string_value();
-                self.r#string_value = value.into();
-                self
-            }
             ///Return a reference to `aggregate_value` as an `Option`
             #[inline]
             pub fn r#aggregate_value(
                 &self,
             ) -> ::core::option::Option<&::std::string::String> {
                 self._has.r#aggregate_value().then_some(&self.r#aggregate_value)
-            }
-            ///Set the value and presence of `aggregate_value`
-            #[inline]
-            pub fn set_aggregate_value(
-                &mut self,
-                value: ::std::string::String,
-            ) -> &mut Self {
-                self._has.set_aggregate_value();
-                self.r#aggregate_value = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for UninterpretedOption {
@@ -7453,27 +8297,10 @@ pub mod google_ {
             ) -> ::core::option::Option<&FeatureSet_::FieldPresence> {
                 self._has.r#field_presence().then_some(&self.r#field_presence)
             }
-            ///Set the value and presence of `field_presence`
-            #[inline]
-            pub fn set_field_presence(
-                &mut self,
-                value: FeatureSet_::FieldPresence,
-            ) -> &mut Self {
-                self._has.set_field_presence();
-                self.r#field_presence = value.into();
-                self
-            }
             ///Return a reference to `enum_type` as an `Option`
             #[inline]
             pub fn r#enum_type(&self) -> ::core::option::Option<&FeatureSet_::EnumType> {
                 self._has.r#enum_type().then_some(&self.r#enum_type)
-            }
-            ///Set the value and presence of `enum_type`
-            #[inline]
-            pub fn set_enum_type(&mut self, value: FeatureSet_::EnumType) -> &mut Self {
-                self._has.set_enum_type();
-                self.r#enum_type = value.into();
-                self
             }
             ///Return a reference to `repeated_field_encoding` as an `Option`
             #[inline]
@@ -7484,32 +8311,12 @@ pub mod google_ {
                     .r#repeated_field_encoding()
                     .then_some(&self.r#repeated_field_encoding)
             }
-            ///Set the value and presence of `repeated_field_encoding`
-            #[inline]
-            pub fn set_repeated_field_encoding(
-                &mut self,
-                value: FeatureSet_::RepeatedFieldEncoding,
-            ) -> &mut Self {
-                self._has.set_repeated_field_encoding();
-                self.r#repeated_field_encoding = value.into();
-                self
-            }
             ///Return a reference to `utf8_validation` as an `Option`
             #[inline]
             pub fn r#utf8_validation(
                 &self,
             ) -> ::core::option::Option<&FeatureSet_::Utf8Validation> {
                 self._has.r#utf8_validation().then_some(&self.r#utf8_validation)
-            }
-            ///Set the value and presence of `utf8_validation`
-            #[inline]
-            pub fn set_utf8_validation(
-                &mut self,
-                value: FeatureSet_::Utf8Validation,
-            ) -> &mut Self {
-                self._has.set_utf8_validation();
-                self.r#utf8_validation = value.into();
-                self
             }
             ///Return a reference to `message_encoding` as an `Option`
             #[inline]
@@ -7518,32 +8325,12 @@ pub mod google_ {
             ) -> ::core::option::Option<&FeatureSet_::MessageEncoding> {
                 self._has.r#message_encoding().then_some(&self.r#message_encoding)
             }
-            ///Set the value and presence of `message_encoding`
-            #[inline]
-            pub fn set_message_encoding(
-                &mut self,
-                value: FeatureSet_::MessageEncoding,
-            ) -> &mut Self {
-                self._has.set_message_encoding();
-                self.r#message_encoding = value.into();
-                self
-            }
             ///Return a reference to `json_format` as an `Option`
             #[inline]
             pub fn r#json_format(
                 &self,
             ) -> ::core::option::Option<&FeatureSet_::JsonFormat> {
                 self._has.r#json_format().then_some(&self.r#json_format)
-            }
-            ///Set the value and presence of `json_format`
-            #[inline]
-            pub fn set_json_format(
-                &mut self,
-                value: FeatureSet_::JsonFormat,
-            ) -> &mut Self {
-                self._has.set_json_format();
-                self.r#json_format = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for FeatureSet {
@@ -7726,13 +8513,6 @@ pub mod google_ {
                 pub fn r#edition(&self) -> ::core::option::Option<&super::Edition> {
                     self._has.r#edition().then_some(&self.r#edition)
                 }
-                ///Set the value and presence of `edition`
-                #[inline]
-                pub fn set_edition(&mut self, value: super::Edition) -> &mut Self {
-                    self._has.set_edition();
-                    self.r#edition = value.into();
-                    self
-                }
                 ///Return a reference to `overridable_features` as an `Option`
                 #[inline]
                 pub fn r#overridable_features(
@@ -7742,32 +8522,12 @@ pub mod google_ {
                         .r#overridable_features()
                         .then_some(&self.r#overridable_features)
                 }
-                ///Set the value and presence of `overridable_features`
-                #[inline]
-                pub fn set_overridable_features(
-                    &mut self,
-                    value: super::FeatureSet,
-                ) -> &mut Self {
-                    self._has.set_overridable_features();
-                    self.r#overridable_features = value.into();
-                    self
-                }
                 ///Return a reference to `fixed_features` as an `Option`
                 #[inline]
                 pub fn r#fixed_features(
                     &self,
                 ) -> ::core::option::Option<&super::FeatureSet> {
                     self._has.r#fixed_features().then_some(&self.r#fixed_features)
-                }
-                ///Set the value and presence of `fixed_features`
-                #[inline]
-                pub fn set_fixed_features(
-                    &mut self,
-                    value: super::FeatureSet,
-                ) -> &mut Self {
-                    self._has.set_fixed_features();
-                    self.r#fixed_features = value.into();
-                    self
                 }
             }
             impl ::micropb::MessageDecode for FeatureSetEditionDefault {
@@ -7889,24 +8649,10 @@ pub mod google_ {
             pub fn r#minimum_edition(&self) -> ::core::option::Option<&Edition> {
                 self._has.r#minimum_edition().then_some(&self.r#minimum_edition)
             }
-            ///Set the value and presence of `minimum_edition`
-            #[inline]
-            pub fn set_minimum_edition(&mut self, value: Edition) -> &mut Self {
-                self._has.set_minimum_edition();
-                self.r#minimum_edition = value.into();
-                self
-            }
             ///Return a reference to `maximum_edition` as an `Option`
             #[inline]
             pub fn r#maximum_edition(&self) -> ::core::option::Option<&Edition> {
                 self._has.r#maximum_edition().then_some(&self.r#maximum_edition)
-            }
-            ///Set the value and presence of `maximum_edition`
-            #[inline]
-            pub fn set_maximum_edition(&mut self, value: Edition) -> &mut Self {
-                self._has.set_maximum_edition();
-                self.r#maximum_edition = value.into();
-                self
             }
         }
         impl ::micropb::MessageDecode for FeatureSetDefaults {
@@ -8037,32 +8783,12 @@ pub mod google_ {
                 ) -> ::core::option::Option<&::std::string::String> {
                     self._has.r#leading_comments().then_some(&self.r#leading_comments)
                 }
-                ///Set the value and presence of `leading_comments`
-                #[inline]
-                pub fn set_leading_comments(
-                    &mut self,
-                    value: ::std::string::String,
-                ) -> &mut Self {
-                    self._has.set_leading_comments();
-                    self.r#leading_comments = value.into();
-                    self
-                }
                 ///Return a reference to `trailing_comments` as an `Option`
                 #[inline]
                 pub fn r#trailing_comments(
                     &self,
                 ) -> ::core::option::Option<&::std::string::String> {
                     self._has.r#trailing_comments().then_some(&self.r#trailing_comments)
-                }
-                ///Set the value and presence of `trailing_comments`
-                #[inline]
-                pub fn set_trailing_comments(
-                    &mut self,
-                    value: ::std::string::String,
-                ) -> &mut Self {
-                    self._has.set_trailing_comments();
-                    self.r#trailing_comments = value.into();
-                    self
                 }
             }
             impl ::micropb::MessageDecode for Location {
@@ -8333,39 +9059,15 @@ pub mod google_ {
                 ) -> ::core::option::Option<&::std::string::String> {
                     self._has.r#source_file().then_some(&self.r#source_file)
                 }
-                ///Set the value and presence of `source_file`
-                #[inline]
-                pub fn set_source_file(
-                    &mut self,
-                    value: ::std::string::String,
-                ) -> &mut Self {
-                    self._has.set_source_file();
-                    self.r#source_file = value.into();
-                    self
-                }
                 ///Return a reference to `begin` as an `Option`
                 #[inline]
                 pub fn r#begin(&self) -> ::core::option::Option<&i32> {
                     self._has.r#begin().then_some(&self.r#begin)
                 }
-                ///Set the value and presence of `begin`
-                #[inline]
-                pub fn set_begin(&mut self, value: i32) -> &mut Self {
-                    self._has.set_begin();
-                    self.r#begin = value.into();
-                    self
-                }
                 ///Return a reference to `end` as an `Option`
                 #[inline]
                 pub fn r#end(&self) -> ::core::option::Option<&i32> {
                     self._has.r#end().then_some(&self.r#end)
-                }
-                ///Set the value and presence of `end`
-                #[inline]
-                pub fn set_end(&mut self, value: i32) -> &mut Self {
-                    self._has.set_end();
-                    self.r#end = value.into();
-                    self
                 }
                 ///Return a reference to `semantic` as an `Option`
                 #[inline]
@@ -8373,16 +9075,6 @@ pub mod google_ {
                     &self,
                 ) -> ::core::option::Option<&Annotation_::Semantic> {
                     self._has.r#semantic().then_some(&self.r#semantic)
-                }
-                ///Set the value and presence of `semantic`
-                #[inline]
-                pub fn set_semantic(
-                    &mut self,
-                    value: Annotation_::Semantic,
-                ) -> &mut Self {
-                    self._has.set_semantic();
-                    self.r#semantic = value.into();
-                    self
                 }
             }
             impl ::micropb::MessageDecode for Annotation {

@@ -231,10 +231,8 @@ impl<'a> Field<'a> {
                 };
 
                 let fname = &self.san_rust_name;
-                let setter_name = format_ident!("set_{}", self.rust_name);
                 let getter_doc =
                     format!("Return a reference to `{}` as an `Option`", self.rust_name);
-                let setter_doc = format!("Set the value and presence of `{}`", self.rust_name);
                 let type_name = type_spec.generate_rust_type(gen);
 
                 // Minimal set of accessors
@@ -245,14 +243,6 @@ impl<'a> Field<'a> {
                         pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
                             self._has.#fname().then_some(&self.#fname)
                         }
-
-                        #[doc = #setter_doc]
-                        #[inline]
-                        pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
-                            self._has.#setter_name();
-                            self.#fname = value.into();
-                            self
-                        }
                     }
                 } else {
                     quote! {
@@ -261,23 +251,18 @@ impl<'a> Field<'a> {
                         pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
                             self.#fname.#deref()
                         }
-
-                        #[doc = #setter_doc]
-                        #[inline]
-                        pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
-                            self.#fname = ::core::option::Option::Some(value.into());
-                            self
-                        }
                     }
                 };
 
                 if !minimal {
                     let wrapped_type = gen.wrapped_type(type_name.clone(), self.boxed, true);
+                    let setter_name = format_ident!("set_{}", self.rust_name);
                     let muter_name = format_ident!("mut_{}", self.rust_name);
                     let clearer_name = format_ident!("clear_{}", self.rust_name);
                     let taker_name = format_ident!("take_{}", self.rust_name);
                     let init_name = format_ident!("init_{}", self.rust_name);
 
+                    let setter_doc = format!("Set the value and presence of `{}`", self.rust_name);
                     let muter_doc = format!(
                         "Return a mutable reference to `{}` as an `Option`",
                         self.rust_name
@@ -295,6 +280,14 @@ impl<'a> Field<'a> {
                     // Add rest of accessors
                     accessors.extend(if let OptionalRepr::Hazzer = opt {
                         quote! {
+                            #[doc = #setter_doc]
+                            #[inline]
+                            pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                                self._has.#setter_name();
+                                self.#fname = value.into();
+                                self
+                            }
+
                             #[doc = #muter_doc]
                             #[inline]
                             pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
@@ -325,6 +318,13 @@ impl<'a> Field<'a> {
                         }
                     } else {
                         quote! {
+                            #[doc = #setter_doc]
+                            #[inline]
+                            pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                                self.#fname = ::core::option::Option::Some(value.into());
+                                self
+                            }
+
                             #[doc = #muter_doc]
                             #[inline]
                             pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
