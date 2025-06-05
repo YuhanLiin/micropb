@@ -353,12 +353,19 @@ impl Generator {
         let Some(msg) = Message::from_proto(proto, self, &msg_conf)? else {
             return Ok(quote! {});
         };
+
         let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf)?;
+        let proto_default = msg.fields.iter().any(|f| f.default.is_some());
         let unknown_conf = msg_conf.next_conf("_unknown");
 
-        let default = msg.generate_default_impl(self, hazzer_field_attr.is_some())?;
-        let partial_eq = msg.generate_partial_eq();
-        let decl = msg.generate_decl(self, hazzer_field_attr, &unknown_conf)?;
+        // Only manually implement Default if there's a Protobuf default specification
+        let default =
+            proto_default.then_some(msg.generate_default_impl(self, hazzer_field_attr.is_some())?);
+        // Only manually implement PartialEq if there's a hazzer
+        let partial_eq = hazzer_field_attr
+            .as_ref()
+            .map(|_| msg.generate_partial_eq());
+        let decl = msg.generate_decl(self, hazzer_field_attr, proto_default, &unknown_conf)?;
         let msg_impl = msg.generate_impl(self);
         let decode = self
             .encode_decode
