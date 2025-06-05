@@ -6,7 +6,10 @@ fn main() {
         .encode_decode(EncodeDecode::DecodeOnly)
         .configure(
             ".",
-            Config::new().no_clone_impl(true).no_partial_eq_impl(true),
+            Config::new()
+                .no_clone_impl(true)
+                .no_partial_eq_impl(true)
+                .minimal_accessors(true),
         )
         .compile_protos(&["google/protobuf/descriptor.proto"], "descriptor.rs")
         .unwrap();
