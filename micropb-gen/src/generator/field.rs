@@ -56,6 +56,7 @@ pub(crate) struct Field<'a> {
     pub(crate) boxed: bool,
     pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
+    no_accessors: bool,
 }
 
 impl<'a> Field<'a> {
@@ -162,6 +163,7 @@ impl<'a> Field<'a> {
         };
         let encoded_max_size = field_conf.config.encoded_max_size;
         let attrs = field_conf.config.field_attr_parsed()?;
+        let no_accessors = field_conf.config.no_accessors.unwrap_or(false);
 
         Ok(Some(Field {
             num,
@@ -173,6 +175,7 @@ impl<'a> Field<'a> {
             encoded_max_size,
             boxed,
             attrs,
+            no_accessors,
         }))
     }
 
@@ -220,8 +223,7 @@ impl<'a> Field<'a> {
         Ok(quote! { ::core::default::Default::default() })
     }
 
-    pub(crate) fn generate_accessors(&self, gen: &Generator, minimal: bool) -> TokenStream {
-        // `minimal` indicates whether to include accessors other than just the optional getter
+    pub(crate) fn generate_accessors(&self, gen: &Generator) -> TokenStream {
         match &self.ftype {
             FieldType::Optional(type_spec, opt) => {
                 let (deref, deref_mut) = if self.boxed {
@@ -235,7 +237,7 @@ impl<'a> Field<'a> {
                     format!("Return a reference to `{}` as an `Option`", self.rust_name);
                 let type_name = type_spec.generate_rust_type(gen);
 
-                // Minimal set of accessors
+                // Getter is needed for encoding, so we have to generate it
                 let mut accessors = if let OptionalRepr::Hazzer = opt {
                     quote! {
                         #[doc = #getter_doc]
@@ -254,7 +256,7 @@ impl<'a> Field<'a> {
                     }
                 };
 
-                if !minimal {
+                if !self.no_accessors {
                     let wrapped_type = gen.wrapped_type(type_name.clone(), self.boxed, true);
                     let setter_name = format_ident!("set_{}", self.rust_name);
                     let muter_name = format_ident!("mut_{}", self.rust_name);
@@ -355,7 +357,7 @@ impl<'a> Field<'a> {
                 }
                 accessors
             }
-            FieldType::Single(type_spec) if !minimal => {
+            FieldType::Single(type_spec) if !self.no_accessors => {
                 let type_name = type_spec.generate_rust_type(gen);
                 let setter_name = format_ident!("set_{}", self.rust_name);
                 let muter_name = format_ident!("mut_{}", self.rust_name);
@@ -723,6 +725,7 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         boxed,
         encoded_max_size: None,
         attrs: vec![],
+        no_accessors: false,
     }
 }
 
@@ -798,6 +801,7 @@ mod tests {
                 boxed: false,
                 encoded_max_size: None,
                 attrs: vec![],
+                no_accessors: false,
             }
         );
 
@@ -829,6 +833,7 @@ mod tests {
                 boxed: true,
                 encoded_max_size: None,
                 attrs: parse_attributes("#[attr]").unwrap(),
+                no_accessors: false,
             }
         );
     }

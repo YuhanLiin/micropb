@@ -4,7 +4,7 @@
 
 ### Added
 
-- Add `minimal_accessors` configuration to reduce generated file size
+- Add `no_accessors` configuration to reduce generated file size
 
 ### Changed
 

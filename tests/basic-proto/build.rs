@@ -445,7 +445,7 @@ fn large_field_nums() {
 
 fn minimal_accessors() {
     let mut generator = Generator::new();
-    generator.configure(".", Config::new().minimal_accessors(true));
+    generator.configure(".", Config::new().no_accessors(true));
     // Test what happens when there's a message that doesn't use hazzers
     generator.configure(
         ".nested.Nested",

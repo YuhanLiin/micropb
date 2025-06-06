@@ -423,6 +423,13 @@ config_decl! {
     /// ```
     field_lifetime: [deref] Option<String>,
 
+    /// Disable field accessors.
+    ///
+    /// Do not generate accessors for this field other than the getter method on optional fields,
+    /// which is required by the encoding logic. This won't reduce the compiled code size, but it
+    /// will significantly reduce the size of the output source file.
+    no_accessors: Option<bool>,
+
     // Type configs
 
     /// Override the integer size of Protobuf enums.
@@ -480,13 +487,6 @@ config_decl! {
     /// This configuration is only applied to the path passed to
     /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.
     [no_inherit] unknown_handler: [deref] Option<String>,
-
-    /// Only generate minimal accessors for message types.
-    ///
-    /// If enabled, the only accessors that will be generated for this message type will be the
-    /// getter methods on optional fields. This won't reduce the compiled code size, but it will
-    /// significantly reduce the size of the output source file.
-    minimal_accessors: Option<bool>,
 
     // General configs
 
