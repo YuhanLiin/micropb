@@ -9,7 +9,7 @@ fn main() {
             Config::new()
                 .no_clone_impl(true)
                 .no_partial_eq_impl(true)
-                .minimal_accessors(true),
+                .no_accessors(true),
         )
         // Override minimal accessors setting for specific paths, since the generator calls `set_`
         // APIs on specific messages
@@ -22,7 +22,7 @@ fn main() {
                 ".google.protobuf.MessageOptions",
                 ".google.protobuf.EnumValueDescriptorProto",
             ],
-            Config::new().minimal_accessors(false),
+            Config::new().no_accessors(false),
         )
         .compile_protos(&["google/protobuf/descriptor.proto"], "descriptor.rs")
         .unwrap();
