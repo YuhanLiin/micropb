@@ -5,6 +5,7 @@
 ### Added
 
 - Add `no_accessors` configuration to reduce generated file size
+- Add new setting to disable generating `MAX_SIZE` calculations
 
 ### Changed
 

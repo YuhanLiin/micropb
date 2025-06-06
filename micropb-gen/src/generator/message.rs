@@ -476,6 +476,10 @@ impl<'a> Message<'a> {
     }
 
     fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if !gen.calculate_max_size {
+            return quote! { const MAX_SIZE: ::core::option::Option<usize> = ::core::option::Option::None; };
+        }
+
         let field_sizes = self.fields.iter().map(|f| f.generate_max_size(gen));
         let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(gen));
         let unknown_size = self

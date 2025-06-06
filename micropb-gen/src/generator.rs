@@ -158,6 +158,7 @@ pub struct Generator {
     pub(crate) warning_cb: WarningCb,
 
     pub(crate) encode_decode: EncodeDecode,
+    pub(crate) calculate_max_size: bool,
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) fdset_path: Option<PathBuf>,

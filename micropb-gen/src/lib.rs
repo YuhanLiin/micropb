@@ -555,6 +555,7 @@ impl Generator {
             encode_decode: Default::default(),
             retain_enum_prefix: Default::default(),
             format: true,
+            calculate_max_size: true,
             fdset_path: Default::default(),
             protoc_args: Default::default(),
 
@@ -948,6 +949,18 @@ impl Generator {
             proto_path.as_ref().to_owned(),
             syn::parse_str(rust_path.as_ref()).expect("failed to tokenize extern path"),
         );
+        self
+    }
+
+    /// Do not generate code to calculate the `MAX_SIZE` constant on each message.
+    ///
+    /// By default, `micropb-gen` generates code to calculate the `MAX_SIZE` associated constant
+    /// for each message struct, which determines the max buffer size needed to encode it. If this
+    /// is set to false, then it replaces the calculations with `None`, effectively disabling the
+    /// use of `MAX_SIZE`. This has no runtime impact, but it can reduce the size of the output
+    /// file.
+    pub fn calculate_max_size(&mut self) -> &mut Self {
+        self.calculate_max_size = true;
         self
     }
 }
