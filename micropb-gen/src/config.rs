@@ -423,6 +423,13 @@ config_decl! {
     /// ```
     field_lifetime: [deref] Option<String>,
 
+    /// Disable field accessors.
+    ///
+    /// Do not generate accessors for this field other than the getter method on optional fields,
+    /// which is required by the encoding logic. This won't reduce the compiled code size, but it
+    /// will significantly reduce the size of the output source file.
+    no_accessors: Option<bool>,
+
     // Type configs
 
     /// Override the integer size of Protobuf enums.

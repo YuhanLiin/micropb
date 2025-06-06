@@ -237,13 +237,13 @@ impl<'a> Message<'a> {
         &self,
         gen: &Generator,
         hazzer_field_attr: Option<Vec<syn::Attribute>>,
+        proto_default: bool,
         unknown_conf: &CurrentConfig,
     ) -> io::Result<TokenStream> {
         let msg_mod_name = resolve_path_elem(self.name);
         let rust_name = &self.rust_name;
         let lifetime = &self.lifetime;
         let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
-        let hazzer_field_attr = hazzer_field_attr.iter();
         let oneof_fields = self
             .oneofs
             .iter()
@@ -259,9 +259,19 @@ impl<'a> Message<'a> {
             quote! {}
         };
 
-        let derive_msg = derive_msg_attr(self.derive_dbg, false, false, self.derive_clone);
+        // If message has no hazzer, then we can derive PartialEq instead of implementing it
+        let derive_partial_eq = self.impl_partial_eq && hazzer_field_attr.is_none();
+        // If message has no Proto default specification, then we can derive Default
+        let derive_default = self.impl_default && !proto_default;
+        let derive_msg = derive_msg_attr(
+            self.derive_dbg,
+            derive_default,
+            derive_partial_eq,
+            self.derive_clone,
+        );
         let attrs = &self.attrs;
 
+        let hazzer_field_attr = hazzer_field_attr.iter();
         Ok(quote! {
             #derive_msg
             #(#attrs)*
@@ -466,6 +476,10 @@ impl<'a> Message<'a> {
     }
 
     fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if !gen.calculate_max_size {
+            return quote! { const MAX_SIZE: ::core::option::Option<usize> = ::core::option::Option::None; };
+        }
+
         let field_sizes = self.fields.iter().map(|f| f.generate_max_size(gen));
         let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(gen));
         let unknown_size = self
