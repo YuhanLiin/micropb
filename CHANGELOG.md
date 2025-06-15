@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 ### Added
 
@@ -10,6 +10,7 @@
 ### Changed
 
 - Use derives for `PartialEq` and `Default` when possible
+- Replace `never` crate with `core::convert::Infallible`
 
 ## 0.2.0
 
