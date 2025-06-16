@@ -1,4 +1,5 @@
 use core::{
+    convert::Infallible,
     mem::MaybeUninit,
     str::{from_utf8, Utf8Error},
 };
@@ -11,8 +12,6 @@ use crate::{
     },
     MessageDecode, Presence, Tag, WIRE_TYPE_I32, WIRE_TYPE_I64, WIRE_TYPE_LEN, WIRE_TYPE_VARINT,
 };
-
-use never::Never;
 
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
@@ -125,7 +124,7 @@ impl<T: PbRead> PbRead for &mut T {
 }
 
 impl PbRead for &[u8] {
-    type Error = Never;
+    type Error = Infallible;
 
     #[inline]
     fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error> {
@@ -190,7 +189,7 @@ impl<R: std::io::BufRead> PbRead for StdReader<R> {
 ///
 /// let mut message = ProtoMessage::default();
 /// message.decode(&mut decoder, data.len())?;
-/// # Ok::<(), DecodeError<never::Never>>(())
+/// # Ok::<(), DecodeError<core::convert::Infallible>>(())
 /// ```
 ///
 /// # Reducing Code Size
@@ -724,7 +723,7 @@ mod tests {
     }
 
     impl PbRead for Multichunk<'_> {
-        type Error = Never;
+        type Error = Infallible;
 
         fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error> {
             let n = if self.len() % 2 == 0 { 2 } else { 1 };

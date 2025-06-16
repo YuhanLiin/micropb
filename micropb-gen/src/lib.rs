@@ -15,10 +15,10 @@
 //! ```protobuf
 //! [dependencies]
 //! # Allow types from `heapless` to be used for container fields
-//! micropb = { version = "0.2.0", features = ["container-heapless"] }
+//! micropb = { version = "0.3.0", features = ["container-heapless"] }
 //!
 //! [build-dependencies]
-//! micropb-gen = "0.2.0"
+//! micropb-gen = "0.3.0"
 //! ```
 //!
 //! Then, place your `.proto` file into the project's root directory:
