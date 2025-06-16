@@ -47,7 +47,7 @@ impl<const N: usize> PbWrite for heapless::Vec<u8, N> {
 
 #[cfg(feature = "alloc")]
 impl PbWrite for alloc::vec::Vec<u8> {
-    type Error = never::Never;
+    type Error = core::convert::Infallible;
 
     #[inline]
     fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {

@@ -18,7 +18,10 @@ pub trait MessageDecode {
     ) -> Result<(), DecodeError<R::Error>>;
 
     /// Decode an instance of the message from the provided bytes
-    fn decode_from_bytes(&mut self, bytes: &[u8]) -> Result<(), DecodeError<never::Never>> {
+    fn decode_from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), DecodeError<core::convert::Infallible>> {
         let mut decoder = PbDecoder::new(bytes);
         self.decode(&mut decoder, bytes.len())
     }
@@ -43,7 +46,10 @@ impl<T: MessageDecode> MessageDecode for &mut T {
         (*self).decode(decoder, len)
     }
 
-    fn decode_from_bytes(&mut self, bytes: &[u8]) -> Result<(), DecodeError<never::Never>> {
+    fn decode_from_bytes(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), DecodeError<core::convert::Infallible>> {
         (*self).decode_from_bytes(bytes)
     }
 

@@ -1,6 +1,6 @@
 [package]
 name = "micropb"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Yuhan Lin <yuhanliin@protonmail.com>"]
 description = "Rust Protobuf library targetting embedded systems and no_std environments"
@@ -24,7 +24,6 @@ container-heapless = ["dep:heapless"]
 arrayvec = { version = "0.7", optional = true, default-features = false }
 heapless = { version = "0.8", optional = true }
 num-traits = { version = "0.2", default-features = false }
-never = { version = "0.1", default-features = false }
 
 [dev-dependencies]
 micropb = { path = ".", features = ["std" ,"container-arrayvec", "container-heapless"] }
