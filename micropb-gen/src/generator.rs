@@ -9,6 +9,7 @@ use std::{
 };
 
 use convert_case::{Case, Casing};
+use micropb::size::sizeof_varint32;
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{Attribute, Ident};
@@ -252,13 +253,19 @@ impl Generator {
         name: &Ident,
         values: &[EnumValueDescriptorProto],
         enum_int_type: IntSize,
+        signed: bool,
         attrs: &[Attribute],
     ) -> TokenStream {
         let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number));
         let var_names = values.iter().map(|v| self.enum_variant_name(&v.name, name));
         let default_num = Literal::i32_unsuffixed(values[0].number);
         let derive_enum = derive_enum_attr();
-        let itype = enum_int_type.type_name(true);
+        let itype = enum_int_type.type_name(signed);
+        let max_size = if signed {
+            10
+        } else {
+            sizeof_varint32(enum_int_type.max_value().try_into().unwrap_or(u32::MAX))
+        };
 
         quote! {
             #derive_enum
@@ -267,6 +274,7 @@ impl Generator {
             pub struct #name(pub #itype);
 
             impl #name {
+                pub const _MAX_SIZE: usize = #max_size;
                 #(pub const #var_names: Self = Self(#nums);)*
             }
 
@@ -299,7 +307,8 @@ impl Generator {
             .config
             .type_attr_parsed()
             .map_err(|e| msg_error(&self.pkg, &enum_type.name, &e))?;
-        let out = self.generate_enum_decl(&name, &enum_type.value, enum_int_type, attrs);
+        let unsigned = enum_conf.config.enum_unsigned.unwrap_or(false);
+        let out = self.generate_enum_decl(&name, &enum_type.value, enum_int_type, !unsigned, attrs);
         Ok(out)
     }
 
@@ -562,13 +571,15 @@ mod tests {
         value[1].set_number(2);
         let gen = Generator::new();
 
-        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, &[]);
+        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, true, &[]);
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct Test(pub i32);
 
             impl Test {
+                pub const _MAX_SIZE: usize = 10usize;
+
                 pub const One: Self = Self(1);
                 pub const OtherValue: Self = Self(2);
             }
@@ -603,15 +614,18 @@ mod tests {
             &name,
             &value,
             IntSize::S8,
+            false,
             &parse_attributes("#[derive(Serialize)]").unwrap(),
         );
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             #[derive(Serialize)]
-            pub struct Enum(pub i8);
+            pub struct Enum(pub u8);
 
             impl Enum {
+                pub const _MAX_SIZE: usize = 2usize;
+
                 pub const EnumOne: Self = Self(1);
             }
 
@@ -621,8 +635,8 @@ mod tests {
                 }
             }
 
-            impl core::convert::From<i8> for Enum {
-                fn from(val: i8) -> Self {
+            impl core::convert::From<u8> for Enum {
+                fn from(val: u8) -> Self {
                     Self(val)
                 }
             }

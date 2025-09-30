@@ -29,6 +29,8 @@ mod implicit_presence;
 #[cfg(test)]
 mod int_type;
 #[cfg(test)]
+mod issues;
+#[cfg(test)]
 mod keyword_fields;
 #[cfg(test)]
 mod large_field_nums;

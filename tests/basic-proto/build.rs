@@ -101,6 +101,12 @@ fn int_type() {
         ".basic.BasicTypes.sint64_num",
         Config::new().int_size(IntSize::S32),
     );
+    generator.configure(
+        ".basic.Enum2",
+        Config::new()
+            .enum_unsigned(true)
+            .enum_int_size(IntSize::S16),
+    );
 
     generator
         .compile_protos(
@@ -464,6 +470,23 @@ fn minimal_accessors() {
         .unwrap();
 }
 
+fn issues() {
+    let mut generator = Generator::new();
+    generator.calculate_max_size(false);
+    generator.use_container_std();
+    generator.use_container_heapless();
+
+    // Default for items not specified below.
+    generator.configure(".", Config::new().max_bytes(36).max_len(8));
+
+    generator
+        .compile_protos(
+            &["proto/issues.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/issues.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -487,4 +510,5 @@ fn main() {
     fixed_string_and_bytes();
     large_field_nums();
     minimal_accessors();
+    issues();
 }
