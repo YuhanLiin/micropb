@@ -1,4 +1,6 @@
-use crate::{MessageEncode, Tag, VarInt};
+use num_traits::{AsPrimitive, PrimInt};
+
+use crate::{MessageEncode, Tag};
 
 /// A writer to which Protobuf data is written, similar to [`std::io::Write`].
 ///
@@ -71,6 +73,10 @@ impl<W: std::io::Write> PbWrite for StdWriter<W> {
         self.0.write_all(data)
     }
 }
+
+trait VarInt: PrimInt + From<u8> + AsPrimitive<u8> {}
+impl VarInt for u32 {}
+impl VarInt for u64 {}
 
 #[derive(Debug)]
 /// Encoder that serializes Rust types into Protobuf messages and values.

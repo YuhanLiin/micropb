@@ -189,7 +189,7 @@ impl TypeSpec {
             TypeSpec::Bool => Some(1),
 
             // negative VARINT values will always take up 10 bytes
-            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) | TypeSpec::Enum(_) => Some(10),
+            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) => Some(10),
 
             // positive VARINT size depends on the max size of the represented int type
             TypeSpec::Int(PbInt::Uint32, intsize) => Some(sizeof_varint32(
@@ -205,7 +205,8 @@ impl TypeSpec {
                 max_bytes.map(|max| sizeof_len_record(max as usize))
             }
 
-            TypeSpec::Message(..) => None,
+            // Will be handled later
+            TypeSpec::Message(..) | TypeSpec::Enum(..) => None,
         }
     }
 
@@ -285,9 +286,16 @@ impl TypeSpec {
     }
 
     pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
-        if let TypeSpec::Message(tname, _) = self {
-            let rust_type = gen.resolve_type_name(tname);
-            return quote! { ::micropb::const_map!(<#rust_type as ::micropb::MessageEncode>::MAX_SIZE, |size| ::micropb::size::sizeof_len_record(size)) };
+        match self {
+            TypeSpec::Message(tname, _) => {
+                let rust_type = gen.resolve_type_name(tname);
+                return quote! { ::micropb::const_map!(<#rust_type as ::micropb::MessageEncode>::MAX_SIZE, |size| ::micropb::size::sizeof_len_record(size)) };
+            }
+            TypeSpec::Enum(tname) => {
+                let rust_type = gen.resolve_type_name(tname);
+                return quote! { ::core::option::Option::Some(#rust_type::_MAX_SIZE) };
+            }
+            _ => (),
         }
 
         self.max_size()
@@ -551,7 +559,6 @@ mod tests {
         assert_eq!(TypeSpec::Float.max_size(), Some(4));
         assert_eq!(TypeSpec::Double.max_size(), Some(8));
         assert_eq!(TypeSpec::Bool.max_size(), Some(1));
-        assert_eq!(TypeSpec::Enum("test".to_string()).max_size(), Some(10));
         assert_eq!(
             TypeSpec::Int(PbInt::Int32, IntSize::S8).max_size(),
             Some(10)

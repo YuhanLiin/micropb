@@ -101,6 +101,12 @@ fn int_type() {
         ".basic.BasicTypes.sint64_num",
         Config::new().int_size(IntSize::S32),
     );
+    generator.configure(
+        ".basic.Enum2",
+        Config::new()
+            .enum_unsigned(true)
+            .enum_int_size(IntSize::S16),
+    );
 
     generator
         .compile_protos(

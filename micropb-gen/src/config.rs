@@ -339,8 +339,7 @@ config_decl! {
     /// ```
     optional_repr: Option<OptionalRepr>,
 
-    /// Replace generated field with an user-provided type. See
-    /// [`CustomField`](crate::config::CustomField) for more info.
+    /// Replace generated field with an user-provided type. See [`CustomField`] for more info.
     ///
     /// Substitute a user-provided type as the type of the field. The encoding and decoding
     /// behaviour will also be user-provided, so the custom type must implement `FieldEncode` and
@@ -437,6 +436,13 @@ config_decl! {
     /// Change the integer fields to be `i8`, `i16`, `i32`, or `i64`. If the integer type is
     /// smaller than the value on the wire, the value will be truncated to fit.
     enum_int_size: Option<IntSize>,
+
+    /// Use unsigned integer to represent enums.
+    ///
+    /// Enum will be `u32` instead of `i32`. Negative values on the wire will be truncated, so do
+    /// not use this if any of the enum variants are negative. Setting this option will reduce the
+    /// maximum encoded size of the enum, since signed integers always have a max size of 10 bytes.
+    enum_unsigned: Option<bool>,
 
     /// Set attributes for generated types, such as messages and enums.
     ///
