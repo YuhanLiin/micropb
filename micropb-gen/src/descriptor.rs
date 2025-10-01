@@ -1406,6 +1406,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct VerificationState(pub i32);
             impl VerificationState {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Declaration: Self = Self(0);
                 pub const Unverified: Self = Self(1);
             }
@@ -1582,6 +1583,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct Type(pub i32);
             impl Type {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Double: Self = Self(1);
                 pub const Float: Self = Self(2);
                 pub const Int64: Self = Self(3);
@@ -1615,6 +1617,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct Label(pub i32);
             impl Label {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Optional: Self = Self(1);
                 pub const Repeated: Self = Self(3);
                 pub const Required: Self = Self(2);
@@ -3652,6 +3655,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct OptimizeMode(pub i32);
             impl OptimizeMode {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Speed: Self = Self(1);
                 pub const CodeSize: Self = Self(2);
                 pub const LiteRuntime: Self = Self(3);
@@ -5699,6 +5703,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct CType(pub i32);
             impl CType {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const String: Self = Self(0);
                 pub const Cord: Self = Self(1);
                 pub const StringPiece: Self = Self(2);
@@ -5717,6 +5722,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct JSType(pub i32);
             impl JSType {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const JsNormal: Self = Self(0);
                 pub const JsString: Self = Self(1);
                 pub const JsNumber: Self = Self(2);
@@ -5735,6 +5741,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct OptionRetention(pub i32);
             impl OptionRetention {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const RetentionUnknown: Self = Self(0);
                 pub const RetentionRuntime: Self = Self(1);
                 pub const RetentionSource: Self = Self(2);
@@ -5753,6 +5760,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct OptionTargetType(pub i32);
             impl OptionTargetType {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const TargetTypeUnknown: Self = Self(0);
                 pub const TargetTypeFile: Self = Self(1);
                 pub const TargetTypeExtensionRange: Self = Self(2);
@@ -7406,6 +7414,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct IdempotencyLevel(pub i32);
             impl IdempotencyLevel {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const IdempotencyUnknown: Self = Self(0);
                 pub const NoSideEffects: Self = Self(1);
                 pub const Idempotent: Self = Self(2);
@@ -8014,6 +8023,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct FieldPresence(pub i32);
             impl FieldPresence {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Unknown: Self = Self(0);
                 pub const Explicit: Self = Self(1);
                 pub const Implicit: Self = Self(2);
@@ -8033,6 +8043,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct EnumType(pub i32);
             impl EnumType {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Unknown: Self = Self(0);
                 pub const Open: Self = Self(1);
                 pub const Closed: Self = Self(2);
@@ -8051,6 +8062,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct RepeatedFieldEncoding(pub i32);
             impl RepeatedFieldEncoding {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Unknown: Self = Self(0);
                 pub const Packed: Self = Self(1);
                 pub const Expanded: Self = Self(2);
@@ -8069,6 +8081,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct Utf8Validation(pub i32);
             impl Utf8Validation {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Unknown: Self = Self(0);
                 pub const Verify: Self = Self(2);
                 pub const None: Self = Self(3);
@@ -8087,6 +8100,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct MessageEncoding(pub i32);
             impl MessageEncoding {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Unknown: Self = Self(0);
                 pub const LengthPrefixed: Self = Self(1);
                 pub const Delimited: Self = Self(2);
@@ -8105,6 +8119,7 @@ pub mod google_ {
             #[repr(transparent)]
             pub struct JsonFormat(pub i32);
             impl JsonFormat {
+                pub const _MAX_SIZE: usize = 10usize;
                 pub const Unknown: Self = Self(0);
                 pub const Allow: Self = Self(1);
                 pub const LegacyBestEffort: Self = Self(2);
@@ -8918,6 +8933,7 @@ pub mod google_ {
                 #[repr(transparent)]
                 pub struct Semantic(pub i32);
                 impl Semantic {
+                    pub const _MAX_SIZE: usize = 10usize;
                     pub const None: Self = Self(0);
                     pub const Set: Self = Self(1);
                     pub const Alias: Self = Self(2);
@@ -9190,6 +9206,7 @@ pub mod google_ {
         #[repr(transparent)]
         pub struct Edition(pub i32);
         impl Edition {
+            pub const _MAX_SIZE: usize = 10usize;
             pub const Unknown: Self = Self(0);
             pub const Legacy: Self = Self(900);
             pub const Proto2: Self = Self(998);
