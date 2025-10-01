@@ -121,8 +121,6 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use num_traits::{AsPrimitive, PrimInt};
-
 pub mod container;
 #[cfg(feature = "decode")]
 mod decode;
@@ -208,12 +206,6 @@ impl Tag {
         self.0
     }
 }
-
-trait VarInt: PrimInt + From<u8> + AsPrimitive<u8> {}
-
-impl VarInt for u32 {}
-
-impl VarInt for u64 {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Field presence discipline
