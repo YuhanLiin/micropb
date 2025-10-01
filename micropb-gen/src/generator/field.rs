@@ -714,7 +714,7 @@ impl<'a> Field<'a> {
 }
 
 #[cfg(test)]
-pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldType) -> Field {
+pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldType) -> Field<'_> {
     Field {
         num,
         ftype,

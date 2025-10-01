@@ -425,7 +425,7 @@ pub(crate) fn make_test_oneof_field(
     name: &str,
     boxed: bool,
     tspec: TypeSpec,
-) -> OneofField {
+) -> OneofField<'_> {
     OneofField {
         num,
         name,
