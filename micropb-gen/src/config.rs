@@ -339,8 +339,7 @@ config_decl! {
     /// ```
     optional_repr: Option<OptionalRepr>,
 
-    /// Replace generated field with an user-provided type. See
-    /// [`CustomField`](crate::config::CustomField) for more info.
+    /// Replace generated field with an user-provided type. See [`CustomField`] for more info.
     ///
     /// Substitute a user-provided type as the type of the field. The encoding and decoding
     /// behaviour will also be user-provided, so the custom type must implement `FieldEncode` and

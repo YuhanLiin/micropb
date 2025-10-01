@@ -141,8 +141,12 @@ pub use ::heapless;
 pub use container::impl_fixed_len::FixedLenString;
 
 pub use container::{PbBytes, PbMap, PbString, PbVec};
+#[cfg(all(feature = "decode", feature = "std"))]
+pub use decode::StdReader;
 #[cfg(feature = "decode")]
 pub use decode::{DecodeError, PbDecoder, PbRead};
+#[cfg(all(feature = "encode", feature = "std"))]
+pub use encode::StdWriter;
 #[cfg(feature = "encode")]
 pub use encode::{PbEncoder, PbWrite};
 #[cfg(feature = "decode")]
@@ -205,17 +209,11 @@ impl Tag {
     }
 }
 
-trait VarInt: PrimInt + From<u8> + AsPrimitive<u8> {
-    const BYTES: u8;
-}
+trait VarInt: PrimInt + From<u8> + AsPrimitive<u8> {}
 
-impl VarInt for u32 {
-    const BYTES: u8 = 5;
-}
+impl VarInt for u32 {}
 
-impl VarInt for u64 {
-    const BYTES: u8 = 10;
-}
+impl VarInt for u64 {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Field presence discipline
