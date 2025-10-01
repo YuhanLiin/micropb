@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add `enum_unsigned` configuration
+
 ## 0.3.0
 
 ### Added
