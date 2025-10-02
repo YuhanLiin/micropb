@@ -27,6 +27,20 @@ impl<W: PbWrite> PbWrite for &mut W {
     }
 }
 
+impl PbWrite for &mut [u8] {
+    type Error = ();
+
+    fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+        if self.len() < data.len() {
+            return Err(());
+        }
+        let (a, b) = core::mem::take(self).split_at_mut(data.len());
+        a.copy_from_slice(data);
+        *self = b;
+        Ok(())
+    }
+}
+
 #[cfg(feature = "container-arrayvec")]
 impl<const N: usize> PbWrite for arrayvec::ArrayVec<u8, N> {
     type Error = arrayvec::CapacityError;
@@ -640,5 +654,25 @@ mod tests {
             "cdef"
         );
         assert_encode_map_elem!([5, 0x08, 0x96, 0x01, 0x12, 0], &150, "");
+    }
+
+    #[test]
+    fn slice_writer() {
+        let mut buf = [0u8; 4];
+        let len_before = buf.len();
+
+        let mut writer = &mut buf[..];
+        let mut encoder = PbEncoder::new(&mut writer);
+        encoder.encode_fixed32(0x123456).unwrap();
+
+        let written = len_before - writer.len();
+        assert_eq!(written, 4);
+        assert_eq!(&[0x56, 0x34, 0x12, 0x00], &buf[..written]);
+
+        // Try to write more than remaining space
+        let mut writer = &mut buf[..];
+        let mut encoder = PbEncoder::new(&mut writer);
+        let res = encoder.encode_fixed64(0x1234567890ABCDEF);
+        assert!(res.is_err());
     }
 }
