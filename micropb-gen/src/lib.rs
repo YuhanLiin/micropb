@@ -564,6 +564,14 @@ impl Generator {
         }
     }
 
+    fn configure_with_path<'a>(&mut self, path: impl Iterator<Item = &'a str>, config: Config) {
+        let config_slot = self.config_tree.root.add_path(path).value_mut();
+        match config_slot {
+            Some(existing) => existing.merge(&config),
+            None => *config_slot = Some(Box::new(config)),
+        }
+    }
+
     /// Apply code generator configurations to Protobuf types and fields. See
     /// [`Config`](crate::Config) for possible configuration options.
     ///
@@ -624,20 +632,8 @@ impl Generator {
     /// gen.configure(".pkg.Message._unknown", Config::new().field_attributes("#[serde(skip)]"));
     ///
     /// ```
-    pub fn configure(&mut self, mut proto_path: &str, config: Config) -> &mut Self {
-        if proto_path.starts_with('.') {
-            proto_path = &proto_path[1..];
-        }
-
-        let config_slot = self
-            .config_tree
-            .root
-            .add_path(split_pkg_name(proto_path))
-            .value_mut();
-        match config_slot {
-            Some(existing) => existing.merge(&config),
-            None => *config_slot = Some(Box::new(config)),
-        }
+    pub fn configure(&mut self, proto_path: &str, config: Config) -> &mut Self {
+        self.configure_with_path(split_dot_prefixed_pkg_name(proto_path), config);
         self
     }
 
@@ -649,6 +645,27 @@ impl Generator {
             self.configure(path, config.clone());
         }
         self
+    }
+
+    #[cfg(feature = "config-file")]
+    fn apply_config_bytes(&mut self, bytes: &[u8], prefix: &str) -> Result<(), toml::de::Error> {
+        let configs: std::collections::HashMap<String, Config> = toml::from_slice(bytes)?;
+        for (path, config) in configs.into_iter() {
+            let prefix_path = split_dot_prefixed_pkg_name(prefix);
+            let path = split_dot_prefixed_pkg_name(&path);
+            let full_path = prefix_path.chain(path);
+
+            self.configure_with_path(full_path, config);
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "config-file")]
+    pub fn apply_config_file(&mut self, file_path: &Path, prefix: &str) -> Result<(), io::Error> {
+        let file_bytes = fs::read(file_path)?;
+        self.apply_config_bytes(&file_bytes, prefix)
+            .map_err(io::Error::other)?;
+        Ok(())
     }
 
     /// Configure the generator to generate `heapless` containers for Protobuf `string`, `bytes`,
@@ -968,4 +985,11 @@ impl Generator {
 fn split_pkg_name(name: &str) -> impl Iterator<Item = &str> {
     // ignore empty segments, so empty pkg name points to root node
     name.split('.').filter(|seg| !seg.is_empty())
+}
+
+fn split_dot_prefixed_pkg_name(mut name: &str) -> impl Iterator<Item = &str> {
+    if name.starts_with('.') {
+        name = &name[1..];
+    }
+    split_pkg_name(name)
 }
