@@ -561,6 +561,7 @@ impl Config {
         self.string_type
             .as_ref()
             .map(|t| {
+                check_missing_len(t, n, "max_bytes")?;
                 let typestr = substitute_param(t.into(), "$N", n);
                 syn::parse_str(&typestr).map_err(|e| {
                     format!("Failed to parse string_type \"{typestr}\" as type path: {e}")
@@ -573,6 +574,7 @@ impl Config {
         self.bytes_type
             .as_ref()
             .map(|t| {
+                check_missing_len(t, n, "max_bytes")?;
                 let typestr = substitute_param(t.into(), "$N", n);
                 syn::parse_str(&typestr).map_err(|e| {
                     format!("Failed to parse bytes_type \"{typestr}\" as type path: {e}")
@@ -589,8 +591,9 @@ impl Config {
         self.vec_type
             .as_ref()
             .map(|typestr| {
-                let typestr = substitute_param(typestr.into(), "$N", n);
-                let typestr = substitute_param(typestr, "$T", Some(t));
+                let typestr = substitute_param(typestr.into(), "$T", Some(t));
+                let typestr = substitute_param(typestr, "$N", n);
+                check_missing_len(&typestr, n, "max_len")?;
                 syn::parse_str(&typestr).map_err(|e| {
                     format!("Failed to parse vec_type \"{typestr}\" as type path: {e}")
                 })
@@ -607,9 +610,10 @@ impl Config {
         self.map_type
             .as_ref()
             .map(|t| {
-                let typestr = substitute_param(t.into(), "$N", n);
-                let typestr = substitute_param(typestr, "$K", Some(k));
+                let typestr = substitute_param(t.into(), "$K", Some(k));
                 let typestr = substitute_param(typestr, "$V", Some(v));
+                let typestr = substitute_param(typestr, "$N", n);
+                check_missing_len(&typestr, n, "max_len")?;
                 syn::parse_str(&typestr).map_err(|e| {
                     format!("Failed to parse map_type \"{typestr}\" as type path: {e}")
                 })
@@ -670,6 +674,14 @@ fn substitute_param<'a>(
         }
     }
     typestr
+}
+
+fn check_missing_len(typestr: &str, n: Option<u32>, len_param: &str) -> Result<(), String> {
+    if n.is_none() && typestr.contains("$N") {
+        Err(format!("Missing {len_param} for type path \"{typestr}\""))
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
