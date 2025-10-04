@@ -9,6 +9,7 @@ use crate::generator::sanitized_ident;
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Sizes of integer types
 pub enum IntSize {
     /// 8-bit int
@@ -56,6 +57,7 @@ impl IntSize {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Customize encoding and decoding behaviour for a generated field
 pub enum CustomField {
     /// Fully-qualified type name that replaces the generated type of the field.
@@ -83,6 +85,7 @@ impl CustomField {
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Representation of optional fields in the generated code
 pub enum OptionalRepr {
     /// Presence of optional field is tracked in a separate bitfield called a hazzer.
@@ -99,6 +102,7 @@ macro_rules! config_decl {
     ($($(#[$doc:meta])* $([$placeholder:ident])? $field:ident : $([$placeholder2:ident])? Option<$type:ty>,)+) => {
         #[non_exhaustive]
         #[derive(Debug, Clone, Default)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         /// Configuration that changes how the code generator handles Protobuf types and fields.
         /// See [`configure`](crate::Generator::configure) for how configurations are applied.
         ///
