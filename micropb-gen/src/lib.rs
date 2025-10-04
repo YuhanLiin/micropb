@@ -563,6 +563,7 @@ impl Generator {
             calculate_max_size: true,
             fdset_path: Default::default(),
             protoc_args: Default::default(),
+            suffixed_package_names: true,
 
             config_tree,
             extern_paths: Default::default(),
@@ -1008,7 +1009,7 @@ impl Generator {
         self
     }
 
-    /// Determine whether to generate code to calculate the `MAX_SIZE` constant on each message.
+    /// Determines whether to generate code to calculate the `MAX_SIZE` constant on each message.
     ///
     /// By default, `micropb-gen` generates code to calculate the `MAX_SIZE` associated constant
     /// for each message struct, which determines the max buffer size needed to encode it. If this
@@ -1017,6 +1018,16 @@ impl Generator {
     /// file.
     pub fn calculate_max_size(&mut self, flag: bool) -> &mut Self {
         self.calculate_max_size = flag;
+        self
+    }
+
+    /// Determines whether the modules names generated from package specifiers are suffixed with an
+    /// underscore.
+    ///
+    /// This is on by default. Even when off, module names like "super" and modules created from
+    /// from message names will still be suffixed.
+    pub fn suffixed_package_names(&mut self, suffixed: bool) -> &mut Self {
+        self.suffixed_package_names = suffixed;
         self
     }
 }

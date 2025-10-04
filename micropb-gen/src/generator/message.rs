@@ -240,7 +240,7 @@ impl<'a> Message<'a> {
         proto_default: bool,
         unknown_conf: &CurrentConfig,
     ) -> io::Result<TokenStream> {
-        let msg_mod_name = resolve_path_elem(self.name);
+        let msg_mod_name = resolve_path_elem(self.name, true);
         let rust_name = &self.rust_name;
         let lifetime = &self.lifetime;
         let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
@@ -401,7 +401,7 @@ impl<'a> Message<'a> {
         let lifetime = &self.lifetime;
         let tag = Ident::new("tag", Span::call_site());
         let decoder = Ident::new("decoder", Span::call_site());
-        let mod_name = resolve_path_elem(self.name);
+        let mod_name = resolve_path_elem(self.name, true);
 
         let field_branches = self
             .fields
@@ -446,7 +446,7 @@ impl<'a> Message<'a> {
     }
 
     fn generate_encode_func(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
-        let mod_name = resolve_path_elem(self.name);
+        let mod_name = resolve_path_elem(self.name, true);
 
         let field_logic = self
             .fields

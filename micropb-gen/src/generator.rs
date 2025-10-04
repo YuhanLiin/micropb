@@ -80,20 +80,6 @@ impl<'a> CurrentConfig<'a> {
     }
 }
 
-fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
-    let code = mod_node.value_mut().take().unwrap_or_default();
-    let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
-        let submod_name = resolve_path_elem(submod_name);
-        let inner = generate_mod_tree(inner_node);
-        quote! { pub mod #submod_name { #inner } }
-    });
-
-    quote! {
-        #code
-        #(#submods)*
-    }
-}
-
 fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> io::Error {
     let dot = if pkg.is_empty() { "" } else { "." };
     io::Error::other(format!("({dot}{pkg}.{msg_name}.{field_name}) {err_text}"))
@@ -164,6 +150,7 @@ pub struct Generator {
     pub(crate) format: bool,
     pub(crate) fdset_path: Option<PathBuf>,
     pub(crate) protoc_args: Vec<OsString>,
+    pub(crate) suffixed_package_names: bool,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
     pub(crate) extern_paths: HashMap<String, TokenStream>,
@@ -199,7 +186,7 @@ impl Generator {
             }
         }
 
-        Ok(generate_mod_tree(&mut mod_tree.root))
+        Ok(self.generate_mod_tree(&mut mod_tree.root))
     }
 
     pub(crate) fn generate_fdproto(
@@ -246,6 +233,20 @@ impl Generator {
         }
 
         Ok(out)
+    }
+
+    fn generate_mod_tree(&self, mod_node: &mut Node<TokenStream>) -> TokenStream {
+        let code = mod_node.value_mut().take().unwrap_or_default();
+        let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
+            let submod_name = resolve_path_elem(submod_name, self.suffixed_package_names);
+            let inner = self.generate_mod_tree(inner_node);
+            quote! { pub mod #submod_name { #inner } }
+        });
+
+        quote! {
+            #code
+            #(#submods)*
+        }
     }
 
     fn generate_enum_decl(
@@ -318,7 +319,7 @@ impl Generator {
         proto: &DescriptorProto,
         msg_conf: &CurrentConfig,
     ) -> io::Result<(TokenStream, Option<Vec<syn::Attribute>>)> {
-        let msg_mod_name = resolve_path_elem(msg.name);
+        let msg_mod_name = resolve_path_elem(msg.name, self.suffixed_package_names);
         self.type_path.borrow_mut().push(msg.name.to_owned());
 
         let mut msg_mod_body = TokenStream::new();
@@ -423,7 +424,7 @@ impl Generator {
 
         let path = local_path
             .map(|_| format_ident!("super"))
-            .chain(ident_path.map(resolve_path_elem));
+            .chain(ident_path.map(|elem| resolve_path_elem(elem, self.suffixed_package_names)));
         quote! { #(#path ::)* #ident_type }
     }
 
@@ -468,9 +469,13 @@ impl Generator {
 }
 
 #[inline]
-pub(crate) fn resolve_path_elem(elem: &str) -> Ident {
-    // Add underscore suffix
-    format_ident!("{elem}_")
+pub(crate) fn resolve_path_elem(elem: &str, suffixed: bool) -> Ident {
+    if suffixed || matches!(elem, "super" | "crate" | "self" | "Self" | "extern") {
+        // Add underscore suffix
+        format_ident!("{elem}_")
+    } else {
+        Ident::new_raw(elem, Span::call_site())
+    }
 }
 
 #[inline]
@@ -646,18 +651,24 @@ mod tests {
 
     #[test]
     fn gen_mod_tree() {
-        let mut mod_tree = PathTree::new(quote! { Root });
-        *mod_tree
-            .root
-            .add_path(["foo", "bar"].into_iter())
-            .value_mut() = Some(quote! { Bar });
-        *mod_tree
-            .root
-            .add_path(["foo", "baz"].into_iter())
-            .value_mut() = Some(quote! { Baz });
-        *mod_tree.root.add_path(["bow"].into_iter()).value_mut() = Some(quote! { Bow });
+        let mk_tree = || {
+            let mut mod_tree = PathTree::new(quote! { Root });
+            *mod_tree
+                .root
+                .add_path(["foo", "bar"].into_iter())
+                .value_mut() = Some(quote! { Bar });
+            *mod_tree
+                .root
+                .add_path(["foo", "baz"].into_iter())
+                .value_mut() = Some(quote! { Baz });
+            *mod_tree.root.add_path(["bow"].into_iter()).value_mut() = Some(quote! { Bow });
+            mod_tree
+        };
 
-        let out = generate_mod_tree(&mut mod_tree.root);
+        let mut gen = Generator::new();
+
+        let mut mod_tree = mk_tree();
+        let out = gen.generate_mod_tree(&mut mod_tree.root);
         let expected = quote! {
             Root
 
@@ -667,6 +678,21 @@ mod tests {
             }
 
             pub mod bow_ { Bow }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
+
+        gen.suffixed_package_names(false);
+        let mut mod_tree = mk_tree();
+        let out = gen.generate_mod_tree(&mut mod_tree.root);
+        let expected = quote! {
+            Root
+
+            pub mod r#foo {
+                pub mod r#bar { Bar }
+                pub mod r#baz { Baz }
+            }
+
+            pub mod r#bow { Bow }
         };
         assert_eq!(out.to_string(), expected.to_string());
     }
