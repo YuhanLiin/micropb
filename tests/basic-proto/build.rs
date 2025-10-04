@@ -476,13 +476,13 @@ fn with_config_file() {
     let mut generator = Generator::new();
     generator.use_container_heapless();
     generator
-        .apply_config_file(Path::new("proto/collections.toml"), ".")
+        .parse_config_file(Path::new("proto/collections.toml"), ".")
         .unwrap();
     generator
-        .apply_config_file(Path::new("proto/map.toml"), ".")
+        .parse_config_file(Path::new("proto/map.toml"), ".")
         .unwrap();
     generator
-        .apply_config_file(Path::new("proto/basic.toml"), ".basic")
+        .parse_config_file(Path::new("proto/basic.toml"), ".basic")
         .unwrap();
 
     generator

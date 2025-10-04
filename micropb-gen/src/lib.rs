@@ -473,6 +473,11 @@
 //! - **Max container size**: Specify the max capacity of [`string`/`bytes`
 //!   fields](Config::max_bytes) as well as [repeated fields](Config::max_len), which is necessary
 //!   when using fixed-capacity containers like `ArrayVec`.
+//!
+//! ## Configuration Files
+//!
+//! Configurations can be stored in TOML files rather than in `build.rs`. See
+//! [`Generator::parse_config_file`] for more info.
 
 pub mod config;
 mod generator;
@@ -648,7 +653,7 @@ impl Generator {
     }
 
     #[cfg(feature = "config-file")]
-    fn apply_config_bytes(&mut self, bytes: &[u8], prefix: &str) -> Result<(), toml::de::Error> {
+    fn parse_config_bytes(&mut self, bytes: &[u8], prefix: &str) -> Result<(), toml::de::Error> {
         let configs: std::collections::HashMap<String, Config> = toml::from_slice(bytes)?;
         for (path, config) in configs.into_iter() {
             let prefix_path = split_dot_prefixed_pkg_name(prefix);
@@ -660,10 +665,45 @@ impl Generator {
         Ok(())
     }
 
+    /// Parse configurations from a TOML file and apply them to the specified Protobuf pacakge.
+    ///
+    /// For example, if we have the following configuration in `build.rs`:
+    ///
+    /// ```
+    /// # use micropb_gen::{Config, config::{IntSize, OptionalRepr}};
+    /// let mut gen = micropb_gen::Generator::new();
+    /// gen.configure(
+    ///     ".my.pkg.Message.int_field",
+    ///     Config::new().int_size(IntSize::S16).optional_repr(OptionalRepr::Option)
+    /// );
+    /// gen.configure("my.pkg.Message.bad_field", Config::new().skip(true));
+    /// ```
+    ///
+    /// We can instead load the configuration for `.my.pkg` from a TOML file:
+    /// ```no_run
+    /// # use std::path::Path;
+    /// # let mut gen = micropb_gen::Generator::new();
+    /// gen.parse_config_file(Path::new("my.pkg.toml"), ".my.pkg")?;
+    /// # Ok::<_, std::io::Error>(())
+    /// ```
+    ///
+    /// `my.pkg.toml`
+    /// ```toml
+    /// # Each Config is represented as a table in the TOML document, keyed by the Protobuf path
+    /// ["Message.int_field"]
+    /// int_size = "S16"
+    /// optional_repr = "Option"
+    ///
+    /// ["Message.bad_field"]
+    /// skip = true
+    /// ```
+    ///
+    /// <div class="warning">Dot-separated Protobuf paths in config files MUST be wrapped in quotes
+    /// for TOML parsing to work correctly.</div>
     #[cfg(feature = "config-file")]
-    pub fn apply_config_file(&mut self, file_path: &Path, prefix: &str) -> Result<(), io::Error> {
+    pub fn parse_config_file(&mut self, file_path: &Path, package: &str) -> Result<(), io::Error> {
         let file_bytes = fs::read(file_path)?;
-        self.apply_config_bytes(&file_bytes, prefix)
+        self.parse_config_bytes(&file_bytes, package)
             .map_err(io::Error::other)?;
         Ok(())
     }
