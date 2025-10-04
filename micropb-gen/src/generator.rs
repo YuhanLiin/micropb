@@ -195,7 +195,7 @@ impl Generator {
                     .value_mut()
                     .as_mut()
                     .expect("root config should exist")
-                    .extend([code]);
+                    .extend(code);
             }
         }
 

@@ -1,0 +1,8 @@
+["."]
+map_type = "std::collections::BTreeMap<$K, $V>"
+
+["Map.mapping.key"]
+max_bytes = 4
+
+["Map.mapping.value"]
+max_bytes = 3

@@ -1,0 +1,21 @@
+["Data.s"]
+max_bytes = 4
+
+["Data.b"]
+max_bytes = 6
+
+["List.list"]
+max_len = 4
+
+["StrList.list"]
+max_len = 2
+max_bytes = 4
+
+["FixedList.list"]
+max_len = 4
+
+["NumList.list"]
+max_len = 8
+
+["EnumList.list"]
+max_len = 2
