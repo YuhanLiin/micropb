@@ -1,0 +1,8 @@
+["BasicTypes.int32_num"]
+int_size = "S8"
+
+["BasicTypes.uint32_num"]
+optional_repr = "Option"
+
+["BasicTypes.sint32_num"]
+custom_field.Type = "crate::with_config_file::CustomField"

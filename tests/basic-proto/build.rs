@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use micropb_gen::{
     config::{CustomField, IntSize, OptionalRepr},
     Config, EncodeDecode, Generator,
@@ -470,6 +472,31 @@ fn minimal_accessors() {
         .unwrap();
 }
 
+fn with_config_file() {
+    let mut generator = Generator::new();
+    generator.use_container_heapless();
+    generator
+        .parse_config_file(Path::new("proto/collections.toml"), ".")
+        .unwrap();
+    generator
+        .parse_config_file(Path::new("proto/map.toml"), ".")
+        .unwrap();
+    generator
+        .parse_config_file(Path::new("proto/basic.toml"), ".basic")
+        .unwrap();
+
+    generator
+        .compile_protos(
+            &[
+                "proto/collections.proto",
+                "proto/map.proto",
+                "proto/basic.proto",
+            ],
+            std::env::var("OUT_DIR").unwrap() + "/with_config_file.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -493,4 +520,5 @@ fn main() {
     fixed_string_and_bytes();
     large_field_nums();
     minimal_accessors();
+    with_config_file();
 }

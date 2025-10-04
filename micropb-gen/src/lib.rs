@@ -473,6 +473,11 @@
 //! - **Max container size**: Specify the max capacity of [`string`/`bytes`
 //!   fields](Config::max_bytes) as well as [repeated fields](Config::max_len), which is necessary
 //!   when using fixed-capacity containers like `ArrayVec`.
+//!
+//! ## Configuration Files
+//!
+//! Configurations can be stored in TOML files rather than in `build.rs`. See
+//! [`Generator::parse_config_file`] for more info.
 
 pub mod config;
 mod generator;
@@ -564,6 +569,14 @@ impl Generator {
         }
     }
 
+    fn configure_with_path<'a>(&mut self, path: impl Iterator<Item = &'a str>, config: Config) {
+        let config_slot = self.config_tree.root.add_path(path).value_mut();
+        match config_slot {
+            Some(existing) => existing.merge(&config),
+            None => *config_slot = Some(Box::new(config)),
+        }
+    }
+
     /// Apply code generator configurations to Protobuf types and fields. See
     /// [`Config`](crate::Config) for possible configuration options.
     ///
@@ -624,20 +637,8 @@ impl Generator {
     /// gen.configure(".pkg.Message._unknown", Config::new().field_attributes("#[serde(skip)]"));
     ///
     /// ```
-    pub fn configure(&mut self, mut proto_path: &str, config: Config) -> &mut Self {
-        if proto_path.starts_with('.') {
-            proto_path = &proto_path[1..];
-        }
-
-        let config_slot = self
-            .config_tree
-            .root
-            .add_path(split_pkg_name(proto_path))
-            .value_mut();
-        match config_slot {
-            Some(existing) => existing.merge(&config),
-            None => *config_slot = Some(Box::new(config)),
-        }
+    pub fn configure(&mut self, proto_path: &str, config: Config) -> &mut Self {
+        self.configure_with_path(split_dot_prefixed_pkg_name(proto_path), config);
         self
     }
 
@@ -649,6 +650,62 @@ impl Generator {
             self.configure(path, config.clone());
         }
         self
+    }
+
+    #[cfg(feature = "config-file")]
+    fn parse_config_bytes(&mut self, bytes: &[u8], prefix: &str) -> Result<(), toml::de::Error> {
+        let configs: std::collections::HashMap<String, Config> = toml::from_slice(bytes)?;
+        for (path, config) in configs.into_iter() {
+            let prefix_path = split_dot_prefixed_pkg_name(prefix);
+            let path = split_dot_prefixed_pkg_name(&path);
+            let full_path = prefix_path.chain(path);
+
+            self.configure_with_path(full_path, config);
+        }
+        Ok(())
+    }
+
+    /// Parse configurations from a TOML file and apply them to the specified Protobuf pacakge.
+    ///
+    /// For example, if we have the following configuration in `build.rs`:
+    ///
+    /// ```
+    /// # use micropb_gen::{Config, config::{IntSize, OptionalRepr}};
+    /// let mut gen = micropb_gen::Generator::new();
+    /// gen.configure(
+    ///     ".my.pkg.Message.int_field",
+    ///     Config::new().int_size(IntSize::S16).optional_repr(OptionalRepr::Option)
+    /// );
+    /// gen.configure("my.pkg.Message.bad_field", Config::new().skip(true));
+    /// ```
+    ///
+    /// We can instead load the configuration for `.my.pkg` from a TOML file:
+    /// ```no_run
+    /// # use std::path::Path;
+    /// # let mut gen = micropb_gen::Generator::new();
+    /// gen.parse_config_file(Path::new("my.pkg.toml"), ".my.pkg")?;
+    /// # Ok::<_, std::io::Error>(())
+    /// ```
+    ///
+    /// `my.pkg.toml`
+    /// ```toml
+    /// # Each Config is represented as a table in the TOML document, keyed by the Protobuf path
+    /// ["Message.int_field"]
+    /// int_size = "S16"
+    /// optional_repr = "Option"
+    ///
+    /// ["Message.bad_field"]
+    /// skip = true
+    /// ```
+    ///
+    /// <div class="warning">Dot-separated Protobuf paths in config files MUST be wrapped in quotes
+    /// for TOML parsing to work correctly.</div>
+    #[cfg(feature = "config-file")]
+    pub fn parse_config_file(&mut self, file_path: &Path, package: &str) -> Result<(), io::Error> {
+        let file_bytes = fs::read(file_path)?;
+        self.parse_config_bytes(&file_bytes, package)
+            .map_err(io::Error::other)?;
+        Ok(())
     }
 
     /// Configure the generator to generate `heapless` containers for Protobuf `string`, `bytes`,
@@ -816,7 +873,6 @@ impl Generator {
 
         #[cfg(feature = "format")]
         let output = if self.format {
-            dbg!(code.to_string());
             prettyplease::unparse(
                 &syn::parse2(code).expect("output code should be parseable as a file"),
             )
@@ -968,4 +1024,11 @@ impl Generator {
 fn split_pkg_name(name: &str) -> impl Iterator<Item = &str> {
     // ignore empty segments, so empty pkg name points to root node
     name.split('.').filter(|seg| !seg.is_empty())
+}
+
+fn split_dot_prefixed_pkg_name(mut name: &str) -> impl Iterator<Item = &str> {
+    if name.starts_with('.') {
+        name = &name[1..];
+    }
+    split_pkg_name(name)
 }

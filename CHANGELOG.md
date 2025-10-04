@@ -5,6 +5,7 @@
 ### Added
 
 - Add `enum_unsigned` configuration
+- Add support for TOML config files
 
 ## 0.3.0
 

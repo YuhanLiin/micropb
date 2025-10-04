@@ -9,6 +9,7 @@ use crate::generator::sanitized_ident;
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Sizes of integer types
 pub enum IntSize {
     /// 8-bit int
@@ -56,6 +57,7 @@ impl IntSize {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Customize encoding and decoding behaviour for a generated field
 pub enum CustomField {
     /// Fully-qualified type name that replaces the generated type of the field.
@@ -83,6 +85,7 @@ impl CustomField {
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Representation of optional fields in the generated code
 pub enum OptionalRepr {
     /// Presence of optional field is tracked in a separate bitfield called a hazzer.
@@ -99,6 +102,7 @@ macro_rules! config_decl {
     ($($(#[$doc:meta])* $([$placeholder:ident])? $field:ident : $([$placeholder2:ident])? Option<$type:ty>,)+) => {
         #[non_exhaustive]
         #[derive(Debug, Clone, Default)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         /// Configuration that changes how the code generator handles Protobuf types and fields.
         /// See [`configure`](crate::Generator::configure) for how configurations are applied.
         ///
@@ -557,6 +561,7 @@ impl Config {
         self.string_type
             .as_ref()
             .map(|t| {
+                check_missing_len(t, n, "max_bytes")?;
                 let typestr = substitute_param(t.into(), "$N", n);
                 syn::parse_str(&typestr).map_err(|e| {
                     format!("Failed to parse string_type \"{typestr}\" as type path: {e}")
@@ -569,6 +574,7 @@ impl Config {
         self.bytes_type
             .as_ref()
             .map(|t| {
+                check_missing_len(t, n, "max_bytes")?;
                 let typestr = substitute_param(t.into(), "$N", n);
                 syn::parse_str(&typestr).map_err(|e| {
                     format!("Failed to parse bytes_type \"{typestr}\" as type path: {e}")
@@ -585,8 +591,9 @@ impl Config {
         self.vec_type
             .as_ref()
             .map(|typestr| {
-                let typestr = substitute_param(typestr.into(), "$N", n);
-                let typestr = substitute_param(typestr, "$T", Some(t));
+                let typestr = substitute_param(typestr.into(), "$T", Some(t));
+                let typestr = substitute_param(typestr, "$N", n);
+                check_missing_len(&typestr, n, "max_len")?;
                 syn::parse_str(&typestr).map_err(|e| {
                     format!("Failed to parse vec_type \"{typestr}\" as type path: {e}")
                 })
@@ -603,9 +610,10 @@ impl Config {
         self.map_type
             .as_ref()
             .map(|t| {
-                let typestr = substitute_param(t.into(), "$N", n);
-                let typestr = substitute_param(typestr, "$K", Some(k));
+                let typestr = substitute_param(t.into(), "$K", Some(k));
                 let typestr = substitute_param(typestr, "$V", Some(v));
+                let typestr = substitute_param(typestr, "$N", n);
+                check_missing_len(&typestr, n, "max_len")?;
                 syn::parse_str(&typestr).map_err(|e| {
                     format!("Failed to parse map_type \"{typestr}\" as type path: {e}")
                 })
@@ -666,6 +674,14 @@ fn substitute_param<'a>(
         }
     }
     typestr
+}
+
+fn check_missing_len(typestr: &str, n: Option<u32>, len_param: &str) -> Result<(), String> {
+    if n.is_none() && typestr.contains("$N") {
+        Err(format!("Missing {len_param} for type path \"{typestr}\""))
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]

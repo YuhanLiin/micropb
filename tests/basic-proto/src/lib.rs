@@ -44,3 +44,5 @@ mod recursive;
 mod skip;
 #[cfg(test)]
 mod static_lifetime_fields;
+#[cfg(test)]
+mod with_config_file;
