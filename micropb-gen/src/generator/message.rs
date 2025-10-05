@@ -37,6 +37,7 @@ pub(crate) struct Message<'a> {
     pub(crate) attrs: Vec<syn::Attribute>,
     pub(crate) unknown_handler: Option<syn::Type>,
     pub(crate) lifetime: Option<syn::Lifetime>,
+    pub(crate) as_oneof_enum: bool,
 }
 
 impl<'a> Message<'a> {
@@ -140,6 +141,11 @@ impl<'a> Message<'a> {
             .or_else(|| unknown_handler.as_ref().and_then(find_lifetime_from_type))
             .cloned();
 
+        let as_enum = gen.single_oneof_msg_as_enum
+            && fields.is_empty()
+            && oneofs.len() == 1
+            && matches!(oneofs[0].otype, OneofType::Enum { .. });
+
         Ok(Some(Self {
             name: msg_name,
             rust_name: sanitized_ident(msg_name),
@@ -152,6 +158,7 @@ impl<'a> Message<'a> {
             attrs,
             unknown_handler,
             lifetime,
+            as_oneof_enum: as_enum,
         }))
     }
 
@@ -159,6 +166,11 @@ impl<'a> Message<'a> {
         &self,
         conf: CurrentConfig,
     ) -> Result<Option<(TokenStream, Vec<syn::Attribute>)>, String> {
+        assert!(
+            !self.as_oneof_enum,
+            "should not generate hazzer if generating enum message"
+        );
+
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
         let attrs = &conf.config.type_attr_parsed()?;
         let derive_msg = derive_msg_attr(true, true, true, true);
@@ -240,24 +252,10 @@ impl<'a> Message<'a> {
         proto_default: bool,
         unknown_conf: &CurrentConfig,
     ) -> io::Result<TokenStream> {
-        let msg_mod_name = resolve_path_elem(self.name);
+        let msg_mod_name = resolve_path_elem(self.name, true);
         let rust_name = &self.rust_name;
         let lifetime = &self.lifetime;
-        let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
-        let oneof_fields = self
-            .oneofs
-            .iter()
-            .map(|oneof| oneof.generate_field(gen, &msg_mod_name));
-
-        let unknown_field = if let Some(handler) = &self.unknown_handler {
-            let unknown_field_attr = unknown_conf
-                .config
-                .field_attr_parsed()
-                .map_err(|e| field_error(&gen.pkg, self.name, "_unknown", &e))?;
-            quote! { #(#unknown_field_attr)* pub _unknown: #handler, }
-        } else {
-            quote! {}
-        };
+        let attrs = &self.attrs;
 
         // If message has no hazzer, then we can derive PartialEq instead of implementing it
         let derive_partial_eq = self.impl_partial_eq && hazzer_field_attr.is_none();
@@ -269,19 +267,52 @@ impl<'a> Message<'a> {
             derive_partial_eq,
             self.derive_clone,
         );
-        let attrs = &self.attrs;
 
-        let hazzer_field_attr = hazzer_field_attr.iter();
-        Ok(quote! {
-            #derive_msg
-            #(#attrs)*
-            pub struct #rust_name<#lifetime> {
-                #(#msg_fields)*
-                #(#oneof_fields)*
-                #(#(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
-                #unknown_field
-            }
-        })
+        if self.as_oneof_enum {
+            let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
+                unreachable!("shouldn't generate enum with custom oneof")
+            };
+            let variants = fields.iter().map(|f| f.generate_field(gen));
+            let default_variant_attr = derive_default.then(|| quote! { #[default] });
+
+            Ok(quote! {
+                #derive_msg
+                #(#attrs)*
+                pub enum #rust_name<#lifetime> {
+                    #(#variants)*
+
+                    #default_variant_attr
+                    None
+                }
+            })
+        } else {
+            let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
+            let oneof_fields = self
+                .oneofs
+                .iter()
+                .map(|oneof| oneof.generate_field(gen, &msg_mod_name));
+            let unknown_field = if let Some(handler) = &self.unknown_handler {
+                let unknown_field_attr = unknown_conf
+                    .config
+                    .field_attr_parsed()
+                    .map_err(|e| field_error(&gen.pkg, self.name, "_unknown", &e))?;
+                quote! { #(#unknown_field_attr)* pub _unknown: #handler, }
+            } else {
+                quote! {}
+            };
+            let hazzer_field_attr = hazzer_field_attr.iter();
+
+            Ok(quote! {
+                #derive_msg
+                #(#attrs)*
+                pub struct #rust_name<#lifetime> {
+                    #(#msg_fields)*
+                    #(#oneof_fields)*
+                    #(#(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
+                    #unknown_field
+                }
+            })
+        }
     }
 
     pub(crate) fn generate_default_impl(
@@ -292,6 +323,10 @@ impl<'a> Message<'a> {
         if !self.impl_default {
             return Ok(quote! {});
         }
+        assert!(
+            !self.as_oneof_enum,
+            "should not generate default impl if generating enum message"
+        );
 
         let mut field_defaults = TokenStream::new();
         for f in &self.fields {
@@ -343,6 +378,10 @@ impl<'a> Message<'a> {
         if !self.impl_partial_eq {
             return quote! {};
         }
+        assert!(
+            !self.as_oneof_enum,
+            "should not generate PartialEq impl if generating enum message"
+        );
 
         let ret_name = Ident::new("ret", Span::call_site());
         let other_name = Ident::new("other", Span::call_site());
@@ -386,6 +425,10 @@ impl<'a> Message<'a> {
     }
 
     pub(crate) fn generate_impl(&self, gen: &Generator) -> TokenStream {
+        if self.as_oneof_enum {
+            return quote! {};
+        }
+
         let accessors = self.fields.iter().map(|f| f.generate_accessors(gen));
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
@@ -401,18 +444,37 @@ impl<'a> Message<'a> {
         let lifetime = &self.lifetime;
         let tag = Ident::new("tag", Span::call_site());
         let decoder = Ident::new("decoder", Span::call_site());
-        let mod_name = resolve_path_elem(self.name);
+        let mod_name = resolve_path_elem(self.name, true);
 
-        let field_branches = self
-            .fields
-            .iter()
-            .map(|f| f.generate_decode_branch(gen, &tag, &decoder));
-        let oneof_branches = self
-            .oneofs
-            .iter()
-            .map(|o| o.generate_decode_branches(gen, &mod_name, &tag, &decoder));
+        let branches = if self.as_oneof_enum {
+            let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
+                unreachable!("shouldn't generate enum with custom oneof")
+            };
+            let variant_branches = fields
+                .iter()
+                .map(|f| f.generate_decode_branch_in_enum_msg(&decoder, gen));
 
-        let unknown_branch = if self.unknown_handler.is_some() {
+            quote! {
+                #(#variant_branches)*
+            }
+        } else {
+            let field_branches = self
+                .fields
+                .iter()
+                .map(|f| f.generate_decode_branch(gen, &tag, &decoder));
+            let oneof_branches = self
+                .oneofs
+                .iter()
+                .map(|o| o.generate_decode_branches(gen, &mod_name, &tag, &decoder));
+
+            quote! {
+                #(#field_branches)*
+                #(#oneof_branches)*
+            }
+        };
+
+        // Ignore unknown handler if the message is an enum
+        let unknown_branch = if self.unknown_handler.is_some() && !self.as_oneof_enum {
             // If the unknown handler can't handle a field, skip it
             quote! { if !self._unknown.decode_field(#tag, #decoder)? { #decoder.skip_wire_value(#tag.wire_type())?; } }
         } else {
@@ -434,8 +496,7 @@ impl<'a> Message<'a> {
                         let #tag = #decoder.decode_tag()?;
                         match #tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
-                            #(#field_branches)*
-                            #(#oneof_branches)*
+                            #branches
                             _ => { #unknown_branch }
                         }
                     }
@@ -446,32 +507,50 @@ impl<'a> Message<'a> {
     }
 
     fn generate_encode_func(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
-        let mod_name = resolve_path_elem(self.name);
+        let mod_name = resolve_path_elem(self.name, true);
 
-        let field_logic = self
-            .fields
-            .iter()
-            .map(|f| f.generate_encode(gen, func_type));
-        let oneof_logic = self
-            .oneofs
-            .iter()
-            .map(|o| o.generate_encode(gen, &mod_name, func_type));
+        if self.as_oneof_enum {
+            let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
+                unreachable!("shouldn't generate enum with custom oneof")
+            };
+            let variant_branches = fields
+                .iter()
+                .map(|f| f.generate_encode_branch(&quote! {Self}, gen, func_type));
 
-        let unknown_logic = if self.unknown_handler.is_some() {
-            match func_type {
-                EncodeFunc::Sizeof(size) => {
-                    quote! { #size += self._unknown.compute_fields_size(); }
+            quote! {
+                match &self {
+                    #(#variant_branches)*
+                    Self::None => {}
                 }
-                EncodeFunc::Encode(encoder) => quote! { self._unknown.encode_fields(#encoder)?; },
             }
         } else {
-            quote! {}
-        };
+            let field_logic = self
+                .fields
+                .iter()
+                .map(|f| f.generate_encode(gen, func_type));
+            let oneof_logic = self
+                .oneofs
+                .iter()
+                .map(|o| o.generate_encode(gen, &mod_name, func_type));
 
-        quote! {
-            #(#field_logic)*
-            #(#oneof_logic)*
-            #unknown_logic
+            let unknown_logic = if self.unknown_handler.is_some() {
+                match func_type {
+                    EncodeFunc::Sizeof(size) => {
+                        quote! { #size += self._unknown.compute_fields_size(); }
+                    }
+                    EncodeFunc::Encode(encoder) => {
+                        quote! { self._unknown.encode_fields(#encoder)?; }
+                    }
+                }
+            } else {
+                quote! {}
+            };
+
+            quote! {
+                #(#field_logic)*
+                #(#oneof_logic)*
+                #unknown_logic
+            }
         }
     }
 
@@ -482,10 +561,14 @@ impl<'a> Message<'a> {
 
         let field_sizes = self.fields.iter().map(|f| f.generate_max_size(gen));
         let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(gen));
-        let unknown_size = self
-            .unknown_handler
-            .as_ref()
-            .map(|handler| quote! { <#handler as ::micropb::field::FieldEncode>::MAX_SIZE });
+        let unknown_size = if self.as_oneof_enum {
+            // Ignore unknown field if generating an enum msg
+            None
+        } else {
+            self.unknown_handler
+                .as_ref()
+                .map(|handler| quote! { <#handler as ::micropb::field::FieldEncode>::MAX_SIZE })
+        };
         let sizes = field_sizes.chain(oneof_sizes).chain(unknown_size);
 
         quote! {
@@ -661,6 +744,7 @@ mod tests {
             attrs: vec![],
             unknown_handler: None,
             lifetime: None,
+            as_oneof_enum: false,
         };
         let config = Box::new(Config::new());
         let mut node = Node::default();
@@ -792,7 +876,8 @@ mod tests {
                 derive_clone: true,
                 attrs: parse_attributes("#[derive(Self)]").unwrap(),
                 unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
-                lifetime: None
+                lifetime: None,
+                as_oneof_enum: false,
             }
         )
     }
@@ -843,6 +928,7 @@ mod tests {
                 derive_clone: true,
                 attrs: vec![],
                 unknown_handler: None,
+                as_oneof_enum: false,
                 lifetime: None
             }
         )
@@ -873,6 +959,7 @@ mod tests {
             derive_clone: true,
             attrs: vec![],
             unknown_handler: None,
+            as_oneof_enum: false,
             lifetime: None,
         };
         assert!(msg.generate_hazzer_decl(config).unwrap().is_none());

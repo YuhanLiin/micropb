@@ -41,6 +41,8 @@ mod no_config;
 #[cfg(test)]
 mod recursive;
 #[cfg(test)]
+mod single_oneof;
+#[cfg(test)]
 mod skip;
 #[cfg(test)]
 mod static_lifetime_fields;

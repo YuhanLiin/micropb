@@ -563,6 +563,8 @@ impl Generator {
             calculate_max_size: true,
             fdset_path: Default::default(),
             protoc_args: Default::default(),
+            suffixed_package_names: true,
+            single_oneof_msg_as_enum: false,
 
             config_tree,
             extern_paths: Default::default(),
@@ -666,6 +668,8 @@ impl Generator {
     }
 
     /// Parse configurations from a TOML file and apply them to the specified Protobuf pacakge.
+    ///
+    /// # Example
     ///
     /// For example, if we have the following configuration in `build.rs`:
     ///
@@ -1008,7 +1012,7 @@ impl Generator {
         self
     }
 
-    /// Determine whether to generate code to calculate the `MAX_SIZE` constant on each message.
+    /// Determines whether to generate code to calculate the `MAX_SIZE` constant on each message.
     ///
     /// By default, `micropb-gen` generates code to calculate the `MAX_SIZE` associated constant
     /// for each message struct, which determines the max buffer size needed to encode it. If this
@@ -1017,6 +1021,54 @@ impl Generator {
     /// file.
     pub fn calculate_max_size(&mut self, flag: bool) -> &mut Self {
         self.calculate_max_size = flag;
+        self
+    }
+
+    /// Determines whether the modules names generated from package specifiers are suffixed with an
+    /// underscore.
+    ///
+    /// This is on by default. Even when off, module names like "super" and modules created from
+    /// from message names will still be suffixed.
+    pub fn suffixed_package_names(&mut self, suffixed: bool) -> &mut Self {
+        self.suffixed_package_names = suffixed;
+        self
+    }
+
+    /// For messages with only a single oneof and no other fields, generate an enum representing
+    /// the oneof rather than a struct.
+    ///
+    /// # Example
+    ///
+    /// Given the following message:
+    /// ```proto
+    /// message Number {
+    ///     oneof inner {
+    ///         sint32 signed = 1;
+    ///         uint32 unsigned = 2;
+    ///         float fraction = 3;
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// The following enum type will be generated:
+    /// ```no_run
+    /// pub enum Number {
+    ///     Signed(i32),
+    ///     Unsigned(u32),
+    ///     Fraction(f32),
+    ///     None,
+    /// }
+    /// ```
+    ///
+    /// All other message structures, including those with multiple oneofs or a single oneof plus
+    /// normal fields, will be generated as normal message structs.
+    ///
+    /// # Ignored configs
+    ///
+    /// With this option, configurations that apply to the oneof itself (`.Number.inner`) will be
+    /// ignored. Also, [`unknown_handler`](Config::unknown_handler) will be ignored.
+    pub fn single_oneof_msg_as_enum(&mut self, as_enum: bool) -> &mut Self {
+        self.single_oneof_msg_as_enum = as_enum;
         self
     }
 }
