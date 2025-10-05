@@ -61,7 +61,7 @@ impl<'a> OneofField<'a> {
         }))
     }
 
-    fn generate_field(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_field(&self, gen: &Generator) -> TokenStream {
         let typ = gen.wrapped_type(self.tspec.generate_rust_type(gen), self.boxed, false);
         let name = &self.rust_name;
         let attrs = &self.attrs;
@@ -105,7 +105,33 @@ impl<'a> OneofField<'a> {
         }
     }
 
-    fn generate_encode_branch(
+    pub(crate) fn generate_decode_branch_in_enum_msg(
+        &self,
+        decoder: &Ident,
+        gen: &Generator,
+    ) -> TokenStream {
+        let fnum = self.num;
+        let mut_ref = Ident::new("mut_ref", Span::call_site());
+        let variant_name = &self.rust_name;
+        let extra_deref_var = self.boxed.then(|| quote! { * });
+
+        let decode_stmts = self
+            .tspec
+            .generate_decode_mut(gen, false, decoder, &mut_ref);
+        quote! {
+            #fnum => {
+                let #mut_ref = loop {
+                    if let Self::#variant_name(variant) = &mut self {
+                        break &mut #extra_deref_var *variant;
+                    }
+                    *self = Self::#variant_name(::core::default::Default::default());
+                };
+                #decode_stmts;
+            }
+        }
+    }
+
+    pub(crate) fn generate_encode_branch(
         &self,
         oneof_type: &TokenStream,
         gen: &Generator,

@@ -151,6 +151,7 @@ pub struct Generator {
     pub(crate) fdset_path: Option<PathBuf>,
     pub(crate) protoc_args: Vec<OsString>,
     pub(crate) suffixed_package_names: bool,
+    pub(crate) single_oneof_msg_as_enum: bool,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
     pub(crate) extern_paths: HashMap<String, TokenStream>,

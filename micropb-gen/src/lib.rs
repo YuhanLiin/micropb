@@ -564,6 +564,7 @@ impl Generator {
             fdset_path: Default::default(),
             protoc_args: Default::default(),
             suffixed_package_names: true,
+            single_oneof_msg_as_enum: false,
 
             config_tree,
             extern_paths: Default::default(),
@@ -1028,6 +1029,11 @@ impl Generator {
     /// from message names will still be suffixed.
     pub fn suffixed_package_names(&mut self, suffixed: bool) -> &mut Self {
         self.suffixed_package_names = suffixed;
+        self
+    }
+
+    pub fn single_oneof_msg_as_enum(&mut self, as_enum: bool) -> &mut Self {
+        self.single_oneof_msg_as_enum = as_enum;
         self
     }
 }
