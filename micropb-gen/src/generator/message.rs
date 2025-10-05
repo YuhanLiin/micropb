@@ -454,7 +454,9 @@ impl<'a> Message<'a> {
                 .iter()
                 .map(|f| f.generate_decode_branch_in_enum_msg(&decoder, gen));
 
-            quote! { #(#variant_branches)* }
+            quote! {
+                #(#variant_branches)*
+            }
         } else {
             let field_branches = self
                 .fields
@@ -465,18 +467,18 @@ impl<'a> Message<'a> {
                 .iter()
                 .map(|o| o.generate_decode_branches(gen, &mod_name, &tag, &decoder));
 
-            let unknown_branch = if self.unknown_handler.is_some() {
-                // If the unknown handler can't handle a field, skip it
-                quote! { if !self._unknown.decode_field(#tag, #decoder)? { #decoder.skip_wire_value(#tag.wire_type())?; } }
-            } else {
-                quote! { #decoder.skip_wire_value(#tag.wire_type())?; }
-            };
-
             quote! {
                 #(#field_branches)*
                 #(#oneof_branches)*
-                _ => { #unknown_branch }
             }
+        };
+
+        // Ignore unknown handler if the message is an enum
+        let unknown_branch = if self.unknown_handler.is_some() && !self.as_oneof_enum {
+            // If the unknown handler can't handle a field, skip it
+            quote! { if !self._unknown.decode_field(#tag, #decoder)? { #decoder.skip_wire_value(#tag.wire_type())?; } }
+        } else {
+            quote! { #decoder.skip_wire_value(#tag.wire_type())?; }
         };
 
         quote! {
@@ -495,6 +497,7 @@ impl<'a> Message<'a> {
                         match #tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             #branches
+                            _ => { #unknown_branch }
                         }
                     }
                     Ok(())

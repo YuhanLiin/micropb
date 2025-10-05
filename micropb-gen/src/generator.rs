@@ -334,18 +334,23 @@ impl Generator {
         for e in proto.enum_type.iter() {
             msg_mod_body.extend(self.generate_enum(e, msg_conf.next_conf(&e.name))?);
         }
-        for o in &msg.oneofs {
-            msg_mod_body.extend(o.generate_decl(self));
-        }
 
-        let (hazzer_decl, hazzer_field_attr) = match msg
-            .generate_hazzer_decl(msg_conf.next_conf("_has"))
-            .map_err(|e| field_error(&self.pkg, msg.name, "_has", &e))?
-        {
-            Some((d, a)) => (Some(d), Some(a)),
-            None => (None, None),
+        let hazzer_field_attr = if msg.as_oneof_enum {
+            None
+        } else {
+            let (hazzer_decl, hazzer_field_attr) = match msg
+                .generate_hazzer_decl(msg_conf.next_conf("_has"))
+                .map_err(|e| field_error(&self.pkg, msg.name, "_has", &e))?
+            {
+                Some((d, a)) => (Some(d), Some(a)),
+                None => (None, None),
+            };
+            msg_mod_body.extend(hazzer_decl);
+            for o in &msg.oneofs {
+                msg_mod_body.extend(o.generate_decl(self));
+            }
+            hazzer_field_attr
         };
-        msg_mod_body.extend(hazzer_decl);
 
         self.type_path.borrow_mut().pop();
 
@@ -371,8 +376,9 @@ impl Generator {
         let unknown_conf = msg_conf.next_conf("_unknown");
 
         // Only manually implement Default if there's a Protobuf default specification
-        let default =
-            proto_default.then_some(msg.generate_default_impl(self, hazzer_field_attr.is_some())?);
+        let default = proto_default
+            .then(|| msg.generate_default_impl(self, hazzer_field_attr.is_some()))
+            .transpose()?;
         // Only manually implement PartialEq if there's a hazzer
         let partial_eq = hazzer_field_attr
             .as_ref()

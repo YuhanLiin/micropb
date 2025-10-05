@@ -497,6 +497,24 @@ fn with_config_file() {
         .unwrap();
 }
 
+fn single_oneof() {
+    let mut generator = Generator::new();
+    generator.single_oneof_msg_as_enum(true);
+    generator.configure(".SingleOneof.inner_msg", Config::new().boxed(true));
+    generator.configure(".SingleOneof.scalar", Config::new().skip(true));
+
+    generator
+        .compile_protos(
+            &[
+                "proto/basic.proto",
+                "proto/nested.proto",
+                "proto/single_oneof.proto",
+            ],
+            std::env::var("OUT_DIR").unwrap() + "/single_oneof.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -521,4 +539,5 @@ fn main() {
     large_field_nums();
     minimal_accessors();
     with_config_file();
+    single_oneof();
 }

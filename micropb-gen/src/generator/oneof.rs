@@ -121,7 +121,7 @@ impl<'a> OneofField<'a> {
         quote! {
             #fnum => {
                 let #mut_ref = loop {
-                    if let Self::#variant_name(variant) = &mut self {
+                    if let Self::#variant_name(variant) = self {
                         break &mut #extra_deref_var *variant;
                     }
                     *self = Self::#variant_name(::core::default::Default::default());
