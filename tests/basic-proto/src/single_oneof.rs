@@ -34,8 +34,9 @@ fn decode_single_oneof() {
     let proto::SingleOneof::InnerMsg(ref msg) = &oneof else {
         panic!("unexpected variant")
     };
-    let _: &Box<_> = msg;
     assert!(msg.val() == Some(&-1) && msg.val2() == Some(&1));
+    #[allow(clippy::borrowed_box)] // type check
+    let _: &Box<_> = msg;
 
     let mut decoder = PbDecoder::new([0x20, 0x00].as_slice());
     let len = decoder.as_reader().len();
