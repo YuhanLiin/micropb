@@ -669,6 +669,8 @@ impl Generator {
 
     /// Parse configurations from a TOML file and apply them to the specified Protobuf pacakge.
     ///
+    /// # Example
+    ///
     /// For example, if we have the following configuration in `build.rs`:
     ///
     /// ```
@@ -1032,6 +1034,39 @@ impl Generator {
         self
     }
 
+    /// For messages with only a single oneof and no other fields, generate an enum representing
+    /// the oneof rather than a struct.
+    ///
+    /// # Example
+    ///
+    /// Given the following message:
+    /// ```proto
+    /// message Number {
+    ///     oneof inner {
+    ///         sint32 signed = 1;
+    ///         uint32 unsigned = 2;
+    ///         float fraction = 3;
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// The following enum type will be generated:
+    /// ```no_run
+    /// pub enum Number {
+    ///     Signed(i32),
+    ///     Unsigned(u32),
+    ///     Fraction(f32),
+    ///     None,
+    /// }
+    /// ```
+    ///
+    /// All other message structures, including those with multiple oneofs or a single oneof plus
+    /// normal fields, will be generated as normal message structs.
+    ///
+    /// # Ignored configs
+    ///
+    /// With this option, configurations that apply to the oneof itself (`.Number.inner`) will be
+    /// ignored. Also, [`unknown_handler`](Config::unknown_handler) will be ignored.
     pub fn single_oneof_msg_as_enum(&mut self, as_enum: bool) -> &mut Self {
         self.single_oneof_msg_as_enum = as_enum;
         self

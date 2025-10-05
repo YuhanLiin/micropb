@@ -65,3 +65,14 @@ fn encode_single_oneof() {
     oneof.encode(&mut encoder).unwrap();
     assert_eq!(encoder.into_writer(), &[0x20, 0x00]);
 }
+
+#[test]
+fn variants() {
+    let oneof = proto::SingleOneof::default();
+    match oneof {
+        proto::SingleOneof::InnerEnum(_) => {}
+        proto::SingleOneof::InnerMsg(_) => {}
+        proto::SingleOneof::None => {}
+    }
+    // scalar variant of the oneof is skipped
+}
