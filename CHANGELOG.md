@@ -6,6 +6,8 @@
 
 - Add `enum_unsigned` configuration
 - Add support for TOML config files
+- Add option to turn off suffixing for package names
+- Add option to generate messages with single oneof as enums
 
 ## 0.3.0
 
