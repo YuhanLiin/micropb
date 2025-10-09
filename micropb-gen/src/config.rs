@@ -92,10 +92,18 @@ pub enum OptionalRepr {
     ///
     /// Default for non-boxed fields.
     Hazzer,
-    /// Optional field is wrapped in `Option`
+
+    /// Optional field is wrapped in `Option`.
     ///
     /// Default for boxed fields.
     Option,
+
+    /// Represented as a non-optional field.
+    ///
+    /// The presence of the field will always be on for the purpose of encoding and decoding,
+    /// making it different from the implicit presence used by Proto3 non-optional fields. As such,
+    /// the `take_*` and `clear_*` accessors won't be generated.
+    None,
 }
 
 macro_rules! config_decl {

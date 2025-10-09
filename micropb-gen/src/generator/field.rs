@@ -205,7 +205,8 @@ impl<'a> Field<'a> {
 
     pub(crate) fn generate_default(&self, gen: &Generator) -> Result<TokenStream, String> {
         match self.ftype {
-            FieldType::Single(ref t) | FieldType::Optional(ref t, OptionalRepr::Hazzer) => {
+            FieldType::Single(ref t)
+            | FieldType::Optional(ref t, OptionalRepr::Hazzer | OptionalRepr::None) => {
                 if let Some(default) = self.default {
                     let value = t.generate_default(default, gen)?;
                     return Ok(gen.wrapped_value(value, self.boxed, false));
@@ -238,20 +239,32 @@ impl<'a> Field<'a> {
                 let type_name = type_spec.generate_rust_type(gen);
 
                 // Getter is needed for encoding, so we have to generate it
-                let mut accessors = if let OptionalRepr::Hazzer = opt {
-                    quote! {
-                        #[doc = #getter_doc]
-                        #[inline]
-                        pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
-                            self._has.#fname().then_some(&self.#fname)
+                let mut accessors = match opt {
+                    OptionalRepr::Hazzer => {
+                        quote! {
+                            #[doc = #getter_doc]
+                            #[inline]
+                            pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                                self._has.#fname().then_some(&self.#fname)
+                            }
                         }
                     }
-                } else {
-                    quote! {
-                        #[doc = #getter_doc]
-                        #[inline]
-                        pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
-                            self.#fname.#deref()
+                    OptionalRepr::Option => {
+                        quote! {
+                            #[doc = #getter_doc]
+                            #[inline]
+                            pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                                self.#fname.#deref()
+                            }
+                        }
+                    }
+                    OptionalRepr::None => {
+                        quote! {
+                            #[doc = #getter_doc]
+                            #[inline]
+                            pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                                ::core::option::Option::Some(self.#fname.#deref())
+                            }
                         }
                     }
                 };
@@ -280,83 +293,112 @@ impl<'a> Field<'a> {
                     );
 
                     // Add rest of accessors
-                    accessors.extend(if let OptionalRepr::Hazzer = opt {
-                        quote! {
-                            #[doc = #setter_doc]
-                            #[inline]
-                            pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
-                                self._has.#setter_name();
-                                self.#fname = value.into();
-                                self
-                            }
+                    accessors.extend(match opt {
+                        OptionalRepr::Hazzer => {
+                            quote! {
+                                #[doc = #setter_doc]
+                                #[inline]
+                                pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                                    self._has.#setter_name();
+                                    self.#fname = value.into();
+                                    self
+                                }
 
-                            #[doc = #muter_doc]
-                            #[inline]
-                            pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
-                                self._has.#fname().then_some(&mut self.#fname)
-                            }
+                                #[doc = #muter_doc]
+                                #[inline]
+                                pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                                    self._has.#fname().then_some(&mut self.#fname)
+                                }
 
-                            #[doc = #clearer_doc]
-                            #[inline]
-                            pub fn #clearer_name(&mut self) -> &mut Self {
-                                self._has.#clearer_name();
-                                self
-                            }
+                                #[doc = #clearer_doc]
+                                #[inline]
+                                pub fn #clearer_name(&mut self) -> &mut Self {
+                                    self._has.#clearer_name();
+                                    self
+                                }
 
-                            #[doc = #taker_doc]
-                            #[inline]
-                            pub fn #taker_name(&mut self) -> #wrapped_type {
-                                let val = self._has.#fname().then(|| ::core::mem::take(&mut self.#fname));
-                                self._has.#clearer_name();
-                                val
-                            }
+                                #[doc = #taker_doc]
+                                #[inline]
+                                pub fn #taker_name(&mut self) -> #wrapped_type {
+                                    let val = self._has.#fname().then(|| ::core::mem::take(&mut self.#fname));
+                                    self._has.#clearer_name();
+                                    val
+                                }
 
-                            #[doc = #init_doc]
-                            #[inline]
-                            pub fn #init_name(mut self, value: #type_name) -> Self {
-                                self.#setter_name(value);
-                                self
+                                #[doc = #init_doc]
+                                #[inline]
+                                pub fn #init_name(mut self, value: #type_name) -> Self {
+                                    self.#setter_name(value);
+                                    self
+                                }
                             }
                         }
-                    } else {
-                        quote! {
-                            #[doc = #setter_doc]
-                            #[inline]
-                            pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
-                                self.#fname = ::core::option::Option::Some(value.into());
-                                self
-                            }
 
-                            #[doc = #muter_doc]
-                            #[inline]
-                            pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
-                                self.#fname.#deref_mut()
-                            }
+                        OptionalRepr::None => {
+                            quote! {
+                                #[doc = #setter_doc]
+                                #[inline]
+                                pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                                    self.#fname = value.into();
+                                    self
+                                }
 
-                            #[doc = #clearer_doc]
-                            #[inline]
-                            pub fn #clearer_name(&mut self) -> &mut Self {
-                                self.#fname = ::core::option::Option::None;
-                                self
-                            }
+                                #[doc = #muter_doc]
+                                #[inline]
+                                pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                                    ::core::option::Option::Some(&mut self.#fname)
+                                }
 
-                            #[doc = #taker_doc]
-                            #[inline]
-                            pub fn #taker_name(&mut self) -> #wrapped_type {
-                                self.#fname.take()
+                                #[doc = #init_doc]
+                                #[inline]
+                                pub fn #init_name(mut self, value: #type_name) -> Self {
+                                    self.#setter_name(value);
+                                    self
+                                }
                             }
+                        }
 
-                            #[doc = #init_doc]
-                            #[inline]
-                            pub fn #init_name(mut self, value: #type_name) -> Self {
-                                self.#setter_name(value);
-                                self
+                        OptionalRepr::Option => {
+                            quote! {
+                                #[doc = #setter_doc]
+                                #[inline]
+                                pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                                    self.#fname = ::core::option::Option::Some(value.into());
+                                    self
+                                }
+
+                                #[doc = #muter_doc]
+                                #[inline]
+                                pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                                    self.#fname.#deref_mut()
+                                }
+
+                                #[doc = #clearer_doc]
+                                #[inline]
+                                pub fn #clearer_name(&mut self) -> &mut Self {
+                                    self.#fname = ::core::option::Option::None;
+                                    self
+                                }
+
+                                #[doc = #taker_doc]
+                                #[inline]
+                                pub fn #taker_name(&mut self) -> #wrapped_type {
+                                    self.#fname.take()
+                                }
+
+                                #[doc = #init_doc]
+                                #[inline]
+                                pub fn #init_name(mut self, value: #type_name) -> Self {
+                                    self.#setter_name(value);
+                                    self
+                                }
                             }
                         }
                     })
                 }
                 accessors
             }
+
             FieldType::Single(type_spec) if !self.no_accessors => {
                 let type_name = type_spec.generate_rust_type(gen);
                 let setter_name = format_ident!("set_{}", self.rust_name);
@@ -436,6 +478,14 @@ impl<'a> Field<'a> {
 
             FieldType::Single(tspec) => {
                 let decode_stmts = tspec.generate_decode_mut(gen, true, decoder, &mut_ref);
+                quote! {
+                    let #mut_ref = &mut #extra_deref self.#fname;
+                    { #decode_stmts };
+                }
+            }
+
+            FieldType::Optional(tspec, OptionalRepr::None) => {
+                let decode_stmts = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_stmts };
