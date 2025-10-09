@@ -34,6 +34,14 @@ fn boxed_and_option() {
             .boxed(true)
             .optional_repr(OptionalRepr::Hazzer),
     );
+    generator.configure(
+        ".basic.BasicTypes.flt",
+        Config::new().boxed(true).optional_repr(OptionalRepr::None),
+    );
+    generator.configure(
+        ".nested.Nested.basic",
+        Config::new().optional_repr(OptionalRepr::None),
+    );
     generator.configure(".nested.Nested.enumeration", Config::new().boxed(true));
     generator.configure(".nested.Nested.inner_msg", Config::new().boxed(true));
     generator.configure(".nested.Nested.InnerMsg.val", Config::new().boxed(true));

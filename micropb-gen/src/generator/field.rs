@@ -263,7 +263,7 @@ impl<'a> Field<'a> {
                             #[doc = #getter_doc]
                             #[inline]
                             pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
-                                ::core::option::Option::Some(self.#fname.#deref())
+                                ::core::option::Option::Some(&self.#fname)
                             }
                         }
                     }
