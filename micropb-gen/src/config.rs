@@ -100,11 +100,11 @@ pub enum OptionalRepr {
 
     /// Represented as a non-optional field.
     ///
-    /// The field is represented the same way as with [`Hazzer`], but without any presence
-    /// tracking. Note that the presence of the field will always be on for the purpose of encoding
-    /// and decoding, making it different from the implicit presence used by Proto3 non-optional
-    /// fields. As such, accessors will always return `Some`, and the `take_*` and `clear_*`
-    /// accessors won't be generated.
+    /// The field is represented the same way as with [`Hazzer`](Self::Hazzer), but without any
+    /// presence tracking. Note that the presence of the field will always be on for the purpose of
+    /// encoding and decoding, making it different from the implicit presence used by Proto3
+    /// non-optional fields. As such, accessors will always return `Some`, and the `take_*` and
+    /// `clear_*` accessors won't be generated.
     None,
 }
 
