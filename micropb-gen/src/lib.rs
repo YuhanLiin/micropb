@@ -207,6 +207,7 @@
 //!     impl _Hazzer {
 //!         /// Create an empty Hazzer with all fields cleared
 //!         pub const fn _new() -> Self;
+//!
 //!         /// Query presence of f_int32
 //!         pub const fn f_int32(&self) -> bool;
 //!         /// Set presence of f_int32

@@ -8,6 +8,7 @@
 - Add support for TOML config files
 - Add option to turn off suffixing for package names
 - Add option to generate messages with single oneof as enums
+- Add `None` to `OptionalRepr`, allowing non-optional representation of optional fields
 
 ## 0.3.0
 
