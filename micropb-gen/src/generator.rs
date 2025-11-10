@@ -3,11 +3,13 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     ffi::OsString,
+    fmt::Display,
     io,
     path::PathBuf,
 };
 
 use convert_case::{Case, Casing};
+use micropb::size::sizeof_varint32;
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{Attribute, Ident};
@@ -78,26 +80,12 @@ impl<'a> CurrentConfig<'a> {
     }
 }
 
-fn generate_mod_tree(mod_node: &mut Node<TokenStream>) -> TokenStream {
-    let code = mod_node.value_mut().take().unwrap_or_default();
-    let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
-        let submod_name = resolve_path_elem(submod_name);
-        let inner = generate_mod_tree(inner_node);
-        quote! { pub mod #submod_name { #inner } }
-    });
-
-    quote! {
-        #code
-        #(#submods)*
-    }
-}
-
-fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: &str) -> io::Error {
+fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> io::Error {
     let dot = if pkg.is_empty() { "" } else { "." };
     io::Error::other(format!("({dot}{pkg}.{msg_name}.{field_name}) {err_text}"))
 }
 
-fn msg_error(pkg: &str, msg_name: &str, err_text: &str) -> io::Error {
+fn msg_error(pkg: &str, msg_name: &str, err_text: impl Display) -> io::Error {
     let dot = if pkg.is_empty() { "" } else { "." };
     io::Error::other(format!("({dot}{pkg}.{msg_name}) {err_text}"))
 }
@@ -157,10 +145,13 @@ pub struct Generator {
     pub(crate) warning_cb: WarningCb,
 
     pub(crate) encode_decode: EncodeDecode,
+    pub(crate) calculate_max_size: bool,
     pub(crate) retain_enum_prefix: bool,
     pub(crate) format: bool,
     pub(crate) fdset_path: Option<PathBuf>,
     pub(crate) protoc_args: Vec<OsString>,
+    pub(crate) suffixed_package_names: bool,
+    pub(crate) single_oneof_msg_as_enum: bool,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
     pub(crate) extern_paths: HashMap<String, TokenStream>,
@@ -192,11 +183,11 @@ impl Generator {
                     .value_mut()
                     .as_mut()
                     .expect("root config should exist")
-                    .extend([code]);
+                    .extend(code);
             }
         }
 
-        Ok(generate_mod_tree(&mut mod_tree.root))
+        Ok(self.generate_mod_tree(&mut mod_tree.root))
     }
 
     pub(crate) fn generate_fdproto(
@@ -245,18 +236,38 @@ impl Generator {
         Ok(out)
     }
 
+    fn generate_mod_tree(&self, mod_node: &mut Node<TokenStream>) -> TokenStream {
+        let code = mod_node.value_mut().take().unwrap_or_default();
+        let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
+            let submod_name = resolve_path_elem(submod_name, self.suffixed_package_names);
+            let inner = self.generate_mod_tree(inner_node);
+            quote! { pub mod #submod_name { #inner } }
+        });
+
+        quote! {
+            #code
+            #(#submods)*
+        }
+    }
+
     fn generate_enum_decl(
         &self,
         name: &Ident,
         values: &[EnumValueDescriptorProto],
         enum_int_type: IntSize,
+        signed: bool,
         attrs: &[Attribute],
     ) -> TokenStream {
         let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number));
         let var_names = values.iter().map(|v| self.enum_variant_name(&v.name, name));
         let default_num = Literal::i32_unsuffixed(values[0].number);
         let derive_enum = derive_enum_attr();
-        let itype = enum_int_type.type_name(true);
+        let itype = enum_int_type.type_name(signed);
+        let max_size = if signed {
+            10
+        } else {
+            sizeof_varint32(enum_int_type.max_value().try_into().unwrap_or(u32::MAX))
+        };
 
         quote! {
             #derive_enum
@@ -265,6 +276,7 @@ impl Generator {
             pub struct #name(pub #itype);
 
             impl #name {
+                pub const _MAX_SIZE: usize = #max_size;
                 #(pub const #var_names: Self = Self(#nums);)*
             }
 
@@ -297,7 +309,8 @@ impl Generator {
             .config
             .type_attr_parsed()
             .map_err(|e| msg_error(&self.pkg, &enum_type.name, &e))?;
-        let out = self.generate_enum_decl(&name, &enum_type.value, enum_int_type, attrs);
+        let unsigned = enum_conf.config.enum_unsigned.unwrap_or(false);
+        let out = self.generate_enum_decl(&name, &enum_type.value, enum_int_type, !unsigned, attrs);
         Ok(out)
     }
 
@@ -307,7 +320,7 @@ impl Generator {
         proto: &DescriptorProto,
         msg_conf: &CurrentConfig,
     ) -> io::Result<(TokenStream, Option<Vec<syn::Attribute>>)> {
-        let msg_mod_name = resolve_path_elem(msg.name);
+        let msg_mod_name = resolve_path_elem(msg.name, self.suffixed_package_names);
         self.type_path.borrow_mut().push(msg.name.to_owned());
 
         let mut msg_mod_body = TokenStream::new();
@@ -321,18 +334,23 @@ impl Generator {
         for e in proto.enum_type.iter() {
             msg_mod_body.extend(self.generate_enum(e, msg_conf.next_conf(&e.name))?);
         }
-        for o in &msg.oneofs {
-            msg_mod_body.extend(o.generate_decl(self));
-        }
 
-        let (hazzer_decl, hazzer_field_attr) = match msg
-            .generate_hazzer_decl(msg_conf.next_conf("_has"))
-            .map_err(|e| field_error(&self.pkg, msg.name, "_has", &e))?
-        {
-            Some((d, a)) => (Some(d), Some(a)),
-            None => (None, None),
+        let hazzer_field_attr = if msg.as_oneof_enum {
+            None
+        } else {
+            let (hazzer_decl, hazzer_field_attr) = match msg
+                .generate_hazzer_decl(msg_conf.next_conf("_has"))
+                .map_err(|e| field_error(&self.pkg, msg.name, "_has", &e))?
+            {
+                Some((d, a)) => (Some(d), Some(a)),
+                None => (None, None),
+            };
+            msg_mod_body.extend(hazzer_decl);
+            for o in &msg.oneofs {
+                msg_mod_body.extend(o.generate_decl(self));
+            }
+            hazzer_field_attr
         };
-        msg_mod_body.extend(hazzer_decl);
 
         self.type_path.borrow_mut().pop();
 
@@ -352,12 +370,20 @@ impl Generator {
         let Some(msg) = Message::from_proto(proto, self, &msg_conf)? else {
             return Ok(quote! {});
         };
+
         let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf)?;
+        let proto_default = msg.fields.iter().any(|f| f.default.is_some());
         let unknown_conf = msg_conf.next_conf("_unknown");
 
-        let default = msg.generate_default_impl(self, hazzer_field_attr.is_some())?;
-        let partial_eq = msg.generate_partial_eq();
-        let decl = msg.generate_decl(self, hazzer_field_attr, &unknown_conf)?;
+        // Only manually implement Default if there's a Protobuf default specification
+        let default = proto_default
+            .then(|| msg.generate_default_impl(self, hazzer_field_attr.is_some()))
+            .transpose()?;
+        // Only manually implement PartialEq if there's a hazzer
+        let partial_eq = hazzer_field_attr
+            .as_ref()
+            .map(|_| msg.generate_partial_eq());
+        let decl = msg.generate_decl(self, hazzer_field_attr, proto_default, &unknown_conf)?;
         let msg_impl = msg.generate_impl(self);
         let decode = self
             .encode_decode
@@ -405,7 +431,7 @@ impl Generator {
 
         let path = local_path
             .map(|_| format_ident!("super"))
-            .chain(ident_path.map(resolve_path_elem));
+            .chain(ident_path.map(|elem| resolve_path_elem(elem, self.suffixed_package_names)));
         quote! { #(#path ::)* #ident_type }
     }
 
@@ -450,9 +476,13 @@ impl Generator {
 }
 
 #[inline]
-pub(crate) fn resolve_path_elem(elem: &str) -> Ident {
-    // Add underscore suffix
-    format_ident!("{elem}_")
+pub(crate) fn resolve_path_elem(elem: &str, suffixed: bool) -> Ident {
+    if suffixed || matches!(elem, "super" | "crate" | "self" | "Self" | "extern") {
+        // Add underscore suffix
+        format_ident!("{elem}_")
+    } else {
+        Ident::new_raw(elem, Span::call_site())
+    }
 }
 
 #[inline]
@@ -553,13 +583,15 @@ mod tests {
         value[1].set_number(2);
         let gen = Generator::new();
 
-        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, &[]);
+        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, true, &[]);
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct Test(pub i32);
 
             impl Test {
+                pub const _MAX_SIZE: usize = 10usize;
+
                 pub const One: Self = Self(1);
                 pub const OtherValue: Self = Self(2);
             }
@@ -594,15 +626,18 @@ mod tests {
             &name,
             &value,
             IntSize::S8,
+            false,
             &parse_attributes("#[derive(Serialize)]").unwrap(),
         );
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             #[derive(Serialize)]
-            pub struct Enum(pub i8);
+            pub struct Enum(pub u8);
 
             impl Enum {
+                pub const _MAX_SIZE: usize = 2usize;
+
                 pub const EnumOne: Self = Self(1);
             }
 
@@ -612,8 +647,8 @@ mod tests {
                 }
             }
 
-            impl core::convert::From<i8> for Enum {
-                fn from(val: i8) -> Self {
+            impl core::convert::From<u8> for Enum {
+                fn from(val: u8) -> Self {
                     Self(val)
                 }
             }
@@ -623,18 +658,24 @@ mod tests {
 
     #[test]
     fn gen_mod_tree() {
-        let mut mod_tree = PathTree::new(quote! { Root });
-        *mod_tree
-            .root
-            .add_path(["foo", "bar"].into_iter())
-            .value_mut() = Some(quote! { Bar });
-        *mod_tree
-            .root
-            .add_path(["foo", "baz"].into_iter())
-            .value_mut() = Some(quote! { Baz });
-        *mod_tree.root.add_path(["bow"].into_iter()).value_mut() = Some(quote! { Bow });
+        let mk_tree = || {
+            let mut mod_tree = PathTree::new(quote! { Root });
+            *mod_tree
+                .root
+                .add_path(["foo", "bar"].into_iter())
+                .value_mut() = Some(quote! { Bar });
+            *mod_tree
+                .root
+                .add_path(["foo", "baz"].into_iter())
+                .value_mut() = Some(quote! { Baz });
+            *mod_tree.root.add_path(["bow"].into_iter()).value_mut() = Some(quote! { Bow });
+            mod_tree
+        };
 
-        let out = generate_mod_tree(&mut mod_tree.root);
+        let mut gen = Generator::new();
+
+        let mut mod_tree = mk_tree();
+        let out = gen.generate_mod_tree(&mut mod_tree.root);
         let expected = quote! {
             Root
 
@@ -644,6 +685,21 @@ mod tests {
             }
 
             pub mod bow_ { Bow }
+        };
+        assert_eq!(out.to_string(), expected.to_string());
+
+        gen.suffixed_package_names(false);
+        let mut mod_tree = mk_tree();
+        let out = gen.generate_mod_tree(&mut mod_tree.root);
+        let expected = quote! {
+            Root
+
+            pub mod r#foo {
+                pub mod r#bar { Bar }
+                pub mod r#baz { Baz }
+            }
+
+            pub mod r#bow { Bow }
         };
         assert_eq!(out.to_string(), expected.to_string());
     }

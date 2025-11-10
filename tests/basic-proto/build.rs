@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use micropb_gen::{
     config::{CustomField, IntSize, OptionalRepr},
     Config, EncodeDecode, Generator,
@@ -31,6 +33,14 @@ fn boxed_and_option() {
         Config::new()
             .boxed(true)
             .optional_repr(OptionalRepr::Hazzer),
+    );
+    generator.configure(
+        ".basic.BasicTypes.flt",
+        Config::new().boxed(true).optional_repr(OptionalRepr::None),
+    );
+    generator.configure(
+        ".nested.Nested.basic",
+        Config::new().optional_repr(OptionalRepr::None),
     );
     generator.configure(".nested.Nested.enumeration", Config::new().boxed(true));
     generator.configure(".nested.Nested.inner_msg", Config::new().boxed(true));
@@ -100,6 +110,12 @@ fn int_type() {
     generator.configure(
         ".basic.BasicTypes.sint64_num",
         Config::new().int_size(IntSize::S32),
+    );
+    generator.configure(
+        ".basic.Enum2",
+        Config::new()
+            .enum_unsigned(true)
+            .enum_int_size(IntSize::S16),
     );
 
     generator
@@ -197,21 +213,36 @@ fn container_alloc() {
         .unwrap();
 }
 
+fn container_cow() {
+    let mut generator = Generator::new();
+    generator
+        .configure(
+            ".",
+            Config::new()
+                .string_type("::alloc::borrow::Cow<'a, str>")
+                .vec_type("::alloc::borrow::Cow<'a, [$T]>")
+                .bytes_type("::alloc::borrow::Cow<'a, [u8]>"),
+        )
+        .configure(".List.list", Config::new().field_lifetime("'a"));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/container_cow.rs",
+        )
+        .unwrap();
+}
+
 fn fixed_string_and_bytes() {
     let mut generator = Generator::new();
     generator.use_container_alloc();
     generator.configure(
         ".Data.s",
         Config::new()
-            .string_type("::micropb::FixedLenString")
+            .string_type("::micropb::FixedLenString<$N>")
             .max_bytes(3),
     );
-    generator.configure(
-        ".Data.b",
-        Config::new()
-            .vec_type("::micropb::FixedLenArray")
-            .max_bytes(2),
-    );
+    generator.configure(".Data.b", Config::new().bytes_type("[u8; $N]").max_bytes(2));
 
     generator
         .compile_protos(
@@ -300,39 +331,75 @@ fn lifetime_fields() {
     let mut generator = Generator::new();
     generator.encode_decode(EncodeDecode::EncodeOnly);
     generator.configure(".", Config::new().no_debug_impl(true).no_default_impl(true));
-    generator.configure(
-        ".nested.Nested.inner",
-        Config::new().custom_field(CustomField::Type(
-            "crate::lifetime_fields::RefField<'a>".to_owned(),
-        )),
-    );
-    generator.configure(
-        ".nested.Nested.basic",
-        Config::new().custom_field(CustomField::Delegate("inner".to_owned())),
-    );
+    // InnerMsg has a lifetime param
     generator.configure(
         ".nested.Nested.InnerMsg",
         Config::new().unknown_handler("Option<crate::lifetime_fields::RefField<'a>>"),
     );
+    // So the inner_msg field must have a lifetime
     generator.configure(
-        ".basic.BasicTypes.int32_num",
-        Config::new().custom_field(CustomField::Type(
-            "crate::lifetime_fields::RefField<'a>".to_owned(),
-        )),
+        ".nested.Nested.inner_msg",
+        Config::new().field_lifetime("'a"),
     );
+    generator.configure(".nested.Nested.basic", Config::new().skip(true));
+
+    // Configurations for collections.proto
+    generator
+        .configure(
+            ".",
+            Config::new()
+                .string_type("&'a str")
+                .bytes_type("&'a [u8]")
+                .vec_type("&'a [$T]")
+                .map_type("&'a std::collections::HashMap<$K, $V>"),
+        )
+        .configure(".List.list", Config::new().field_lifetime("'a"));
+
     generator
         .compile_protos(
-            &["proto/basic.proto", "proto/nested.proto"],
+            &[
+                "proto/basic.proto",
+                "proto/nested.proto",
+                "proto/collections.proto",
+                "proto/map.proto",
+            ],
             std::env::var("OUT_DIR").unwrap() + "/lifetime_fields.rs",
+        )
+        .unwrap();
+}
+
+fn static_lifetime_fields() {
+    let mut generator = Generator::new();
+    generator.encode_decode(EncodeDecode::EncodeOnly);
+    generator.configure(
+        ".",
+        Config::new()
+            .no_default_impl(true)
+            .string_type("&'static str")
+            .bytes_type("&'static [u8]")
+            .vec_type("&'static [$T]")
+            .map_type("&'static std::collections::HashMap<$K, $V>"),
+    );
+    // Use non-static lifetime for Data.b, so Data should have a lifetime param
+    generator.configure(".Data.b", Config::new().bytes_type("&'a [u8]"));
+    // Force List.list to use Data<'static>, so List shouldn't have a lifetime param
+    generator.configure(".List.list", Config::new().field_lifetime("'static"));
+
+    generator
+        .compile_protos(
+            &["proto/collections.proto", "proto/map.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/static_lifetime_fields.rs",
         )
         .unwrap();
 }
 
 fn recursive() {
     let mut generator = Generator::new();
-    generator.configure(".Recursive.recursive", Config::new().boxed(true));
+    generator.configure_many(
+        &[".Recursive.recursive", ".Recursive.rec"],
+        Config::new().recursive_field(),
+    );
     generator.configure(".Recursive.of", Config::new().boxed(true));
-    generator.configure(".Recursive.rec", Config::new().boxed(true));
     generator
         .compile_protos(
             &["proto/recursive.proto"],
@@ -382,6 +449,80 @@ fn files_with_same_package() {
         .unwrap();
 }
 
+fn large_field_nums() {
+    let mut generator = Generator::new();
+    generator
+        .compile_protos(
+            &["proto/large_field_nums.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/large_field_nums.rs",
+        )
+        .unwrap();
+}
+
+fn minimal_accessors() {
+    let mut generator = Generator::new();
+    generator.calculate_max_size(false);
+    generator.configure(".", Config::new().no_accessors(true));
+    // Test what happens when there's a message that doesn't use hazzers
+    generator.configure(
+        ".nested.Nested",
+        Config::new().optional_repr(OptionalRepr::Option),
+    );
+    generator
+        .compile_protos(
+            &[
+                "proto/basic.proto",
+                "proto/basic3.proto",
+                "proto/nested.proto",
+            ],
+            std::env::var("OUT_DIR").unwrap() + "/minimal_accessors.rs",
+        )
+        .unwrap();
+}
+
+fn with_config_file() {
+    let mut generator = Generator::new();
+    generator.use_container_heapless();
+    generator
+        .parse_config_file(Path::new("proto/collections.toml"), ".")
+        .unwrap();
+    generator
+        .parse_config_file(Path::new("proto/map.toml"), ".")
+        .unwrap();
+    generator
+        .parse_config_file(Path::new("proto/basic.toml"), ".basic")
+        .unwrap();
+
+    generator
+        .compile_protos(
+            &[
+                "proto/collections.proto",
+                "proto/map.proto",
+                "proto/basic.proto",
+            ],
+            std::env::var("OUT_DIR").unwrap() + "/with_config_file.rs",
+        )
+        .unwrap();
+}
+
+fn single_oneof() {
+    let mut generator = Generator::new();
+    generator.single_oneof_msg_as_enum(true);
+    generator.configure(".SingleOneof.inner_msg", Config::new().boxed(true));
+    generator.configure(".SingleOneof.scalar", Config::new().skip(true));
+
+    generator
+        .compile_protos(
+            &[
+                "proto/basic.proto",
+                "proto/nested.proto",
+                "proto/single_oneof.proto",
+            ],
+            std::env::var("OUT_DIR").unwrap() + "/single_oneof.rs",
+        )
+        .unwrap();
+}
+
 fn main() {
     no_config();
     boxed_and_option();
@@ -391,14 +532,20 @@ fn main() {
     container_heapless();
     container_arrayvec();
     container_alloc();
+    container_cow();
     custom_field();
     implicit_presence();
     extern_import();
     lifetime_fields();
+    static_lifetime_fields();
     recursive();
     conflicting_names();
     default_str_escape();
     extension();
     files_with_same_package();
     fixed_string_and_bytes();
+    large_field_nums();
+    minimal_accessors();
+    with_config_file();
+    single_oneof();
 }

@@ -26,6 +26,7 @@ mod tests {
     fn test_roundtrip(msg: micropb_types::TestOneOf) {
         let mut encoder = PbEncoder::new(vec![]);
         msg.encode(&mut encoder).unwrap();
+        assert_eq!(msg.compute_size(), encoder.as_writer().len());
 
         let mut decoder = PbDecoder::new(encoder.as_writer().as_slice());
         let mut output = micropb_types::TestOneOf::default();
@@ -35,6 +36,7 @@ mod tests {
         assert_eq!(msg, output);
     }
 
+<<<<<<< HEAD
     fn test_proto_roundtrip(msg: micropb_types::TestOneOf) {
         use protobuf::Message;
 
@@ -75,6 +77,25 @@ mod tests {
         fn decode_random(data in bytes()) {
             let mut decoder = PbDecoder::new(data.as_slice());
             let mut msg = micropb_types::TestOneOf::default();
+            if msg.decode(&mut decoder, data.len()).is_ok() {
+                let mut encoder = PbEncoder::new(vec![]);
+                let _ = msg.encode(&mut encoder);
+            }
+        }
+
+        #[test]
+        fn max_size(sin1: proto::TestTypesSingular1, opt1: proto::TestTypesOptional1) {
+            const SIN1_MAX: usize = proto::TestTypesSingular1::MAX_SIZE.unwrap();
+            assert!(sin1.compute_size() <= SIN1_MAX);
+            const OPT1_MAX: usize = proto::TestTypesOptional1::MAX_SIZE.unwrap();
+            assert!(opt1.compute_size() <= OPT1_MAX);
+        }
+
+        // Decode random data to ensure it doesn't crash
+        #[test]
+        fn decode_random(data in bytes()) {
+            let mut decoder = PbDecoder::new(data.as_slice());
+            let mut msg = proto::TestOneOf::default();
             if msg.decode(&mut decoder, data.len()).is_ok() {
                 let mut encoder = PbEncoder::new(vec![]);
                 let _ = msg.encode(&mut encoder);

@@ -1,12 +1,15 @@
 //! Configuration options for Protobuf types and fields.
 
-use proc_macro2::Span;
+use std::borrow::Cow;
+
+use proc_macro2::{Span, TokenStream};
 use syn::Ident;
 
 use crate::generator::sanitized_ident;
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Sizes of integer types
 pub enum IntSize {
     /// 8-bit int
@@ -33,9 +36,28 @@ impl IntSize {
         };
         Ident::new(t, Span::call_site())
     }
+
+    pub(crate) fn max_value(self) -> u64 {
+        match self {
+            IntSize::S8 => u8::MAX as u64,
+            IntSize::S16 => u16::MAX as u64,
+            IntSize::S32 => u32::MAX as u64,
+            IntSize::S64 => u64::MAX,
+        }
+    }
+
+    pub(crate) fn min_value(self) -> i64 {
+        match self {
+            IntSize::S8 => i8::MIN as i64,
+            IntSize::S16 => i16::MIN as i64,
+            IntSize::S32 => i32::MIN as i64,
+            IntSize::S64 => i64::MIN,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Customize encoding and decoding behaviour for a generated field
 pub enum CustomField {
     /// Fully-qualified type name that replaces the generated type of the field.
@@ -49,24 +71,48 @@ pub enum CustomField {
     Delegate(String),
 }
 
+impl CustomField {
+    /// Constructs a [`CustomField::Type`]
+    pub fn from_type(s: &str) -> Self {
+        Self::Type(s.to_owned())
+    }
+
+    /// Constructs a [`CustomField::Delegate`]
+    pub fn from_delegate(s: &str) -> Self {
+        Self::Delegate(s.to_owned())
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Representation of optional fields in the generated code
 pub enum OptionalRepr {
     /// Presence of optional field is tracked in a separate bitfield called a hazzer.
     ///
     /// Default for non-boxed fields.
     Hazzer,
-    /// Optional field is wrapped in `Option`
+
+    /// Optional field is wrapped in `Option`.
     ///
     /// Default for boxed fields.
     Option,
+
+    /// Represented as a non-optional field.
+    ///
+    /// The field is represented the same way as with [`Hazzer`](Self::Hazzer), but without any
+    /// presence tracking. Note that the presence of the field will always be on for the purpose of
+    /// encoding and decoding, making it different from the implicit presence used by Proto3
+    /// non-optional fields. As such, accessors will always return `Some`, and the `take_*` and
+    /// `clear_*` accessors won't be generated.
+    None,
 }
 
 macro_rules! config_decl {
     ($($(#[$doc:meta])* $([$placeholder:ident])? $field:ident : $([$placeholder2:ident])? Option<$type:ty>,)+) => {
         #[non_exhaustive]
         #[derive(Debug, Clone, Default)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         /// Configuration that changes how the code generator handles Protobuf types and fields.
         /// See [`configure`](crate::Generator::configure) for how configurations are applied.
         ///
@@ -198,70 +244,89 @@ config_decl! {
     /// This config not apply to elements of repeated and `map` fields.
     boxed: Option<bool>,
 
-    /// Container type that's generated for `bytes` and repeated fields. The provided type must
-    /// implement `PbVec`.
+    /// Container type that's generated for repeated fields.
     ///
-    /// If the provided type is fixed-capacity, such as `ArrayVec`, then it should have type
-    /// parameters `<T, N: usize>`, where `T` is the element type and `N` is the capacity. If the
-    /// type is dynamic-capacity, such as `Vec`, it should have a type parameter `<T>`.
+    /// For decoding, the provided type must implement `PbVec<T>`. For encoding, the type must
+    /// dereference into `[T]`, where `T` is the type of the element. Moreover, the type must
+    /// implement `Default` in order to generate default values.
     ///
-    /// The string provided to this call should not include any type parameters, since they will be
-    /// filled in by the generator. Specifically, `T` will be the element type for repeated fields
-    /// or `u8` for `bytes` fields, and `N` will be [`max_len`](Config::max_len) or
-    /// [`max_bytes`](Config::max_bytes) if set.
+    /// If the provided type contains the sequence `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field. Similarly, the sequence `$T`
+    /// will be substituted for the type of the repeated element.
     ///
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::IntSize};
     /// # let mut gen = micropb_gen::Generator::new();
-    /// // `bytes` field configured to `Vec<u8>` (dynamic-capacity)
-    /// gen.configure(".pkg.Message.bytes_field", Config::new().vec_type("Vec"));
-    /// // repeated field configured to `arrayvec::ArrayVec<T, 5>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.list", Config::new().vec_type("arrayvec::ArrayVec").max_len(5));
+    /// // assuming that .pkg.Message.list is a repeated field of booleans:
+    ///
+    /// // repeated field configured to `Vec<bool>` (dynamic-capacity)
+    /// gen.configure(".pkg.Message.list", Config::new().vec_type("Vec<$T>"));
+    /// // repeated field configured to `arrayvec::ArrayVec<bool, 5>` (fixed-capacity)
+    /// gen.configure(".pkg.Message.list", Config::new().vec_type("arrayvec::ArrayVec<$T, $N>").max_len(5));
     /// ```
     vec_type: [deref] Option<String>,
 
-    /// Container type that's generated for `string` fields. The provided type must implement
-    /// `PbString`.
+    /// Container type that's generated for `string` fields.
     ///
-    /// If the provided type is fixed-capacity, such as `ArrayString`, then it should have type
-    /// parameter `<N: usize>`, where `N` is the capacity. If the type is dynamic-capacity, such as
-    /// `String`, it should have no type parameters.
+    /// For decoding, the provided type must implement `PbString`. For encoding, the type must
+    /// dereference to `str`. Moreover, the type must implement `Default + TryFrom<&str>` in order
+    /// to generate default values.
     ///
-    /// The string provided to this call should not include any type parameters, since they will be
-    /// filled in by the generator. Specifically, `N` will be [`max_bytes`](Config::max_bytes) if
-    /// set.
+    /// If the provided type contains the sequence `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field.
     ///
     /// # Example
     /// ```no_run
-    /// # use micropb_gen::{Generator, Config, config::IntSize};
+    /// # use micropb_gen::{Generator, Config};
     /// # let mut gen = micropb_gen::Generator::new();
     /// // `string` field configured to `String` (dynamic-capacity)
     /// gen.configure(".pkg.Message.string_field", Config::new().string_type("String"));
     /// // `string` field configured to `ArrayString<4>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("ArrayString").max_bytes(4));
+    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("ArrayString<$N>").max_bytes(4));
     /// ```
     string_type: [deref] Option<String>,
 
-    /// Container type that's generated for `map` fields. The provided type must implement `PbMap`.
+    /// Container type that's generated for `bytes` fields.
     ///
-    /// If the provided type is fixed-capacity, such as `FnvIndexMap`, then it should have type
-    /// parameters `<K, V, N: usize>`, where `K` is the key type, `V` is the value type, and `N` is
-    /// the capacity. If the type is dynamic-capacity, such as `BTreeMap`, it should have a type
-    /// parameters `<K, V>`.
+    /// For decoding, the provided type must implement `PbBytes`. For encoding, the type must
+    /// dereference to `[u8]`. Moreover, the type must implement `Default + TryFrom<&[u8]>` in
+    /// order to generate default values.
     ///
-    /// The string provided to this call should not include any type parameters, since they will be
-    /// filled in by the generator. Specifically, `K` and `V` will be the key and value types, and
-    /// `N` will be [`max_len`](Config::max_len) if set.
+    /// If the provided type contains the sequence `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use micropb_gen::{Generator, Config};
+    /// # let mut gen = micropb_gen::Generator::new();
+    /// // `bytes` field configured to `Vec<u8>` (dynamic-capacity)
+    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("Vec<u8>"));
+    /// // `bytes` field configured to `Vec<u8, 4>` (fixed-capacity)
+    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("Vec<u8, $N>").max_bytes(4));
+    /// ```
+    bytes_type: [deref] Option<String>,
+
+    /// Container type that's generated for `map` fields.
+    ///
+    /// For decoding, the provided type must implement `PbMap`. For encoding, the type must
+    /// implement `IntoIterator<Item = (&K, &V)>` for `&T`. Moreover, the type must implement
+    /// `Default` in order to generate default values.
+    ///
+    /// If the provided type contains the sequence `$N`, it will be substituted for the value of
+    /// [`max_bytes`](Config::max_bytes) if it's set for this field. Similarly, the sequences `$K`
+    /// and `$V` will be substituted for the types of the map key and value respectively.
     ///
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::IntSize};
     /// # let mut gen = micropb_gen::Generator::new();
-    /// // `map` field configured to `BTreeMap<K, V>` (dynamic-capacity)
-    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("BTreeMap"));
-    /// // `map` field configured to `FnvIndexMap<K, V, 4>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap").max_len(4));
+    /// // assume that .pkg.Message.map_field is a `map<int32, float>`:
+    ///
+    /// // `map` field configured to `BTreeMap<i32, f32>` (dynamic-capacity)
+    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("BTreeMap<$K, $V>"));
+    /// // `map` field configured to `FnvIndexMap<i32, f32, 4>` (fixed-capacity)
+    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap<$K, $V, $N>").max_len(4));
     /// ```
     map_type: [deref] Option<String>,
 
@@ -288,8 +353,7 @@ config_decl! {
     /// ```
     optional_repr: Option<OptionalRepr>,
 
-    /// Replace generated field with an user-provided type. See
-    /// [`CustomField`](crate::config::CustomField) for more info.
+    /// Replace generated field with an user-provided type. See [`CustomField`] for more info.
     ///
     /// Substitute a user-provided type as the type of the field. The encoding and decoding
     /// behaviour will also be user-provided, so the custom type must implement `FieldEncode` and
@@ -315,12 +379,12 @@ config_decl! {
     /// // Make the generator generate `foo: crate::CustomHandler` for field `foo`
     /// gen.configure(
     ///     ".Message.foo",
-    ///     Config::new().custom_field(CustomField::Type("crate::CustomHandler".to_owned()))
+    ///     Config::new().custom_field(CustomField::from_type("crate::CustomHandler"))
     /// );
     /// // Decoding and encoding of `bar` will also be handled by the `CustomHandler` assigned to `foo`
     /// gen.configure(
     ///     ".Message.bar",
-    ///     Config::new().custom_field(CustomField::Delegate("foo".to_owned()))
+    ///     Config::new().custom_field(CustomField::from_delegate("foo"))
     /// );
     /// ```
     custom_field: Option<CustomField>,
@@ -341,9 +405,43 @@ config_decl! {
     /// ```
     ///
     /// # Note
-    /// This configuration is only applied to the path passed to `configure`. It is
-    /// not propagated to "children" paths.
+    /// This configuration is only applied to the path passed to
+    /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.
     [no_inherit] rename_field: [deref] Option<String>,
+
+    /// Override the max size of the field on the wire.
+    ///
+    /// Instead of calculating the max size of the field, the generator will use this value instead
+    /// when determining the max size of the entire message. This is useful for fields with
+    /// "unbounded" size, such as `Vec` fields and recursive fields. Applies to normal fields,
+    /// oneof fields, and oneof variants.
+    encoded_max_size: Option<usize>,
+
+    /// Specify lifetime parameter of a message field.
+    ///
+    /// If message type `Inner` has fields with a lifetime, its message struct will be generated
+    /// with that lifetime parameter. However, if another message type `Outer` has `Inner` as its
+    /// field, then that field must specify `field_lifetime` so that the lifetime is included in
+    /// the field declaration.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use micropb_gen::{Generator, Config};
+    /// # let mut gen = micropb_gen::Generator::new();
+    /// // `Inner` now has a lifetime param
+    /// gen.configure(".Inner.field", Config::new().string_type("MyString<'a>"));
+    /// // Make sure inner is declared as `inner: Inner<'a>`
+    /// // Will also automatically add the lifetime param to declaration of `Outer`
+    /// gen.configure(".Outer.inner", Config::new().field_lifetime("'a"));
+    /// ```
+    field_lifetime: [deref] Option<String>,
+
+    /// Disable field accessors.
+    ///
+    /// Do not generate accessors for this field other than the getter method on optional fields,
+    /// which is required by the encoding logic. This won't reduce the compiled code size, but it
+    /// will significantly reduce the size of the output source file.
+    no_accessors: Option<bool>,
 
     // Type configs
 
@@ -352,6 +450,13 @@ config_decl! {
     /// Change the integer fields to be `i8`, `i16`, `i32`, or `i64`. If the integer type is
     /// smaller than the value on the wire, the value will be truncated to fit.
     enum_int_size: Option<IntSize>,
+
+    /// Use unsigned integer to represent enums.
+    ///
+    /// Enum will be `u32` instead of `i32`. Negative values on the wire will be truncated, so do
+    /// not use this if any of the enum variants are negative. Setting this option will reduce the
+    /// maximum encoded size of the enum, since signed integers always have a max size of 10 bytes.
+    enum_unsigned: Option<bool>,
 
     /// Set attributes for generated types, such as messages and enums.
     ///
@@ -397,7 +502,11 @@ config_decl! {
     /// added to the message struct. This field will handle decoding of all unknown fields and will
     /// also be encoded, so the handler type must implement `FieldEncode` and `FieldDecode`,
     /// like with [`custom_field`](Config::custom_field).
-    unknown_handler: [deref] Option<String>,
+    ///
+    /// # Note
+    /// This configuration is only applied to the path passed to
+    /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.
+    [no_inherit] unknown_handler: [deref] Option<String>,
 
     // General configs
 
@@ -406,6 +515,15 @@ config_decl! {
     /// If applied to message or enum, the whole type definition will be skipped. If applied to a
     /// field, it won't be included in the message struct.
     skip: Option<bool>,
+}
+
+impl Config {
+    /// Ensure proper handling of a recursive field by boxing it and hardcoding its max size to 0
+    ///
+    /// Combination of [`Self::boxed`] and [`Self::encoded_max_size`].
+    pub fn recursive_field(self) -> Self {
+        self.boxed(true).encoded_max_size(0)
+    }
 }
 
 struct Attributes(Vec<syn::Attribute>);
@@ -449,32 +567,66 @@ impl Config {
         }
     }
 
-    pub(crate) fn vec_type_parsed(&self) -> Result<Option<syn::Path>, String> {
-        self.vec_type
-            .as_ref()
-            .map(|t| {
-                syn::parse_str(t)
-                    .map_err(|e| format!("Failed to parse vec_type \"{t}\" as type path: {e}"))
-            })
-            .transpose()
-    }
-
-    pub(crate) fn string_type_parsed(&self) -> Result<Option<syn::Path>, String> {
+    pub(crate) fn string_type_parsed(&self, n: Option<u32>) -> Result<Option<syn::Type>, String> {
         self.string_type
             .as_ref()
             .map(|t| {
-                syn::parse_str(t)
-                    .map_err(|e| format!("Failed to parse string_type \"{t}\" as type path: {e}"))
+                check_missing_len(t, n, "max_bytes")?;
+                let typestr = substitute_param(t.into(), "$N", n);
+                syn::parse_str(&typestr).map_err(|e| {
+                    format!("Failed to parse string_type \"{typestr}\" as type path: {e}")
+                })
             })
             .transpose()
     }
 
-    pub(crate) fn map_type_parsed(&self) -> Result<Option<syn::Path>, String> {
+    pub(crate) fn bytes_type_parsed(&self, n: Option<u32>) -> Result<Option<syn::Type>, String> {
+        self.bytes_type
+            .as_ref()
+            .map(|t| {
+                check_missing_len(t, n, "max_bytes")?;
+                let typestr = substitute_param(t.into(), "$N", n);
+                syn::parse_str(&typestr).map_err(|e| {
+                    format!("Failed to parse bytes_type \"{typestr}\" as type path: {e}")
+                })
+            })
+            .transpose()
+    }
+
+    pub(crate) fn vec_type_parsed(
+        &self,
+        t: TokenStream,
+        n: Option<u32>,
+    ) -> Result<Option<syn::Type>, String> {
+        self.vec_type
+            .as_ref()
+            .map(|typestr| {
+                let typestr = substitute_param(typestr.into(), "$T", Some(t));
+                let typestr = substitute_param(typestr, "$N", n);
+                check_missing_len(&typestr, n, "max_len")?;
+                syn::parse_str(&typestr).map_err(|e| {
+                    format!("Failed to parse vec_type \"{typestr}\" as type path: {e}")
+                })
+            })
+            .transpose()
+    }
+
+    pub(crate) fn map_type_parsed(
+        &self,
+        k: TokenStream,
+        v: TokenStream,
+        n: Option<u32>,
+    ) -> Result<Option<syn::Type>, String> {
         self.map_type
             .as_ref()
             .map(|t| {
-                syn::parse_str(t)
-                    .map_err(|e| format!("Failed to parse map_type \"{t}\" as type path: {e}"))
+                let typestr = substitute_param(t.into(), "$K", Some(k));
+                let typestr = substitute_param(typestr, "$V", Some(v));
+                let typestr = substitute_param(typestr, "$N", n);
+                check_missing_len(&typestr, n, "max_len")?;
+                syn::parse_str(&typestr).map_err(|e| {
+                    format!("Failed to parse map_type \"{typestr}\" as type path: {e}")
+                })
             })
             .transpose()
     }
@@ -508,6 +660,38 @@ impl Config {
         };
         Ok(res)
     }
+
+    pub(crate) fn field_lifetime_parsed(&self) -> Result<Option<syn::Lifetime>, String> {
+        self.field_lifetime
+            .as_ref()
+            .map(|l| {
+                syn::parse_str(l)
+                    .map_err(|e| format!("Failed to parse \"{l}\" as Rust lifetime: {e}"))
+            })
+            .transpose()
+    }
+}
+
+fn substitute_param<'a>(
+    typestr: Cow<'a, str>,
+    pat: &str,
+    t: Option<impl ToString>,
+) -> Cow<'a, str> {
+    if let Some(t) = t {
+        if typestr.find(pat).is_some() {
+            let t = t.to_string();
+            return typestr.replace(pat, &t).into();
+        }
+    }
+    typestr
+}
+
+fn check_missing_len(typestr: &str, n: Option<u32>, len_param: &str) -> Result<(), String> {
+    if n.is_none() && typestr.contains("$N") {
+        Err(format!("Missing {len_param} for type path \"{typestr}\""))
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -538,35 +722,45 @@ mod tests {
     #[test]
     fn parse() {
         let mut config = Config::new()
-            .vec_type("heapless::Vec")
-            .string_type("heapless::String")
-            .map_type("Map")
+            .vec_type("heapless::Vec<$T, $N>")
+            .string_type("heapless::String<$N>")
+            .map_type("Map<$K, $V, $N>")
+            .bytes_type("Bytes")
             .type_attributes("#[derive(Hash)]");
 
         assert_eq!(
             config
-                .vec_type_parsed()
+                .vec_type_parsed(quote! {u8}, Some(5))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
-            quote! { heapless::Vec }.to_string()
+            quote! { heapless::Vec<u8, 5> }.to_string()
         );
         assert_eq!(
             config
-                .string_type_parsed()
+                .string_type_parsed(Some(12))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
-            quote! { heapless::String }.to_string()
+            quote! { heapless::String<12> }.to_string()
         );
         assert_eq!(
             config
-                .map_type_parsed()
+                .map_type_parsed(quote! {u32}, quote! {bool}, Some(14))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
-            "Map"
+            quote! { Map<u32, bool, 14> }.to_string()
         );
+        assert_eq!(
+            config
+                .bytes_type_parsed(None)
+                .unwrap()
+                .to_token_stream()
+                .to_string(),
+            "Bytes"
+        );
+
         let attrs = config.type_attr_parsed().unwrap();
         assert_eq!(
             quote! { #(#attrs)* }.to_string(),

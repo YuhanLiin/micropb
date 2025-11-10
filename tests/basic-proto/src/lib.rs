@@ -9,6 +9,8 @@ mod container_alloc;
 #[cfg(test)]
 mod container_arrayvec;
 #[cfg(test)]
+mod container_cow;
+#[cfg(test)]
 mod container_heapless;
 #[cfg(test)]
 mod custom_field;
@@ -29,10 +31,20 @@ mod int_type;
 #[cfg(test)]
 mod keyword_fields;
 #[cfg(test)]
+mod large_field_nums;
+#[cfg(test)]
 mod lifetime_fields;
+#[cfg(test)]
+mod minimal_accessors;
 #[cfg(test)]
 mod no_config;
 #[cfg(test)]
 mod recursive;
 #[cfg(test)]
+mod single_oneof;
+#[cfg(test)]
 mod skip;
+#[cfg(test)]
+mod static_lifetime_fields;
+#[cfg(test)]
+mod with_config_file;

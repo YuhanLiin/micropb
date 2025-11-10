@@ -3,15 +3,16 @@ use proc_macro2::{Literal, Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
 
-use super::{
-    derive_msg_attr,
-    field::CustomField,
-    sanitized_ident,
-    type_spec::{find_lifetime_from_type, TypeSpec},
-    CurrentConfig, EncodeFunc, Generator,
+use crate::{
+    descriptor::{FieldDescriptorProto, OneofDescriptorProto},
+    generator::{
+        derive_msg_attr,
+        field::CustomField,
+        sanitized_ident,
+        type_spec::{find_lifetime_from_type, TypeSpec},
+        CurrentConfig, EncodeFunc, Generator,
+    },
 };
-
-use crate::descriptor::{FieldDescriptorProto, OneofDescriptorProto};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
@@ -23,6 +24,7 @@ pub(crate) struct OneofField<'a> {
     /// Sanitized Rust ident after renaming, used for field name
     pub(crate) rust_name: Ident,
     pub(crate) boxed: bool,
+    pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
 }
 
@@ -53,12 +55,13 @@ impl<'a> OneofField<'a> {
             tspec,
             name,
             rust_name,
+            encoded_max_size: field_conf.config.encoded_max_size,
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs,
         }))
     }
 
-    fn generate_field(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_field(&self, gen: &Generator) -> TokenStream {
         let typ = gen.wrapped_type(self.tspec.generate_rust_type(gen), self.boxed, false);
         let name = &self.rust_name;
         let attrs = &self.attrs;
@@ -102,7 +105,33 @@ impl<'a> OneofField<'a> {
         }
     }
 
-    fn generate_encode_branch(
+    pub(crate) fn generate_decode_branch_in_enum_msg(
+        &self,
+        decoder: &Ident,
+        gen: &Generator,
+    ) -> TokenStream {
+        let fnum = self.num;
+        let mut_ref = Ident::new("mut_ref", Span::call_site());
+        let variant_name = &self.rust_name;
+        let extra_deref_var = self.boxed.then(|| quote! { * });
+
+        let decode_stmts = self
+            .tspec
+            .generate_decode_mut(gen, false, decoder, &mut_ref);
+        quote! {
+            #fnum => {
+                let #mut_ref = loop {
+                    if let Self::#variant_name(variant) = self {
+                        break &mut #extra_deref_var *variant;
+                    }
+                    *self = Self::#variant_name(::core::default::Default::default());
+                };
+                #decode_stmts;
+            }
+        }
+    }
+
+    pub(crate) fn generate_encode_branch(
         &self,
         oneof_type: &TokenStream,
         gen: &Generator,
@@ -139,6 +168,11 @@ impl<'a> OneofField<'a> {
     }
 }
 
+fn find_oneof_field_lifetime<'a, 'b: 'a>(fields: &'b [OneofField<'a>]) -> Option<&'a Lifetime> {
+    // Only need to find the first lifetime
+    fields.iter().find_map(|of| of.tspec.find_lifetime())
+}
+
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum OneofType<'a> {
     Enum {
@@ -149,6 +183,23 @@ pub(crate) enum OneofType<'a> {
         field: CustomField,
         nums: Vec<i32>,
     },
+}
+
+impl OneofType<'_> {
+    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
+        match self {
+            OneofType::Custom {
+                field: CustomField::Type(ty),
+                ..
+            } => find_lifetime_from_type(ty),
+            OneofType::Custom {
+                field: CustomField::Delegate(..),
+                ..
+            } => None,
+
+            OneofType::Enum { fields, .. } => find_oneof_field_lifetime(fields),
+        }
+    }
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -165,20 +216,12 @@ pub(crate) struct Oneof<'a> {
     pub(crate) derive_dbg: bool,
     pub(crate) derive_partial_eq: bool,
     pub(crate) derive_clone: bool,
+    pub(crate) encoded_max_size: Option<usize>,
+    pub(crate) lifetime: Option<Lifetime>,
     pub(crate) idx: usize,
 }
 
 impl<'a> Oneof<'a> {
-    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
-        match &self.otype {
-            OneofType::Custom {
-                field: CustomField::Type(ty),
-                ..
-            } => find_lifetime_from_type(ty),
-            _ => None,
-        }
-    }
-
     pub(crate) fn from_proto(
         proto: &'a OneofDescriptorProto,
         oneof_conf: CurrentConfig,
@@ -211,12 +254,20 @@ impl<'a> Oneof<'a> {
             idx,
             otype,
             boxed,
+            encoded_max_size: oneof_conf.config.encoded_max_size,
             derive_dbg: oneof_conf.derive_dbg(),
             derive_partial_eq: oneof_conf.derive_partial_eq(),
             derive_clone: oneof_conf.derive_clone(),
+            lifetime: None,
             field_attrs,
             type_attrs,
         }))
+    }
+
+    /// Find lifetime and set the oneof's lifetime field
+    pub(crate) fn find_lifetime(&mut self) -> Option<&Lifetime> {
+        self.lifetime = self.otype.find_lifetime().cloned();
+        self.lifetime.as_ref()
     }
 
     pub(crate) fn generate_decl(&self, gen: &Generator) -> TokenStream {
@@ -230,11 +281,12 @@ impl<'a> Oneof<'a> {
                 self.derive_clone,
             );
             let attrs = &self.type_attrs;
+            let lifetime = &self.lifetime;
 
             quote! {
                 #derive_msg
                 #(#attrs)*
-                pub enum #type_name {
+                pub enum #type_name<#lifetime> {
                     #(#fields)*
                 }
             }
@@ -247,8 +299,14 @@ impl<'a> Oneof<'a> {
         let name = &self.san_rust_name;
         let oneof_type = match &self.otype {
             OneofType::Enum { type_name, .. } => {
-                gen.wrapped_type(quote! { #msg_mod_name::#type_name }, self.boxed, true)
+                let lifetime = &self.lifetime;
+                gen.wrapped_type(
+                    quote! { #msg_mod_name::#type_name<#lifetime> },
+                    self.boxed,
+                    true,
+                )
             }
+            // Don't explicitly write lifetime for custom types, since it's already included
             OneofType::Custom {
                 field: CustomField::Type(type_path),
                 ..
@@ -338,6 +396,53 @@ impl<'a> Oneof<'a> {
             } => quote! {},
         }
     }
+
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if let Some(max_size) = self.encoded_max_size {
+            return quote! { ::core::option::Option::Some(#max_size) };
+        }
+
+        match &self.otype {
+            OneofType::Custom {
+                field: CustomField::Type(custom),
+                ..
+            } => {
+                quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE }
+            }
+            OneofType::Custom {
+                field: CustomField::Delegate(_),
+                ..
+            } => quote! { ::core::option::Option::Some(0) },
+
+            OneofType::Enum { fields, .. } => {
+                let variant_sizes = fields.iter().map(|f| {
+                    if let Some(max_size) = f.encoded_max_size {
+                        quote! { ::core::option::Option::Some(#max_size) }
+                    } else {
+                        let wire_type = f.tspec.wire_type();
+                        let tag = micropb::Tag::from_parts(f.num, wire_type);
+                        let tag_len = ::micropb::size::sizeof_tag(tag);
+                        let size = f.tspec.generate_max_size(gen);
+                        quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
+                    }
+                });
+
+                quote! {'oneof: {
+                    let mut max_size = 0;
+                    #(
+                        if let ::core::option::Option::Some(size) = #variant_sizes {
+                            if size > max_size {
+                                max_size = size;
+                            }
+                        } else {
+                            break 'oneof (::core::option::Option::<usize>::None);
+                        }
+                    )*
+                    ::core::option::Option::Some(max_size)
+                }}
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -346,13 +451,14 @@ pub(crate) fn make_test_oneof_field(
     name: &str,
     boxed: bool,
     tspec: TypeSpec,
-) -> OneofField {
+) -> OneofField<'_> {
     OneofField {
         num,
         name,
         tspec,
         rust_name: Ident::new(&name.to_case(Case::Pascal), Span::call_site()),
         boxed,
+        encoded_max_size: None,
         attrs: vec![],
     }
 }
@@ -408,6 +514,7 @@ mod tests {
                 name: "field",
                 rust_name: Ident::new("Field", Span::call_site()),
                 boxed: false,
+                encoded_max_size: None,
                 attrs: vec![]
             }
         );
@@ -428,6 +535,7 @@ mod tests {
                 tspec: TypeSpec::Bool,
                 name: "field",
                 rust_name: Ident::new("Renamed", Span::call_site()),
+                encoded_max_size: None,
                 boxed: true,
                 attrs: parse_attributes("#[attr]").unwrap()
             }
@@ -454,10 +562,12 @@ mod tests {
                 },
                 field_attrs: vec![],
                 type_attrs: vec![],
+                encoded_max_size: None,
                 boxed: false,
                 derive_dbg: true,
                 derive_partial_eq: true,
                 derive_clone: true,
+                lifetime: None,
                 idx: 0
             }
         );
@@ -481,10 +591,12 @@ mod tests {
                 },
                 field_attrs: parse_attributes("#[attr]").unwrap(),
                 type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+                encoded_max_size: None,
                 boxed: false,
                 derive_dbg: false,
                 derive_partial_eq: true,
                 derive_clone: true,
+                lifetime: None,
                 idx: 0
             }
         );
@@ -503,9 +615,11 @@ mod tests {
             field_attrs: vec![],
             type_attrs: vec![],
             boxed: false,
+            encoded_max_size: None,
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,
+            lifetime: None,
             idx: 0,
         };
         assert!(oneof.generate_decl(&gen).is_empty());
@@ -526,9 +640,11 @@ mod tests {
             field_attrs: vec![],
             type_attrs: vec![],
             boxed: false,
+            encoded_max_size: None,
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,
+            lifetime: None,
             idx: 0,
         };
         assert!(oneof.generate_decl(&gen).is_empty());

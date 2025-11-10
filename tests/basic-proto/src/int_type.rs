@@ -113,3 +113,16 @@ fn encode_64_as_32() {
     basic.encode(&mut encoder).unwrap();
     assert_eq!(encoder.into_writer(), &exp);
 }
+
+#[test]
+fn max_size() {
+    let basic_max_size = (14/* tags */) + 10 + 10 + 2 + 3 + 5 + 5 + 4 + 8 + 4 + 8 + 1 + 4 + 8 + 10;
+    assert_eq!(proto::basic_::BasicTypes::MAX_SIZE, Some(basic_max_size));
+}
+
+#[test]
+fn unsigned_enum() {
+    assert_eq!(proto::basic_::EnumMessage::MAX_SIZE, Some(1 + 3));
+    let enum_msg = proto::basic_::EnumMessage::default();
+    let _: u16 = enum_msg.enumeration.0;
+}

@@ -1,4 +1,7 @@
 use convert_case::{Case, Casing};
+use micropb::size::{
+    sizeof_len_record, sizeof_sint32, sizeof_sint64, sizeof_varint32, sizeof_varint64,
+};
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::quote;
 use syn::{Ident, Lifetime};
@@ -107,13 +110,28 @@ impl PbInt {
     }
 }
 
+/// Ignore static and _ lifetimes
+fn filter_lifetime(lt: &Lifetime) -> Option<&Lifetime> {
+    if lt.ident == "static" || lt.ident == "_" {
+        None
+    } else {
+        Some(lt)
+    }
+}
+
 /// Find the first lifetime embedded in a type
 pub(crate) fn find_lifetime_from_type(ty: &syn::Type) -> Option<&Lifetime> {
     match ty {
         syn::Type::Array(tarr) => find_lifetime_from_type(&tarr.elem),
         syn::Type::Group(t) => find_lifetime_from_type(&t.elem),
         syn::Type::Paren(t) => find_lifetime_from_type(&t.elem),
-        syn::Type::Reference(tref) => tref.lifetime.as_ref(),
+        syn::Type::Reference(tref) => tref
+            .lifetime
+            .as_ref()
+            .and_then(filter_lifetime)
+            .or_else(|| find_lifetime_from_type(&tref.elem)),
+        syn::Type::Slice(tslice) => find_lifetime_from_type(&tslice.elem),
+        syn::Type::Tuple(tuple) => tuple.elems.iter().find_map(find_lifetime_from_type),
         syn::Type::Path(tpath) => find_lifetime_from_path(&tpath.path),
         _ => None,
     }
@@ -124,36 +142,74 @@ pub(crate) fn find_lifetime_from_path(tpath: &syn::Path) -> Option<&Lifetime> {
     if let syn::PathArguments::AngleBracketed(args) =
         &tpath.segments.last().expect("empty type path").arguments
     {
-        for arg in &args.args {
-            match arg {
-                syn::GenericArgument::Lifetime(lt) => return Some(lt),
-                syn::GenericArgument::Type(ty) => return find_lifetime_from_type(ty),
-                _ => (),
-            }
-        }
+        args.args.iter().find_map(|arg| match arg {
+            syn::GenericArgument::Lifetime(lt) => filter_lifetime(lt),
+            syn::GenericArgument::Type(ty) => find_lifetime_from_type(ty),
+            _ => None,
+        })
+    } else {
+        None
     }
-    None
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum TypeSpec {
-    Message(String),
+    Message(String, Option<syn::Lifetime>),
     Enum(String),
     Float,
     Double,
     Bool,
     Int(PbInt, IntSize),
+    // Box the syn::Type fields since they're taking up too much space
     String {
-        type_path: syn::Path,
+        type_path: Box<syn::Type>,
         max_bytes: Option<u32>,
     },
     Bytes {
-        type_path: syn::Path,
+        type_path: Box<syn::Type>,
         max_bytes: Option<u32>,
     },
 }
 
 impl TypeSpec {
+    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
+        match self {
+            TypeSpec::Message(_, lifetime) => lifetime.as_ref().and_then(filter_lifetime),
+            TypeSpec::Bytes { type_path, .. } | TypeSpec::String { type_path, .. } => {
+                find_lifetime_from_type(type_path)
+            }
+            _ => None,
+        }
+    }
+
+    fn max_size(&self) -> Option<usize> {
+        match self {
+            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),
+            TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => Some(8),
+            TypeSpec::Bool => Some(1),
+
+            // negative VARINT values will always take up 10 bytes
+            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) => Some(10),
+
+            // positive VARINT size depends on the max size of the represented int type
+            TypeSpec::Int(PbInt::Uint32, intsize) => Some(sizeof_varint32(
+                intsize.max_value().try_into().unwrap_or(u32::MAX),
+            )),
+            TypeSpec::Int(PbInt::Uint64, intsize) => Some(sizeof_varint64(intsize.max_value())),
+            TypeSpec::Int(PbInt::Sint32, intsize) => Some(sizeof_sint32(
+                intsize.min_value().try_into().unwrap_or(i32::MAX),
+            )),
+            TypeSpec::Int(PbInt::Sint64, intsize) => Some(sizeof_sint64(intsize.min_value())),
+
+            TypeSpec::Bytes { max_bytes, .. } | TypeSpec::String { max_bytes, .. } => {
+                max_bytes.map(|max| sizeof_len_record(max as usize))
+            }
+
+            // Will be handled later
+            TypeSpec::Message(..) | TypeSpec::Enum(..) => None,
+        }
+    }
+
     pub(crate) fn fixed_size(&self) -> Option<usize> {
         match self {
             TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),
@@ -174,19 +230,22 @@ impl TypeSpec {
             Type::Float => TypeSpec::Float,
             Type::Bool => TypeSpec::Bool,
             Type::String => TypeSpec::String {
-                type_path: conf.string_type_parsed()?.ok_or_else(|| {
-                    "Field is of type `string`, but string_type was not configured for it"
-                        .to_owned()
-                })?,
+                type_path: Box::new(
+                    conf.string_type_parsed(conf.max_bytes)?
+                        .ok_or_else(|| "string_type not configured for string field".to_owned())?,
+                ),
                 max_bytes: conf.max_bytes,
             },
             Type::Bytes => TypeSpec::Bytes {
-                type_path: conf.vec_type_parsed()?.ok_or_else(|| {
-                    "Field is of type `bytes`, but vec_type was not configured for it".to_owned()
-                })?,
+                type_path: Box::new(
+                    conf.bytes_type_parsed(conf.max_bytes)?
+                        .ok_or_else(|| "bytes_type not configured for bytes field".to_owned())?,
+                ),
                 max_bytes: conf.max_bytes,
             },
-            Type::Message => TypeSpec::Message(proto.type_name.clone()),
+            Type::Message => {
+                TypeSpec::Message(proto.type_name.clone(), conf.field_lifetime_parsed()?)
+            }
             Type::Enum => TypeSpec::Enum(proto.type_name.clone()),
             Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_size.unwrap_or(IntSize::S32)),
             Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_size.unwrap_or(IntSize::S64)),
@@ -212,25 +271,37 @@ impl TypeSpec {
             TypeSpec::Float => quote! {f32},
             TypeSpec::Double => quote! {f64},
             TypeSpec::Bool => quote! {bool},
-            TypeSpec::String {
-                type_path,
-                max_bytes,
-            } => {
-                let max_bytes = max_bytes.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_path #(<#max_bytes>)* }
+            TypeSpec::String { type_path, .. } => quote! { #type_path },
+            TypeSpec::Bytes { type_path, .. } => quote! { #type_path },
+
+            TypeSpec::Message(tname, lifetime) => {
+                let rust_type = gen.resolve_type_name(tname);
+                quote! { #rust_type<#lifetime> }
             }
-            TypeSpec::Bytes {
-                type_path,
-                max_bytes,
-            } => {
-                let max_bytes = max_bytes.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_path <u8 #(, #max_bytes)* > }
-            }
-            TypeSpec::Message(tname) | TypeSpec::Enum(tname) => {
+            TypeSpec::Enum(tname) => {
                 let rust_type = gen.resolve_type_name(tname);
                 quote! { #rust_type }
             }
         }
+    }
+
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        match self {
+            TypeSpec::Message(tname, _) => {
+                let rust_type = gen.resolve_type_name(tname);
+                return quote! { ::micropb::const_map!(<#rust_type as ::micropb::MessageEncode>::MAX_SIZE, |size| ::micropb::size::sizeof_len_record(size)) };
+            }
+            TypeSpec::Enum(tname) => {
+                let rust_type = gen.resolve_type_name(tname);
+                return quote! { ::core::option::Option::Some(#rust_type::_MAX_SIZE) };
+            }
+            _ => (),
+        }
+
+        self.max_size()
+            .map(Literal::usize_suffixed)
+            .map(|lit| quote! {::core::option::Option::Some(#lit)})
+            .unwrap_or(quote! {::core::option::Option::<usize>::None})
     }
 
     pub(crate) fn generate_default(
@@ -243,7 +314,7 @@ impl TypeSpec {
                 match *max_bytes {
                     Some(max_bytes) if default.len() > max_bytes as usize =>
                         return Err(format!("String field is limited to {max_bytes} bytes, but its default value is {} bytes", default.len())),
-                    _ => quote! { ::micropb::PbString::pb_from_str(#default).unwrap_or_default() }
+                    _ => quote! { ::core::convert::TryFrom::try_from(#default).unwrap_or_default() }
                 }
             }
 
@@ -253,11 +324,11 @@ impl TypeSpec {
                 match *max_bytes {
                     Some(max_bytes) if bytes.len() > max_bytes as usize =>
                         return Err(format!("Bytes field is limited to {max_bytes} bytes, but its default value is {} bytes", bytes.len())),
-                    _ => quote! { ::micropb::PbVec::pb_from_slice(#default_bytes).unwrap_or_default() }
+                    _ => quote! { ::core::convert::TryFrom::try_from(#default_bytes.as_slice()).unwrap_or_default() }
                 }
             }
 
-            TypeSpec::Message(_) => {
+            TypeSpec::Message(..) => {
                 unreachable!("message fields shouldn't have custom defaults")
             }
 
@@ -297,7 +368,7 @@ impl TypeSpec {
                 | PbInt::Sint64,
                 _,
             ) => micropb::WIRE_TYPE_VARINT,
-            TypeSpec::Message(_) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => {
+            TypeSpec::Message(..) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => {
                 micropb::WIRE_TYPE_LEN
             }
         }
@@ -305,7 +376,7 @@ impl TypeSpec {
 
     pub(crate) fn generate_implicit_presence_check(&self, val_ref: &Ident) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => quote! {},
+            TypeSpec::Message(..) => quote! {},
             TypeSpec::Enum(_) => quote! { if #val_ref.0 != 0 },
             TypeSpec::Float | TypeSpec::Double => quote! { if *#val_ref != 0.0 },
             TypeSpec::Bool => quote! { if *#val_ref },
@@ -353,7 +424,7 @@ impl TypeSpec {
         let presence_ident = Ident::new(presence, Span::call_site());
 
         match self {
-            TypeSpec::Message(_) => quote! { #mut_ref.decode_len_delimited(#decoder)?; },
+            TypeSpec::Message(..) => quote! { #mut_ref.decode_len_delimited(#decoder)?; },
             TypeSpec::Enum(_)
             | TypeSpec::Float
             | TypeSpec::Double
@@ -390,7 +461,7 @@ impl TypeSpec {
 
     pub(crate) fn generate_sizeof(&self, _gen: &Generator, val_ref: &Ident) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => {
+            TypeSpec::Message(..) => {
                 quote! { ::micropb::size::sizeof_len_record(#val_ref.compute_size()) }
             }
             TypeSpec::Enum(_) => quote! { ::micropb::size::sizeof_int32(#val_ref.0 as _) },
@@ -412,7 +483,7 @@ impl TypeSpec {
         val_ref: &Ident,
     ) -> TokenStream {
         match self {
-            TypeSpec::Message(_) => quote! { #val_ref.encode_len_delimited(#encoder) },
+            TypeSpec::Message(..) => quote! { #val_ref.encode_len_delimited(#encoder) },
             TypeSpec::Enum(_) => quote! { #encoder.encode_int32(#val_ref.0 as _) },
             TypeSpec::Float => quote! { #encoder.encode_float(* #val_ref) },
             TypeSpec::Double => quote! { #encoder.encode_double(* #val_ref) },
@@ -441,6 +512,7 @@ mod tests {
         assert!(find_lifetime_from_type(&ty).is_none());
         let ty: syn::Type = syn::parse_str("Vec<u8>").unwrap();
         assert!(find_lifetime_from_type(&ty).is_none());
+
         let ty: syn::Type = syn::parse_str("std::Vec<'a>").unwrap();
         assert!(find_lifetime_from_type(&ty).is_some());
         let ty: syn::Type = syn::parse_str("&'a [u8]").unwrap();
@@ -451,6 +523,144 @@ mod tests {
         assert!(find_lifetime_from_type(&ty).is_some());
         let ty: syn::Type = syn::parse_str("std::Option<std::Vec<'a>>").unwrap();
         assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("([&'a u8])").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("(u32, u8, &'a bool)").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+
+        let ty: syn::Type = syn::parse_str("std::Vec<'static>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("&'static [u8]").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("[&'static u8; 10]").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("([&'static u8; 10])").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("std::Option<std::Vec<'static>>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("([&'static u8])").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+        let ty: syn::Type = syn::parse_str("(u32, u8, &'static bool)").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_none());
+
+        let ty: syn::Type = syn::parse_str("&'static std::Option<std::Vec<'a>>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type =
+            syn::parse_str("&'static std::Option<std::Vec<'static, Ref<'a>>>").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("&'static [&'a u8]").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+        let ty: syn::Type = syn::parse_str("(&'static u32, &'a u64)").unwrap();
+        assert!(find_lifetime_from_type(&ty).is_some());
+    }
+
+    #[test]
+    fn max_size() {
+        assert_eq!(TypeSpec::Float.max_size(), Some(4));
+        assert_eq!(TypeSpec::Double.max_size(), Some(8));
+        assert_eq!(TypeSpec::Bool.max_size(), Some(1));
+        assert_eq!(
+            TypeSpec::Int(PbInt::Int32, IntSize::S8).max_size(),
+            Some(10)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Int64, IntSize::S8).max_size(),
+            Some(10)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Fixed32, IntSize::S8).max_size(),
+            Some(4)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Fixed64, IntSize::S8).max_size(),
+            Some(8)
+        );
+
+        // uint types
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint32, IntSize::S8).max_size(),
+            Some(2)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint32, IntSize::S32).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint32, IntSize::S64).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint64, IntSize::S16).max_size(),
+            Some(3)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint64, IntSize::S32).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Uint64, IntSize::S64).max_size(),
+            Some(10)
+        );
+
+        // sint types
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint32, IntSize::S16).max_size(),
+            Some(3)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint32, IntSize::S32).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint32, IntSize::S64).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint64, IntSize::S16).max_size(),
+            Some(3)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint64, IntSize::S32).max_size(),
+            Some(5)
+        );
+        assert_eq!(
+            TypeSpec::Int(PbInt::Sint64, IntSize::S64).max_size(),
+            Some(10)
+        );
+
+        assert_eq!(
+            TypeSpec::String {
+                type_path: syn::parse_str("test").unwrap(),
+                max_bytes: Some(12)
+            }
+            .max_size(),
+            Some(13)
+        );
+        assert_eq!(
+            TypeSpec::String {
+                type_path: syn::parse_str("test").unwrap(),
+                max_bytes: None
+            }
+            .max_size(),
+            None
+        );
+
+        assert_eq!(
+            TypeSpec::Bytes {
+                type_path: syn::parse_str("test").unwrap(),
+                max_bytes: Some(12)
+            }
+            .max_size(),
+            Some(13)
+        );
+        assert_eq!(
+            TypeSpec::Bytes {
+                type_path: syn::parse_str("test").unwrap(),
+                max_bytes: None
+            }
+            .max_size(),
+            None
+        );
     }
 
     fn field_proto(typ: Type, type_name: &str) -> FieldDescriptorProto {
@@ -466,8 +676,8 @@ mod tests {
     fn from_proto() {
         let mut config = Box::new(
             Config::new()
-                .string_type("string::String")
-                .vec_type("vec::Vec")
+                .string_type("string::String<$N>")
+                .bytes_type("vec::Vec<u8, $N>")
                 .max_bytes(10),
         );
 
@@ -490,26 +700,28 @@ mod tests {
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::String, ""), &type_conf).unwrap(),
             TypeSpec::String {
-                type_path: syn::parse_str("string::String").unwrap(),
+                type_path: syn::parse_str("string::String<10>").unwrap(),
                 max_bytes: Some(10)
             }
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf).unwrap(),
             TypeSpec::Bytes {
-                type_path: syn::parse_str("vec::Vec").unwrap(),
+                type_path: syn::parse_str("vec::Vec<u8, 10>").unwrap(),
                 max_bytes: Some(10)
             }
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Message, ".msg.Message"), &type_conf).unwrap(),
-            TypeSpec::Message(".msg.Message".to_owned())
+            TypeSpec::Message(".msg.Message".to_owned(), None)
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Enum, ".Enum"), &type_conf).unwrap(),
             TypeSpec::Enum(".Enum".to_owned())
         );
 
+        config.string_type = Some("string::String".to_owned());
+        config.bytes_type = Some("Bytes".to_owned());
         config.max_bytes = None;
         let type_conf = CurrentConfig {
             node: None,
@@ -525,7 +737,7 @@ mod tests {
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Bytes, ""), &type_conf).unwrap(),
             TypeSpec::Bytes {
-                type_path: syn::parse_str("vec::Vec").unwrap(),
+                type_path: syn::parse_str("Bytes").unwrap(),
                 max_bytes: None
             }
         );
@@ -616,7 +828,7 @@ mod tests {
             .generate_default("abc\n\tddd", &gen)
             .unwrap()
             .to_string(),
-            quote! { ::micropb::PbString::pb_from_str("abc\n\tddd").unwrap_or_default() }
+            quote! { ::core::convert::TryFrom::try_from("abc\n\tddd").unwrap_or_default() }
                 .to_string()
         );
         assert_eq!(
@@ -627,7 +839,7 @@ mod tests {
             .generate_default("abc\\n\\t\\a\\xA0ddd", &gen)
             .unwrap()
             .to_string(),
-            quote! { ::micropb::PbVec::pb_from_slice(b"abc\n\t\x07\xA0ddd").unwrap_or_default() }
+            quote! { ::core::convert::TryFrom::try_from(b"abc\n\t\x07\xA0ddd".as_slice()).unwrap_or_default() }
                 .to_string()
         );
     }

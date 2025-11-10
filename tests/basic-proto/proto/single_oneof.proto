@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+message SingleOneof {
+    message InnerMsg {
+        optional sint32 val = 1;
+        optional sint32 val2 = 2;
+    }
+    enum InnerEnum {
+        INNER_ENUM_VAL = 0;
+    }
+
+    oneof inner {
+        InnerMsg inner_msg = 3;
+        InnerEnum inner_enum = 4 [default = INNER_ENUM_VAL];
+        bool scalar = 5;
+    }
+}

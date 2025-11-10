@@ -333,3 +333,14 @@ fn encode_map() {
         ]
     );
 }
+
+#[test]
+fn max_size() {
+    assert_eq!(proto::Data::MAX_SIZE, None);
+    assert_eq!(proto::List::MAX_SIZE, None);
+    assert_eq!(proto::NumList::MAX_SIZE, None);
+    assert_eq!(proto::StrList::MAX_SIZE, None);
+    assert_eq!(proto::FixedList::MAX_SIZE, None);
+    assert_eq!(proto::EnumList::MAX_SIZE, None);
+    assert_eq!(proto::Map::MAX_SIZE, None);
+}

@@ -1,4 +1,4 @@
-use proc_macro2::{Literal, Span, TokenStream};
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{Ident, Lifetime};
 
@@ -26,7 +26,7 @@ pub(crate) enum FieldType {
     Map {
         key: TypeSpec,
         val: TypeSpec,
-        type_path: syn::Path,
+        type_path: syn::Type,
         max_len: Option<u32>,
     },
     // Implicit presence
@@ -36,7 +36,7 @@ pub(crate) enum FieldType {
     Repeated {
         typ: TypeSpec,
         packed: bool,
-        type_path: syn::Path,
+        type_path: syn::Type,
         max_len: Option<u32>,
     },
     Custom(CustomField),
@@ -54,7 +54,9 @@ pub(crate) struct Field<'a> {
     pub(crate) san_rust_name: Ident,
     pub(crate) default: Option<&'a str>,
     pub(crate) boxed: bool,
+    pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
+    no_accessors: bool,
 }
 
 impl<'a> Field<'a> {
@@ -69,6 +71,18 @@ impl<'a> Field<'a> {
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match &self.ftype {
             FieldType::Custom(CustomField::Type(ty)) => find_lifetime_from_type(ty),
+            FieldType::Single(tspec) | FieldType::Optional(tspec, _) => tspec.find_lifetime(),
+            FieldType::Repeated { typ, type_path, .. } => {
+                find_lifetime_from_type(type_path).or_else(|| typ.find_lifetime())
+            }
+            FieldType::Map {
+                key,
+                val,
+                type_path,
+                ..
+            } => find_lifetime_from_type(type_path)
+                .or_else(|| key.find_lifetime())
+                .or_else(|| val.find_lifetime()),
             _ => None,
         }
     }
@@ -76,7 +90,7 @@ impl<'a> Field<'a> {
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
         field_conf: &CurrentConfig,
-        syntax: Syntax,
+        gen: &Generator,
         map_msg: Option<&DescriptorProto>,
     ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
@@ -98,31 +112,42 @@ impl<'a> Field<'a> {
             (None, Some(map_msg), _) => {
                 let key = TypeSpec::from_proto(&map_msg.field[0], &field_conf.next_conf("key"))?;
                 let val = TypeSpec::from_proto(&map_msg.field[1], &field_conf.next_conf("value"))?;
-                let type_path = field_conf.config.map_type_parsed()?.ok_or_else(|| {
-                    "Field is of type `map`, but map_type was not configured for it".to_owned()
-                })?;
+                let max_len = field_conf.config.max_len;
+                let type_path = field_conf
+                    .config
+                    .map_type_parsed(
+                        key.generate_rust_type(gen),
+                        val.generate_rust_type(gen),
+                        max_len,
+                    )?
+                    .ok_or_else(|| "map_type not configured for map field".to_owned())?;
                 FieldType::Map {
                     key,
                     val,
                     type_path,
-                    max_len: field_conf.config.max_len,
+                    max_len,
                 }
             }
 
-            (None, None, Label::Repeated) => FieldType::Repeated {
-                typ: TypeSpec::from_proto(proto, &field_conf.next_conf("elem"))?,
-                type_path: field_conf.config.vec_type_parsed()?.ok_or_else(|| {
-                    "Field is repeated, but vec_type was not configured for it".to_owned()
-                })?,
-                max_len: field_conf.config.max_len,
-                packed: proto
-                    .options()
-                    .and_then(|opt| opt.packed().copied())
-                    .unwrap_or(false),
-            },
+            (None, None, Label::Repeated) => {
+                let typ = TypeSpec::from_proto(proto, &field_conf.next_conf("elem"))?;
+                let max_len = field_conf.config.max_len;
+                FieldType::Repeated {
+                    type_path: field_conf
+                        .config
+                        .vec_type_parsed(typ.generate_rust_type(gen), max_len)?
+                        .ok_or_else(|| "vec_type not configured for repeated field".to_owned())?,
+                    typ,
+                    max_len,
+                    packed: proto
+                        .options()
+                        .and_then(|opt| opt.packed().copied())
+                        .unwrap_or(false),
+                }
+            }
 
             (None, None, Label::Required | Label::Optional)
-                if syntax == Syntax::Proto2
+                if gen.syntax == Syntax::Proto2
                     || proto.proto3_optional
                     || proto.r#type == Type::Message =>
             {
@@ -136,7 +161,9 @@ impl<'a> Field<'a> {
 
             (None, None, _) => FieldType::Single(TypeSpec::from_proto(proto, field_conf)?),
         };
+        let encoded_max_size = field_conf.config.encoded_max_size;
         let attrs = field_conf.config.field_attr_parsed()?;
+        let no_accessors = field_conf.config.no_accessors.unwrap_or(false);
 
         Ok(Some(Field {
             num,
@@ -145,38 +172,18 @@ impl<'a> Field<'a> {
             rust_name,
             san_rust_name,
             default: proto.default_value().map(String::as_str),
+            encoded_max_size,
             boxed,
             attrs,
+            no_accessors,
         }))
     }
 
     pub(crate) fn generate_rust_type(&self, gen: &Generator) -> TokenStream {
         let typ = match &self.ftype {
-            FieldType::Map {
-                key,
-                val,
-                type_path: type_name,
-                max_len,
-                ..
-            } => {
-                let k = key.generate_rust_type(gen);
-                let v = val.generate_rust_type(gen);
-                let max_len = max_len.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_name <#k, #v #(, #max_len)* > }
-            }
-
+            FieldType::Map { type_path, .. } => quote! { #type_path },
             FieldType::Single(t) | FieldType::Optional(t, _) => t.generate_rust_type(gen),
-
-            FieldType::Repeated {
-                typ,
-                type_path,
-                max_len,
-                ..
-            } => {
-                let t = typ.generate_rust_type(gen);
-                let max_len = max_len.map(Literal::u32_unsuffixed).into_iter();
-                quote! { #type_path <#t #(, #max_len)* > }
-            }
+            FieldType::Repeated { type_path, .. } => quote! { #type_path },
 
             FieldType::Custom(CustomField::Type(t)) => return quote! {#t},
             FieldType::Custom(CustomField::Delegate(_)) => {
@@ -198,7 +205,8 @@ impl<'a> Field<'a> {
 
     pub(crate) fn generate_default(&self, gen: &Generator) -> Result<TokenStream, String> {
         match self.ftype {
-            FieldType::Single(ref t) | FieldType::Optional(ref t, OptionalRepr::Hazzer) => {
+            FieldType::Single(ref t)
+            | FieldType::Optional(ref t, OptionalRepr::Hazzer | OptionalRepr::None) => {
                 if let Some(default) = self.default {
                     let value = t.generate_default(default, gen)?;
                     return Ok(gen.wrapped_value(value, self.boxed, false));
@@ -219,125 +227,179 @@ impl<'a> Field<'a> {
     pub(crate) fn generate_accessors(&self, gen: &Generator) -> TokenStream {
         match &self.ftype {
             FieldType::Optional(type_spec, opt) => {
-                let type_name = type_spec.generate_rust_type(gen);
-                let wrapped_type = gen.wrapped_type(type_name.clone(), self.boxed, true);
-                let setter_name = format_ident!("set_{}", self.rust_name);
-                let muter_name = format_ident!("mut_{}", self.rust_name);
-                let clearer_name = format_ident!("clear_{}", self.rust_name);
-                let taker_name = format_ident!("take_{}", self.rust_name);
-                let init_name = format_ident!("init_{}", self.rust_name);
-                let fname = &self.san_rust_name;
+                let (deref, deref_mut) = if self.boxed {
+                    (format_ident!("as_deref"), format_ident!("as_deref_mut"))
+                } else {
+                    (format_ident!("as_ref"), format_ident!("as_mut"))
+                };
 
+                let fname = &self.san_rust_name;
                 let getter_doc =
                     format!("Return a reference to `{}` as an `Option`", self.rust_name);
-                let muter_doc = format!(
-                    "Return a mutable reference to `{}` as an `Option`",
-                    self.rust_name
-                );
-                let setter_doc = format!("Set the value and presence of `{}`", self.rust_name);
-                let clearer_doc = format!("Clear the presence of `{}`", self.rust_name);
-                let taker_doc = format!(
-                    "Take the value of `{}` and clear its presence",
-                    self.rust_name
-                );
-                let init_doc = format!(
-                    "Builder method that sets the value of `{}`. Useful for initializing the message.",
-                    self.rust_name
-                );
+                let type_name = type_spec.generate_rust_type(gen);
 
-                if let OptionalRepr::Hazzer = opt {
-                    quote! {
-                        #[doc = #getter_doc]
-                        #[inline]
-                        pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
-                            self._has.#fname().then_some(&self.#fname)
-                        }
-
-                        #[doc = #muter_doc]
-                        #[inline]
-                        pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
-                            self._has.#fname().then_some(&mut self.#fname)
-                        }
-
-                        #[doc = #setter_doc]
-                        #[inline]
-                        pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
-                            self._has.#setter_name();
-                            self.#fname = value.into();
-                            self
-                        }
-
-                        #[doc = #clearer_doc]
-                        #[inline]
-                        pub fn #clearer_name(&mut self) -> &mut Self {
-                            self._has.#clearer_name();
-                            self
-                        }
-
-                        #[doc = #taker_doc]
-                        #[inline]
-                        pub fn #taker_name(&mut self) -> #wrapped_type {
-                            let val = self._has.#fname().then(|| ::core::mem::take(&mut self.#fname));
-                            self._has.#clearer_name();
-                            val
-                        }
-
-                        #[doc = #init_doc]
-                        #[inline]
-                        pub fn #init_name(mut self, value: #type_name) -> Self {
-                            self.#setter_name(value);
-                            self
+                // Getter is needed for encoding, so we have to generate it
+                let mut accessors = match opt {
+                    OptionalRepr::Hazzer => {
+                        quote! {
+                            #[doc = #getter_doc]
+                            #[inline]
+                            pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                                self._has.#fname().then_some(&self.#fname)
+                            }
                         }
                     }
-                } else {
-                    let (deref, deref_mut) = if self.boxed {
-                        (format_ident!("as_deref"), format_ident!("as_deref_mut"))
-                    } else {
-                        (format_ident!("as_ref"), format_ident!("as_mut"))
-                    };
-                    quote! {
-                        #[doc = #getter_doc]
-                        #[inline]
-                        pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
-                            self.#fname.#deref()
-                        }
-
-                        #[doc = #muter_doc]
-                        #[inline]
-                        pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
-                            self.#fname.#deref_mut()
-                        }
-
-                        #[doc = #setter_doc]
-                        #[inline]
-                        pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
-                            self.#fname = ::core::option::Option::Some(value.into());
-                            self
-                        }
-
-                        #[doc = #clearer_doc]
-                        #[inline]
-                        pub fn #clearer_name(&mut self) -> &mut Self {
-                            self.#fname = ::core::option::Option::None;
-                            self
-                        }
-
-                        #[doc = #taker_doc]
-                        #[inline]
-                        pub fn #taker_name(&mut self) -> #wrapped_type {
-                            self.#fname.take()
-                        }
-
-                        #[doc = #init_doc]
-                        #[inline]
-                        pub fn #init_name(mut self, value: #type_name) -> Self {
-                            self.#setter_name(value);
-                            self
+                    OptionalRepr::Option => {
+                        quote! {
+                            #[doc = #getter_doc]
+                            #[inline]
+                            pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                                self.#fname.#deref()
+                            }
                         }
                     }
+                    OptionalRepr::None => {
+                        quote! {
+                            #[doc = #getter_doc]
+                            #[inline]
+                            pub fn #fname(&self) -> ::core::option::Option<&#type_name> {
+                                ::core::option::Option::Some(&self.#fname)
+                            }
+                        }
+                    }
+                };
+
+                if !self.no_accessors {
+                    let wrapped_type = gen.wrapped_type(type_name.clone(), self.boxed, true);
+                    let setter_name = format_ident!("set_{}", self.rust_name);
+                    let muter_name = format_ident!("mut_{}", self.rust_name);
+                    let clearer_name = format_ident!("clear_{}", self.rust_name);
+                    let taker_name = format_ident!("take_{}", self.rust_name);
+                    let init_name = format_ident!("init_{}", self.rust_name);
+
+                    let setter_doc = format!("Set the value and presence of `{}`", self.rust_name);
+                    let muter_doc = format!(
+                        "Return a mutable reference to `{}` as an `Option`",
+                        self.rust_name
+                    );
+                    let clearer_doc = format!("Clear the presence of `{}`", self.rust_name);
+                    let taker_doc = format!(
+                        "Take the value of `{}` and clear its presence",
+                        self.rust_name
+                    );
+                    let init_doc = format!(
+                        "Builder method that sets the value of `{}`. Useful for initializing the message.",
+                        self.rust_name
+                    );
+
+                    // Add rest of accessors
+                    accessors.extend(match opt {
+                        OptionalRepr::Hazzer => {
+                            quote! {
+                                #[doc = #setter_doc]
+                                #[inline]
+                                pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                                    self._has.#setter_name();
+                                    self.#fname = value.into();
+                                    self
+                                }
+
+                                #[doc = #muter_doc]
+                                #[inline]
+                                pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                                    self._has.#fname().then_some(&mut self.#fname)
+                                }
+
+                                #[doc = #clearer_doc]
+                                #[inline]
+                                pub fn #clearer_name(&mut self) -> &mut Self {
+                                    self._has.#clearer_name();
+                                    self
+                                }
+
+                                #[doc = #taker_doc]
+                                #[inline]
+                                pub fn #taker_name(&mut self) -> #wrapped_type {
+                                    let val = self._has.#fname().then(|| ::core::mem::take(&mut self.#fname));
+                                    self._has.#clearer_name();
+                                    val
+                                }
+
+                                #[doc = #init_doc]
+                                #[inline]
+                                pub fn #init_name(mut self, value: #type_name) -> Self {
+                                    self.#setter_name(value);
+                                    self
+                                }
+                            }
+                        }
+
+                        OptionalRepr::None => {
+                            quote! {
+                                #[doc = #setter_doc]
+                                #[inline]
+                                pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                                    self.#fname = value.into();
+                                    self
+                                }
+
+                                #[doc = #muter_doc]
+                                #[inline]
+                                pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                                    ::core::option::Option::Some(&mut self.#fname)
+                                }
+
+                                #[doc = #init_doc]
+                                #[inline]
+                                pub fn #init_name(mut self, value: #type_name) -> Self {
+                                    self.#setter_name(value);
+                                    self
+                                }
+                            }
+                        }
+
+                        OptionalRepr::Option => {
+                            quote! {
+                                #[doc = #setter_doc]
+                                #[inline]
+                                pub fn #setter_name(&mut self, value: #type_name) -> &mut Self {
+                                    self.#fname = ::core::option::Option::Some(value.into());
+                                    self
+                                }
+
+                                #[doc = #muter_doc]
+                                #[inline]
+                                pub fn #muter_name(&mut self) -> ::core::option::Option<&mut #type_name> {
+                                    self.#fname.#deref_mut()
+                                }
+
+                                #[doc = #clearer_doc]
+                                #[inline]
+                                pub fn #clearer_name(&mut self) -> &mut Self {
+                                    self.#fname = ::core::option::Option::None;
+                                    self
+                                }
+
+                                #[doc = #taker_doc]
+                                #[inline]
+                                pub fn #taker_name(&mut self) -> #wrapped_type {
+                                    self.#fname.take()
+                                }
+
+                                #[doc = #init_doc]
+                                #[inline]
+                                pub fn #init_name(mut self, value: #type_name) -> Self {
+                                    self.#setter_name(value);
+                                    self
+                                }
+                            }
+                        }
+                    })
                 }
+                accessors
             }
-            FieldType::Single(type_spec) => {
+
+            FieldType::Single(type_spec) if !self.no_accessors => {
                 let type_name = type_spec.generate_rust_type(gen);
                 let setter_name = format_ident!("set_{}", self.rust_name);
                 let muter_name = format_ident!("mut_{}", self.rust_name);
@@ -422,6 +484,14 @@ impl<'a> Field<'a> {
                 }
             }
 
+            FieldType::Optional(tspec, OptionalRepr::None) => {
+                let decode_stmts = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
+                quote! {
+                    let #mut_ref = &mut #extra_deref self.#fname;
+                    { #decode_stmts };
+                }
+            }
+
             FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
                 let decode_expr = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
                 let setter = format_ident!("set_{}", self.rust_name);
@@ -498,6 +568,61 @@ impl<'a> Field<'a> {
         }
     }
 
+    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+        if let Some(max_size) = self.encoded_max_size {
+            return quote! { ::core::option::Option::Some(#max_size) };
+        }
+
+        let wire_type = self.wire_type();
+        let tag = micropb::Tag::from_parts(self.num, wire_type);
+        let tag_len = ::micropb::size::sizeof_tag(tag);
+
+        match &self.ftype {
+            FieldType::Map {
+                key, val, max_len, ..
+            } => max_len
+                .map(|len| {
+                    let len = len as usize;
+                    let key_size = key.generate_max_size(gen);
+                    let val_size = val.generate_max_size(gen);
+                    quote! {
+                        match (#key_size, #val_size) {
+                            (_, ::core::option::Option::None) => ::core::option::Option::<usize>::None,
+                            (::core::option::Option::None, _) => ::core::option::Option::<usize>::None,
+                            (::core::option::Option::Some(key_size), ::core::option::Option::Some(val_size)) => {
+                                let max_size = ::micropb::size::sizeof_len_record(key_size + val_size + 2) + #tag_len;
+                                ::core::option::Option::Some(max_size * #len)
+                            }
+                        }
+                    }
+                })
+                .unwrap_or(quote! {::core::option::Option::<usize>::None}),
+
+            FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
+                let size = type_spec.generate_max_size(gen);
+                quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
+            }
+
+            FieldType::Repeated {
+                typ,
+                packed,
+                max_len,
+                ..
+            } => max_len.map(|len| {
+                let len = len as usize;
+                let size = typ.generate_max_size(gen);
+                if *packed {
+                    quote! { ::micropb::const_map!(#size, |size| ::micropb::size::sizeof_len_record(#len * size) + #tag_len) }
+                } else {
+                    quote! { ::micropb::const_map!(#size, |size| (size + #tag_len) * #len) }
+                }
+            }).unwrap_or(quote! { ::core::option::Option::<usize>::None }),
+
+            FieldType::Custom(CustomField::Type(custom)) => quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE },
+            FieldType::Custom(CustomField::Delegate(_)) => quote! { ::core::option::Option::Some(0) },
+        }
+    }
+
     pub(crate) fn generate_encode(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
         let fname = &self.san_rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
@@ -532,7 +657,7 @@ impl<'a> Field<'a> {
                     }
                 };
                 quote! {
-                    for (k, v) in self.#fname.pb_iter() {
+                    for (k, v) in (&#extra_deref self.#fname).into_iter() {
                         let len = ::micropb::size::sizeof_map_elem(k, v, |#val_ref| { #key_sizeof }, |#val_ref| { #val_sizeof });
                         #stmts
                     }
@@ -541,7 +666,7 @@ impl<'a> Field<'a> {
 
             FieldType::Single(tspec) | FieldType::Optional(tspec, _) => {
                 let check = if let FieldType::Optional(..) = self.ftype {
-                    quote! { if let Some(#val_ref) = self.#fname() }
+                    quote! { if let ::core::option::Option::Some(#val_ref) = self.#fname() }
                 } else {
                     let implicit_presence_check = tspec.generate_implicit_presence_check(&val_ref);
                     quote! {
@@ -639,7 +764,7 @@ impl<'a> Field<'a> {
 }
 
 #[cfg(test)]
-pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldType) -> Field {
+pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldType) -> Field<'_> {
     Field {
         num,
         ftype,
@@ -648,7 +773,9 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         san_rust_name: Ident::new_raw(name, proc_macro2::Span::call_site()),
         default: None,
         boxed,
+        encoded_max_size: None,
         attrs: vec![],
+        no_accessors: false,
     }
 }
 
@@ -691,7 +818,10 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(2, "field", None, false);
-        assert!(Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+
+        let mut gen = Generator::new();
+        gen.syntax = Syntax::Proto2;
+        assert!(Field::from_proto(&field, &field_conf, &gen, None)
             .unwrap()
             .is_none());
     }
@@ -704,8 +834,11 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(2, "field", None, false);
+
+        let mut gen = Generator::new();
+        gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -716,7 +849,9 @@ mod tests {
                 san_rust_name: Ident::new_raw("field", Span::call_site()),
                 default: None,
                 boxed: false,
+                encoded_max_size: None,
                 attrs: vec![],
+                no_accessors: false,
             }
         );
 
@@ -733,8 +868,9 @@ mod tests {
         };
         let mut field = field_proto(2, "field", None, false);
         field.set_default_value("true".to_owned());
+
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -745,7 +881,9 @@ mod tests {
                 san_rust_name: Ident::new("renamed", Span::call_site()),
                 default: Some("true"),
                 boxed: true,
+                encoded_max_size: None,
                 attrs: parse_attributes("#[attr]").unwrap(),
+                no_accessors: false,
             }
         );
     }
@@ -758,15 +896,19 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(0, "field", None, false);
+
+        let mut gen = Generator::new();
+        gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
             FieldType::Single(TypeSpec::Bool)
         );
+        gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -776,7 +918,7 @@ mod tests {
         // Required fields are treated like optionals
         let field = field_proto(0, "field", Some(Label::Required), false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -784,9 +926,10 @@ mod tests {
         );
 
         // In proto3, if proto3_optional is set then field is optional
+        gen.syntax = Syntax::Proto3;
         let field = field_proto(0, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -799,8 +942,9 @@ mod tests {
             node: None,
             config: Cow::Borrowed(&config),
         };
+        gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -814,7 +958,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -836,8 +980,11 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
+
+        let mut gen = Generator::new();
+        gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -855,7 +1002,7 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -877,8 +1024,11 @@ mod tests {
 
         let mut field = field_proto(0, "field", Some(Label::Repeated), false);
         field.set_type(Type::Int32);
+
+        let mut gen = Generator::new();
+        gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -892,7 +1042,7 @@ mod tests {
         field.set_options(Default::default());
         field.options.set_packed(true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto3, None)
+            Field::from_proto(&field, &field_conf, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -943,8 +1093,10 @@ mod tests {
         field.set_type(Type::Message);
         field.set_type_name("MapElem".to_owned());
 
+        let mut gen = Generator::new();
+        gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, Syntax::Proto2, Some(&map_elem))
+            Field::from_proto(&field, &field_conf, &gen, Some(&map_elem))
                 .unwrap()
                 .unwrap()
                 .ftype,

@@ -24,3 +24,11 @@ message BasicTypes {
     optional double dbl = 13;
     required Enum enumeration = 14 [default = ENUM_ONE];
 }
+
+enum Enum2 {
+    ENUM2_UNKNOWN = 0;
+}
+
+message EnumMessage {
+    optional Enum2 enumeration = 1;
+}

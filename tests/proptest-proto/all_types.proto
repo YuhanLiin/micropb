@@ -26,6 +26,7 @@ message TestTypesSingular1 {
     uint64 uint64_field = 6;
     sint32 sint32_field = 7;
     sint64 sint64_field = 8;
+    SubM message_field = 17;
 }
 
 message TestTypesSingular2 {
@@ -37,7 +38,6 @@ message TestTypesSingular2 {
     string string_field = 14;
     bytes bytes_field = 15;
     TestEnum enum_field = 16;
-    SubM message_field = 17;
 }
 
 message TestTypesOptional1 {
@@ -49,6 +49,7 @@ message TestTypesOptional1 {
     optional uint64 uint64_field = 6;
     optional sint32 sint32_field = 7;
     optional sint64 sint64_field = 8;
+    optional SubM message_field = 17;
 }
 
 message TestTypesOptional2 {
@@ -60,7 +61,6 @@ message TestTypesOptional2 {
     optional string string_field = 14;
     optional bytes bytes_field = 15;
     optional TestEnum enum_field = 16;
-    optional SubM message_field = 17;
 }
 
 message TestTypesRepeated1 {

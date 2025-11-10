@@ -6,7 +6,23 @@ fn main() {
         .encode_decode(EncodeDecode::DecodeOnly)
         .configure(
             ".",
-            Config::new().no_clone_impl(true).no_partial_eq_impl(true),
+            Config::new()
+                .no_clone_impl(true)
+                .no_partial_eq_impl(true)
+                .no_accessors(true),
+        )
+        // Override minimal accessors setting for specific paths, since the generator calls `set_`
+        // APIs on specific messages
+        .configure_many(
+            &[
+                ".google.protobuf.DescriptorProto",
+                ".google.protobuf.FieldDescriptorProto",
+                ".google.protobuf.FieldOptions",
+                ".google.protobuf.OneofDescriptorProto",
+                ".google.protobuf.MessageOptions",
+                ".google.protobuf.EnumValueDescriptorProto",
+            ],
+            Config::new().no_accessors(false),
         )
         .compile_protos(&["google/protobuf/descriptor.proto"], "descriptor.rs")
         .unwrap();
