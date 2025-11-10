@@ -36,7 +36,6 @@ mod tests {
         assert_eq!(msg, output);
     }
 
-<<<<<<< HEAD
     fn test_proto_roundtrip(msg: micropb_types::TestOneOf) {
         use protobuf::Message;
 
