@@ -7,11 +7,11 @@ edition = "2021"
 
 [dependencies]
 micropb = { path = "../../micropb/", features = ["alloc"]}
-protobuf = "3.7.2"
+prost = "0.14"
 
 [build-dependencies]
 micropb-gen = { path = "../../micropb-gen/" }
-protobuf-codegen = "3.7.2"
+prost-build = "0.14"
 
 [dev-dependencies]
 proptest = "1.6.0"
