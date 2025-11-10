@@ -11,6 +11,10 @@ enum TestEnum {
     GREEN = 3;
 }
 
+message Test {
+    repeated TestEnum enum_field = 16;
+}
+
 // Message structs need to have under 10 fields in order to derive Arbitrary
 
 message TestTypesSingular1 {
@@ -112,8 +116,9 @@ message TestOneOf {
     TestTypesSingular2 singular2 = 2;
     TestTypesRepeated1 repeat1 = 3;
     TestTypesRepeated2 repeat2 = 4;
-    TestTypesMap1 map1 = 5;
-    TestTypesMap2 map2 = 6;
+    // Can't test with maps due to: https://github.com/tokio-rs/prost/issues/698 (not my fault)
+    //TestTypesMap1 map1 = 5;
+    //TestTypesMap2 map2 = 6;
     TestTypesOptional1 optional1 = 7;
     TestTypesOptional2 optional2 = 8;
   }

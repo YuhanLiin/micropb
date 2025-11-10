@@ -15,7 +15,9 @@ fn main() {
     generator
         .compile_protos(
             &["all_types.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/all_types.rs",
+            std::env::var("OUT_DIR").unwrap() + "/micropb_all_types.rs",
         )
         .unwrap();
+
+    prost_build::compile_protos(&["all_types.proto"], &["."]).unwrap();
 }
