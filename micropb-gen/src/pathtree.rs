@@ -7,10 +7,7 @@ pub struct Node<T, S: ?Sized + ToOwned = str> {
     accessed: Cell<bool>,
 }
 
-impl<T, S: ?Sized + ToOwned> Default for Node<T, S>
-where
-    S::Owned: Default,
-{
+impl<T, S: ?Sized + ToOwned> Default for Node<T, S> {
     fn default() -> Self {
         Self {
             value: Default::default(),

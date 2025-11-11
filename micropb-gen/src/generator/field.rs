@@ -8,6 +8,7 @@ use crate::descriptor::{
     FieldDescriptorProto_::{Label, Type},
 };
 
+use super::location::{self, CommentNode, Comments};
 use super::Syntax;
 use super::{
     type_spec::{find_lifetime_from_type, TypeSpec},
@@ -57,6 +58,7 @@ pub(crate) struct Field<'a> {
     pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
     no_accessors: bool,
+    comments: Option<&'a Comments>,
 }
 
 impl<'a> Field<'a> {
@@ -90,6 +92,7 @@ impl<'a> Field<'a> {
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
         field_conf: &CurrentConfig,
+        comment_node: Option<&'a CommentNode>,
         gen: &Generator,
         map_msg: Option<&DescriptorProto>,
     ) -> Result<Option<Self>, String> {
@@ -176,6 +179,7 @@ impl<'a> Field<'a> {
             boxed,
             attrs,
             no_accessors,
+            comments: location::get_comments(comment_node),
         }))
     }
 

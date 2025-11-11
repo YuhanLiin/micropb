@@ -8,6 +8,7 @@ use crate::{
     descriptor::DescriptorProto,
     generator::{
         field::{CustomField, FieldType},
+        location::{self, next_comment_node},
         resolve_path_elem, EncodeFunc,
     },
 };
@@ -15,7 +16,9 @@ use crate::{
 use super::{
     derive_msg_attr,
     field::Field,
-    field_error, msg_error,
+    field_error,
+    location::{CommentNode, Comments},
+    msg_error,
     oneof::{Oneof, OneofField, OneofType},
     sanitized_ident,
     type_spec::find_lifetime_from_type,
@@ -38,6 +41,7 @@ pub(crate) struct Message<'a> {
     pub(crate) unknown_handler: Option<syn::Type>,
     pub(crate) lifetime: Option<syn::Lifetime>,
     pub(crate) as_oneof_enum: bool,
+    comments: Option<&'a Comments>,
 }
 
 impl<'a> Message<'a> {
@@ -45,6 +49,7 @@ impl<'a> Message<'a> {
         proto: &'a DescriptorProto,
         gen: &Generator,
         msg_conf: &CurrentConfig,
+        comment_node: Option<&'a CommentNode>,
     ) -> io::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -53,8 +58,13 @@ impl<'a> Message<'a> {
         let msg_name = &proto.name;
         let mut oneofs = vec![];
         for (idx, oneof) in proto.oneof_decl.iter().enumerate() {
-            let oneof = Oneof::from_proto(oneof, msg_conf.next_conf(&oneof.name), idx)
-                .map_err(|e| field_error(&gen.pkg, msg_name, &oneof.name, &e))?;
+            let oneof = Oneof::from_proto(
+                oneof,
+                msg_conf.next_conf(&oneof.name),
+                next_comment_node(comment_node, location::path::msg_oneof(idx)),
+                idx,
+            )
+            .map_err(|e| field_error(&gen.pkg, msg_name, &oneof.name, &e))?;
             if let Some(oneof) = oneof {
                 oneofs.push(oneof);
             }
@@ -70,15 +80,18 @@ impl<'a> Message<'a> {
         let mut synthetic_oneof_idx = vec![];
 
         let mut fields = vec![];
-        for f in proto.field.iter() {
+        for (i, f) in proto.field.iter().enumerate() {
             let field_conf = msg_conf.next_conf(&f.name);
+            let field_comments = next_comment_node(comment_node, location::path::msg_field(i));
+
             let raw_msg_name = f
                 .type_name
                 .rsplit_once('.')
                 .map(|(_, r)| r)
                 .unwrap_or(&f.type_name);
+
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, gen, Some(map_msg))
+                Field::from_proto(f, &field_conf, field_comments, gen, Some(map_msg))
                     .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             } else {
                 if let Some(idx) = f.oneof_index().copied() {
@@ -92,8 +105,9 @@ impl<'a> Message<'a> {
                         {
                             Some(OneofType::Enum { fields, .. }) => {
                                 // Oneof field
-                                if let Some(field) = OneofField::from_proto(f, &field_conf)
-                                    .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
+                                if let Some(field) =
+                                    OneofField::from_proto(f, &field_conf, field_comments)
+                                        .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
                                 {
                                     fields.push(field);
                                 }
@@ -109,7 +123,7 @@ impl<'a> Message<'a> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, gen, None)
+                Field::from_proto(f, &field_conf, field_comments, gen, None)
                     .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {
@@ -159,6 +173,7 @@ impl<'a> Message<'a> {
             unknown_handler,
             lifetime,
             as_oneof_enum: as_enum,
+            comments: location::get_comments(comment_node),
         }))
     }
 

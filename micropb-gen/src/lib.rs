@@ -504,6 +504,7 @@ use std::{
 };
 
 pub use config::Config;
+use generator::location::Comments;
 pub use generator::Generator;
 use micropb::{MessageDecode, PbDecoder};
 use pathtree::PathTree;
@@ -549,7 +550,10 @@ impl Generator {
 
     /// Create a generator with a custom callback for emitting warnings
     pub fn with_warning_callback(warning_cb: WarningCb) -> Self {
-        let config_tree = PathTree::new(Box::new(Config::new()));
+        let config_tree = PathTree::new(Box::new(Config::default()));
+        // Unused Comments at the tree root
+        let comment_tree = PathTree::new(Comments::default());
+
         Self {
             syntax: Default::default(),
             pkg_path: Default::default(),
@@ -568,6 +572,7 @@ impl Generator {
             single_oneof_msg_as_enum: false,
 
             config_tree,
+            comment_tree,
             extern_paths: Default::default(),
         }
     }

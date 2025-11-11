@@ -8,11 +8,14 @@ use crate::{
     generator::{
         derive_msg_attr,
         field::CustomField,
+        location::get_comments,
         sanitized_ident,
         type_spec::{find_lifetime_from_type, TypeSpec},
         CurrentConfig, EncodeFunc, Generator,
     },
 };
+
+use super::location::{self, CommentNode, Comments};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
@@ -26,12 +29,14 @@ pub(crate) struct OneofField<'a> {
     pub(crate) boxed: bool,
     pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
+    comments: Option<&'a Comments>,
 }
 
 impl<'a> OneofField<'a> {
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
         field_conf: &CurrentConfig,
+        comment_node: Option<&'a CommentNode>,
     ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -58,6 +63,7 @@ impl<'a> OneofField<'a> {
             encoded_max_size: field_conf.config.encoded_max_size,
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs,
+            comments: location::get_comments(comment_node),
         }))
     }
 
@@ -219,12 +225,14 @@ pub(crate) struct Oneof<'a> {
     pub(crate) encoded_max_size: Option<usize>,
     pub(crate) lifetime: Option<Lifetime>,
     pub(crate) idx: usize,
+    comments: Option<&'a Comments>,
 }
 
 impl<'a> Oneof<'a> {
     pub(crate) fn from_proto(
         proto: &'a OneofDescriptorProto,
         oneof_conf: CurrentConfig,
+        comment_node: Option<&'a CommentNode>,
         idx: usize,
     ) -> Result<Option<Self>, String> {
         if oneof_conf.config.skip.unwrap_or(false) {
@@ -261,6 +269,7 @@ impl<'a> Oneof<'a> {
             lifetime: None,
             field_attrs,
             type_attrs,
+            comments: get_comments(comment_node),
         }))
     }
 

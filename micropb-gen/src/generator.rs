@@ -9,6 +9,7 @@ use std::{
 };
 
 use convert_case::{Case, Casing};
+use location::{add_location_comments, next_comment_node, CommentNode, Comments};
 use micropb::size::sizeof_varint32;
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
@@ -28,6 +29,7 @@ use self::message::Message;
 use super::WarningCb;
 
 pub(crate) mod field;
+pub(crate) mod location;
 pub(crate) mod message;
 pub(crate) mod oneof;
 pub(crate) mod type_spec;
@@ -102,7 +104,6 @@ pub(crate) enum Syntax {
     Proto3,
 }
 
-#[derive(Debug)]
 /// Protobuf code generator
 ///
 /// Use this in `build.rs` to compile `.proto` files into a Rust module.
@@ -154,6 +155,7 @@ pub struct Generator {
     pub(crate) single_oneof_msg_as_enum: bool,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
+    pub(crate) comment_tree: PathTree<Comments, (i32, i32)>,
     pub(crate) extern_paths: HashMap<String, TokenStream>,
 }
 
@@ -225,12 +227,26 @@ impl Generator {
             config: Cow::Owned(conf),
         };
 
-        let mut out = TokenStream::new();
-        for m in &fdproto.message_type {
-            out.extend(self.generate_msg(m, cur_config.next_conf(&m.name))?);
+        if let Some(src) = fdproto.source_code_info() {
+            for location in &src.location {
+                add_location_comments(&mut self.comment_tree, location);
+            }
         }
-        for e in &fdproto.enum_type {
-            out.extend(self.generate_enum(e, cur_config.next_conf(&e.name))?);
+
+        let mut out = TokenStream::new();
+        for (i, m) in fdproto.message_type.iter().enumerate() {
+            out.extend(self.generate_msg(
+                m,
+                cur_config.next_conf(&m.name),
+                self.comment_tree.root.next(&location::path::fdset_msg(i)),
+            )?);
+        }
+        for (i, e) in fdproto.enum_type.iter().enumerate() {
+            out.extend(self.generate_enum(
+                e,
+                cur_config.next_conf(&e.name),
+                self.comment_tree.root.next(&location::path::fdset_enum(i)),
+            )?);
         }
 
         Ok(out)
@@ -257,6 +273,7 @@ impl Generator {
         enum_int_type: IntSize,
         signed: bool,
         attrs: &[Attribute],
+        enum_comments: Option<&CommentNode>,
     ) -> TokenStream {
         let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number));
         let var_names = values.iter().map(|v| self.enum_variant_name(&v.name, name));
@@ -298,6 +315,7 @@ impl Generator {
         &self,
         enum_type: &EnumDescriptorProto,
         enum_conf: CurrentConfig,
+        comment_node: Option<&CommentNode>,
     ) -> io::Result<TokenStream> {
         if enum_conf.config.skip.unwrap_or(false) {
             return Ok(quote! {});
@@ -310,7 +328,14 @@ impl Generator {
             .type_attr_parsed()
             .map_err(|e| msg_error(&self.pkg, &enum_type.name, &e))?;
         let unsigned = enum_conf.config.enum_unsigned.unwrap_or(false);
-        let out = self.generate_enum_decl(&name, &enum_type.value, enum_int_type, !unsigned, attrs);
+        let out = self.generate_enum_decl(
+            &name,
+            &enum_type.value,
+            enum_int_type,
+            !unsigned,
+            attrs,
+            comment_node,
+        );
         Ok(out)
     }
 
@@ -319,20 +344,30 @@ impl Generator {
         msg: &Message,
         proto: &DescriptorProto,
         msg_conf: &CurrentConfig,
+        comment_node: Option<&CommentNode>,
     ) -> io::Result<(TokenStream, Option<Vec<syn::Attribute>>)> {
         let msg_mod_name = resolve_path_elem(msg.name, self.suffixed_package_names);
         self.type_path.borrow_mut().push(msg.name.to_owned());
 
         let mut msg_mod_body = TokenStream::new();
-        for m in proto
+        for (i, m) in proto
             .nested_type
             .iter()
-            .filter(|m| !m.options().map(|o| o.map_entry).unwrap_or(false))
+            .enumerate()
+            .filter(|(_, m)| !m.options().map(|o| o.map_entry).unwrap_or(false))
         {
-            msg_mod_body.extend(self.generate_msg(m, msg_conf.next_conf(&m.name))?);
+            msg_mod_body.extend(self.generate_msg(
+                m,
+                msg_conf.next_conf(&m.name),
+                next_comment_node(comment_node, location::path::msg_msg(i)),
+            )?);
         }
-        for e in proto.enum_type.iter() {
-            msg_mod_body.extend(self.generate_enum(e, msg_conf.next_conf(&e.name))?);
+        for (i, e) in proto.enum_type.iter().enumerate() {
+            msg_mod_body.extend(self.generate_enum(
+                e,
+                msg_conf.next_conf(&e.name),
+                next_comment_node(comment_node, location::path::msg_enum(i)),
+            )?);
         }
 
         let hazzer_field_attr = if msg.as_oneof_enum {
@@ -366,12 +401,14 @@ impl Generator {
         &self,
         proto: &DescriptorProto,
         msg_conf: CurrentConfig,
+        comment_node: Option<&CommentNode>,
     ) -> io::Result<TokenStream> {
-        let Some(msg) = Message::from_proto(proto, self, &msg_conf)? else {
+        let Some(msg) = Message::from_proto(proto, self, &msg_conf, comment_node)? else {
             return Ok(quote! {});
         };
 
-        let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf)?;
+        let (msg_mod, hazzer_field_attr) =
+            self.generate_msg_mod(&msg, proto, &msg_conf, comment_node)?;
         let proto_default = msg.fields.iter().any(|f| f.default.is_some());
         let unknown_conf = msg_conf.next_conf("_unknown");
 
@@ -583,7 +620,7 @@ mod tests {
         value[1].set_number(2);
         let gen = Generator::new();
 
-        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, true, &[]);
+        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, true, &[], None);
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
