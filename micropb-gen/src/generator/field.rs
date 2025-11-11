@@ -204,7 +204,8 @@ impl<'a> Field<'a> {
         let typ = self.generate_rust_type(gen);
         let name = &self.san_rust_name;
         let attrs = &self.attrs;
-        quote! { #(#attrs)* pub #name : #typ, }
+        let comments = self.comments.map(Comments::lines).into_iter().flatten();
+        quote! { #(#[doc = #comments])* #(#attrs)* pub #name : #typ, }
     }
 
     pub(crate) fn generate_default(&self, gen: &Generator) -> Result<TokenStream, String> {

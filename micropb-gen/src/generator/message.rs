@@ -282,6 +282,7 @@ impl<'a> Message<'a> {
             derive_partial_eq,
             self.derive_clone,
         );
+        let comments = self.comments.map(Comments::lines).into_iter().flatten();
 
         if self.as_oneof_enum {
             let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
@@ -291,6 +292,7 @@ impl<'a> Message<'a> {
             let default_variant_attr = derive_default.then(|| quote! { #[default] });
 
             Ok(quote! {
+                #(#[doc = #comments])*
                 #derive_msg
                 #(#attrs)*
                 pub enum #rust_name<#lifetime> {
@@ -318,6 +320,7 @@ impl<'a> Message<'a> {
             let hazzer_field_attr = hazzer_field_attr.iter();
 
             Ok(quote! {
+                #(#[doc = #comments])*
                 #derive_msg
                 #(#attrs)*
                 pub struct #rust_name<#lifetime> {

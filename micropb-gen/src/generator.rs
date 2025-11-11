@@ -9,7 +9,7 @@ use std::{
 };
 
 use convert_case::{Case, Casing};
-use location::{add_location_comments, next_comment_node, CommentNode, Comments};
+use location::{add_location_comments, get_comments, next_comment_node, CommentNode, Comments};
 use micropb::size::sizeof_varint32;
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
@@ -229,6 +229,10 @@ impl Generator {
 
         if let Some(src) = fdproto.source_code_info() {
             for location in &src.location {
+                //println!(
+                //"cargo:warning={:?}: {}",
+                //location.path, location.leading_comments
+                //);
                 add_location_comments(&mut self.comment_tree, location);
             }
         }
@@ -273,10 +277,20 @@ impl Generator {
         enum_int_type: IntSize,
         signed: bool,
         attrs: &[Attribute],
-        enum_comments: Option<&CommentNode>,
+        enum_comment_node: Option<&CommentNode>,
     ) -> TokenStream {
-        let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number));
-        let var_names = values.iter().map(|v| self.enum_variant_name(&v.name, name));
+        let variants = values.iter().enumerate().map(|(i, v)| {
+            let num = Literal::i32_unsuffixed(v.number);
+            let var_name = self.enum_variant_name(&v.name, name);
+            let var_comment_node =
+                next_comment_node(enum_comment_node, location::path::enum_value(i));
+            let var_comments = get_comments(var_comment_node)
+                .map(Comments::lines)
+                .into_iter()
+                .flatten();
+            quote! { #(#[doc = #var_comments])* pub const #var_name: Self = Self(#num); }
+        });
+
         let default_num = Literal::i32_unsuffixed(values[0].number);
         let derive_enum = derive_enum_attr();
         let itype = enum_int_type.type_name(signed);
@@ -285,8 +299,13 @@ impl Generator {
         } else {
             sizeof_varint32(enum_int_type.max_value().try_into().unwrap_or(u32::MAX))
         };
+        let enum_comments = get_comments(enum_comment_node)
+            .map(Comments::lines)
+            .into_iter()
+            .flatten();
 
         quote! {
+            #(#[doc = #enum_comments])*
             #derive_enum
             #[repr(transparent)]
             #(#attrs)*
@@ -294,7 +313,7 @@ impl Generator {
 
             impl #name {
                 pub const _MAX_SIZE: usize = #max_size;
-                #(pub const #var_names: Self = Self(#nums);)*
+                #(#variants)*
             }
 
             impl core::default::Default for #name {

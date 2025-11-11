@@ -71,7 +71,8 @@ impl<'a> OneofField<'a> {
         let typ = gen.wrapped_type(self.tspec.generate_rust_type(gen), self.boxed, false);
         let name = &self.rust_name;
         let attrs = &self.attrs;
-        quote! { #(#attrs)* #name(#typ), }
+        let comments = self.comments.map(Comments::lines).into_iter().flatten();
+        quote! { #(#[doc = #comments])* #(#attrs)* #name(#typ), }
     }
 
     fn generate_decode_branch(
@@ -326,7 +327,8 @@ impl<'a> Oneof<'a> {
             } => return quote! {},
         };
         let attrs = &self.field_attrs;
-        quote! { #(#attrs)* pub #name: #oneof_type, }
+        let comments = self.comments.map(Comments::lines).into_iter().flatten();
+        quote! { #(#[doc = #comments])* #(#attrs)* pub #name: #oneof_type, }
     }
 
     pub(crate) fn generate_decode_branches(
