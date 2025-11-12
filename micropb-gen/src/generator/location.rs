@@ -3,24 +3,26 @@ use crate::{
     pathtree::{Node, PathTree},
 };
 
-#[derive(Default)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+#[derive(Debug, Default)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub(crate) struct Comments {
     leading: Vec<String>,
     trailing: Vec<String>,
 }
 
 impl Comments {
+    /// Return None if there aren't any comments we care about
     fn from_location(location: &Location) -> Option<Self> {
-        let (Some(leading_comments), Some(trailing_comments)) =
-            (location.leading_comments(), location.trailing_comments())
-        else {
+        let leading = location
+            .leading_comments()
+            .map_or_else(Default::default, |c| get_lines(c));
+        let trailing = location
+            .trailing_comments()
+            .map_or_else(Default::default, |c| get_lines(c));
+        if leading.is_empty() && trailing.is_empty() {
             return None;
-        };
-        Some(Self {
-            leading: get_lines(leading_comments),
-            trailing: get_lines(trailing_comments),
-        })
+        }
+        Some(Self { leading, trailing })
     }
 
     pub(crate) fn lines(&self) -> impl Iterator<Item = &String> {

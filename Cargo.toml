@@ -13,6 +13,7 @@ members = [
     "examples/arm-app",
     "examples/basic",
     "tests/proptest-proto",
+    "tests/doc-proto",
 ]
 
 # For the no-panicking example

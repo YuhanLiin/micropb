@@ -230,10 +230,6 @@ impl Generator {
 
         if let Some(src) = fdproto.source_code_info() {
             for location in &src.location {
-                //println!(
-                //"cargo:warning={:?}: {}",
-                //location.path, location.leading_comments
-                //);
                 add_location_comments(&mut self.comment_tree, location);
             }
         }
