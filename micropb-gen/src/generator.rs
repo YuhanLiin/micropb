@@ -309,6 +309,7 @@ impl Generator {
             pub struct #name(pub #itype);
 
             impl #name {
+                #[doc = " Maximum encoded size of the enum"]
                 pub const _MAX_SIZE: usize = #max_size;
                 #(#variants)*
             }
@@ -408,7 +409,8 @@ impl Generator {
         let msg_mod = if msg_mod_body.is_empty() {
             quote! {}
         } else {
-            quote! { pub mod #msg_mod_name { #msg_mod_body } }
+            let doc = format!(" Inner types for `{}`", msg.name);
+            quote! { #[doc = #doc] pub mod #msg_mod_name { #msg_mod_body } }
         };
         Ok((msg_mod, hazzer_field_attr))
     }

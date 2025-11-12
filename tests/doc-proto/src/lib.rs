@@ -1,4 +1,5 @@
 mod proto {
+    #![deny(missing_docs)] // Ensure that all docs are generated properly
     #![allow(clippy::all)]
     #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
     include!("../test.proto.rs");

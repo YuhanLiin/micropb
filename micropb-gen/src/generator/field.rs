@@ -205,7 +205,14 @@ impl<'a> Field<'a> {
         let name = &self.san_rust_name;
         let attrs = &self.attrs;
         let comments = self.comments.map(Comments::lines).into_iter().flatten();
-        quote! { #(#[doc = #comments])* #(#attrs)* pub #name : #typ, }
+
+        let hazzer_warning = self.is_hazzer().then(|| {
+            let empty_line = self.comments.map(|_| "").into_iter();
+            let warning = std::iter::once(" *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.");
+            empty_line.chain(warning)
+        }).into_iter().flatten();
+
+        quote! { #(#[doc = #comments])* #(#[doc = #hazzer_warning])* #(#attrs)* pub #name : #typ, }
     }
 
     pub(crate) fn generate_default(&self, gen: &Generator) -> Result<TokenStream, String> {
@@ -240,7 +247,7 @@ impl<'a> Field<'a> {
 
                 let fname = &self.san_rust_name;
                 let getter_doc =
-                    format!("Return a reference to `{}` as an `Option`", self.rust_name);
+                    format!(" Return a reference to `{}` as an `Option`", self.rust_name);
                 let type_name = type_spec.generate_rust_type(gen);
 
                 // Getter is needed for encoding, so we have to generate it
@@ -282,18 +289,18 @@ impl<'a> Field<'a> {
                     let taker_name = format_ident!("take_{}", self.rust_name);
                     let init_name = format_ident!("init_{}", self.rust_name);
 
-                    let setter_doc = format!("Set the value and presence of `{}`", self.rust_name);
+                    let setter_doc = format!(" Set the value and presence of `{}`", self.rust_name);
                     let muter_doc = format!(
-                        "Return a mutable reference to `{}` as an `Option`",
+                        " Return a mutable reference to `{}` as an `Option`",
                         self.rust_name
                     );
-                    let clearer_doc = format!("Clear the presence of `{}`", self.rust_name);
+                    let clearer_doc = format!(" Clear the presence of `{}`", self.rust_name);
                     let taker_doc = format!(
-                        "Take the value of `{}` and clear its presence",
+                        " Take the value of `{}` and clear its presence",
                         self.rust_name
                     );
                     let init_doc = format!(
-                        "Builder method that sets the value of `{}`. Useful for initializing the message.",
+                        " Builder method that sets the value of `{}`. Useful for initializing the message.",
                         self.rust_name
                     );
 
@@ -411,11 +418,11 @@ impl<'a> Field<'a> {
                 let init_name = format_ident!("init_{}", self.rust_name);
                 let fname = &self.san_rust_name;
 
-                let getter_doc = format!("Return a reference to `{}`", self.rust_name);
-                let muter_doc = format!("Return a mutable reference to `{}`", self.rust_name);
-                let setter_doc = format!("Set the value of `{}`", self.rust_name);
+                let getter_doc = format!(" Return a reference to `{}`", self.rust_name);
+                let muter_doc = format!(" Return a mutable reference to `{}`", self.rust_name);
+                let setter_doc = format!(" Set the value of `{}`", self.rust_name);
                 let init_doc = format!(
-                    "Builder method that sets the value of `{}`. Useful for initializing the message.",
+                    " Builder method that sets the value of `{}`. Useful for initializing the message.",
                     self.rust_name
                 );
 

@@ -292,8 +292,10 @@ impl<'a> Oneof<'a> {
             );
             let attrs = &self.type_attrs;
             let lifetime = &self.lifetime;
+            let comments = self.comments.map(Comments::lines).into_iter().flatten();
 
             quote! {
+                #(#[doc = #comments])*
                 #derive_msg
                 #(#attrs)*
                 pub enum #type_name<#lifetime> {

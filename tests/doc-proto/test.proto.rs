@@ -1,3 +1,4 @@
+/// Inner types for `Msg`
 pub mod Msg_ {
     /// Inner message type nested inside Msg
     #[derive(Debug, Default, PartialEq, Clone)]
@@ -6,23 +7,23 @@ pub mod Msg_ {
         pub r#num: i32,
     }
     impl Inner {
-        ///Return a reference to `num`
+        /// Return a reference to `num`
         #[inline]
         pub fn r#num(&self) -> &i32 {
             &self.r#num
         }
-        ///Return a mutable reference to `num`
+        /// Return a mutable reference to `num`
         #[inline]
         pub fn mut_num(&mut self) -> &mut i32 {
             &mut self.r#num
         }
-        ///Set the value of `num`
+        /// Set the value of `num`
         #[inline]
         pub fn set_num(&mut self, value: i32) -> &mut Self {
             self.r#num = value.into();
             self
         }
-        ///Builder method that sets the value of `num`. Useful for initializing the message.
+        /// Builder method that sets the value of `num`. Useful for initializing the message.
         #[inline]
         pub fn init_num(mut self, value: i32) -> Self {
             self.r#num = value.into();
@@ -102,6 +103,7 @@ pub mod Msg_ {
     #[repr(transparent)]
     pub struct Count(pub i32);
     impl Count {
+        /// Maximum encoded size of the enum
         pub const _MAX_SIZE: usize = 10usize;
         /// Inner variant 0
         pub const Zero: Self = Self(0);
@@ -118,6 +120,42 @@ pub mod Msg_ {
             Self(val)
         }
     }
+    /// Compact bitfield for tracking presence of optional and message fields
+    #[derive(Debug, Default, PartialEq, Clone)]
+    pub struct _Hazzer([u8; 1]);
+    impl _Hazzer {
+        /// New hazzer with all fields set to off
+        #[inline]
+        pub const fn _new() -> Self {
+            Self([0; 1])
+        }
+        /// Query presence of `opt`
+        #[inline]
+        pub const fn r#opt(&self) -> bool {
+            (self.0[0] & 1) != 0
+        }
+        /// Set presence of `opt`
+        #[inline]
+        pub const fn set_opt(&mut self) -> &mut Self {
+            let elem = &mut self.0[0];
+            *elem |= 1;
+            self
+        }
+        /// Clear presence of `opt`
+        #[inline]
+        pub const fn clear_opt(&mut self) -> &mut Self {
+            let elem = &mut self.0[0];
+            *elem &= !1;
+            self
+        }
+        /// Builder method that sets the presence of `opt`. Useful for initializing the Hazzer.
+        #[inline]
+        pub const fn init_opt(mut self) -> Self {
+            self.set_opt();
+            self
+        }
+    }
+    /// This is the oneof type
     #[derive(Debug, PartialEq, Clone)]
     pub enum Variant {
         /// This is a "string" variant
@@ -129,35 +167,87 @@ pub mod Msg_ {
 /// This is the outermost message.
 ///
 /// Comments should be converted to rustdoc
-#[derive(Debug, Default, PartialEq, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Msg {
     /// This is the first field.
+    ///
     /// Trailing comments should also be included.
     pub r#num: i32,
+    /// This an optional field with a hazzer
+    ///
+    /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+    pub r#opt: ::std::vec::Vec<u8>,
     /// This is the oneof type
     pub r#variant: ::core::option::Option<Msg_::Variant>,
+    /// Tracks presence of optional and message fields
+    pub _has: Msg_::_Hazzer,
+}
+impl ::core::cmp::PartialEq for Msg {
+    fn eq(&self, other: &Self) -> bool {
+        let mut ret = true;
+        ret &= (self.r#num == other.r#num);
+        ret &= (self.r#opt() == other.r#opt());
+        ret &= (self.r#variant == other.r#variant);
+        ret
+    }
 }
 impl Msg {
-    ///Return a reference to `num`
+    /// Return a reference to `num`
     #[inline]
     pub fn r#num(&self) -> &i32 {
         &self.r#num
     }
-    ///Return a mutable reference to `num`
+    /// Return a mutable reference to `num`
     #[inline]
     pub fn mut_num(&mut self) -> &mut i32 {
         &mut self.r#num
     }
-    ///Set the value of `num`
+    /// Set the value of `num`
     #[inline]
     pub fn set_num(&mut self, value: i32) -> &mut Self {
         self.r#num = value.into();
         self
     }
-    ///Builder method that sets the value of `num`. Useful for initializing the message.
+    /// Builder method that sets the value of `num`. Useful for initializing the message.
     #[inline]
     pub fn init_num(mut self, value: i32) -> Self {
         self.r#num = value.into();
+        self
+    }
+    /// Return a reference to `opt` as an `Option`
+    #[inline]
+    pub fn r#opt(&self) -> ::core::option::Option<&::std::vec::Vec<u8>> {
+        self._has.r#opt().then_some(&self.r#opt)
+    }
+    /// Set the value and presence of `opt`
+    #[inline]
+    pub fn set_opt(&mut self, value: ::std::vec::Vec<u8>) -> &mut Self {
+        self._has.set_opt();
+        self.r#opt = value.into();
+        self
+    }
+    /// Return a mutable reference to `opt` as an `Option`
+    #[inline]
+    pub fn mut_opt(&mut self) -> ::core::option::Option<&mut ::std::vec::Vec<u8>> {
+        self._has.r#opt().then_some(&mut self.r#opt)
+    }
+    /// Clear the presence of `opt`
+    #[inline]
+    pub fn clear_opt(&mut self) -> &mut Self {
+        self._has.clear_opt();
+        self
+    }
+    /// Take the value of `opt` and clear its presence
+    #[inline]
+    pub fn take_opt(&mut self) -> ::core::option::Option<::std::vec::Vec<u8>> {
+        let val = self._has.r#opt().then(|| ::core::mem::take(&mut self.r#opt));
+        self._has.clear_opt();
+        val
+    }
+    /// Builder method that sets the value of `opt`. Useful for initializing the message.
+    #[inline]
+    pub fn init_opt(mut self, value: ::std::vec::Vec<u8>) -> Self {
+        self.set_opt(value);
         self
     }
 }
@@ -182,6 +272,13 @@ impl ::micropb::MessageDecode for Msg {
                             *mut_ref = val as _;
                         }
                     };
+                }
+                5u32 => {
+                    let mut_ref = &mut self.r#opt;
+                    {
+                        decoder.decode_bytes(mut_ref, ::micropb::Presence::Explicit)?;
+                    };
+                    self._has.set_opt();
                 }
                 2u32 => {
                     let mut_ref = loop {
@@ -234,6 +331,13 @@ impl ::micropb::MessageEncode for Msg {
         } else {
             break 'msg (::core::option::Option::<usize>::None);
         };
+        if let ::core::option::Option::Some(size) = ::micropb::const_map!(
+            ::core::option::Option:: < usize > ::None, | size | size + 1usize
+        ) {
+            max_size += size;
+        } else {
+            break 'msg (::core::option::Option::<usize>::None);
+        };
         if let ::core::option::Option::Some(size) = 'oneof: {
             let mut max_size = 0;
             if let ::core::option::Option::Some(size) = ::micropb::const_map!(
@@ -274,6 +378,12 @@ impl ::micropb::MessageEncode for Msg {
                 encoder.encode_int32(*val_ref as _)?;
             }
         }
+        {
+            if let ::core::option::Option::Some(val_ref) = self.r#opt() {
+                encoder.encode_varint32(42u32)?;
+                encoder.encode_bytes(val_ref)?;
+            }
+        }
         if let Some(oneof) = &self.r#variant {
             match &*oneof {
                 Msg_::Variant::St(val_ref) => {
@@ -299,6 +409,11 @@ impl ::micropb::MessageEncode for Msg {
                 size += 1usize + ::micropb::size::sizeof_int32(*val_ref as _);
             }
         }
+        {
+            if let ::core::option::Option::Some(val_ref) = self.r#opt() {
+                size += 1usize + ::micropb::size::sizeof_len_record(val_ref.len());
+            }
+        }
         if let Some(oneof) = &self.r#variant {
             match &*oneof {
                 Msg_::Variant::St(val_ref) => {
@@ -319,6 +434,7 @@ impl ::micropb::MessageEncode for Msg {
 #[repr(transparent)]
 pub struct Count(pub i32);
 impl Count {
+    /// Maximum encoded size of the enum
     pub const _MAX_SIZE: usize = 10usize;
     /// Variant 0
     pub const Zero: Self = Self(0);

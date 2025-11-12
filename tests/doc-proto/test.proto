@@ -8,6 +8,9 @@ message Msg {
   int32 num = 1;
   // Trailing comments should also be included.
 
+  // This an optional field with a hazzer
+  optional bytes opt = 5;
+
   // This is the oneof type
   oneof variant {
     // This is a "string" variant

@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::{
     descriptor::SourceCodeInfo_::Location,
     pathtree::{Node, PathTree},
@@ -25,13 +27,19 @@ impl Comments {
         Some(Self { leading, trailing })
     }
 
-    pub(crate) fn lines(&self) -> impl Iterator<Item = &String> {
-        self.leading.iter().chain(self.trailing.iter())
+    pub(crate) fn lines(&self) -> impl Iterator<Item = &str> {
+        let leading_and_trailing = !self.leading.is_empty() && !self.trailing.is_empty();
+        // Insert empty line between leading and trailing comments if both are present
+        let empty_line = leading_and_trailing.then_some("").into_iter();
+        self.leading
+            .iter()
+            .map(Deref::deref)
+            .chain(empty_line)
+            .chain(self.trailing.iter().map(Deref::deref))
     }
 }
 
 fn get_lines(comment: &str) -> Vec<String> {
-    // TODO sanitize
     comment.lines().map(ToOwned::to_owned).collect()
 }
 

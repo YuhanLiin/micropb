@@ -204,10 +204,10 @@ impl<'a> Message<'a> {
             let idx = Literal::usize_unsuffixed(i / 8);
             let mask = Literal::u8_unsuffixed(1 << (i % 8));
 
-            let getter_doc = format!("Query presence of `{}`", f.rust_name);
-            let setter_doc = format!("Set presence of `{}`", f.rust_name);
-            let clearer_doc = format!("Clear presence of `{}`", f.rust_name);
-            let init_doc = format!("Builder method that sets the presence of `{}`. Useful for initializing the Hazzer.", f.rust_name);
+            let getter_doc = format!(" Query presence of `{}`", f.rust_name);
+            let setter_doc = format!(" Set presence of `{}`", f.rust_name);
+            let clearer_doc = format!(" Clear presence of `{}`", f.rust_name);
+            let init_doc = format!(" Builder method that sets the presence of `{}`. Useful for initializing the Hazzer.", f.rust_name);
 
             quote! {
                 #[doc = #getter_doc]
@@ -243,12 +243,13 @@ impl<'a> Message<'a> {
 
         let bytes = Literal::usize_unsuffixed(count.div_ceil(8));
         let decl = quote! {
+            #[doc = " Compact bitfield for tracking presence of optional and message fields"]
             #derive_msg
             #(#attrs)*
             pub struct #hazzer_name([u8; #bytes]);
 
             impl #hazzer_name {
-                #[doc = "New hazzer with all fields set to off"]
+                #[doc = " New hazzer with all fields set to off"]
                 #[inline]
                 pub const fn _new() -> Self {
                     Self([0; #bytes])
@@ -313,7 +314,7 @@ impl<'a> Message<'a> {
                     .config
                     .field_attr_parsed()
                     .map_err(|e| field_error(&gen.pkg, self.name, "_unknown", &e))?;
-                quote! { #(#unknown_field_attr)* pub _unknown: #handler, }
+                quote! { #[doc = " Handler for unknown fields on the wire"] #(#unknown_field_attr)* pub _unknown: #handler, }
             } else {
                 quote! {}
             };
@@ -326,7 +327,7 @@ impl<'a> Message<'a> {
                 pub struct #rust_name<#lifetime> {
                     #(#msg_fields)*
                     #(#oneof_fields)*
-                    #(#(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
+                    #(#[doc = " Tracks presence of optional and message fields"] #(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
                     #unknown_field
                 }
             })
