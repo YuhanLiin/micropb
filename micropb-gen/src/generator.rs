@@ -562,8 +562,6 @@ pub(crate) fn sanitized_ident(name: &str) -> Ident {
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::parse_attributes, descriptor::EnumValueDescriptorProto};
-
     use super::*;
 
     #[test]
