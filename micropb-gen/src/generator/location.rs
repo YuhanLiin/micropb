@@ -45,6 +45,15 @@ fn get_lines(comment: &str) -> Vec<String> {
 
 pub(crate) type CommentNode = Node<Comments, (i32, i32)>;
 
+/// Each Location has a path and maybe some comments. The path is a list of numbers that point to
+/// some item in the proto file. The numbers in the path can be grouped into pairs, where each pair
+/// is an "edge" in the FileDescriptorSet hierarchy. The first number in the pair is the field
+/// number of the descriptor, and the second number is the index within that field.
+///
+/// The natural way to process paths is to split them into pairs and use them as edges in the
+/// PathTree, with the comments as the nodes. That way the shape of the comment PathTree matches
+/// the shape of the config tree, so both trees can be walked together as we walk the
+/// FileDescriptorSet structure.
 pub(crate) fn add_location_comments(
     tree: &mut PathTree<Comments, (i32, i32)>,
     location: &Location,
