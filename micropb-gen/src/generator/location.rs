@@ -28,7 +28,7 @@ impl Comments {
     }
 }
 
-fn get_lines(comment: &String) -> Vec<String> {
+fn get_lines(comment: &str) -> Vec<String> {
     // TODO sanitize
     comment.lines().map(ToOwned::to_owned).collect()
 }

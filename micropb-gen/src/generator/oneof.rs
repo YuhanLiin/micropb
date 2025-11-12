@@ -226,7 +226,7 @@ pub(crate) struct Oneof<'a> {
     pub(crate) encoded_max_size: Option<usize>,
     pub(crate) lifetime: Option<Lifetime>,
     pub(crate) idx: usize,
-    comments: Option<&'a Comments>,
+    pub(crate) comments: Option<&'a Comments>,
 }
 
 impl<'a> Oneof<'a> {
@@ -471,6 +471,7 @@ pub(crate) fn make_test_oneof_field(
         boxed,
         encoded_max_size: None,
         attrs: vec![],
+        comments: None,
     }
 }
 
@@ -500,11 +501,13 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(1, "field");
-        assert!(OneofField::from_proto(&field, &oneof_conf)
+        assert!(OneofField::from_proto(&field, &oneof_conf, None)
             .unwrap()
             .is_none());
         let oneof = OneofDescriptorProto::default();
-        assert!(Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().is_none());
+        assert!(Oneof::from_proto(&oneof, oneof_conf, None, 0,)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -516,7 +519,7 @@ mod tests {
         };
         let field = field_proto(1, "field");
         assert_eq!(
-            OneofField::from_proto(&field, &field_conf)
+            OneofField::from_proto(&field, &field_conf, None)
                 .unwrap()
                 .unwrap(),
             OneofField {
@@ -526,7 +529,8 @@ mod tests {
                 rust_name: Ident::new("Field", Span::call_site()),
                 boxed: false,
                 encoded_max_size: None,
-                attrs: vec![]
+                attrs: vec![],
+                comments: None
             }
         );
 
@@ -538,7 +542,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            OneofField::from_proto(&field, &field_conf)
+            OneofField::from_proto(&field, &field_conf, None)
                 .unwrap()
                 .unwrap(),
             OneofField {
@@ -548,7 +552,8 @@ mod tests {
                 rust_name: Ident::new("Renamed", Span::call_site()),
                 encoded_max_size: None,
                 boxed: true,
-                attrs: parse_attributes("#[attr]").unwrap()
+                attrs: parse_attributes("#[attr]").unwrap(),
+                comments: None
             }
         );
     }
@@ -563,7 +568,9 @@ mod tests {
         let mut oneof = OneofDescriptorProto::default();
         oneof.set_name("oneof".to_owned());
         assert_eq!(
-            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
+            Oneof::from_proto(&oneof, oneof_conf, None, 0)
+                .unwrap()
+                .unwrap(),
             Oneof {
                 name: "oneof",
                 san_rust_name: Ident::new_raw("oneof", Span::call_site()),
@@ -579,7 +586,8 @@ mod tests {
                 derive_partial_eq: true,
                 derive_clone: true,
                 lifetime: None,
-                idx: 0
+                idx: 0,
+                comments: None
             }
         );
 
@@ -592,7 +600,9 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
+            Oneof::from_proto(&oneof, oneof_conf, None, 0)
+                .unwrap()
+                .unwrap(),
             Oneof {
                 name: "oneof",
                 san_rust_name: Ident::new("renamed_oneof", Span::call_site()),
@@ -608,7 +618,8 @@ mod tests {
                 derive_partial_eq: true,
                 derive_clone: true,
                 lifetime: None,
-                idx: 0
+                idx: 0,
+                comments: None
             }
         );
     }
@@ -632,6 +643,7 @@ mod tests {
             derive_clone: true,
             lifetime: None,
             idx: 0,
+            comments: None,
         };
         assert!(oneof.generate_decl(&gen).is_empty());
         assert_eq!(
@@ -657,6 +669,7 @@ mod tests {
             derive_clone: true,
             lifetime: None,
             idx: 0,
+            comments: None,
         };
         assert!(oneof.generate_decl(&gen).is_empty());
         assert!(oneof

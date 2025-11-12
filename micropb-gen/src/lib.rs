@@ -840,6 +840,7 @@ impl Generator {
         // Get protoc command from PROTOC env-var, otherwise just use "protoc"
         let mut cmd = Command::new(env::var("PROTOC").as_deref().unwrap_or("protoc"));
         cmd.arg("-o").arg(fdset_file.as_os_str());
+        cmd.arg("--include_source_info");
         cmd.args(&self.protoc_args);
 
         for proto in protos {

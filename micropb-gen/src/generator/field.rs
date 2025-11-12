@@ -781,6 +781,7 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         encoded_max_size: None,
         attrs: vec![],
         no_accessors: false,
+        comments: None,
     }
 }
 
@@ -826,7 +827,7 @@ mod tests {
 
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto2;
-        assert!(Field::from_proto(&field, &field_conf, &gen, None)
+        assert!(Field::from_proto(&field, &field_conf, None, &gen, None)
             .unwrap()
             .is_none());
     }
@@ -843,7 +844,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -857,6 +858,7 @@ mod tests {
                 encoded_max_size: None,
                 attrs: vec![],
                 no_accessors: false,
+                comments: None
             }
         );
 
@@ -875,7 +877,7 @@ mod tests {
         field.set_default_value("true".to_owned());
 
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -889,6 +891,7 @@ mod tests {
                 encoded_max_size: None,
                 attrs: parse_attributes("#[attr]").unwrap(),
                 no_accessors: false,
+                comments: None
             }
         );
     }
@@ -905,7 +908,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -913,7 +916,7 @@ mod tests {
         );
         gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -923,7 +926,7 @@ mod tests {
         // Required fields are treated like optionals
         let field = field_proto(0, "field", Some(Label::Required), false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -934,7 +937,7 @@ mod tests {
         gen.syntax = Syntax::Proto3;
         let field = field_proto(0, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -949,7 +952,7 @@ mod tests {
         };
         gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -963,7 +966,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -989,7 +992,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1007,7 +1010,7 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1033,7 +1036,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1047,7 +1050,7 @@ mod tests {
         field.set_options(Default::default());
         field.options.set_packed(true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1101,7 +1104,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, Some(&map_elem))
+            Field::from_proto(&field, &field_conf, None, &gen, Some(&map_elem))
                 .unwrap()
                 .unwrap()
                 .ftype,

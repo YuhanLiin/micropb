@@ -741,7 +741,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let gen = Generator::new();
-        assert!(Message::from_proto(&proto, &gen, &msg_conf)
+        assert!(Message::from_proto(&proto, &gen, &msg_conf, None)
             .unwrap()
             .is_none());
     }
@@ -763,6 +763,7 @@ mod tests {
             unknown_handler: None,
             lifetime: None,
             as_oneof_enum: false,
+            comments: None,
         };
         let config = Box::new(Config::new());
         let mut node = Node::default();
@@ -779,7 +780,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -797,7 +798,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -836,7 +837,7 @@ mod tests {
         };
 
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             Message {
@@ -867,7 +868,8 @@ mod tests {
                     derive_partial_eq: true,
                     derive_clone: true,
                     lifetime: None,
-                    idx: 0
+                    idx: 0,
+                    comments: None
                 }],
                 fields: vec![
                     make_test_field(
@@ -896,6 +898,7 @@ mod tests {
                 unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
                 lifetime: None,
                 as_oneof_enum: false,
+                comments: None
             }
         )
     }
@@ -927,7 +930,7 @@ mod tests {
         };
 
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             Message {
@@ -947,7 +950,8 @@ mod tests {
                 attrs: vec![],
                 unknown_handler: None,
                 as_oneof_enum: false,
-                lifetime: None
+                lifetime: None,
+                comments: None,
             }
         )
     }
@@ -979,6 +983,7 @@ mod tests {
             unknown_handler: None,
             as_oneof_enum: false,
             lifetime: None,
+            comments: None,
         };
         assert!(msg.generate_hazzer_decl(config).unwrap().is_none());
     }

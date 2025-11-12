@@ -684,6 +684,7 @@ mod tests {
             IntSize::S8,
             false,
             &parse_attributes("#[derive(Serialize)]").unwrap(),
+            None
         );
         let expected = quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
