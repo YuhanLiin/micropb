@@ -570,6 +570,7 @@ impl Generator {
             protoc_args: Default::default(),
             suffixed_package_names: true,
             single_oneof_msg_as_enum: false,
+            emit_docs: true,
 
             config_tree,
             comment_tree,
@@ -840,7 +841,9 @@ impl Generator {
         // Get protoc command from PROTOC env-var, otherwise just use "protoc"
         let mut cmd = Command::new(env::var("PROTOC").as_deref().unwrap_or("protoc"));
         cmd.arg("-o").arg(fdset_file.as_os_str());
-        cmd.arg("--include_source_info");
+        if self.emit_docs {
+            cmd.arg("--include_source_info");
+        }
         cmd.args(&self.protoc_args);
 
         for proto in protos {
@@ -1076,6 +1079,15 @@ impl Generator {
     /// ignored. Also, [`unknown_handler`](Config::unknown_handler) will be ignored.
     pub fn single_oneof_msg_as_enum(&mut self, as_enum: bool) -> &mut Self {
         self.single_oneof_msg_as_enum = as_enum;
+        self
+    }
+
+    /// If enabled, comments in the Proto file will be used to generate doc comments on the
+    /// messages, enums, oneofs, and fields in the generated code.
+    ///
+    /// Enabled by default.
+    pub fn emit_docs(&mut self, flag: bool) -> &mut Self {
+        self.emit_docs = flag;
         self
     }
 }
