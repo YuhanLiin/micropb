@@ -153,7 +153,7 @@ pub struct Generator {
     pub(crate) protoc_args: Vec<OsString>,
     pub(crate) suffixed_package_names: bool,
     pub(crate) single_oneof_msg_as_enum: bool,
-    pub(crate) emit_docs: bool,
+    pub(crate) comments_to_docs: bool,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
     pub(crate) comment_tree: PathTree<Comments, (i32, i32)>,
