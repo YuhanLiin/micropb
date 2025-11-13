@@ -450,13 +450,13 @@ impl Generator {
             .then(|| msg.generate_encode_trait(self));
 
         Ok(quote! {
-            #msg_mod
             #decl
             #default
             #partial_eq
             #msg_impl
             #decode
             #encode
+            #msg_mod
         })
     }
 
