@@ -40,169 +40,6 @@ pub mod google_ {
                 Ok(())
             }
         }
-        /// Inner types for `FileDescriptorProto`
-        pub mod FileDescriptorProto_ {
-            /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
-            pub struct _Hazzer([u8; 1]);
-            impl _Hazzer {
-                /// New hazzer with all fields set to off
-                #[inline]
-                pub const fn _new() -> Self {
-                    Self([0; 1])
-                }
-                /// Query presence of `name`
-                #[inline]
-                pub const fn r#name(&self) -> bool {
-                    (self.0[0] & 1) != 0
-                }
-                /// Set presence of `name`
-                #[inline]
-                pub const fn set_name(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 1;
-                    self
-                }
-                /// Clear presence of `name`
-                #[inline]
-                pub const fn clear_name(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !1;
-                    self
-                }
-                /// Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_name(mut self) -> Self {
-                    self.set_name();
-                    self
-                }
-                /// Query presence of `package`
-                #[inline]
-                pub const fn r#package(&self) -> bool {
-                    (self.0[0] & 2) != 0
-                }
-                /// Set presence of `package`
-                #[inline]
-                pub const fn set_package(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 2;
-                    self
-                }
-                /// Clear presence of `package`
-                #[inline]
-                pub const fn clear_package(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !2;
-                    self
-                }
-                /// Builder method that sets the presence of `package`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_package(mut self) -> Self {
-                    self.set_package();
-                    self
-                }
-                /// Query presence of `options`
-                #[inline]
-                pub const fn r#options(&self) -> bool {
-                    (self.0[0] & 4) != 0
-                }
-                /// Set presence of `options`
-                #[inline]
-                pub const fn set_options(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 4;
-                    self
-                }
-                /// Clear presence of `options`
-                #[inline]
-                pub const fn clear_options(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !4;
-                    self
-                }
-                /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_options(mut self) -> Self {
-                    self.set_options();
-                    self
-                }
-                /// Query presence of `source_code_info`
-                #[inline]
-                pub const fn r#source_code_info(&self) -> bool {
-                    (self.0[0] & 8) != 0
-                }
-                /// Set presence of `source_code_info`
-                #[inline]
-                pub const fn set_source_code_info(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 8;
-                    self
-                }
-                /// Clear presence of `source_code_info`
-                #[inline]
-                pub const fn clear_source_code_info(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !8;
-                    self
-                }
-                /// Builder method that sets the presence of `source_code_info`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_source_code_info(mut self) -> Self {
-                    self.set_source_code_info();
-                    self
-                }
-                /// Query presence of `syntax`
-                #[inline]
-                pub const fn r#syntax(&self) -> bool {
-                    (self.0[0] & 16) != 0
-                }
-                /// Set presence of `syntax`
-                #[inline]
-                pub const fn set_syntax(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 16;
-                    self
-                }
-                /// Clear presence of `syntax`
-                #[inline]
-                pub const fn clear_syntax(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !16;
-                    self
-                }
-                /// Builder method that sets the presence of `syntax`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_syntax(mut self) -> Self {
-                    self.set_syntax();
-                    self
-                }
-                /// Query presence of `edition`
-                #[inline]
-                pub const fn r#edition(&self) -> bool {
-                    (self.0[0] & 32) != 0
-                }
-                /// Set presence of `edition`
-                #[inline]
-                pub const fn set_edition(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 32;
-                    self
-                }
-                /// Clear presence of `edition`
-                #[inline]
-                pub const fn clear_edition(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !32;
-                    self
-                }
-                /// Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_edition(mut self) -> Self {
-                    self.set_edition();
-                    self
-                }
-            }
-        }
         /// Describes a complete .proto file.
         #[derive(Debug, Default)]
         pub struct FileDescriptorProto {
@@ -449,480 +286,8 @@ pub mod google_ {
                 Ok(())
             }
         }
-        /// Inner types for `DescriptorProto`
-        pub mod DescriptorProto_ {
-            /// Inner types for `ExtensionRange`
-            pub mod ExtensionRange_ {
-                /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
-                pub struct _Hazzer([u8; 1]);
-                impl _Hazzer {
-                    /// New hazzer with all fields set to off
-                    #[inline]
-                    pub const fn _new() -> Self {
-                        Self([0; 1])
-                    }
-                    /// Query presence of `start`
-                    #[inline]
-                    pub const fn r#start(&self) -> bool {
-                        (self.0[0] & 1) != 0
-                    }
-                    /// Set presence of `start`
-                    #[inline]
-                    pub const fn set_start(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 1;
-                        self
-                    }
-                    /// Clear presence of `start`
-                    #[inline]
-                    pub const fn clear_start(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !1;
-                        self
-                    }
-                    /// Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_start(mut self) -> Self {
-                        self.set_start();
-                        self
-                    }
-                    /// Query presence of `end`
-                    #[inline]
-                    pub const fn r#end(&self) -> bool {
-                        (self.0[0] & 2) != 0
-                    }
-                    /// Set presence of `end`
-                    #[inline]
-                    pub const fn set_end(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 2;
-                        self
-                    }
-                    /// Clear presence of `end`
-                    #[inline]
-                    pub const fn clear_end(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !2;
-                        self
-                    }
-                    /// Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_end(mut self) -> Self {
-                        self.set_end();
-                        self
-                    }
-                    /// Query presence of `options`
-                    #[inline]
-                    pub const fn r#options(&self) -> bool {
-                        (self.0[0] & 4) != 0
-                    }
-                    /// Set presence of `options`
-                    #[inline]
-                    pub const fn set_options(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 4;
-                        self
-                    }
-                    /// Clear presence of `options`
-                    #[inline]
-                    pub const fn clear_options(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !4;
-                        self
-                    }
-                    /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_options(mut self) -> Self {
-                        self.set_options();
-                        self
-                    }
-                }
-            }
-            #[derive(Debug, Default)]
-            pub struct ExtensionRange {
-                /// Inclusive.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#start: i32,
-                /// Exclusive.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#end: i32,
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#options: super::ExtensionRangeOptions,
-                /// Tracks presence of optional and message fields
-                pub _has: ExtensionRange_::_Hazzer,
-            }
-            impl ExtensionRange {
-                /// Return a reference to `start` as an `Option`
-                #[inline]
-                pub fn r#start(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#start().then_some(&self.r#start)
-                }
-                /// Set the value and presence of `start`
-                #[inline]
-                pub fn set_start(&mut self, value: i32) -> &mut Self {
-                    self._has.set_start();
-                    self.r#start = value.into();
-                    self
-                }
-                /// Return a mutable reference to `start` as an `Option`
-                #[inline]
-                pub fn mut_start(&mut self) -> ::core::option::Option<&mut i32> {
-                    self._has.r#start().then_some(&mut self.r#start)
-                }
-                /// Clear the presence of `start`
-                #[inline]
-                pub fn clear_start(&mut self) -> &mut Self {
-                    self._has.clear_start();
-                    self
-                }
-                /// Take the value of `start` and clear its presence
-                #[inline]
-                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
-                    let val = self
-                        ._has
-                        .r#start()
-                        .then(|| ::core::mem::take(&mut self.r#start));
-                    self._has.clear_start();
-                    val
-                }
-                /// Builder method that sets the value of `start`. Useful for initializing the message.
-                #[inline]
-                pub fn init_start(mut self, value: i32) -> Self {
-                    self.set_start(value);
-                    self
-                }
-                /// Return a reference to `end` as an `Option`
-                #[inline]
-                pub fn r#end(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#end().then_some(&self.r#end)
-                }
-                /// Set the value and presence of `end`
-                #[inline]
-                pub fn set_end(&mut self, value: i32) -> &mut Self {
-                    self._has.set_end();
-                    self.r#end = value.into();
-                    self
-                }
-                /// Return a mutable reference to `end` as an `Option`
-                #[inline]
-                pub fn mut_end(&mut self) -> ::core::option::Option<&mut i32> {
-                    self._has.r#end().then_some(&mut self.r#end)
-                }
-                /// Clear the presence of `end`
-                #[inline]
-                pub fn clear_end(&mut self) -> &mut Self {
-                    self._has.clear_end();
-                    self
-                }
-                /// Take the value of `end` and clear its presence
-                #[inline]
-                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
-                    let val = self
-                        ._has
-                        .r#end()
-                        .then(|| ::core::mem::take(&mut self.r#end));
-                    self._has.clear_end();
-                    val
-                }
-                /// Builder method that sets the value of `end`. Useful for initializing the message.
-                #[inline]
-                pub fn init_end(mut self, value: i32) -> Self {
-                    self.set_end(value);
-                    self
-                }
-                /// Return a reference to `options` as an `Option`
-                #[inline]
-                pub fn r#options(
-                    &self,
-                ) -> ::core::option::Option<&super::ExtensionRangeOptions> {
-                    self._has.r#options().then_some(&self.r#options)
-                }
-                /// Set the value and presence of `options`
-                #[inline]
-                pub fn set_options(
-                    &mut self,
-                    value: super::ExtensionRangeOptions,
-                ) -> &mut Self {
-                    self._has.set_options();
-                    self.r#options = value.into();
-                    self
-                }
-                /// Return a mutable reference to `options` as an `Option`
-                #[inline]
-                pub fn mut_options(
-                    &mut self,
-                ) -> ::core::option::Option<&mut super::ExtensionRangeOptions> {
-                    self._has.r#options().then_some(&mut self.r#options)
-                }
-                /// Clear the presence of `options`
-                #[inline]
-                pub fn clear_options(&mut self) -> &mut Self {
-                    self._has.clear_options();
-                    self
-                }
-                /// Take the value of `options` and clear its presence
-                #[inline]
-                pub fn take_options(
-                    &mut self,
-                ) -> ::core::option::Option<super::ExtensionRangeOptions> {
-                    let val = self
-                        ._has
-                        .r#options()
-                        .then(|| ::core::mem::take(&mut self.r#options));
-                    self._has.clear_options();
-                    val
-                }
-                /// Builder method that sets the value of `options`. Useful for initializing the message.
-                #[inline]
-                pub fn init_options(
-                    mut self,
-                    value: super::ExtensionRangeOptions,
-                ) -> Self {
-                    self.set_options(value);
-                    self
-                }
-            }
-            impl ::micropb::MessageDecode for ExtensionRange {
-                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                    &mut self,
-                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                    len: usize,
-                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                    let before = decoder.bytes_read();
-                    while decoder.bytes_read() - before < len {
-                        let tag = decoder.decode_tag()?;
-                        match tag.field_num() {
-                            0 => return Err(::micropb::DecodeError::ZeroField),
-                            1u32 => {
-                                let mut_ref = &mut self.r#start;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_start();
-                            }
-                            2u32 => {
-                                let mut_ref = &mut self.r#end;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_end();
-                            }
-                            3u32 => {
-                                let mut_ref = &mut self.r#options;
-                                {
-                                    mut_ref.decode_len_delimited(decoder)?;
-                                };
-                                self._has.set_options();
-                            }
-                            _ => {
-                                decoder.skip_wire_value(tag.wire_type())?;
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-            }
-            /// Inner types for `ReservedRange`
-            pub mod ReservedRange_ {
-                /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
-                pub struct _Hazzer([u8; 1]);
-                impl _Hazzer {
-                    /// New hazzer with all fields set to off
-                    #[inline]
-                    pub const fn _new() -> Self {
-                        Self([0; 1])
-                    }
-                    /// Query presence of `start`
-                    #[inline]
-                    pub const fn r#start(&self) -> bool {
-                        (self.0[0] & 1) != 0
-                    }
-                    /// Set presence of `start`
-                    #[inline]
-                    pub const fn set_start(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 1;
-                        self
-                    }
-                    /// Clear presence of `start`
-                    #[inline]
-                    pub const fn clear_start(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !1;
-                        self
-                    }
-                    /// Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_start(mut self) -> Self {
-                        self.set_start();
-                        self
-                    }
-                    /// Query presence of `end`
-                    #[inline]
-                    pub const fn r#end(&self) -> bool {
-                        (self.0[0] & 2) != 0
-                    }
-                    /// Set presence of `end`
-                    #[inline]
-                    pub const fn set_end(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 2;
-                        self
-                    }
-                    /// Clear presence of `end`
-                    #[inline]
-                    pub const fn clear_end(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !2;
-                        self
-                    }
-                    /// Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_end(mut self) -> Self {
-                        self.set_end();
-                        self
-                    }
-                }
-            }
-            /// Range of reserved tag numbers. Reserved tag numbers may not be used by
-            /// fields or extension ranges in the same message. Reserved ranges may
-            /// not overlap.
-            #[derive(Debug, Default)]
-            pub struct ReservedRange {
-                /// Inclusive.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#start: i32,
-                /// Exclusive.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#end: i32,
-                /// Tracks presence of optional and message fields
-                pub _has: ReservedRange_::_Hazzer,
-            }
-            impl ReservedRange {
-                /// Return a reference to `start` as an `Option`
-                #[inline]
-                pub fn r#start(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#start().then_some(&self.r#start)
-                }
-                /// Set the value and presence of `start`
-                #[inline]
-                pub fn set_start(&mut self, value: i32) -> &mut Self {
-                    self._has.set_start();
-                    self.r#start = value.into();
-                    self
-                }
-                /// Return a mutable reference to `start` as an `Option`
-                #[inline]
-                pub fn mut_start(&mut self) -> ::core::option::Option<&mut i32> {
-                    self._has.r#start().then_some(&mut self.r#start)
-                }
-                /// Clear the presence of `start`
-                #[inline]
-                pub fn clear_start(&mut self) -> &mut Self {
-                    self._has.clear_start();
-                    self
-                }
-                /// Take the value of `start` and clear its presence
-                #[inline]
-                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
-                    let val = self
-                        ._has
-                        .r#start()
-                        .then(|| ::core::mem::take(&mut self.r#start));
-                    self._has.clear_start();
-                    val
-                }
-                /// Builder method that sets the value of `start`. Useful for initializing the message.
-                #[inline]
-                pub fn init_start(mut self, value: i32) -> Self {
-                    self.set_start(value);
-                    self
-                }
-                /// Return a reference to `end` as an `Option`
-                #[inline]
-                pub fn r#end(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#end().then_some(&self.r#end)
-                }
-                /// Set the value and presence of `end`
-                #[inline]
-                pub fn set_end(&mut self, value: i32) -> &mut Self {
-                    self._has.set_end();
-                    self.r#end = value.into();
-                    self
-                }
-                /// Return a mutable reference to `end` as an `Option`
-                #[inline]
-                pub fn mut_end(&mut self) -> ::core::option::Option<&mut i32> {
-                    self._has.r#end().then_some(&mut self.r#end)
-                }
-                /// Clear the presence of `end`
-                #[inline]
-                pub fn clear_end(&mut self) -> &mut Self {
-                    self._has.clear_end();
-                    self
-                }
-                /// Take the value of `end` and clear its presence
-                #[inline]
-                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
-                    let val = self
-                        ._has
-                        .r#end()
-                        .then(|| ::core::mem::take(&mut self.r#end));
-                    self._has.clear_end();
-                    val
-                }
-                /// Builder method that sets the value of `end`. Useful for initializing the message.
-                #[inline]
-                pub fn init_end(mut self, value: i32) -> Self {
-                    self.set_end(value);
-                    self
-                }
-            }
-            impl ::micropb::MessageDecode for ReservedRange {
-                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                    &mut self,
-                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                    len: usize,
-                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                    let before = decoder.bytes_read();
-                    while decoder.bytes_read() - before < len {
-                        let tag = decoder.decode_tag()?;
-                        match tag.field_num() {
-                            0 => return Err(::micropb::DecodeError::ZeroField),
-                            1u32 => {
-                                let mut_ref = &mut self.r#start;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_start();
-                            }
-                            2u32 => {
-                                let mut_ref = &mut self.r#end;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_end();
-                            }
-                            _ => {
-                                decoder.skip_wire_value(tag.wire_type())?;
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-            }
+        /// Inner types for `FileDescriptorProto`
+        pub mod FileDescriptorProto_ {
             /// Compact bitfield for tracking presence of optional and message fields
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
@@ -957,29 +322,129 @@ pub mod google_ {
                     self.set_name();
                     self
                 }
+                /// Query presence of `package`
+                #[inline]
+                pub const fn r#package(&self) -> bool {
+                    (self.0[0] & 2) != 0
+                }
+                /// Set presence of `package`
+                #[inline]
+                pub const fn set_package(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 2;
+                    self
+                }
+                /// Clear presence of `package`
+                #[inline]
+                pub const fn clear_package(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !2;
+                    self
+                }
+                /// Builder method that sets the presence of `package`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_package(mut self) -> Self {
+                    self.set_package();
+                    self
+                }
                 /// Query presence of `options`
                 #[inline]
                 pub const fn r#options(&self) -> bool {
-                    (self.0[0] & 2) != 0
+                    (self.0[0] & 4) != 0
                 }
                 /// Set presence of `options`
                 #[inline]
                 pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem |= 2;
+                    *elem |= 4;
                     self
                 }
                 /// Clear presence of `options`
                 #[inline]
                 pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem &= !2;
+                    *elem &= !4;
                     self
                 }
                 /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
                 #[inline]
                 pub const fn init_options(mut self) -> Self {
                     self.set_options();
+                    self
+                }
+                /// Query presence of `source_code_info`
+                #[inline]
+                pub const fn r#source_code_info(&self) -> bool {
+                    (self.0[0] & 8) != 0
+                }
+                /// Set presence of `source_code_info`
+                #[inline]
+                pub const fn set_source_code_info(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 8;
+                    self
+                }
+                /// Clear presence of `source_code_info`
+                #[inline]
+                pub const fn clear_source_code_info(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !8;
+                    self
+                }
+                /// Builder method that sets the presence of `source_code_info`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_source_code_info(mut self) -> Self {
+                    self.set_source_code_info();
+                    self
+                }
+                /// Query presence of `syntax`
+                #[inline]
+                pub const fn r#syntax(&self) -> bool {
+                    (self.0[0] & 16) != 0
+                }
+                /// Set presence of `syntax`
+                #[inline]
+                pub const fn set_syntax(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 16;
+                    self
+                }
+                /// Clear presence of `syntax`
+                #[inline]
+                pub const fn clear_syntax(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !16;
+                    self
+                }
+                /// Builder method that sets the presence of `syntax`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_syntax(mut self) -> Self {
+                    self.set_syntax();
+                    self
+                }
+                /// Query presence of `edition`
+                #[inline]
+                pub const fn r#edition(&self) -> bool {
+                    (self.0[0] & 32) != 0
+                }
+                /// Set presence of `edition`
+                #[inline]
+                pub const fn set_edition(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 32;
+                    self
+                }
+                /// Clear presence of `edition`
+                #[inline]
+                pub const fn clear_edition(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !32;
+                    self
+                }
+                /// Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_edition(mut self) -> Self {
+                    self.set_edition();
                     self
                 }
             }
@@ -1230,8 +695,774 @@ pub mod google_ {
                 Ok(())
             }
         }
+        /// Inner types for `DescriptorProto`
+        pub mod DescriptorProto_ {
+            #[derive(Debug, Default)]
+            pub struct ExtensionRange {
+                /// Inclusive.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#start: i32,
+                /// Exclusive.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#end: i32,
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#options: super::ExtensionRangeOptions,
+                /// Tracks presence of optional and message fields
+                pub _has: ExtensionRange_::_Hazzer,
+            }
+            impl ExtensionRange {
+                /// Return a reference to `start` as an `Option`
+                #[inline]
+                pub fn r#start(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#start().then_some(&self.r#start)
+                }
+                /// Set the value and presence of `start`
+                #[inline]
+                pub fn set_start(&mut self, value: i32) -> &mut Self {
+                    self._has.set_start();
+                    self.r#start = value.into();
+                    self
+                }
+                /// Return a mutable reference to `start` as an `Option`
+                #[inline]
+                pub fn mut_start(&mut self) -> ::core::option::Option<&mut i32> {
+                    self._has.r#start().then_some(&mut self.r#start)
+                }
+                /// Clear the presence of `start`
+                #[inline]
+                pub fn clear_start(&mut self) -> &mut Self {
+                    self._has.clear_start();
+                    self
+                }
+                /// Take the value of `start` and clear its presence
+                #[inline]
+                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#start()
+                        .then(|| ::core::mem::take(&mut self.r#start));
+                    self._has.clear_start();
+                    val
+                }
+                /// Builder method that sets the value of `start`. Useful for initializing the message.
+                #[inline]
+                pub fn init_start(mut self, value: i32) -> Self {
+                    self.set_start(value);
+                    self
+                }
+                /// Return a reference to `end` as an `Option`
+                #[inline]
+                pub fn r#end(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#end().then_some(&self.r#end)
+                }
+                /// Set the value and presence of `end`
+                #[inline]
+                pub fn set_end(&mut self, value: i32) -> &mut Self {
+                    self._has.set_end();
+                    self.r#end = value.into();
+                    self
+                }
+                /// Return a mutable reference to `end` as an `Option`
+                #[inline]
+                pub fn mut_end(&mut self) -> ::core::option::Option<&mut i32> {
+                    self._has.r#end().then_some(&mut self.r#end)
+                }
+                /// Clear the presence of `end`
+                #[inline]
+                pub fn clear_end(&mut self) -> &mut Self {
+                    self._has.clear_end();
+                    self
+                }
+                /// Take the value of `end` and clear its presence
+                #[inline]
+                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#end()
+                        .then(|| ::core::mem::take(&mut self.r#end));
+                    self._has.clear_end();
+                    val
+                }
+                /// Builder method that sets the value of `end`. Useful for initializing the message.
+                #[inline]
+                pub fn init_end(mut self, value: i32) -> Self {
+                    self.set_end(value);
+                    self
+                }
+                /// Return a reference to `options` as an `Option`
+                #[inline]
+                pub fn r#options(
+                    &self,
+                ) -> ::core::option::Option<&super::ExtensionRangeOptions> {
+                    self._has.r#options().then_some(&self.r#options)
+                }
+                /// Set the value and presence of `options`
+                #[inline]
+                pub fn set_options(
+                    &mut self,
+                    value: super::ExtensionRangeOptions,
+                ) -> &mut Self {
+                    self._has.set_options();
+                    self.r#options = value.into();
+                    self
+                }
+                /// Return a mutable reference to `options` as an `Option`
+                #[inline]
+                pub fn mut_options(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::ExtensionRangeOptions> {
+                    self._has.r#options().then_some(&mut self.r#options)
+                }
+                /// Clear the presence of `options`
+                #[inline]
+                pub fn clear_options(&mut self) -> &mut Self {
+                    self._has.clear_options();
+                    self
+                }
+                /// Take the value of `options` and clear its presence
+                #[inline]
+                pub fn take_options(
+                    &mut self,
+                ) -> ::core::option::Option<super::ExtensionRangeOptions> {
+                    let val = self
+                        ._has
+                        .r#options()
+                        .then(|| ::core::mem::take(&mut self.r#options));
+                    self._has.clear_options();
+                    val
+                }
+                /// Builder method that sets the value of `options`. Useful for initializing the message.
+                #[inline]
+                pub fn init_options(
+                    mut self,
+                    value: super::ExtensionRangeOptions,
+                ) -> Self {
+                    self.set_options(value);
+                    self
+                }
+            }
+            impl ::micropb::MessageDecode for ExtensionRange {
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                    &mut self,
+                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                    let before = decoder.bytes_read();
+                    while decoder.bytes_read() - before < len {
+                        let tag = decoder.decode_tag()?;
+                        match tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            1u32 => {
+                                let mut_ref = &mut self.r#start;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_start();
+                            }
+                            2u32 => {
+                                let mut_ref = &mut self.r#end;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_end();
+                            }
+                            3u32 => {
+                                let mut_ref = &mut self.r#options;
+                                {
+                                    mut_ref.decode_len_delimited(decoder)?;
+                                };
+                                self._has.set_options();
+                            }
+                            _ => {
+                                decoder.skip_wire_value(tag.wire_type())?;
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            }
+            /// Inner types for `ExtensionRange`
+            pub mod ExtensionRange_ {
+                /// Compact bitfield for tracking presence of optional and message fields
+                #[derive(Debug, Default, PartialEq, Clone)]
+                pub struct _Hazzer([u8; 1]);
+                impl _Hazzer {
+                    /// New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
+                    /// Query presence of `start`
+                    #[inline]
+                    pub const fn r#start(&self) -> bool {
+                        (self.0[0] & 1) != 0
+                    }
+                    /// Set presence of `start`
+                    #[inline]
+                    pub const fn set_start(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 1;
+                        self
+                    }
+                    /// Clear presence of `start`
+                    #[inline]
+                    pub const fn clear_start(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !1;
+                        self
+                    }
+                    /// Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_start(mut self) -> Self {
+                        self.set_start();
+                        self
+                    }
+                    /// Query presence of `end`
+                    #[inline]
+                    pub const fn r#end(&self) -> bool {
+                        (self.0[0] & 2) != 0
+                    }
+                    /// Set presence of `end`
+                    #[inline]
+                    pub const fn set_end(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 2;
+                        self
+                    }
+                    /// Clear presence of `end`
+                    #[inline]
+                    pub const fn clear_end(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !2;
+                        self
+                    }
+                    /// Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_end(mut self) -> Self {
+                        self.set_end();
+                        self
+                    }
+                    /// Query presence of `options`
+                    #[inline]
+                    pub const fn r#options(&self) -> bool {
+                        (self.0[0] & 4) != 0
+                    }
+                    /// Set presence of `options`
+                    #[inline]
+                    pub const fn set_options(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 4;
+                        self
+                    }
+                    /// Clear presence of `options`
+                    #[inline]
+                    pub const fn clear_options(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !4;
+                        self
+                    }
+                    /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_options(mut self) -> Self {
+                        self.set_options();
+                        self
+                    }
+                }
+            }
+            /// Range of reserved tag numbers. Reserved tag numbers may not be used by
+            /// fields or extension ranges in the same message. Reserved ranges may
+            /// not overlap.
+            #[derive(Debug, Default)]
+            pub struct ReservedRange {
+                /// Inclusive.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#start: i32,
+                /// Exclusive.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#end: i32,
+                /// Tracks presence of optional and message fields
+                pub _has: ReservedRange_::_Hazzer,
+            }
+            impl ReservedRange {
+                /// Return a reference to `start` as an `Option`
+                #[inline]
+                pub fn r#start(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#start().then_some(&self.r#start)
+                }
+                /// Set the value and presence of `start`
+                #[inline]
+                pub fn set_start(&mut self, value: i32) -> &mut Self {
+                    self._has.set_start();
+                    self.r#start = value.into();
+                    self
+                }
+                /// Return a mutable reference to `start` as an `Option`
+                #[inline]
+                pub fn mut_start(&mut self) -> ::core::option::Option<&mut i32> {
+                    self._has.r#start().then_some(&mut self.r#start)
+                }
+                /// Clear the presence of `start`
+                #[inline]
+                pub fn clear_start(&mut self) -> &mut Self {
+                    self._has.clear_start();
+                    self
+                }
+                /// Take the value of `start` and clear its presence
+                #[inline]
+                pub fn take_start(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#start()
+                        .then(|| ::core::mem::take(&mut self.r#start));
+                    self._has.clear_start();
+                    val
+                }
+                /// Builder method that sets the value of `start`. Useful for initializing the message.
+                #[inline]
+                pub fn init_start(mut self, value: i32) -> Self {
+                    self.set_start(value);
+                    self
+                }
+                /// Return a reference to `end` as an `Option`
+                #[inline]
+                pub fn r#end(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#end().then_some(&self.r#end)
+                }
+                /// Set the value and presence of `end`
+                #[inline]
+                pub fn set_end(&mut self, value: i32) -> &mut Self {
+                    self._has.set_end();
+                    self.r#end = value.into();
+                    self
+                }
+                /// Return a mutable reference to `end` as an `Option`
+                #[inline]
+                pub fn mut_end(&mut self) -> ::core::option::Option<&mut i32> {
+                    self._has.r#end().then_some(&mut self.r#end)
+                }
+                /// Clear the presence of `end`
+                #[inline]
+                pub fn clear_end(&mut self) -> &mut Self {
+                    self._has.clear_end();
+                    self
+                }
+                /// Take the value of `end` and clear its presence
+                #[inline]
+                pub fn take_end(&mut self) -> ::core::option::Option<i32> {
+                    let val = self
+                        ._has
+                        .r#end()
+                        .then(|| ::core::mem::take(&mut self.r#end));
+                    self._has.clear_end();
+                    val
+                }
+                /// Builder method that sets the value of `end`. Useful for initializing the message.
+                #[inline]
+                pub fn init_end(mut self, value: i32) -> Self {
+                    self.set_end(value);
+                    self
+                }
+            }
+            impl ::micropb::MessageDecode for ReservedRange {
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                    &mut self,
+                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                    let before = decoder.bytes_read();
+                    while decoder.bytes_read() - before < len {
+                        let tag = decoder.decode_tag()?;
+                        match tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            1u32 => {
+                                let mut_ref = &mut self.r#start;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_start();
+                            }
+                            2u32 => {
+                                let mut_ref = &mut self.r#end;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_end();
+                            }
+                            _ => {
+                                decoder.skip_wire_value(tag.wire_type())?;
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            }
+            /// Inner types for `ReservedRange`
+            pub mod ReservedRange_ {
+                /// Compact bitfield for tracking presence of optional and message fields
+                #[derive(Debug, Default, PartialEq, Clone)]
+                pub struct _Hazzer([u8; 1]);
+                impl _Hazzer {
+                    /// New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
+                    /// Query presence of `start`
+                    #[inline]
+                    pub const fn r#start(&self) -> bool {
+                        (self.0[0] & 1) != 0
+                    }
+                    /// Set presence of `start`
+                    #[inline]
+                    pub const fn set_start(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 1;
+                        self
+                    }
+                    /// Clear presence of `start`
+                    #[inline]
+                    pub const fn clear_start(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !1;
+                        self
+                    }
+                    /// Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_start(mut self) -> Self {
+                        self.set_start();
+                        self
+                    }
+                    /// Query presence of `end`
+                    #[inline]
+                    pub const fn r#end(&self) -> bool {
+                        (self.0[0] & 2) != 0
+                    }
+                    /// Set presence of `end`
+                    #[inline]
+                    pub const fn set_end(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 2;
+                        self
+                    }
+                    /// Clear presence of `end`
+                    #[inline]
+                    pub const fn clear_end(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !2;
+                        self
+                    }
+                    /// Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_end(mut self) -> Self {
+                        self.set_end();
+                        self
+                    }
+                }
+            }
+            /// Compact bitfield for tracking presence of optional and message fields
+            #[derive(Debug, Default, PartialEq, Clone)]
+            pub struct _Hazzer([u8; 1]);
+            impl _Hazzer {
+                /// New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
+                /// Query presence of `name`
+                #[inline]
+                pub const fn r#name(&self) -> bool {
+                    (self.0[0] & 1) != 0
+                }
+                /// Set presence of `name`
+                #[inline]
+                pub const fn set_name(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 1;
+                    self
+                }
+                /// Clear presence of `name`
+                #[inline]
+                pub const fn clear_name(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !1;
+                    self
+                }
+                /// Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_name(mut self) -> Self {
+                    self.set_name();
+                    self
+                }
+                /// Query presence of `options`
+                #[inline]
+                pub const fn r#options(&self) -> bool {
+                    (self.0[0] & 2) != 0
+                }
+                /// Set presence of `options`
+                #[inline]
+                pub const fn set_options(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 2;
+                    self
+                }
+                /// Clear presence of `options`
+                #[inline]
+                pub const fn clear_options(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !2;
+                    self
+                }
+                /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_options(mut self) -> Self {
+                    self.set_options();
+                    self
+                }
+            }
+        }
+        #[derive(Debug)]
+        pub struct ExtensionRangeOptions {
+            /// The parser stores options it doesn't recognize here. See above.
+            pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
+            /// For external users: DO NOT USE. We are in the process of open sourcing
+            /// extension declaration and executing internal cleanups before it can be
+            /// used externally.
+            pub r#declaration: ::std::vec::Vec<ExtensionRangeOptions_::Declaration>,
+            /// Any features defined in the specific edition.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#features: FeatureSet,
+            /// The verification state of the range.
+            /// TODO: flip the default to DECLARATION once all empty ranges
+            /// are marked as UNVERIFIED.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#verification: ExtensionRangeOptions_::VerificationState,
+            /// Tracks presence of optional and message fields
+            pub _has: ExtensionRangeOptions_::_Hazzer,
+        }
+        impl ::core::default::Default for ExtensionRangeOptions {
+            fn default() -> Self {
+                Self {
+                    r#uninterpreted_option: ::core::default::Default::default(),
+                    r#declaration: ::core::default::Default::default(),
+                    r#features: ::core::default::Default::default(),
+                    r#verification: ExtensionRangeOptions_::VerificationState::Unverified,
+                    _has: ::core::default::Default::default(),
+                }
+            }
+        }
+        impl ExtensionRangeOptions {
+            /// Return a reference to `features` as an `Option`
+            #[inline]
+            pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
+                self._has.r#features().then_some(&self.r#features)
+            }
+            /// Return a reference to `verification` as an `Option`
+            #[inline]
+            pub fn r#verification(
+                &self,
+            ) -> ::core::option::Option<&ExtensionRangeOptions_::VerificationState> {
+                self._has.r#verification().then_some(&self.r#verification)
+            }
+        }
+        impl ::micropb::MessageDecode for ExtensionRangeOptions {
+            fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                &mut self,
+                decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                len: usize,
+            ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                let before = decoder.bytes_read();
+                while decoder.bytes_read() - before < len {
+                    let tag = decoder.decode_tag()?;
+                    match tag.field_num() {
+                        0 => return Err(::micropb::DecodeError::ZeroField),
+                        999u32 => {
+                            let mut val: UninterpretedOption = ::core::default::Default::default();
+                            let mut_ref = &mut val;
+                            {
+                                mut_ref.decode_len_delimited(decoder)?;
+                            };
+                            if let (Err(_), false) = (
+                                self.r#uninterpreted_option.pb_push(val),
+                                decoder.ignore_repeated_cap_err,
+                            ) {
+                                return Err(::micropb::DecodeError::Capacity);
+                            }
+                        }
+                        2u32 => {
+                            let mut val: ExtensionRangeOptions_::Declaration = ::core::default::Default::default();
+                            let mut_ref = &mut val;
+                            {
+                                mut_ref.decode_len_delimited(decoder)?;
+                            };
+                            if let (Err(_), false) = (
+                                self.r#declaration.pb_push(val),
+                                decoder.ignore_repeated_cap_err,
+                            ) {
+                                return Err(::micropb::DecodeError::Capacity);
+                            }
+                        }
+                        50u32 => {
+                            let mut_ref = &mut self.r#features;
+                            {
+                                mut_ref.decode_len_delimited(decoder)?;
+                            };
+                            self._has.set_features();
+                        }
+                        3u32 => {
+                            let mut_ref = &mut self.r#verification;
+                            {
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| ExtensionRangeOptions_::VerificationState(
+                                        n as _,
+                                    ))?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_verification();
+                        }
+                        _ => {
+                            decoder.skip_wire_value(tag.wire_type())?;
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
         /// Inner types for `ExtensionRangeOptions`
         pub mod ExtensionRangeOptions_ {
+            #[derive(Debug, Default)]
+            pub struct Declaration {
+                /// The extension number declared within the extension range.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#number: i32,
+                /// The fully-qualified name of the extension field. There must be a leading
+                /// dot in front of the full name.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#full_name: ::std::string::String,
+                /// The fully-qualified type name of the extension field. Unlike
+                /// Metadata.type, Declaration.type must have a leading dot for messages
+                /// and enums.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#type: ::std::string::String,
+                /// If true, indicates that the number is reserved in the extension range,
+                /// and any extension field with the number will fail to compile. Set this
+                /// when a declared extension field is deleted.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#reserved: bool,
+                /// If true, indicates that the extension must be defined as repeated.
+                /// Otherwise the extension must be defined as optional.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#repeated: bool,
+                /// Tracks presence of optional and message fields
+                pub _has: Declaration_::_Hazzer,
+            }
+            impl Declaration {
+                /// Return a reference to `number` as an `Option`
+                #[inline]
+                pub fn r#number(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#number().then_some(&self.r#number)
+                }
+                /// Return a reference to `full_name` as an `Option`
+                #[inline]
+                pub fn r#full_name(
+                    &self,
+                ) -> ::core::option::Option<&::std::string::String> {
+                    self._has.r#full_name().then_some(&self.r#full_name)
+                }
+                /// Return a reference to `type` as an `Option`
+                #[inline]
+                pub fn r#type(&self) -> ::core::option::Option<&::std::string::String> {
+                    self._has.r#type().then_some(&self.r#type)
+                }
+                /// Return a reference to `reserved` as an `Option`
+                #[inline]
+                pub fn r#reserved(&self) -> ::core::option::Option<&bool> {
+                    self._has.r#reserved().then_some(&self.r#reserved)
+                }
+                /// Return a reference to `repeated` as an `Option`
+                #[inline]
+                pub fn r#repeated(&self) -> ::core::option::Option<&bool> {
+                    self._has.r#repeated().then_some(&self.r#repeated)
+                }
+            }
+            impl ::micropb::MessageDecode for Declaration {
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                    &mut self,
+                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                    let before = decoder.bytes_read();
+                    while decoder.bytes_read() - before < len {
+                        let tag = decoder.decode_tag()?;
+                        match tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            1u32 => {
+                                let mut_ref = &mut self.r#number;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_number();
+                            }
+                            2u32 => {
+                                let mut_ref = &mut self.r#full_name;
+                                {
+                                    decoder
+                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                                };
+                                self._has.set_full_name();
+                            }
+                            3u32 => {
+                                let mut_ref = &mut self.r#type;
+                                {
+                                    decoder
+                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                                };
+                                self._has.set_type();
+                            }
+                            5u32 => {
+                                let mut_ref = &mut self.r#reserved;
+                                {
+                                    let val = decoder.decode_bool()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_reserved();
+                            }
+                            6u32 => {
+                                let mut_ref = &mut self.r#repeated;
+                                {
+                                    let val = decoder.decode_bool()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_repeated();
+                            }
+                            _ => {
+                                decoder.skip_wire_value(tag.wire_type())?;
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            }
             /// Inner types for `Declaration`
             pub mod Declaration_ {
                 /// Compact bitfield for tracking presence of optional and message fields
@@ -1370,126 +1601,6 @@ pub mod google_ {
                     }
                 }
             }
-            #[derive(Debug, Default)]
-            pub struct Declaration {
-                /// The extension number declared within the extension range.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#number: i32,
-                /// The fully-qualified name of the extension field. There must be a leading
-                /// dot in front of the full name.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#full_name: ::std::string::String,
-                /// The fully-qualified type name of the extension field. Unlike
-                /// Metadata.type, Declaration.type must have a leading dot for messages
-                /// and enums.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#type: ::std::string::String,
-                /// If true, indicates that the number is reserved in the extension range,
-                /// and any extension field with the number will fail to compile. Set this
-                /// when a declared extension field is deleted.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#reserved: bool,
-                /// If true, indicates that the extension must be defined as repeated.
-                /// Otherwise the extension must be defined as optional.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#repeated: bool,
-                /// Tracks presence of optional and message fields
-                pub _has: Declaration_::_Hazzer,
-            }
-            impl Declaration {
-                /// Return a reference to `number` as an `Option`
-                #[inline]
-                pub fn r#number(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#number().then_some(&self.r#number)
-                }
-                /// Return a reference to `full_name` as an `Option`
-                #[inline]
-                pub fn r#full_name(
-                    &self,
-                ) -> ::core::option::Option<&::std::string::String> {
-                    self._has.r#full_name().then_some(&self.r#full_name)
-                }
-                /// Return a reference to `type` as an `Option`
-                #[inline]
-                pub fn r#type(&self) -> ::core::option::Option<&::std::string::String> {
-                    self._has.r#type().then_some(&self.r#type)
-                }
-                /// Return a reference to `reserved` as an `Option`
-                #[inline]
-                pub fn r#reserved(&self) -> ::core::option::Option<&bool> {
-                    self._has.r#reserved().then_some(&self.r#reserved)
-                }
-                /// Return a reference to `repeated` as an `Option`
-                #[inline]
-                pub fn r#repeated(&self) -> ::core::option::Option<&bool> {
-                    self._has.r#repeated().then_some(&self.r#repeated)
-                }
-            }
-            impl ::micropb::MessageDecode for Declaration {
-                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                    &mut self,
-                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                    len: usize,
-                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                    let before = decoder.bytes_read();
-                    while decoder.bytes_read() - before < len {
-                        let tag = decoder.decode_tag()?;
-                        match tag.field_num() {
-                            0 => return Err(::micropb::DecodeError::ZeroField),
-                            1u32 => {
-                                let mut_ref = &mut self.r#number;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_number();
-                            }
-                            2u32 => {
-                                let mut_ref = &mut self.r#full_name;
-                                {
-                                    decoder
-                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                                };
-                                self._has.set_full_name();
-                            }
-                            3u32 => {
-                                let mut_ref = &mut self.r#type;
-                                {
-                                    decoder
-                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                                };
-                                self._has.set_type();
-                            }
-                            5u32 => {
-                                let mut_ref = &mut self.r#reserved;
-                                {
-                                    let val = decoder.decode_bool()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_reserved();
-                            }
-                            6u32 => {
-                                let mut_ref = &mut self.r#repeated;
-                                {
-                                    let val = decoder.decode_bool()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_repeated();
-                            }
-                            _ => {
-                                decoder.skip_wire_value(tag.wire_type())?;
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-            }
             /// The verification state of the extension range.
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
@@ -1568,479 +1679,6 @@ pub mod google_ {
                 #[inline]
                 pub const fn init_verification(mut self) -> Self {
                     self.set_verification();
-                    self
-                }
-            }
-        }
-        #[derive(Debug)]
-        pub struct ExtensionRangeOptions {
-            /// The parser stores options it doesn't recognize here. See above.
-            pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            /// For external users: DO NOT USE. We are in the process of open sourcing
-            /// extension declaration and executing internal cleanups before it can be
-            /// used externally.
-            pub r#declaration: ::std::vec::Vec<ExtensionRangeOptions_::Declaration>,
-            /// Any features defined in the specific edition.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#features: FeatureSet,
-            /// The verification state of the range.
-            /// TODO: flip the default to DECLARATION once all empty ranges
-            /// are marked as UNVERIFIED.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#verification: ExtensionRangeOptions_::VerificationState,
-            /// Tracks presence of optional and message fields
-            pub _has: ExtensionRangeOptions_::_Hazzer,
-        }
-        impl ::core::default::Default for ExtensionRangeOptions {
-            fn default() -> Self {
-                Self {
-                    r#uninterpreted_option: ::core::default::Default::default(),
-                    r#declaration: ::core::default::Default::default(),
-                    r#features: ::core::default::Default::default(),
-                    r#verification: ExtensionRangeOptions_::VerificationState::Unverified,
-                    _has: ::core::default::Default::default(),
-                }
-            }
-        }
-        impl ExtensionRangeOptions {
-            /// Return a reference to `features` as an `Option`
-            #[inline]
-            pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
-                self._has.r#features().then_some(&self.r#features)
-            }
-            /// Return a reference to `verification` as an `Option`
-            #[inline]
-            pub fn r#verification(
-                &self,
-            ) -> ::core::option::Option<&ExtensionRangeOptions_::VerificationState> {
-                self._has.r#verification().then_some(&self.r#verification)
-            }
-        }
-        impl ::micropb::MessageDecode for ExtensionRangeOptions {
-            fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                &mut self,
-                decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                len: usize,
-            ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                let before = decoder.bytes_read();
-                while decoder.bytes_read() - before < len {
-                    let tag = decoder.decode_tag()?;
-                    match tag.field_num() {
-                        0 => return Err(::micropb::DecodeError::ZeroField),
-                        999u32 => {
-                            let mut val: UninterpretedOption = ::core::default::Default::default();
-                            let mut_ref = &mut val;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            if let (Err(_), false) = (
-                                self.r#uninterpreted_option.pb_push(val),
-                                decoder.ignore_repeated_cap_err,
-                            ) {
-                                return Err(::micropb::DecodeError::Capacity);
-                            }
-                        }
-                        2u32 => {
-                            let mut val: ExtensionRangeOptions_::Declaration = ::core::default::Default::default();
-                            let mut_ref = &mut val;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            if let (Err(_), false) = (
-                                self.r#declaration.pb_push(val),
-                                decoder.ignore_repeated_cap_err,
-                            ) {
-                                return Err(::micropb::DecodeError::Capacity);
-                            }
-                        }
-                        50u32 => {
-                            let mut_ref = &mut self.r#features;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            self._has.set_features();
-                        }
-                        3u32 => {
-                            let mut_ref = &mut self.r#verification;
-                            {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| ExtensionRangeOptions_::VerificationState(
-                                        n as _,
-                                    ))?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_verification();
-                        }
-                        _ => {
-                            decoder.skip_wire_value(tag.wire_type())?;
-                        }
-                    }
-                }
-                Ok(())
-            }
-        }
-        /// Inner types for `FieldDescriptorProto`
-        pub mod FieldDescriptorProto_ {
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-            #[repr(transparent)]
-            pub struct Type(pub i32);
-            impl Type {
-                /// Maximum encoded size of the enum
-                pub const _MAX_SIZE: usize = 10usize;
-                /// 0 is reserved for errors.
-                /// Order is weird for historical reasons.
-                pub const Double: Self = Self(1);
-                pub const Float: Self = Self(2);
-                /// Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT64 if
-                /// negative values are likely.
-                pub const Int64: Self = Self(3);
-                pub const Uint64: Self = Self(4);
-                /// Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT32 if
-                /// negative values are likely.
-                pub const Int32: Self = Self(5);
-                pub const Fixed64: Self = Self(6);
-                pub const Fixed32: Self = Self(7);
-                pub const Bool: Self = Self(8);
-                pub const String: Self = Self(9);
-                /// Tag-delimited aggregate.
-                /// Group type is deprecated and not supported after google.protobuf. However, Proto3
-                /// implementations should still be able to parse the group wire format and
-                /// treat group fields as unknown fields.  In Editions, the group wire format
-                /// can be enabled via the `message_encoding` feature.
-                pub const Group: Self = Self(10);
-                /// Length-delimited aggregate.
-                pub const Message: Self = Self(11);
-                /// New in version 2.
-                pub const Bytes: Self = Self(12);
-                pub const Uint32: Self = Self(13);
-                pub const Enum: Self = Self(14);
-                pub const Sfixed32: Self = Self(15);
-                pub const Sfixed64: Self = Self(16);
-                /// Uses ZigZag encoding.
-                pub const Sint32: Self = Self(17);
-                /// Uses ZigZag encoding.
-                pub const Sint64: Self = Self(18);
-            }
-            impl core::default::Default for Type {
-                fn default() -> Self {
-                    Self(1)
-                }
-            }
-            impl core::convert::From<i32> for Type {
-                fn from(val: i32) -> Self {
-                    Self(val)
-                }
-            }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-            #[repr(transparent)]
-            pub struct Label(pub i32);
-            impl Label {
-                /// Maximum encoded size of the enum
-                pub const _MAX_SIZE: usize = 10usize;
-                /// 0 is reserved for errors
-                pub const Optional: Self = Self(1);
-                pub const Repeated: Self = Self(3);
-                /// The required label is only allowed in google.protobuf.  In proto3 and Editions
-                /// it's explicitly prohibited.  In Editions, the `field_presence` feature
-                /// can be used to get this behavior.
-                pub const Required: Self = Self(2);
-            }
-            impl core::default::Default for Label {
-                fn default() -> Self {
-                    Self(1)
-                }
-            }
-            impl core::convert::From<i32> for Label {
-                fn from(val: i32) -> Self {
-                    Self(val)
-                }
-            }
-            /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
-            pub struct _Hazzer([u8; 2]);
-            impl _Hazzer {
-                /// New hazzer with all fields set to off
-                #[inline]
-                pub const fn _new() -> Self {
-                    Self([0; 2])
-                }
-                /// Query presence of `name`
-                #[inline]
-                pub const fn r#name(&self) -> bool {
-                    (self.0[0] & 1) != 0
-                }
-                /// Set presence of `name`
-                #[inline]
-                pub const fn set_name(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 1;
-                    self
-                }
-                /// Clear presence of `name`
-                #[inline]
-                pub const fn clear_name(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !1;
-                    self
-                }
-                /// Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_name(mut self) -> Self {
-                    self.set_name();
-                    self
-                }
-                /// Query presence of `number`
-                #[inline]
-                pub const fn r#number(&self) -> bool {
-                    (self.0[0] & 2) != 0
-                }
-                /// Set presence of `number`
-                #[inline]
-                pub const fn set_number(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 2;
-                    self
-                }
-                /// Clear presence of `number`
-                #[inline]
-                pub const fn clear_number(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !2;
-                    self
-                }
-                /// Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_number(mut self) -> Self {
-                    self.set_number();
-                    self
-                }
-                /// Query presence of `label`
-                #[inline]
-                pub const fn r#label(&self) -> bool {
-                    (self.0[0] & 4) != 0
-                }
-                /// Set presence of `label`
-                #[inline]
-                pub const fn set_label(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 4;
-                    self
-                }
-                /// Clear presence of `label`
-                #[inline]
-                pub const fn clear_label(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !4;
-                    self
-                }
-                /// Builder method that sets the presence of `label`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_label(mut self) -> Self {
-                    self.set_label();
-                    self
-                }
-                /// Query presence of `type`
-                #[inline]
-                pub const fn r#type(&self) -> bool {
-                    (self.0[0] & 8) != 0
-                }
-                /// Set presence of `type`
-                #[inline]
-                pub const fn set_type(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 8;
-                    self
-                }
-                /// Clear presence of `type`
-                #[inline]
-                pub const fn clear_type(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !8;
-                    self
-                }
-                /// Builder method that sets the presence of `type`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_type(mut self) -> Self {
-                    self.set_type();
-                    self
-                }
-                /// Query presence of `type_name`
-                #[inline]
-                pub const fn r#type_name(&self) -> bool {
-                    (self.0[0] & 16) != 0
-                }
-                /// Set presence of `type_name`
-                #[inline]
-                pub const fn set_type_name(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 16;
-                    self
-                }
-                /// Clear presence of `type_name`
-                #[inline]
-                pub const fn clear_type_name(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !16;
-                    self
-                }
-                /// Builder method that sets the presence of `type_name`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_type_name(mut self) -> Self {
-                    self.set_type_name();
-                    self
-                }
-                /// Query presence of `extendee`
-                #[inline]
-                pub const fn r#extendee(&self) -> bool {
-                    (self.0[0] & 32) != 0
-                }
-                /// Set presence of `extendee`
-                #[inline]
-                pub const fn set_extendee(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 32;
-                    self
-                }
-                /// Clear presence of `extendee`
-                #[inline]
-                pub const fn clear_extendee(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !32;
-                    self
-                }
-                /// Builder method that sets the presence of `extendee`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_extendee(mut self) -> Self {
-                    self.set_extendee();
-                    self
-                }
-                /// Query presence of `default_value`
-                #[inline]
-                pub const fn r#default_value(&self) -> bool {
-                    (self.0[0] & 64) != 0
-                }
-                /// Set presence of `default_value`
-                #[inline]
-                pub const fn set_default_value(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 64;
-                    self
-                }
-                /// Clear presence of `default_value`
-                #[inline]
-                pub const fn clear_default_value(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !64;
-                    self
-                }
-                /// Builder method that sets the presence of `default_value`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_default_value(mut self) -> Self {
-                    self.set_default_value();
-                    self
-                }
-                /// Query presence of `oneof_index`
-                #[inline]
-                pub const fn r#oneof_index(&self) -> bool {
-                    (self.0[0] & 128) != 0
-                }
-                /// Set presence of `oneof_index`
-                #[inline]
-                pub const fn set_oneof_index(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 128;
-                    self
-                }
-                /// Clear presence of `oneof_index`
-                #[inline]
-                pub const fn clear_oneof_index(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !128;
-                    self
-                }
-                /// Builder method that sets the presence of `oneof_index`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_oneof_index(mut self) -> Self {
-                    self.set_oneof_index();
-                    self
-                }
-                /// Query presence of `json_name`
-                #[inline]
-                pub const fn r#json_name(&self) -> bool {
-                    (self.0[1] & 1) != 0
-                }
-                /// Set presence of `json_name`
-                #[inline]
-                pub const fn set_json_name(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem |= 1;
-                    self
-                }
-                /// Clear presence of `json_name`
-                #[inline]
-                pub const fn clear_json_name(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem &= !1;
-                    self
-                }
-                /// Builder method that sets the presence of `json_name`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_json_name(mut self) -> Self {
-                    self.set_json_name();
-                    self
-                }
-                /// Query presence of `options`
-                #[inline]
-                pub const fn r#options(&self) -> bool {
-                    (self.0[1] & 2) != 0
-                }
-                /// Set presence of `options`
-                #[inline]
-                pub const fn set_options(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem |= 2;
-                    self
-                }
-                /// Clear presence of `options`
-                #[inline]
-                pub const fn clear_options(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem &= !2;
-                    self
-                }
-                /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_options(mut self) -> Self {
-                    self.set_options();
-                    self
-                }
-                /// Query presence of `proto3_optional`
-                #[inline]
-                pub const fn r#proto3_optional(&self) -> bool {
-                    (self.0[1] & 4) != 0
-                }
-                /// Set presence of `proto3_optional`
-                #[inline]
-                pub const fn set_proto3_optional(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem |= 4;
-                    self
-                }
-                /// Clear presence of `proto3_optional`
-                #[inline]
-                pub const fn clear_proto3_optional(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem &= !4;
-                    self
-                }
-                /// Builder method that sets the presence of `proto3_optional`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_proto3_optional(mut self) -> Self {
-                    self.set_proto3_optional();
                     self
                 }
             }
@@ -2702,16 +2340,90 @@ pub mod google_ {
                 Ok(())
             }
         }
-        /// Inner types for `OneofDescriptorProto`
-        pub mod OneofDescriptorProto_ {
+        /// Inner types for `FieldDescriptorProto`
+        pub mod FieldDescriptorProto_ {
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[repr(transparent)]
+            pub struct Type(pub i32);
+            impl Type {
+                /// Maximum encoded size of the enum
+                pub const _MAX_SIZE: usize = 10usize;
+                /// 0 is reserved for errors.
+                /// Order is weird for historical reasons.
+                pub const Double: Self = Self(1);
+                pub const Float: Self = Self(2);
+                /// Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT64 if
+                /// negative values are likely.
+                pub const Int64: Self = Self(3);
+                pub const Uint64: Self = Self(4);
+                /// Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT32 if
+                /// negative values are likely.
+                pub const Int32: Self = Self(5);
+                pub const Fixed64: Self = Self(6);
+                pub const Fixed32: Self = Self(7);
+                pub const Bool: Self = Self(8);
+                pub const String: Self = Self(9);
+                /// Tag-delimited aggregate.
+                /// Group type is deprecated and not supported after google.protobuf. However, Proto3
+                /// implementations should still be able to parse the group wire format and
+                /// treat group fields as unknown fields.  In Editions, the group wire format
+                /// can be enabled via the `message_encoding` feature.
+                pub const Group: Self = Self(10);
+                /// Length-delimited aggregate.
+                pub const Message: Self = Self(11);
+                /// New in version 2.
+                pub const Bytes: Self = Self(12);
+                pub const Uint32: Self = Self(13);
+                pub const Enum: Self = Self(14);
+                pub const Sfixed32: Self = Self(15);
+                pub const Sfixed64: Self = Self(16);
+                /// Uses ZigZag encoding.
+                pub const Sint32: Self = Self(17);
+                /// Uses ZigZag encoding.
+                pub const Sint64: Self = Self(18);
+            }
+            impl core::default::Default for Type {
+                fn default() -> Self {
+                    Self(1)
+                }
+            }
+            impl core::convert::From<i32> for Type {
+                fn from(val: i32) -> Self {
+                    Self(val)
+                }
+            }
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[repr(transparent)]
+            pub struct Label(pub i32);
+            impl Label {
+                /// Maximum encoded size of the enum
+                pub const _MAX_SIZE: usize = 10usize;
+                /// 0 is reserved for errors
+                pub const Optional: Self = Self(1);
+                pub const Repeated: Self = Self(3);
+                /// The required label is only allowed in google.protobuf.  In proto3 and Editions
+                /// it's explicitly prohibited.  In Editions, the `field_presence` feature
+                /// can be used to get this behavior.
+                pub const Required: Self = Self(2);
+            }
+            impl core::default::Default for Label {
+                fn default() -> Self {
+                    Self(1)
+                }
+            }
+            impl core::convert::From<i32> for Label {
+                fn from(val: i32) -> Self {
+                    Self(val)
+                }
+            }
             /// Compact bitfield for tracking presence of optional and message fields
             #[derive(Debug, Default, PartialEq, Clone)]
-            pub struct _Hazzer([u8; 1]);
+            pub struct _Hazzer([u8; 2]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
                 #[inline]
                 pub const fn _new() -> Self {
-                    Self([0; 1])
+                    Self([0; 2])
                 }
                 /// Query presence of `name`
                 #[inline]
@@ -2738,22 +2450,222 @@ pub mod google_ {
                     self.set_name();
                     self
                 }
+                /// Query presence of `number`
+                #[inline]
+                pub const fn r#number(&self) -> bool {
+                    (self.0[0] & 2) != 0
+                }
+                /// Set presence of `number`
+                #[inline]
+                pub const fn set_number(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 2;
+                    self
+                }
+                /// Clear presence of `number`
+                #[inline]
+                pub const fn clear_number(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !2;
+                    self
+                }
+                /// Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_number(mut self) -> Self {
+                    self.set_number();
+                    self
+                }
+                /// Query presence of `label`
+                #[inline]
+                pub const fn r#label(&self) -> bool {
+                    (self.0[0] & 4) != 0
+                }
+                /// Set presence of `label`
+                #[inline]
+                pub const fn set_label(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 4;
+                    self
+                }
+                /// Clear presence of `label`
+                #[inline]
+                pub const fn clear_label(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !4;
+                    self
+                }
+                /// Builder method that sets the presence of `label`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_label(mut self) -> Self {
+                    self.set_label();
+                    self
+                }
+                /// Query presence of `type`
+                #[inline]
+                pub const fn r#type(&self) -> bool {
+                    (self.0[0] & 8) != 0
+                }
+                /// Set presence of `type`
+                #[inline]
+                pub const fn set_type(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 8;
+                    self
+                }
+                /// Clear presence of `type`
+                #[inline]
+                pub const fn clear_type(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !8;
+                    self
+                }
+                /// Builder method that sets the presence of `type`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_type(mut self) -> Self {
+                    self.set_type();
+                    self
+                }
+                /// Query presence of `type_name`
+                #[inline]
+                pub const fn r#type_name(&self) -> bool {
+                    (self.0[0] & 16) != 0
+                }
+                /// Set presence of `type_name`
+                #[inline]
+                pub const fn set_type_name(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 16;
+                    self
+                }
+                /// Clear presence of `type_name`
+                #[inline]
+                pub const fn clear_type_name(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !16;
+                    self
+                }
+                /// Builder method that sets the presence of `type_name`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_type_name(mut self) -> Self {
+                    self.set_type_name();
+                    self
+                }
+                /// Query presence of `extendee`
+                #[inline]
+                pub const fn r#extendee(&self) -> bool {
+                    (self.0[0] & 32) != 0
+                }
+                /// Set presence of `extendee`
+                #[inline]
+                pub const fn set_extendee(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 32;
+                    self
+                }
+                /// Clear presence of `extendee`
+                #[inline]
+                pub const fn clear_extendee(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !32;
+                    self
+                }
+                /// Builder method that sets the presence of `extendee`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_extendee(mut self) -> Self {
+                    self.set_extendee();
+                    self
+                }
+                /// Query presence of `default_value`
+                #[inline]
+                pub const fn r#default_value(&self) -> bool {
+                    (self.0[0] & 64) != 0
+                }
+                /// Set presence of `default_value`
+                #[inline]
+                pub const fn set_default_value(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 64;
+                    self
+                }
+                /// Clear presence of `default_value`
+                #[inline]
+                pub const fn clear_default_value(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !64;
+                    self
+                }
+                /// Builder method that sets the presence of `default_value`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_default_value(mut self) -> Self {
+                    self.set_default_value();
+                    self
+                }
+                /// Query presence of `oneof_index`
+                #[inline]
+                pub const fn r#oneof_index(&self) -> bool {
+                    (self.0[0] & 128) != 0
+                }
+                /// Set presence of `oneof_index`
+                #[inline]
+                pub const fn set_oneof_index(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 128;
+                    self
+                }
+                /// Clear presence of `oneof_index`
+                #[inline]
+                pub const fn clear_oneof_index(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !128;
+                    self
+                }
+                /// Builder method that sets the presence of `oneof_index`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_oneof_index(mut self) -> Self {
+                    self.set_oneof_index();
+                    self
+                }
+                /// Query presence of `json_name`
+                #[inline]
+                pub const fn r#json_name(&self) -> bool {
+                    (self.0[1] & 1) != 0
+                }
+                /// Set presence of `json_name`
+                #[inline]
+                pub const fn set_json_name(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem |= 1;
+                    self
+                }
+                /// Clear presence of `json_name`
+                #[inline]
+                pub const fn clear_json_name(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem &= !1;
+                    self
+                }
+                /// Builder method that sets the presence of `json_name`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_json_name(mut self) -> Self {
+                    self.set_json_name();
+                    self
+                }
                 /// Query presence of `options`
                 #[inline]
                 pub const fn r#options(&self) -> bool {
-                    (self.0[0] & 2) != 0
+                    (self.0[1] & 2) != 0
                 }
                 /// Set presence of `options`
                 #[inline]
                 pub const fn set_options(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
+                    let elem = &mut self.0[1];
                     *elem |= 2;
                     self
                 }
                 /// Clear presence of `options`
                 #[inline]
                 pub const fn clear_options(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
+                    let elem = &mut self.0[1];
                     *elem &= !2;
                     self
                 }
@@ -2761,6 +2673,31 @@ pub mod google_ {
                 #[inline]
                 pub const fn init_options(mut self) -> Self {
                     self.set_options();
+                    self
+                }
+                /// Query presence of `proto3_optional`
+                #[inline]
+                pub const fn r#proto3_optional(&self) -> bool {
+                    (self.0[1] & 4) != 0
+                }
+                /// Set presence of `proto3_optional`
+                #[inline]
+                pub const fn set_proto3_optional(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem |= 4;
+                    self
+                }
+                /// Clear presence of `proto3_optional`
+                #[inline]
+                pub const fn clear_proto3_optional(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem &= !4;
+                    self
+                }
+                /// Builder method that sets the presence of `proto3_optional`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_proto3_optional(mut self) -> Self {
+                    self.set_proto3_optional();
                     self
                 }
             }
@@ -2894,138 +2831,8 @@ pub mod google_ {
                 Ok(())
             }
         }
-        /// Inner types for `EnumDescriptorProto`
-        pub mod EnumDescriptorProto_ {
-            /// Inner types for `EnumReservedRange`
-            pub mod EnumReservedRange_ {
-                /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
-                pub struct _Hazzer([u8; 1]);
-                impl _Hazzer {
-                    /// New hazzer with all fields set to off
-                    #[inline]
-                    pub const fn _new() -> Self {
-                        Self([0; 1])
-                    }
-                    /// Query presence of `start`
-                    #[inline]
-                    pub const fn r#start(&self) -> bool {
-                        (self.0[0] & 1) != 0
-                    }
-                    /// Set presence of `start`
-                    #[inline]
-                    pub const fn set_start(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 1;
-                        self
-                    }
-                    /// Clear presence of `start`
-                    #[inline]
-                    pub const fn clear_start(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !1;
-                        self
-                    }
-                    /// Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_start(mut self) -> Self {
-                        self.set_start();
-                        self
-                    }
-                    /// Query presence of `end`
-                    #[inline]
-                    pub const fn r#end(&self) -> bool {
-                        (self.0[0] & 2) != 0
-                    }
-                    /// Set presence of `end`
-                    #[inline]
-                    pub const fn set_end(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 2;
-                        self
-                    }
-                    /// Clear presence of `end`
-                    #[inline]
-                    pub const fn clear_end(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !2;
-                        self
-                    }
-                    /// Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_end(mut self) -> Self {
-                        self.set_end();
-                        self
-                    }
-                }
-            }
-            /// Range of reserved numeric values. Reserved values may not be used by
-            /// entries in the same enum. Reserved ranges may not overlap.
-            ///
-            /// Note that this is distinct from DescriptorProto.ReservedRange in that it
-            /// is inclusive such that it can appropriately represent the entire int32
-            /// domain.
-            #[derive(Debug, Default)]
-            pub struct EnumReservedRange {
-                /// Inclusive.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#start: i32,
-                /// Inclusive.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#end: i32,
-                /// Tracks presence of optional and message fields
-                pub _has: EnumReservedRange_::_Hazzer,
-            }
-            impl EnumReservedRange {
-                /// Return a reference to `start` as an `Option`
-                #[inline]
-                pub fn r#start(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#start().then_some(&self.r#start)
-                }
-                /// Return a reference to `end` as an `Option`
-                #[inline]
-                pub fn r#end(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#end().then_some(&self.r#end)
-                }
-            }
-            impl ::micropb::MessageDecode for EnumReservedRange {
-                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                    &mut self,
-                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                    len: usize,
-                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                    let before = decoder.bytes_read();
-                    while decoder.bytes_read() - before < len {
-                        let tag = decoder.decode_tag()?;
-                        match tag.field_num() {
-                            0 => return Err(::micropb::DecodeError::ZeroField),
-                            1u32 => {
-                                let mut_ref = &mut self.r#start;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_start();
-                            }
-                            2u32 => {
-                                let mut_ref = &mut self.r#end;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_end();
-                            }
-                            _ => {
-                                decoder.skip_wire_value(tag.wire_type())?;
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-            }
+        /// Inner types for `OneofDescriptorProto`
+        pub mod OneofDescriptorProto_ {
             /// Compact bitfield for tracking presence of optional and message fields
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
@@ -3194,8 +3001,138 @@ pub mod google_ {
                 Ok(())
             }
         }
-        /// Inner types for `EnumValueDescriptorProto`
-        pub mod EnumValueDescriptorProto_ {
+        /// Inner types for `EnumDescriptorProto`
+        pub mod EnumDescriptorProto_ {
+            /// Range of reserved numeric values. Reserved values may not be used by
+            /// entries in the same enum. Reserved ranges may not overlap.
+            ///
+            /// Note that this is distinct from DescriptorProto.ReservedRange in that it
+            /// is inclusive such that it can appropriately represent the entire int32
+            /// domain.
+            #[derive(Debug, Default)]
+            pub struct EnumReservedRange {
+                /// Inclusive.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#start: i32,
+                /// Inclusive.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#end: i32,
+                /// Tracks presence of optional and message fields
+                pub _has: EnumReservedRange_::_Hazzer,
+            }
+            impl EnumReservedRange {
+                /// Return a reference to `start` as an `Option`
+                #[inline]
+                pub fn r#start(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#start().then_some(&self.r#start)
+                }
+                /// Return a reference to `end` as an `Option`
+                #[inline]
+                pub fn r#end(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#end().then_some(&self.r#end)
+                }
+            }
+            impl ::micropb::MessageDecode for EnumReservedRange {
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                    &mut self,
+                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                    let before = decoder.bytes_read();
+                    while decoder.bytes_read() - before < len {
+                        let tag = decoder.decode_tag()?;
+                        match tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            1u32 => {
+                                let mut_ref = &mut self.r#start;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_start();
+                            }
+                            2u32 => {
+                                let mut_ref = &mut self.r#end;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_end();
+                            }
+                            _ => {
+                                decoder.skip_wire_value(tag.wire_type())?;
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            }
+            /// Inner types for `EnumReservedRange`
+            pub mod EnumReservedRange_ {
+                /// Compact bitfield for tracking presence of optional and message fields
+                #[derive(Debug, Default, PartialEq, Clone)]
+                pub struct _Hazzer([u8; 1]);
+                impl _Hazzer {
+                    /// New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
+                    /// Query presence of `start`
+                    #[inline]
+                    pub const fn r#start(&self) -> bool {
+                        (self.0[0] & 1) != 0
+                    }
+                    /// Set presence of `start`
+                    #[inline]
+                    pub const fn set_start(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 1;
+                        self
+                    }
+                    /// Clear presence of `start`
+                    #[inline]
+                    pub const fn clear_start(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !1;
+                        self
+                    }
+                    /// Builder method that sets the presence of `start`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_start(mut self) -> Self {
+                        self.set_start();
+                        self
+                    }
+                    /// Query presence of `end`
+                    #[inline]
+                    pub const fn r#end(&self) -> bool {
+                        (self.0[0] & 2) != 0
+                    }
+                    /// Set presence of `end`
+                    #[inline]
+                    pub const fn set_end(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 2;
+                        self
+                    }
+                    /// Clear presence of `end`
+                    #[inline]
+                    pub const fn clear_end(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !2;
+                        self
+                    }
+                    /// Builder method that sets the presence of `end`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_end(mut self) -> Self {
+                        self.set_end();
+                        self
+                    }
+                }
+            }
             /// Compact bitfield for tracking presence of optional and message fields
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
@@ -3230,48 +3167,23 @@ pub mod google_ {
                     self.set_name();
                     self
                 }
-                /// Query presence of `number`
-                #[inline]
-                pub const fn r#number(&self) -> bool {
-                    (self.0[0] & 2) != 0
-                }
-                /// Set presence of `number`
-                #[inline]
-                pub const fn set_number(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 2;
-                    self
-                }
-                /// Clear presence of `number`
-                #[inline]
-                pub const fn clear_number(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !2;
-                    self
-                }
-                /// Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_number(mut self) -> Self {
-                    self.set_number();
-                    self
-                }
                 /// Query presence of `options`
                 #[inline]
                 pub const fn r#options(&self) -> bool {
-                    (self.0[0] & 4) != 0
+                    (self.0[0] & 2) != 0
                 }
                 /// Set presence of `options`
                 #[inline]
                 pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem |= 4;
+                    *elem |= 2;
                     self
                 }
                 /// Clear presence of `options`
                 #[inline]
                 pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem &= !4;
+                    *elem &= !2;
                     self
                 }
                 /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
@@ -3462,8 +3374,8 @@ pub mod google_ {
                 Ok(())
             }
         }
-        /// Inner types for `ServiceDescriptorProto`
-        pub mod ServiceDescriptorProto_ {
+        /// Inner types for `EnumValueDescriptorProto`
+        pub mod EnumValueDescriptorProto_ {
             /// Compact bitfield for tracking presence of optional and message fields
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
@@ -3498,23 +3410,48 @@ pub mod google_ {
                     self.set_name();
                     self
                 }
+                /// Query presence of `number`
+                #[inline]
+                pub const fn r#number(&self) -> bool {
+                    (self.0[0] & 2) != 0
+                }
+                /// Set presence of `number`
+                #[inline]
+                pub const fn set_number(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 2;
+                    self
+                }
+                /// Clear presence of `number`
+                #[inline]
+                pub const fn clear_number(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !2;
+                    self
+                }
+                /// Builder method that sets the presence of `number`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_number(mut self) -> Self {
+                    self.set_number();
+                    self
+                }
                 /// Query presence of `options`
                 #[inline]
                 pub const fn r#options(&self) -> bool {
-                    (self.0[0] & 2) != 0
+                    (self.0[0] & 4) != 0
                 }
                 /// Set presence of `options`
                 #[inline]
                 pub const fn set_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem |= 2;
+                    *elem |= 4;
                     self
                 }
                 /// Clear presence of `options`
                 #[inline]
                 pub const fn clear_options(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem &= !2;
+                    *elem &= !4;
                     self
                 }
                 /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
@@ -3587,6 +3524,210 @@ pub mod google_ {
                                 mut_ref.decode_len_delimited(decoder)?;
                             };
                             self._has.set_options();
+                        }
+                        _ => {
+                            decoder.skip_wire_value(tag.wire_type())?;
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
+        /// Inner types for `ServiceDescriptorProto`
+        pub mod ServiceDescriptorProto_ {
+            /// Compact bitfield for tracking presence of optional and message fields
+            #[derive(Debug, Default, PartialEq, Clone)]
+            pub struct _Hazzer([u8; 1]);
+            impl _Hazzer {
+                /// New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 1])
+                }
+                /// Query presence of `name`
+                #[inline]
+                pub const fn r#name(&self) -> bool {
+                    (self.0[0] & 1) != 0
+                }
+                /// Set presence of `name`
+                #[inline]
+                pub const fn set_name(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 1;
+                    self
+                }
+                /// Clear presence of `name`
+                #[inline]
+                pub const fn clear_name(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !1;
+                    self
+                }
+                /// Builder method that sets the presence of `name`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_name(mut self) -> Self {
+                    self.set_name();
+                    self
+                }
+                /// Query presence of `options`
+                #[inline]
+                pub const fn r#options(&self) -> bool {
+                    (self.0[0] & 2) != 0
+                }
+                /// Set presence of `options`
+                #[inline]
+                pub const fn set_options(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 2;
+                    self
+                }
+                /// Clear presence of `options`
+                #[inline]
+                pub const fn clear_options(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !2;
+                    self
+                }
+                /// Builder method that sets the presence of `options`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_options(mut self) -> Self {
+                    self.set_options();
+                    self
+                }
+            }
+        }
+        /// Describes a method of a service.
+        #[derive(Debug)]
+        pub struct MethodDescriptorProto {
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#name: ::std::string::String,
+            /// Input and output type names.  These are resolved in the same way as
+            /// FieldDescriptorProto.type_name, but must refer to a message type.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#input_type: ::std::string::String,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#output_type: ::std::string::String,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#options: MethodOptions,
+            /// Identifies if client streams multiple client messages
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#client_streaming: bool,
+            /// Identifies if server streams multiple server messages
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#server_streaming: bool,
+            /// Tracks presence of optional and message fields
+            pub _has: MethodDescriptorProto_::_Hazzer,
+        }
+        impl ::core::default::Default for MethodDescriptorProto {
+            fn default() -> Self {
+                Self {
+                    r#name: ::core::default::Default::default(),
+                    r#input_type: ::core::default::Default::default(),
+                    r#output_type: ::core::default::Default::default(),
+                    r#options: ::core::default::Default::default(),
+                    r#client_streaming: false as _,
+                    r#server_streaming: false as _,
+                    _has: ::core::default::Default::default(),
+                }
+            }
+        }
+        impl MethodDescriptorProto {
+            /// Return a reference to `name` as an `Option`
+            #[inline]
+            pub fn r#name(&self) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#name().then_some(&self.r#name)
+            }
+            /// Return a reference to `input_type` as an `Option`
+            #[inline]
+            pub fn r#input_type(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#input_type().then_some(&self.r#input_type)
+            }
+            /// Return a reference to `output_type` as an `Option`
+            #[inline]
+            pub fn r#output_type(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#output_type().then_some(&self.r#output_type)
+            }
+            /// Return a reference to `options` as an `Option`
+            #[inline]
+            pub fn r#options(&self) -> ::core::option::Option<&MethodOptions> {
+                self._has.r#options().then_some(&self.r#options)
+            }
+            /// Return a reference to `client_streaming` as an `Option`
+            #[inline]
+            pub fn r#client_streaming(&self) -> ::core::option::Option<&bool> {
+                self._has.r#client_streaming().then_some(&self.r#client_streaming)
+            }
+            /// Return a reference to `server_streaming` as an `Option`
+            #[inline]
+            pub fn r#server_streaming(&self) -> ::core::option::Option<&bool> {
+                self._has.r#server_streaming().then_some(&self.r#server_streaming)
+            }
+        }
+        impl ::micropb::MessageDecode for MethodDescriptorProto {
+            fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                &mut self,
+                decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                len: usize,
+            ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                let before = decoder.bytes_read();
+                while decoder.bytes_read() - before < len {
+                    let tag = decoder.decode_tag()?;
+                    match tag.field_num() {
+                        0 => return Err(::micropb::DecodeError::ZeroField),
+                        1u32 => {
+                            let mut_ref = &mut self.r#name;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_name();
+                        }
+                        2u32 => {
+                            let mut_ref = &mut self.r#input_type;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_input_type();
+                        }
+                        3u32 => {
+                            let mut_ref = &mut self.r#output_type;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_output_type();
+                        }
+                        4u32 => {
+                            let mut_ref = &mut self.r#options;
+                            {
+                                mut_ref.decode_len_delimited(decoder)?;
+                            };
+                            self._has.set_options();
+                        }
+                        5u32 => {
+                            let mut_ref = &mut self.r#client_streaming;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_client_streaming();
+                        }
+                        6u32 => {
+                            let mut_ref = &mut self.r#server_streaming;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_server_streaming();
                         }
                         _ => {
                             decoder.skip_wire_value(tag.wire_type())?;
@@ -3759,81 +3900,302 @@ pub mod google_ {
                 }
             }
         }
-        /// Describes a method of a service.
         #[derive(Debug)]
-        pub struct MethodDescriptorProto {
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#name: ::std::string::String,
-            /// Input and output type names.  These are resolved in the same way as
-            /// FieldDescriptorProto.type_name, but must refer to a message type.
+        pub struct FileOptions {
+            /// Sets the Java package where classes generated from this .proto will be
+            /// placed.  By default, the proto package is used, but this is often
+            /// inappropriate because proto packages do not normally start with backwards
+            /// domain names.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#input_type: ::std::string::String,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#output_type: ::std::string::String,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#options: MethodOptions,
-            /// Identifies if client streams multiple client messages
+            pub r#java_package: ::std::string::String,
+            /// Controls the name of the wrapper Java class generated for the .proto file.
+            /// That class will always contain the .proto file's getDescriptor() method as
+            /// well as any top-level extensions defined in the .proto file.
+            /// If java_multiple_files is disabled, then all the other classes from the
+            /// .proto file will be nested inside the single wrapper outer class.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#client_streaming: bool,
-            /// Identifies if server streams multiple server messages
+            pub r#java_outer_classname: ::std::string::String,
+            /// If enabled, then the Java code generator will generate a separate .java
+            /// file for each top-level message, enum, and service defined in the .proto
+            /// file.  Thus, these types will *not* be nested inside the wrapper class
+            /// named by java_outer_classname.  However, the wrapper class will still be
+            /// generated to contain the file's getDescriptor() method as well as any
+            /// top-level extensions defined in the file.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#server_streaming: bool,
+            pub r#java_multiple_files: bool,
+            /// This option does nothing.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#java_generate_equals_and_hash: bool,
+            /// A proto2 file can set this to true to opt in to UTF-8 checking for Java,
+            /// which will throw an exception if invalid UTF-8 is parsed from the wire or
+            /// assigned to a string field.
+            ///
+            /// TODO: clarify exactly what kinds of field types this option
+            /// applies to, and update these docs accordingly.
+            ///
+            /// Proto3 files already perform these checks. Setting the option explicitly to
+            /// false has no effect: it cannot be used to opt proto3 files out of UTF-8
+            /// checks.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#java_string_check_utf8: bool,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#optimize_for: FileOptions_::OptimizeMode,
+            /// Sets the Go package where structs generated from this .proto will be
+            /// placed. If omitted, the Go package will be derived from the following:
+            ///   - The basename of the package import path, if provided.
+            ///   - Otherwise, the package statement in the .proto file, if present.
+            ///   - Otherwise, the basename of the .proto file, without extension.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#go_package: ::std::string::String,
+            /// Should generic services be generated in each language?  "Generic" services
+            /// are not specific to any particular RPC system.  They are generated by the
+            /// main code generators in each language (without additional plugins).
+            /// Generic services were the only kind of service generation supported by
+            /// early versions of google.protobuf.
+            ///
+            /// Generic services are now considered deprecated in favor of using plugins
+            /// that generate code specific to your particular RPC system.  Therefore,
+            /// these default to false.  Old code which depends on generic services should
+            /// explicitly set them to true.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#cc_generic_services: bool,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#java_generic_services: bool,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#py_generic_services: bool,
+            /// Is this file deprecated?
+            /// Depending on the target platform, this can emit Deprecated annotations
+            /// for everything in the file, or it will be completely ignored; in the very
+            /// least, this is a formalization for deprecating files.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#deprecated: bool,
+            /// Enables the use of arenas for the proto messages in this file. This applies
+            /// only to generated classes for C++.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#cc_enable_arenas: bool,
+            /// Sets the objective c class prefix which is prepended to all objective c
+            /// generated classes from this .proto. There is no default.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#objc_class_prefix: ::std::string::String,
+            /// Namespace for generated classes; defaults to the package.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#csharp_namespace: ::std::string::String,
+            /// By default Swift generators will take the proto package and CamelCase it
+            /// replacing '.' with underscore and use that to prefix the types/symbols
+            /// defined. When this options is provided, they will use this value instead
+            /// to prefix the types/symbols defined.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#swift_prefix: ::std::string::String,
+            /// Sets the php class prefix which is prepended to all php generated classes
+            /// from this .proto. Default is empty.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#php_class_prefix: ::std::string::String,
+            /// Use this option to change the namespace of php generated classes. Default
+            /// is empty. When this option is empty, the package name will be used for
+            /// determining the namespace.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#php_namespace: ::std::string::String,
+            /// Use this option to change the namespace of php generated metadata classes.
+            /// Default is empty. When this option is empty, the proto file name will be
+            /// used for determining the namespace.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#php_metadata_namespace: ::std::string::String,
+            /// Use this option to change the package of ruby generated classes. Default
+            /// is empty. When this option is not set, the package name will be used for
+            /// determining the ruby package.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#ruby_package: ::std::string::String,
+            /// Any features defined in the specific edition.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#features: FeatureSet,
+            /// The parser stores options it doesn't recognize here.
+            /// See the documentation for the "Options" section above.
+            pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
             /// Tracks presence of optional and message fields
-            pub _has: MethodDescriptorProto_::_Hazzer,
+            pub _has: FileOptions_::_Hazzer,
         }
-        impl ::core::default::Default for MethodDescriptorProto {
+        impl ::core::default::Default for FileOptions {
             fn default() -> Self {
                 Self {
-                    r#name: ::core::default::Default::default(),
-                    r#input_type: ::core::default::Default::default(),
-                    r#output_type: ::core::default::Default::default(),
-                    r#options: ::core::default::Default::default(),
-                    r#client_streaming: false as _,
-                    r#server_streaming: false as _,
+                    r#java_package: ::core::default::Default::default(),
+                    r#java_outer_classname: ::core::default::Default::default(),
+                    r#java_multiple_files: false as _,
+                    r#java_generate_equals_and_hash: ::core::default::Default::default(),
+                    r#java_string_check_utf8: false as _,
+                    r#optimize_for: FileOptions_::OptimizeMode::Speed,
+                    r#go_package: ::core::default::Default::default(),
+                    r#cc_generic_services: false as _,
+                    r#java_generic_services: false as _,
+                    r#py_generic_services: false as _,
+                    r#deprecated: false as _,
+                    r#cc_enable_arenas: true as _,
+                    r#objc_class_prefix: ::core::default::Default::default(),
+                    r#csharp_namespace: ::core::default::Default::default(),
+                    r#swift_prefix: ::core::default::Default::default(),
+                    r#php_class_prefix: ::core::default::Default::default(),
+                    r#php_namespace: ::core::default::Default::default(),
+                    r#php_metadata_namespace: ::core::default::Default::default(),
+                    r#ruby_package: ::core::default::Default::default(),
+                    r#features: ::core::default::Default::default(),
+                    r#uninterpreted_option: ::core::default::Default::default(),
                     _has: ::core::default::Default::default(),
                 }
             }
         }
-        impl MethodDescriptorProto {
-            /// Return a reference to `name` as an `Option`
+        impl FileOptions {
+            /// Return a reference to `java_package` as an `Option`
             #[inline]
-            pub fn r#name(&self) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#name().then_some(&self.r#name)
-            }
-            /// Return a reference to `input_type` as an `Option`
-            #[inline]
-            pub fn r#input_type(
+            pub fn r#java_package(
                 &self,
             ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#input_type().then_some(&self.r#input_type)
+                self._has.r#java_package().then_some(&self.r#java_package)
             }
-            /// Return a reference to `output_type` as an `Option`
+            /// Return a reference to `java_outer_classname` as an `Option`
             #[inline]
-            pub fn r#output_type(
+            pub fn r#java_outer_classname(
                 &self,
             ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#output_type().then_some(&self.r#output_type)
+                self._has
+                    .r#java_outer_classname()
+                    .then_some(&self.r#java_outer_classname)
             }
-            /// Return a reference to `options` as an `Option`
+            /// Return a reference to `java_multiple_files` as an `Option`
             #[inline]
-            pub fn r#options(&self) -> ::core::option::Option<&MethodOptions> {
-                self._has.r#options().then_some(&self.r#options)
+            pub fn r#java_multiple_files(&self) -> ::core::option::Option<&bool> {
+                self._has.r#java_multiple_files().then_some(&self.r#java_multiple_files)
             }
-            /// Return a reference to `client_streaming` as an `Option`
+            /// Return a reference to `java_generate_equals_and_hash` as an `Option`
             #[inline]
-            pub fn r#client_streaming(&self) -> ::core::option::Option<&bool> {
-                self._has.r#client_streaming().then_some(&self.r#client_streaming)
+            pub fn r#java_generate_equals_and_hash(
+                &self,
+            ) -> ::core::option::Option<&bool> {
+                self._has
+                    .r#java_generate_equals_and_hash()
+                    .then_some(&self.r#java_generate_equals_and_hash)
             }
-            /// Return a reference to `server_streaming` as an `Option`
+            /// Return a reference to `java_string_check_utf8` as an `Option`
             #[inline]
-            pub fn r#server_streaming(&self) -> ::core::option::Option<&bool> {
-                self._has.r#server_streaming().then_some(&self.r#server_streaming)
+            pub fn r#java_string_check_utf8(&self) -> ::core::option::Option<&bool> {
+                self._has
+                    .r#java_string_check_utf8()
+                    .then_some(&self.r#java_string_check_utf8)
+            }
+            /// Return a reference to `optimize_for` as an `Option`
+            #[inline]
+            pub fn r#optimize_for(
+                &self,
+            ) -> ::core::option::Option<&FileOptions_::OptimizeMode> {
+                self._has.r#optimize_for().then_some(&self.r#optimize_for)
+            }
+            /// Return a reference to `go_package` as an `Option`
+            #[inline]
+            pub fn r#go_package(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#go_package().then_some(&self.r#go_package)
+            }
+            /// Return a reference to `cc_generic_services` as an `Option`
+            #[inline]
+            pub fn r#cc_generic_services(&self) -> ::core::option::Option<&bool> {
+                self._has.r#cc_generic_services().then_some(&self.r#cc_generic_services)
+            }
+            /// Return a reference to `java_generic_services` as an `Option`
+            #[inline]
+            pub fn r#java_generic_services(&self) -> ::core::option::Option<&bool> {
+                self._has
+                    .r#java_generic_services()
+                    .then_some(&self.r#java_generic_services)
+            }
+            /// Return a reference to `py_generic_services` as an `Option`
+            #[inline]
+            pub fn r#py_generic_services(&self) -> ::core::option::Option<&bool> {
+                self._has.r#py_generic_services().then_some(&self.r#py_generic_services)
+            }
+            /// Return a reference to `deprecated` as an `Option`
+            #[inline]
+            pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
+                self._has.r#deprecated().then_some(&self.r#deprecated)
+            }
+            /// Return a reference to `cc_enable_arenas` as an `Option`
+            #[inline]
+            pub fn r#cc_enable_arenas(&self) -> ::core::option::Option<&bool> {
+                self._has.r#cc_enable_arenas().then_some(&self.r#cc_enable_arenas)
+            }
+            /// Return a reference to `objc_class_prefix` as an `Option`
+            #[inline]
+            pub fn r#objc_class_prefix(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#objc_class_prefix().then_some(&self.r#objc_class_prefix)
+            }
+            /// Return a reference to `csharp_namespace` as an `Option`
+            #[inline]
+            pub fn r#csharp_namespace(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#csharp_namespace().then_some(&self.r#csharp_namespace)
+            }
+            /// Return a reference to `swift_prefix` as an `Option`
+            #[inline]
+            pub fn r#swift_prefix(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#swift_prefix().then_some(&self.r#swift_prefix)
+            }
+            /// Return a reference to `php_class_prefix` as an `Option`
+            #[inline]
+            pub fn r#php_class_prefix(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#php_class_prefix().then_some(&self.r#php_class_prefix)
+            }
+            /// Return a reference to `php_namespace` as an `Option`
+            #[inline]
+            pub fn r#php_namespace(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#php_namespace().then_some(&self.r#php_namespace)
+            }
+            /// Return a reference to `php_metadata_namespace` as an `Option`
+            #[inline]
+            pub fn r#php_metadata_namespace(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has
+                    .r#php_metadata_namespace()
+                    .then_some(&self.r#php_metadata_namespace)
+            }
+            /// Return a reference to `ruby_package` as an `Option`
+            #[inline]
+            pub fn r#ruby_package(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#ruby_package().then_some(&self.r#ruby_package)
+            }
+            /// Return a reference to `features` as an `Option`
+            #[inline]
+            pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
+                self._has.r#features().then_some(&self.r#features)
             }
         }
-        impl ::micropb::MessageDecode for MethodDescriptorProto {
+        impl ::micropb::MessageDecode for FileOptions {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -3846,51 +4208,178 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
-                            let mut_ref = &mut self.r#name;
+                            let mut_ref = &mut self.r#java_package;
                             {
                                 decoder
                                     .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
                             };
-                            self._has.set_name();
+                            self._has.set_java_package();
                         }
-                        2u32 => {
-                            let mut_ref = &mut self.r#input_type;
+                        8u32 => {
+                            let mut_ref = &mut self.r#java_outer_classname;
                             {
                                 decoder
                                     .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
                             };
-                            self._has.set_input_type();
+                            self._has.set_java_outer_classname();
                         }
-                        3u32 => {
-                            let mut_ref = &mut self.r#output_type;
+                        10u32 => {
+                            let mut_ref = &mut self.r#java_multiple_files;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_java_multiple_files();
+                        }
+                        20u32 => {
+                            let mut_ref = &mut self.r#java_generate_equals_and_hash;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_java_generate_equals_and_hash();
+                        }
+                        27u32 => {
+                            let mut_ref = &mut self.r#java_string_check_utf8;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_java_string_check_utf8();
+                        }
+                        9u32 => {
+                            let mut_ref = &mut self.r#optimize_for;
+                            {
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| FileOptions_::OptimizeMode(n as _))?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_optimize_for();
+                        }
+                        11u32 => {
+                            let mut_ref = &mut self.r#go_package;
                             {
                                 decoder
                                     .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
                             };
-                            self._has.set_output_type();
+                            self._has.set_go_package();
                         }
-                        4u32 => {
-                            let mut_ref = &mut self.r#options;
+                        16u32 => {
+                            let mut_ref = &mut self.r#cc_generic_services;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_cc_generic_services();
+                        }
+                        17u32 => {
+                            let mut_ref = &mut self.r#java_generic_services;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_java_generic_services();
+                        }
+                        18u32 => {
+                            let mut_ref = &mut self.r#py_generic_services;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_py_generic_services();
+                        }
+                        23u32 => {
+                            let mut_ref = &mut self.r#deprecated;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_deprecated();
+                        }
+                        31u32 => {
+                            let mut_ref = &mut self.r#cc_enable_arenas;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_cc_enable_arenas();
+                        }
+                        36u32 => {
+                            let mut_ref = &mut self.r#objc_class_prefix;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_objc_class_prefix();
+                        }
+                        37u32 => {
+                            let mut_ref = &mut self.r#csharp_namespace;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_csharp_namespace();
+                        }
+                        39u32 => {
+                            let mut_ref = &mut self.r#swift_prefix;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_swift_prefix();
+                        }
+                        40u32 => {
+                            let mut_ref = &mut self.r#php_class_prefix;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_php_class_prefix();
+                        }
+                        41u32 => {
+                            let mut_ref = &mut self.r#php_namespace;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_php_namespace();
+                        }
+                        44u32 => {
+                            let mut_ref = &mut self.r#php_metadata_namespace;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_php_metadata_namespace();
+                        }
+                        45u32 => {
+                            let mut_ref = &mut self.r#ruby_package;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_ruby_package();
+                        }
+                        50u32 => {
+                            let mut_ref = &mut self.r#features;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
                             };
-                            self._has.set_options();
+                            self._has.set_features();
                         }
-                        5u32 => {
-                            let mut_ref = &mut self.r#client_streaming;
+                        999u32 => {
+                            let mut val: UninterpretedOption = ::core::default::Default::default();
+                            let mut_ref = &mut val;
                             {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
+                                mut_ref.decode_len_delimited(decoder)?;
                             };
-                            self._has.set_client_streaming();
-                        }
-                        6u32 => {
-                            let mut_ref = &mut self.r#server_streaming;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_server_streaming();
+                            if let (Err(_), false) = (
+                                self.r#uninterpreted_option.pb_push(val),
+                                decoder.ignore_repeated_cap_err,
+                            ) {
+                                return Err(::micropb::DecodeError::Capacity);
+                            }
                         }
                         _ => {
                             decoder.skip_wire_value(tag.wire_type())?;
@@ -4442,668 +4931,6 @@ pub mod google_ {
             }
         }
         #[derive(Debug)]
-        pub struct FileOptions {
-            /// Sets the Java package where classes generated from this .proto will be
-            /// placed.  By default, the proto package is used, but this is often
-            /// inappropriate because proto packages do not normally start with backwards
-            /// domain names.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#java_package: ::std::string::String,
-            /// Controls the name of the wrapper Java class generated for the .proto file.
-            /// That class will always contain the .proto file's getDescriptor() method as
-            /// well as any top-level extensions defined in the .proto file.
-            /// If java_multiple_files is disabled, then all the other classes from the
-            /// .proto file will be nested inside the single wrapper outer class.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#java_outer_classname: ::std::string::String,
-            /// If enabled, then the Java code generator will generate a separate .java
-            /// file for each top-level message, enum, and service defined in the .proto
-            /// file.  Thus, these types will *not* be nested inside the wrapper class
-            /// named by java_outer_classname.  However, the wrapper class will still be
-            /// generated to contain the file's getDescriptor() method as well as any
-            /// top-level extensions defined in the file.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#java_multiple_files: bool,
-            /// This option does nothing.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#java_generate_equals_and_hash: bool,
-            /// A proto2 file can set this to true to opt in to UTF-8 checking for Java,
-            /// which will throw an exception if invalid UTF-8 is parsed from the wire or
-            /// assigned to a string field.
-            ///
-            /// TODO: clarify exactly what kinds of field types this option
-            /// applies to, and update these docs accordingly.
-            ///
-            /// Proto3 files already perform these checks. Setting the option explicitly to
-            /// false has no effect: it cannot be used to opt proto3 files out of UTF-8
-            /// checks.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#java_string_check_utf8: bool,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#optimize_for: FileOptions_::OptimizeMode,
-            /// Sets the Go package where structs generated from this .proto will be
-            /// placed. If omitted, the Go package will be derived from the following:
-            ///   - The basename of the package import path, if provided.
-            ///   - Otherwise, the package statement in the .proto file, if present.
-            ///   - Otherwise, the basename of the .proto file, without extension.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#go_package: ::std::string::String,
-            /// Should generic services be generated in each language?  "Generic" services
-            /// are not specific to any particular RPC system.  They are generated by the
-            /// main code generators in each language (without additional plugins).
-            /// Generic services were the only kind of service generation supported by
-            /// early versions of google.protobuf.
-            ///
-            /// Generic services are now considered deprecated in favor of using plugins
-            /// that generate code specific to your particular RPC system.  Therefore,
-            /// these default to false.  Old code which depends on generic services should
-            /// explicitly set them to true.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#cc_generic_services: bool,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#java_generic_services: bool,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#py_generic_services: bool,
-            /// Is this file deprecated?
-            /// Depending on the target platform, this can emit Deprecated annotations
-            /// for everything in the file, or it will be completely ignored; in the very
-            /// least, this is a formalization for deprecating files.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#deprecated: bool,
-            /// Enables the use of arenas for the proto messages in this file. This applies
-            /// only to generated classes for C++.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#cc_enable_arenas: bool,
-            /// Sets the objective c class prefix which is prepended to all objective c
-            /// generated classes from this .proto. There is no default.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#objc_class_prefix: ::std::string::String,
-            /// Namespace for generated classes; defaults to the package.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#csharp_namespace: ::std::string::String,
-            /// By default Swift generators will take the proto package and CamelCase it
-            /// replacing '.' with underscore and use that to prefix the types/symbols
-            /// defined. When this options is provided, they will use this value instead
-            /// to prefix the types/symbols defined.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#swift_prefix: ::std::string::String,
-            /// Sets the php class prefix which is prepended to all php generated classes
-            /// from this .proto. Default is empty.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#php_class_prefix: ::std::string::String,
-            /// Use this option to change the namespace of php generated classes. Default
-            /// is empty. When this option is empty, the package name will be used for
-            /// determining the namespace.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#php_namespace: ::std::string::String,
-            /// Use this option to change the namespace of php generated metadata classes.
-            /// Default is empty. When this option is empty, the proto file name will be
-            /// used for determining the namespace.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#php_metadata_namespace: ::std::string::String,
-            /// Use this option to change the package of ruby generated classes. Default
-            /// is empty. When this option is not set, the package name will be used for
-            /// determining the ruby package.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#ruby_package: ::std::string::String,
-            /// Any features defined in the specific edition.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#features: FeatureSet,
-            /// The parser stores options it doesn't recognize here.
-            /// See the documentation for the "Options" section above.
-            pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
-            /// Tracks presence of optional and message fields
-            pub _has: FileOptions_::_Hazzer,
-        }
-        impl ::core::default::Default for FileOptions {
-            fn default() -> Self {
-                Self {
-                    r#java_package: ::core::default::Default::default(),
-                    r#java_outer_classname: ::core::default::Default::default(),
-                    r#java_multiple_files: false as _,
-                    r#java_generate_equals_and_hash: ::core::default::Default::default(),
-                    r#java_string_check_utf8: false as _,
-                    r#optimize_for: FileOptions_::OptimizeMode::Speed,
-                    r#go_package: ::core::default::Default::default(),
-                    r#cc_generic_services: false as _,
-                    r#java_generic_services: false as _,
-                    r#py_generic_services: false as _,
-                    r#deprecated: false as _,
-                    r#cc_enable_arenas: true as _,
-                    r#objc_class_prefix: ::core::default::Default::default(),
-                    r#csharp_namespace: ::core::default::Default::default(),
-                    r#swift_prefix: ::core::default::Default::default(),
-                    r#php_class_prefix: ::core::default::Default::default(),
-                    r#php_namespace: ::core::default::Default::default(),
-                    r#php_metadata_namespace: ::core::default::Default::default(),
-                    r#ruby_package: ::core::default::Default::default(),
-                    r#features: ::core::default::Default::default(),
-                    r#uninterpreted_option: ::core::default::Default::default(),
-                    _has: ::core::default::Default::default(),
-                }
-            }
-        }
-        impl FileOptions {
-            /// Return a reference to `java_package` as an `Option`
-            #[inline]
-            pub fn r#java_package(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#java_package().then_some(&self.r#java_package)
-            }
-            /// Return a reference to `java_outer_classname` as an `Option`
-            #[inline]
-            pub fn r#java_outer_classname(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has
-                    .r#java_outer_classname()
-                    .then_some(&self.r#java_outer_classname)
-            }
-            /// Return a reference to `java_multiple_files` as an `Option`
-            #[inline]
-            pub fn r#java_multiple_files(&self) -> ::core::option::Option<&bool> {
-                self._has.r#java_multiple_files().then_some(&self.r#java_multiple_files)
-            }
-            /// Return a reference to `java_generate_equals_and_hash` as an `Option`
-            #[inline]
-            pub fn r#java_generate_equals_and_hash(
-                &self,
-            ) -> ::core::option::Option<&bool> {
-                self._has
-                    .r#java_generate_equals_and_hash()
-                    .then_some(&self.r#java_generate_equals_and_hash)
-            }
-            /// Return a reference to `java_string_check_utf8` as an `Option`
-            #[inline]
-            pub fn r#java_string_check_utf8(&self) -> ::core::option::Option<&bool> {
-                self._has
-                    .r#java_string_check_utf8()
-                    .then_some(&self.r#java_string_check_utf8)
-            }
-            /// Return a reference to `optimize_for` as an `Option`
-            #[inline]
-            pub fn r#optimize_for(
-                &self,
-            ) -> ::core::option::Option<&FileOptions_::OptimizeMode> {
-                self._has.r#optimize_for().then_some(&self.r#optimize_for)
-            }
-            /// Return a reference to `go_package` as an `Option`
-            #[inline]
-            pub fn r#go_package(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#go_package().then_some(&self.r#go_package)
-            }
-            /// Return a reference to `cc_generic_services` as an `Option`
-            #[inline]
-            pub fn r#cc_generic_services(&self) -> ::core::option::Option<&bool> {
-                self._has.r#cc_generic_services().then_some(&self.r#cc_generic_services)
-            }
-            /// Return a reference to `java_generic_services` as an `Option`
-            #[inline]
-            pub fn r#java_generic_services(&self) -> ::core::option::Option<&bool> {
-                self._has
-                    .r#java_generic_services()
-                    .then_some(&self.r#java_generic_services)
-            }
-            /// Return a reference to `py_generic_services` as an `Option`
-            #[inline]
-            pub fn r#py_generic_services(&self) -> ::core::option::Option<&bool> {
-                self._has.r#py_generic_services().then_some(&self.r#py_generic_services)
-            }
-            /// Return a reference to `deprecated` as an `Option`
-            #[inline]
-            pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
-                self._has.r#deprecated().then_some(&self.r#deprecated)
-            }
-            /// Return a reference to `cc_enable_arenas` as an `Option`
-            #[inline]
-            pub fn r#cc_enable_arenas(&self) -> ::core::option::Option<&bool> {
-                self._has.r#cc_enable_arenas().then_some(&self.r#cc_enable_arenas)
-            }
-            /// Return a reference to `objc_class_prefix` as an `Option`
-            #[inline]
-            pub fn r#objc_class_prefix(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#objc_class_prefix().then_some(&self.r#objc_class_prefix)
-            }
-            /// Return a reference to `csharp_namespace` as an `Option`
-            #[inline]
-            pub fn r#csharp_namespace(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#csharp_namespace().then_some(&self.r#csharp_namespace)
-            }
-            /// Return a reference to `swift_prefix` as an `Option`
-            #[inline]
-            pub fn r#swift_prefix(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#swift_prefix().then_some(&self.r#swift_prefix)
-            }
-            /// Return a reference to `php_class_prefix` as an `Option`
-            #[inline]
-            pub fn r#php_class_prefix(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#php_class_prefix().then_some(&self.r#php_class_prefix)
-            }
-            /// Return a reference to `php_namespace` as an `Option`
-            #[inline]
-            pub fn r#php_namespace(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#php_namespace().then_some(&self.r#php_namespace)
-            }
-            /// Return a reference to `php_metadata_namespace` as an `Option`
-            #[inline]
-            pub fn r#php_metadata_namespace(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has
-                    .r#php_metadata_namespace()
-                    .then_some(&self.r#php_metadata_namespace)
-            }
-            /// Return a reference to `ruby_package` as an `Option`
-            #[inline]
-            pub fn r#ruby_package(
-                &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#ruby_package().then_some(&self.r#ruby_package)
-            }
-            /// Return a reference to `features` as an `Option`
-            #[inline]
-            pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
-                self._has.r#features().then_some(&self.r#features)
-            }
-        }
-        impl ::micropb::MessageDecode for FileOptions {
-            fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                &mut self,
-                decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                len: usize,
-            ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                let before = decoder.bytes_read();
-                while decoder.bytes_read() - before < len {
-                    let tag = decoder.decode_tag()?;
-                    match tag.field_num() {
-                        0 => return Err(::micropb::DecodeError::ZeroField),
-                        1u32 => {
-                            let mut_ref = &mut self.r#java_package;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_java_package();
-                        }
-                        8u32 => {
-                            let mut_ref = &mut self.r#java_outer_classname;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_java_outer_classname();
-                        }
-                        10u32 => {
-                            let mut_ref = &mut self.r#java_multiple_files;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_java_multiple_files();
-                        }
-                        20u32 => {
-                            let mut_ref = &mut self.r#java_generate_equals_and_hash;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_java_generate_equals_and_hash();
-                        }
-                        27u32 => {
-                            let mut_ref = &mut self.r#java_string_check_utf8;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_java_string_check_utf8();
-                        }
-                        9u32 => {
-                            let mut_ref = &mut self.r#optimize_for;
-                            {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| FileOptions_::OptimizeMode(n as _))?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_optimize_for();
-                        }
-                        11u32 => {
-                            let mut_ref = &mut self.r#go_package;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_go_package();
-                        }
-                        16u32 => {
-                            let mut_ref = &mut self.r#cc_generic_services;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_cc_generic_services();
-                        }
-                        17u32 => {
-                            let mut_ref = &mut self.r#java_generic_services;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_java_generic_services();
-                        }
-                        18u32 => {
-                            let mut_ref = &mut self.r#py_generic_services;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_py_generic_services();
-                        }
-                        23u32 => {
-                            let mut_ref = &mut self.r#deprecated;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_deprecated();
-                        }
-                        31u32 => {
-                            let mut_ref = &mut self.r#cc_enable_arenas;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_cc_enable_arenas();
-                        }
-                        36u32 => {
-                            let mut_ref = &mut self.r#objc_class_prefix;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_objc_class_prefix();
-                        }
-                        37u32 => {
-                            let mut_ref = &mut self.r#csharp_namespace;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_csharp_namespace();
-                        }
-                        39u32 => {
-                            let mut_ref = &mut self.r#swift_prefix;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_swift_prefix();
-                        }
-                        40u32 => {
-                            let mut_ref = &mut self.r#php_class_prefix;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_php_class_prefix();
-                        }
-                        41u32 => {
-                            let mut_ref = &mut self.r#php_namespace;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_php_namespace();
-                        }
-                        44u32 => {
-                            let mut_ref = &mut self.r#php_metadata_namespace;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_php_metadata_namespace();
-                        }
-                        45u32 => {
-                            let mut_ref = &mut self.r#ruby_package;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_ruby_package();
-                        }
-                        50u32 => {
-                            let mut_ref = &mut self.r#features;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            self._has.set_features();
-                        }
-                        999u32 => {
-                            let mut val: UninterpretedOption = ::core::default::Default::default();
-                            let mut_ref = &mut val;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            if let (Err(_), false) = (
-                                self.r#uninterpreted_option.pb_push(val),
-                                decoder.ignore_repeated_cap_err,
-                            ) {
-                                return Err(::micropb::DecodeError::Capacity);
-                            }
-                        }
-                        _ => {
-                            decoder.skip_wire_value(tag.wire_type())?;
-                        }
-                    }
-                }
-                Ok(())
-            }
-        }
-        /// Inner types for `MessageOptions`
-        pub mod MessageOptions_ {
-            /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
-            pub struct _Hazzer([u8; 1]);
-            impl _Hazzer {
-                /// New hazzer with all fields set to off
-                #[inline]
-                pub const fn _new() -> Self {
-                    Self([0; 1])
-                }
-                /// Query presence of `message_set_wire_format`
-                #[inline]
-                pub const fn r#message_set_wire_format(&self) -> bool {
-                    (self.0[0] & 1) != 0
-                }
-                /// Set presence of `message_set_wire_format`
-                #[inline]
-                pub const fn set_message_set_wire_format(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 1;
-                    self
-                }
-                /// Clear presence of `message_set_wire_format`
-                #[inline]
-                pub const fn clear_message_set_wire_format(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !1;
-                    self
-                }
-                /// Builder method that sets the presence of `message_set_wire_format`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_message_set_wire_format(mut self) -> Self {
-                    self.set_message_set_wire_format();
-                    self
-                }
-                /// Query presence of `no_standard_descriptor_accessor`
-                #[inline]
-                pub const fn r#no_standard_descriptor_accessor(&self) -> bool {
-                    (self.0[0] & 2) != 0
-                }
-                /// Set presence of `no_standard_descriptor_accessor`
-                #[inline]
-                pub const fn set_no_standard_descriptor_accessor(
-                    &mut self,
-                ) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 2;
-                    self
-                }
-                /// Clear presence of `no_standard_descriptor_accessor`
-                #[inline]
-                pub const fn clear_no_standard_descriptor_accessor(
-                    &mut self,
-                ) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !2;
-                    self
-                }
-                /// Builder method that sets the presence of `no_standard_descriptor_accessor`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_no_standard_descriptor_accessor(mut self) -> Self {
-                    self.set_no_standard_descriptor_accessor();
-                    self
-                }
-                /// Query presence of `deprecated`
-                #[inline]
-                pub const fn r#deprecated(&self) -> bool {
-                    (self.0[0] & 4) != 0
-                }
-                /// Set presence of `deprecated`
-                #[inline]
-                pub const fn set_deprecated(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 4;
-                    self
-                }
-                /// Clear presence of `deprecated`
-                #[inline]
-                pub const fn clear_deprecated(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !4;
-                    self
-                }
-                /// Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_deprecated(mut self) -> Self {
-                    self.set_deprecated();
-                    self
-                }
-                /// Query presence of `map_entry`
-                #[inline]
-                pub const fn r#map_entry(&self) -> bool {
-                    (self.0[0] & 8) != 0
-                }
-                /// Set presence of `map_entry`
-                #[inline]
-                pub const fn set_map_entry(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 8;
-                    self
-                }
-                /// Clear presence of `map_entry`
-                #[inline]
-                pub const fn clear_map_entry(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !8;
-                    self
-                }
-                /// Builder method that sets the presence of `map_entry`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_map_entry(mut self) -> Self {
-                    self.set_map_entry();
-                    self
-                }
-                /// Query presence of `deprecated_legacy_json_field_conflicts`
-                #[inline]
-                pub const fn r#deprecated_legacy_json_field_conflicts(&self) -> bool {
-                    (self.0[0] & 16) != 0
-                }
-                /// Set presence of `deprecated_legacy_json_field_conflicts`
-                #[inline]
-                pub const fn set_deprecated_legacy_json_field_conflicts(
-                    &mut self,
-                ) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 16;
-                    self
-                }
-                /// Clear presence of `deprecated_legacy_json_field_conflicts`
-                #[inline]
-                pub const fn clear_deprecated_legacy_json_field_conflicts(
-                    &mut self,
-                ) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !16;
-                    self
-                }
-                /// Builder method that sets the presence of `deprecated_legacy_json_field_conflicts`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_deprecated_legacy_json_field_conflicts(
-                    mut self,
-                ) -> Self {
-                    self.set_deprecated_legacy_json_field_conflicts();
-                    self
-                }
-                /// Query presence of `features`
-                #[inline]
-                pub const fn r#features(&self) -> bool {
-                    (self.0[0] & 32) != 0
-                }
-                /// Set presence of `features`
-                #[inline]
-                pub const fn set_features(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 32;
-                    self
-                }
-                /// Clear presence of `features`
-                #[inline]
-                pub const fn clear_features(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !32;
-                    self
-                }
-                /// Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_features(mut self) -> Self {
-                    self.set_features();
-                    self
-                }
-            }
-        }
-        #[derive(Debug)]
         pub struct MessageOptions {
             /// Set true to use the old proto1 MessageSet wire format for extensions.
             /// This is provided for backwards-compatibility with the MessageSet wire
@@ -5557,871 +5384,88 @@ pub mod google_ {
                 Ok(())
             }
         }
-        /// Inner types for `FieldOptions`
-        pub mod FieldOptions_ {
-            /// Inner types for `EditionDefault`
-            pub mod EditionDefault_ {
-                /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
-                pub struct _Hazzer([u8; 1]);
-                impl _Hazzer {
-                    /// New hazzer with all fields set to off
-                    #[inline]
-                    pub const fn _new() -> Self {
-                        Self([0; 1])
-                    }
-                    /// Query presence of `edition`
-                    #[inline]
-                    pub const fn r#edition(&self) -> bool {
-                        (self.0[0] & 1) != 0
-                    }
-                    /// Set presence of `edition`
-                    #[inline]
-                    pub const fn set_edition(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 1;
-                        self
-                    }
-                    /// Clear presence of `edition`
-                    #[inline]
-                    pub const fn clear_edition(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !1;
-                        self
-                    }
-                    /// Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_edition(mut self) -> Self {
-                        self.set_edition();
-                        self
-                    }
-                    /// Query presence of `value`
-                    #[inline]
-                    pub const fn r#value(&self) -> bool {
-                        (self.0[0] & 2) != 0
-                    }
-                    /// Set presence of `value`
-                    #[inline]
-                    pub const fn set_value(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 2;
-                        self
-                    }
-                    /// Clear presence of `value`
-                    #[inline]
-                    pub const fn clear_value(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !2;
-                        self
-                    }
-                    /// Builder method that sets the presence of `value`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_value(mut self) -> Self {
-                        self.set_value();
-                        self
-                    }
-                }
-            }
-            #[derive(Debug, Default)]
-            pub struct EditionDefault {
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#edition: super::Edition,
-                /// Textproto value.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#value: ::std::string::String,
-                /// Tracks presence of optional and message fields
-                pub _has: EditionDefault_::_Hazzer,
-            }
-            impl EditionDefault {
-                /// Return a reference to `edition` as an `Option`
-                #[inline]
-                pub fn r#edition(&self) -> ::core::option::Option<&super::Edition> {
-                    self._has.r#edition().then_some(&self.r#edition)
-                }
-                /// Set the value and presence of `edition`
-                #[inline]
-                pub fn set_edition(&mut self, value: super::Edition) -> &mut Self {
-                    self._has.set_edition();
-                    self.r#edition = value.into();
-                    self
-                }
-                /// Return a mutable reference to `edition` as an `Option`
-                #[inline]
-                pub fn mut_edition(
-                    &mut self,
-                ) -> ::core::option::Option<&mut super::Edition> {
-                    self._has.r#edition().then_some(&mut self.r#edition)
-                }
-                /// Clear the presence of `edition`
-                #[inline]
-                pub fn clear_edition(&mut self) -> &mut Self {
-                    self._has.clear_edition();
-                    self
-                }
-                /// Take the value of `edition` and clear its presence
-                #[inline]
-                pub fn take_edition(
-                    &mut self,
-                ) -> ::core::option::Option<super::Edition> {
-                    let val = self
-                        ._has
-                        .r#edition()
-                        .then(|| ::core::mem::take(&mut self.r#edition));
-                    self._has.clear_edition();
-                    val
-                }
-                /// Builder method that sets the value of `edition`. Useful for initializing the message.
-                #[inline]
-                pub fn init_edition(mut self, value: super::Edition) -> Self {
-                    self.set_edition(value);
-                    self
-                }
-                /// Return a reference to `value` as an `Option`
-                #[inline]
-                pub fn r#value(&self) -> ::core::option::Option<&::std::string::String> {
-                    self._has.r#value().then_some(&self.r#value)
-                }
-                /// Set the value and presence of `value`
-                #[inline]
-                pub fn set_value(&mut self, value: ::std::string::String) -> &mut Self {
-                    self._has.set_value();
-                    self.r#value = value.into();
-                    self
-                }
-                /// Return a mutable reference to `value` as an `Option`
-                #[inline]
-                pub fn mut_value(
-                    &mut self,
-                ) -> ::core::option::Option<&mut ::std::string::String> {
-                    self._has.r#value().then_some(&mut self.r#value)
-                }
-                /// Clear the presence of `value`
-                #[inline]
-                pub fn clear_value(&mut self) -> &mut Self {
-                    self._has.clear_value();
-                    self
-                }
-                /// Take the value of `value` and clear its presence
-                #[inline]
-                pub fn take_value(
-                    &mut self,
-                ) -> ::core::option::Option<::std::string::String> {
-                    let val = self
-                        ._has
-                        .r#value()
-                        .then(|| ::core::mem::take(&mut self.r#value));
-                    self._has.clear_value();
-                    val
-                }
-                /// Builder method that sets the value of `value`. Useful for initializing the message.
-                #[inline]
-                pub fn init_value(mut self, value: ::std::string::String) -> Self {
-                    self.set_value(value);
-                    self
-                }
-            }
-            impl ::micropb::MessageDecode for EditionDefault {
-                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                    &mut self,
-                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                    len: usize,
-                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                    let before = decoder.bytes_read();
-                    while decoder.bytes_read() - before < len {
-                        let tag = decoder.decode_tag()?;
-                        match tag.field_num() {
-                            0 => return Err(::micropb::DecodeError::ZeroField),
-                            3u32 => {
-                                let mut_ref = &mut self.r#edition;
-                                {
-                                    let val = decoder
-                                        .decode_int32()
-                                        .map(|n| super::Edition(n as _))?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_edition();
-                            }
-                            2u32 => {
-                                let mut_ref = &mut self.r#value;
-                                {
-                                    decoder
-                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                                };
-                                self._has.set_value();
-                            }
-                            _ => {
-                                decoder.skip_wire_value(tag.wire_type())?;
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-            }
-            /// Inner types for `FeatureSupport`
-            pub mod FeatureSupport_ {
-                /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
-                pub struct _Hazzer([u8; 1]);
-                impl _Hazzer {
-                    /// New hazzer with all fields set to off
-                    #[inline]
-                    pub const fn _new() -> Self {
-                        Self([0; 1])
-                    }
-                    /// Query presence of `edition_introduced`
-                    #[inline]
-                    pub const fn r#edition_introduced(&self) -> bool {
-                        (self.0[0] & 1) != 0
-                    }
-                    /// Set presence of `edition_introduced`
-                    #[inline]
-                    pub const fn set_edition_introduced(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 1;
-                        self
-                    }
-                    /// Clear presence of `edition_introduced`
-                    #[inline]
-                    pub const fn clear_edition_introduced(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !1;
-                        self
-                    }
-                    /// Builder method that sets the presence of `edition_introduced`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_edition_introduced(mut self) -> Self {
-                        self.set_edition_introduced();
-                        self
-                    }
-                    /// Query presence of `edition_deprecated`
-                    #[inline]
-                    pub const fn r#edition_deprecated(&self) -> bool {
-                        (self.0[0] & 2) != 0
-                    }
-                    /// Set presence of `edition_deprecated`
-                    #[inline]
-                    pub const fn set_edition_deprecated(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 2;
-                        self
-                    }
-                    /// Clear presence of `edition_deprecated`
-                    #[inline]
-                    pub const fn clear_edition_deprecated(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !2;
-                        self
-                    }
-                    /// Builder method that sets the presence of `edition_deprecated`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_edition_deprecated(mut self) -> Self {
-                        self.set_edition_deprecated();
-                        self
-                    }
-                    /// Query presence of `deprecation_warning`
-                    #[inline]
-                    pub const fn r#deprecation_warning(&self) -> bool {
-                        (self.0[0] & 4) != 0
-                    }
-                    /// Set presence of `deprecation_warning`
-                    #[inline]
-                    pub const fn set_deprecation_warning(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 4;
-                        self
-                    }
-                    /// Clear presence of `deprecation_warning`
-                    #[inline]
-                    pub const fn clear_deprecation_warning(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !4;
-                        self
-                    }
-                    /// Builder method that sets the presence of `deprecation_warning`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_deprecation_warning(mut self) -> Self {
-                        self.set_deprecation_warning();
-                        self
-                    }
-                    /// Query presence of `edition_removed`
-                    #[inline]
-                    pub const fn r#edition_removed(&self) -> bool {
-                        (self.0[0] & 8) != 0
-                    }
-                    /// Set presence of `edition_removed`
-                    #[inline]
-                    pub const fn set_edition_removed(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 8;
-                        self
-                    }
-                    /// Clear presence of `edition_removed`
-                    #[inline]
-                    pub const fn clear_edition_removed(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !8;
-                        self
-                    }
-                    /// Builder method that sets the presence of `edition_removed`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_edition_removed(mut self) -> Self {
-                        self.set_edition_removed();
-                        self
-                    }
-                }
-            }
-            /// Information about the support window of a feature.
-            #[derive(Debug, Default)]
-            pub struct FeatureSupport {
-                /// The edition that this feature was first available in.  In editions
-                /// earlier than this one, the default assigned to EDITION_LEGACY will be
-                /// used, and proto files will not be able to override it.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#edition_introduced: super::Edition,
-                /// The edition this feature becomes deprecated in.  Using this after this
-                /// edition may trigger warnings.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#edition_deprecated: super::Edition,
-                /// The deprecation warning text if this feature is used after the edition it
-                /// was marked deprecated in.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#deprecation_warning: ::std::string::String,
-                /// The edition this feature is no longer available in.  In editions after
-                /// this one, the last default assigned will be used, and proto files will
-                /// not be able to override it.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#edition_removed: super::Edition,
-                /// Tracks presence of optional and message fields
-                pub _has: FeatureSupport_::_Hazzer,
-            }
-            impl FeatureSupport {
-                /// Return a reference to `edition_introduced` as an `Option`
-                #[inline]
-                pub fn r#edition_introduced(
-                    &self,
-                ) -> ::core::option::Option<&super::Edition> {
-                    self._has
-                        .r#edition_introduced()
-                        .then_some(&self.r#edition_introduced)
-                }
-                /// Set the value and presence of `edition_introduced`
-                #[inline]
-                pub fn set_edition_introduced(
-                    &mut self,
-                    value: super::Edition,
-                ) -> &mut Self {
-                    self._has.set_edition_introduced();
-                    self.r#edition_introduced = value.into();
-                    self
-                }
-                /// Return a mutable reference to `edition_introduced` as an `Option`
-                #[inline]
-                pub fn mut_edition_introduced(
-                    &mut self,
-                ) -> ::core::option::Option<&mut super::Edition> {
-                    self._has
-                        .r#edition_introduced()
-                        .then_some(&mut self.r#edition_introduced)
-                }
-                /// Clear the presence of `edition_introduced`
-                #[inline]
-                pub fn clear_edition_introduced(&mut self) -> &mut Self {
-                    self._has.clear_edition_introduced();
-                    self
-                }
-                /// Take the value of `edition_introduced` and clear its presence
-                #[inline]
-                pub fn take_edition_introduced(
-                    &mut self,
-                ) -> ::core::option::Option<super::Edition> {
-                    let val = self
-                        ._has
-                        .r#edition_introduced()
-                        .then(|| ::core::mem::take(&mut self.r#edition_introduced));
-                    self._has.clear_edition_introduced();
-                    val
-                }
-                /// Builder method that sets the value of `edition_introduced`. Useful for initializing the message.
-                #[inline]
-                pub fn init_edition_introduced(mut self, value: super::Edition) -> Self {
-                    self.set_edition_introduced(value);
-                    self
-                }
-                /// Return a reference to `edition_deprecated` as an `Option`
-                #[inline]
-                pub fn r#edition_deprecated(
-                    &self,
-                ) -> ::core::option::Option<&super::Edition> {
-                    self._has
-                        .r#edition_deprecated()
-                        .then_some(&self.r#edition_deprecated)
-                }
-                /// Set the value and presence of `edition_deprecated`
-                #[inline]
-                pub fn set_edition_deprecated(
-                    &mut self,
-                    value: super::Edition,
-                ) -> &mut Self {
-                    self._has.set_edition_deprecated();
-                    self.r#edition_deprecated = value.into();
-                    self
-                }
-                /// Return a mutable reference to `edition_deprecated` as an `Option`
-                #[inline]
-                pub fn mut_edition_deprecated(
-                    &mut self,
-                ) -> ::core::option::Option<&mut super::Edition> {
-                    self._has
-                        .r#edition_deprecated()
-                        .then_some(&mut self.r#edition_deprecated)
-                }
-                /// Clear the presence of `edition_deprecated`
-                #[inline]
-                pub fn clear_edition_deprecated(&mut self) -> &mut Self {
-                    self._has.clear_edition_deprecated();
-                    self
-                }
-                /// Take the value of `edition_deprecated` and clear its presence
-                #[inline]
-                pub fn take_edition_deprecated(
-                    &mut self,
-                ) -> ::core::option::Option<super::Edition> {
-                    let val = self
-                        ._has
-                        .r#edition_deprecated()
-                        .then(|| ::core::mem::take(&mut self.r#edition_deprecated));
-                    self._has.clear_edition_deprecated();
-                    val
-                }
-                /// Builder method that sets the value of `edition_deprecated`. Useful for initializing the message.
-                #[inline]
-                pub fn init_edition_deprecated(mut self, value: super::Edition) -> Self {
-                    self.set_edition_deprecated(value);
-                    self
-                }
-                /// Return a reference to `deprecation_warning` as an `Option`
-                #[inline]
-                pub fn r#deprecation_warning(
-                    &self,
-                ) -> ::core::option::Option<&::std::string::String> {
-                    self._has
-                        .r#deprecation_warning()
-                        .then_some(&self.r#deprecation_warning)
-                }
-                /// Set the value and presence of `deprecation_warning`
-                #[inline]
-                pub fn set_deprecation_warning(
-                    &mut self,
-                    value: ::std::string::String,
-                ) -> &mut Self {
-                    self._has.set_deprecation_warning();
-                    self.r#deprecation_warning = value.into();
-                    self
-                }
-                /// Return a mutable reference to `deprecation_warning` as an `Option`
-                #[inline]
-                pub fn mut_deprecation_warning(
-                    &mut self,
-                ) -> ::core::option::Option<&mut ::std::string::String> {
-                    self._has
-                        .r#deprecation_warning()
-                        .then_some(&mut self.r#deprecation_warning)
-                }
-                /// Clear the presence of `deprecation_warning`
-                #[inline]
-                pub fn clear_deprecation_warning(&mut self) -> &mut Self {
-                    self._has.clear_deprecation_warning();
-                    self
-                }
-                /// Take the value of `deprecation_warning` and clear its presence
-                #[inline]
-                pub fn take_deprecation_warning(
-                    &mut self,
-                ) -> ::core::option::Option<::std::string::String> {
-                    let val = self
-                        ._has
-                        .r#deprecation_warning()
-                        .then(|| ::core::mem::take(&mut self.r#deprecation_warning));
-                    self._has.clear_deprecation_warning();
-                    val
-                }
-                /// Builder method that sets the value of `deprecation_warning`. Useful for initializing the message.
-                #[inline]
-                pub fn init_deprecation_warning(
-                    mut self,
-                    value: ::std::string::String,
-                ) -> Self {
-                    self.set_deprecation_warning(value);
-                    self
-                }
-                /// Return a reference to `edition_removed` as an `Option`
-                #[inline]
-                pub fn r#edition_removed(
-                    &self,
-                ) -> ::core::option::Option<&super::Edition> {
-                    self._has.r#edition_removed().then_some(&self.r#edition_removed)
-                }
-                /// Set the value and presence of `edition_removed`
-                #[inline]
-                pub fn set_edition_removed(
-                    &mut self,
-                    value: super::Edition,
-                ) -> &mut Self {
-                    self._has.set_edition_removed();
-                    self.r#edition_removed = value.into();
-                    self
-                }
-                /// Return a mutable reference to `edition_removed` as an `Option`
-                #[inline]
-                pub fn mut_edition_removed(
-                    &mut self,
-                ) -> ::core::option::Option<&mut super::Edition> {
-                    self._has.r#edition_removed().then_some(&mut self.r#edition_removed)
-                }
-                /// Clear the presence of `edition_removed`
-                #[inline]
-                pub fn clear_edition_removed(&mut self) -> &mut Self {
-                    self._has.clear_edition_removed();
-                    self
-                }
-                /// Take the value of `edition_removed` and clear its presence
-                #[inline]
-                pub fn take_edition_removed(
-                    &mut self,
-                ) -> ::core::option::Option<super::Edition> {
-                    let val = self
-                        ._has
-                        .r#edition_removed()
-                        .then(|| ::core::mem::take(&mut self.r#edition_removed));
-                    self._has.clear_edition_removed();
-                    val
-                }
-                /// Builder method that sets the value of `edition_removed`. Useful for initializing the message.
-                #[inline]
-                pub fn init_edition_removed(mut self, value: super::Edition) -> Self {
-                    self.set_edition_removed(value);
-                    self
-                }
-            }
-            impl ::micropb::MessageDecode for FeatureSupport {
-                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                    &mut self,
-                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                    len: usize,
-                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                    let before = decoder.bytes_read();
-                    while decoder.bytes_read() - before < len {
-                        let tag = decoder.decode_tag()?;
-                        match tag.field_num() {
-                            0 => return Err(::micropb::DecodeError::ZeroField),
-                            1u32 => {
-                                let mut_ref = &mut self.r#edition_introduced;
-                                {
-                                    let val = decoder
-                                        .decode_int32()
-                                        .map(|n| super::Edition(n as _))?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_edition_introduced();
-                            }
-                            2u32 => {
-                                let mut_ref = &mut self.r#edition_deprecated;
-                                {
-                                    let val = decoder
-                                        .decode_int32()
-                                        .map(|n| super::Edition(n as _))?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_edition_deprecated();
-                            }
-                            3u32 => {
-                                let mut_ref = &mut self.r#deprecation_warning;
-                                {
-                                    decoder
-                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                                };
-                                self._has.set_deprecation_warning();
-                            }
-                            4u32 => {
-                                let mut_ref = &mut self.r#edition_removed;
-                                {
-                                    let val = decoder
-                                        .decode_int32()
-                                        .map(|n| super::Edition(n as _))?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_edition_removed();
-                            }
-                            _ => {
-                                decoder.skip_wire_value(tag.wire_type())?;
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-            }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-            #[repr(transparent)]
-            pub struct CType(pub i32);
-            impl CType {
-                /// Maximum encoded size of the enum
-                pub const _MAX_SIZE: usize = 10usize;
-                /// Default mode.
-                pub const String: Self = Self(0);
-                /// The option [ctype=CORD] may be applied to a non-repeated field of type
-                /// "bytes". It indicates that in C++, the data should be stored in a Cord
-                /// instead of a string.  For very large strings, this may reduce memory
-                /// fragmentation. It may also allow better performance when parsing from a
-                /// Cord, or when parsing with aliasing enabled, as the parsed Cord may then
-                /// alias the original buffer.
-                pub const Cord: Self = Self(1);
-                pub const StringPiece: Self = Self(2);
-            }
-            impl core::default::Default for CType {
-                fn default() -> Self {
-                    Self(0)
-                }
-            }
-            impl core::convert::From<i32> for CType {
-                fn from(val: i32) -> Self {
-                    Self(val)
-                }
-            }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-            #[repr(transparent)]
-            pub struct JSType(pub i32);
-            impl JSType {
-                /// Maximum encoded size of the enum
-                pub const _MAX_SIZE: usize = 10usize;
-                /// Use the default type.
-                pub const JsNormal: Self = Self(0);
-                /// Use JavaScript strings.
-                pub const JsString: Self = Self(1);
-                /// Use JavaScript numbers.
-                pub const JsNumber: Self = Self(2);
-            }
-            impl core::default::Default for JSType {
-                fn default() -> Self {
-                    Self(0)
-                }
-            }
-            impl core::convert::From<i32> for JSType {
-                fn from(val: i32) -> Self {
-                    Self(val)
-                }
-            }
-            /// If set to RETENTION_SOURCE, the option will be omitted from the binary.
-            /// Note: as of January 2023, support for this is in progress and does not yet
-            /// have an effect (b/264593489).
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-            #[repr(transparent)]
-            pub struct OptionRetention(pub i32);
-            impl OptionRetention {
-                /// Maximum encoded size of the enum
-                pub const _MAX_SIZE: usize = 10usize;
-                pub const RetentionUnknown: Self = Self(0);
-                pub const RetentionRuntime: Self = Self(1);
-                pub const RetentionSource: Self = Self(2);
-            }
-            impl core::default::Default for OptionRetention {
-                fn default() -> Self {
-                    Self(0)
-                }
-            }
-            impl core::convert::From<i32> for OptionRetention {
-                fn from(val: i32) -> Self {
-                    Self(val)
-                }
-            }
-            /// This indicates the types of entities that the field may apply to when used
-            /// as an option. If it is unset, then the field may be freely used as an
-            /// option on any kind of entity. Note: as of January 2023, support for this is
-            /// in progress and does not yet have an effect (b/264593489).
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-            #[repr(transparent)]
-            pub struct OptionTargetType(pub i32);
-            impl OptionTargetType {
-                /// Maximum encoded size of the enum
-                pub const _MAX_SIZE: usize = 10usize;
-                pub const TargetTypeUnknown: Self = Self(0);
-                pub const TargetTypeFile: Self = Self(1);
-                pub const TargetTypeExtensionRange: Self = Self(2);
-                pub const TargetTypeMessage: Self = Self(3);
-                pub const TargetTypeField: Self = Self(4);
-                pub const TargetTypeOneof: Self = Self(5);
-                pub const TargetTypeEnum: Self = Self(6);
-                pub const TargetTypeEnumEntry: Self = Self(7);
-                pub const TargetTypeService: Self = Self(8);
-                pub const TargetTypeMethod: Self = Self(9);
-            }
-            impl core::default::Default for OptionTargetType {
-                fn default() -> Self {
-                    Self(0)
-                }
-            }
-            impl core::convert::From<i32> for OptionTargetType {
-                fn from(val: i32) -> Self {
-                    Self(val)
-                }
-            }
+        /// Inner types for `MessageOptions`
+        pub mod MessageOptions_ {
             /// Compact bitfield for tracking presence of optional and message fields
             #[derive(Debug, Default, PartialEq, Clone)]
-            pub struct _Hazzer([u8; 2]);
+            pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
                 #[inline]
                 pub const fn _new() -> Self {
-                    Self([0; 2])
+                    Self([0; 1])
                 }
-                /// Query presence of `ctype`
+                /// Query presence of `message_set_wire_format`
                 #[inline]
-                pub const fn r#ctype(&self) -> bool {
+                pub const fn r#message_set_wire_format(&self) -> bool {
                     (self.0[0] & 1) != 0
                 }
-                /// Set presence of `ctype`
+                /// Set presence of `message_set_wire_format`
                 #[inline]
-                pub const fn set_ctype(&mut self) -> &mut Self {
+                pub const fn set_message_set_wire_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 1;
                     self
                 }
-                /// Clear presence of `ctype`
+                /// Clear presence of `message_set_wire_format`
                 #[inline]
-                pub const fn clear_ctype(&mut self) -> &mut Self {
+                pub const fn clear_message_set_wire_format(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !1;
                     self
                 }
-                /// Builder method that sets the presence of `ctype`. Useful for initializing the Hazzer.
+                /// Builder method that sets the presence of `message_set_wire_format`. Useful for initializing the Hazzer.
                 #[inline]
-                pub const fn init_ctype(mut self) -> Self {
-                    self.set_ctype();
+                pub const fn init_message_set_wire_format(mut self) -> Self {
+                    self.set_message_set_wire_format();
                     self
                 }
-                /// Query presence of `packed`
+                /// Query presence of `no_standard_descriptor_accessor`
                 #[inline]
-                pub const fn r#packed(&self) -> bool {
+                pub const fn r#no_standard_descriptor_accessor(&self) -> bool {
                     (self.0[0] & 2) != 0
                 }
-                /// Set presence of `packed`
+                /// Set presence of `no_standard_descriptor_accessor`
                 #[inline]
-                pub const fn set_packed(&mut self) -> &mut Self {
+                pub const fn set_no_standard_descriptor_accessor(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem |= 2;
                     self
                 }
-                /// Clear presence of `packed`
+                /// Clear presence of `no_standard_descriptor_accessor`
                 #[inline]
-                pub const fn clear_packed(&mut self) -> &mut Self {
+                pub const fn clear_no_standard_descriptor_accessor(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
                     *elem &= !2;
                     self
                 }
-                /// Builder method that sets the presence of `packed`. Useful for initializing the Hazzer.
+                /// Builder method that sets the presence of `no_standard_descriptor_accessor`. Useful for initializing the Hazzer.
                 #[inline]
-                pub const fn init_packed(mut self) -> Self {
-                    self.set_packed();
-                    self
-                }
-                /// Query presence of `jstype`
-                #[inline]
-                pub const fn r#jstype(&self) -> bool {
-                    (self.0[0] & 4) != 0
-                }
-                /// Set presence of `jstype`
-                #[inline]
-                pub const fn set_jstype(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 4;
-                    self
-                }
-                /// Clear presence of `jstype`
-                #[inline]
-                pub const fn clear_jstype(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !4;
-                    self
-                }
-                /// Builder method that sets the presence of `jstype`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_jstype(mut self) -> Self {
-                    self.set_jstype();
-                    self
-                }
-                /// Query presence of `lazy`
-                #[inline]
-                pub const fn r#lazy(&self) -> bool {
-                    (self.0[0] & 8) != 0
-                }
-                /// Set presence of `lazy`
-                #[inline]
-                pub const fn set_lazy(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 8;
-                    self
-                }
-                /// Clear presence of `lazy`
-                #[inline]
-                pub const fn clear_lazy(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !8;
-                    self
-                }
-                /// Builder method that sets the presence of `lazy`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_lazy(mut self) -> Self {
-                    self.set_lazy();
-                    self
-                }
-                /// Query presence of `unverified_lazy`
-                #[inline]
-                pub const fn r#unverified_lazy(&self) -> bool {
-                    (self.0[0] & 16) != 0
-                }
-                /// Set presence of `unverified_lazy`
-                #[inline]
-                pub const fn set_unverified_lazy(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem |= 16;
-                    self
-                }
-                /// Clear presence of `unverified_lazy`
-                #[inline]
-                pub const fn clear_unverified_lazy(&mut self) -> &mut Self {
-                    let elem = &mut self.0[0];
-                    *elem &= !16;
-                    self
-                }
-                /// Builder method that sets the presence of `unverified_lazy`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_unverified_lazy(mut self) -> Self {
-                    self.set_unverified_lazy();
+                pub const fn init_no_standard_descriptor_accessor(mut self) -> Self {
+                    self.set_no_standard_descriptor_accessor();
                     self
                 }
                 /// Query presence of `deprecated`
                 #[inline]
                 pub const fn r#deprecated(&self) -> bool {
-                    (self.0[0] & 32) != 0
+                    (self.0[0] & 4) != 0
                 }
                 /// Set presence of `deprecated`
                 #[inline]
                 pub const fn set_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem |= 32;
+                    *elem |= 4;
                     self
                 }
                 /// Clear presence of `deprecated`
                 #[inline]
                 pub const fn clear_deprecated(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem &= !32;
+                    *elem &= !4;
                     self
                 }
                 /// Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
@@ -6430,129 +5474,85 @@ pub mod google_ {
                     self.set_deprecated();
                     self
                 }
-                /// Query presence of `weak`
+                /// Query presence of `map_entry`
                 #[inline]
-                pub const fn r#weak(&self) -> bool {
-                    (self.0[0] & 64) != 0
+                pub const fn r#map_entry(&self) -> bool {
+                    (self.0[0] & 8) != 0
                 }
-                /// Set presence of `weak`
+                /// Set presence of `map_entry`
                 #[inline]
-                pub const fn set_weak(&mut self) -> &mut Self {
+                pub const fn set_map_entry(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem |= 64;
+                    *elem |= 8;
                     self
                 }
-                /// Clear presence of `weak`
+                /// Clear presence of `map_entry`
                 #[inline]
-                pub const fn clear_weak(&mut self) -> &mut Self {
+                pub const fn clear_map_entry(&mut self) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem &= !64;
+                    *elem &= !8;
                     self
                 }
-                /// Builder method that sets the presence of `weak`. Useful for initializing the Hazzer.
+                /// Builder method that sets the presence of `map_entry`. Useful for initializing the Hazzer.
                 #[inline]
-                pub const fn init_weak(mut self) -> Self {
-                    self.set_weak();
+                pub const fn init_map_entry(mut self) -> Self {
+                    self.set_map_entry();
                     self
                 }
-                /// Query presence of `debug_redact`
+                /// Query presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub const fn r#debug_redact(&self) -> bool {
-                    (self.0[0] & 128) != 0
+                pub const fn r#deprecated_legacy_json_field_conflicts(&self) -> bool {
+                    (self.0[0] & 16) != 0
                 }
-                /// Set presence of `debug_redact`
+                /// Set presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub const fn set_debug_redact(&mut self) -> &mut Self {
+                pub const fn set_deprecated_legacy_json_field_conflicts(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem |= 128;
+                    *elem |= 16;
                     self
                 }
-                /// Clear presence of `debug_redact`
+                /// Clear presence of `deprecated_legacy_json_field_conflicts`
                 #[inline]
-                pub const fn clear_debug_redact(&mut self) -> &mut Self {
+                pub const fn clear_deprecated_legacy_json_field_conflicts(
+                    &mut self,
+                ) -> &mut Self {
                     let elem = &mut self.0[0];
-                    *elem &= !128;
+                    *elem &= !16;
                     self
                 }
-                /// Builder method that sets the presence of `debug_redact`. Useful for initializing the Hazzer.
+                /// Builder method that sets the presence of `deprecated_legacy_json_field_conflicts`. Useful for initializing the Hazzer.
                 #[inline]
-                pub const fn init_debug_redact(mut self) -> Self {
-                    self.set_debug_redact();
-                    self
-                }
-                /// Query presence of `retention`
-                #[inline]
-                pub const fn r#retention(&self) -> bool {
-                    (self.0[1] & 1) != 0
-                }
-                /// Set presence of `retention`
-                #[inline]
-                pub const fn set_retention(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem |= 1;
-                    self
-                }
-                /// Clear presence of `retention`
-                #[inline]
-                pub const fn clear_retention(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem &= !1;
-                    self
-                }
-                /// Builder method that sets the presence of `retention`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_retention(mut self) -> Self {
-                    self.set_retention();
+                pub const fn init_deprecated_legacy_json_field_conflicts(
+                    mut self,
+                ) -> Self {
+                    self.set_deprecated_legacy_json_field_conflicts();
                     self
                 }
                 /// Query presence of `features`
                 #[inline]
                 pub const fn r#features(&self) -> bool {
-                    (self.0[1] & 2) != 0
+                    (self.0[0] & 32) != 0
                 }
                 /// Set presence of `features`
                 #[inline]
                 pub const fn set_features(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem |= 2;
+                    let elem = &mut self.0[0];
+                    *elem |= 32;
                     self
                 }
                 /// Clear presence of `features`
                 #[inline]
                 pub const fn clear_features(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem &= !2;
+                    let elem = &mut self.0[0];
+                    *elem &= !32;
                     self
                 }
                 /// Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
                 #[inline]
                 pub const fn init_features(mut self) -> Self {
                     self.set_features();
-                    self
-                }
-                /// Query presence of `feature_support`
-                #[inline]
-                pub const fn r#feature_support(&self) -> bool {
-                    (self.0[1] & 4) != 0
-                }
-                /// Set presence of `feature_support`
-                #[inline]
-                pub const fn set_feature_support(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem |= 4;
-                    self
-                }
-                /// Clear presence of `feature_support`
-                #[inline]
-                pub const fn clear_feature_support(&mut self) -> &mut Self {
-                    let elem = &mut self.0[1];
-                    *elem &= !4;
-                    self
-                }
-                /// Builder method that sets the presence of `feature_support`. Useful for initializing the Hazzer.
-                #[inline]
-                pub const fn init_feature_support(mut self) -> Self {
-                    self.set_feature_support();
                     self
                 }
             }
@@ -7304,6 +6304,1064 @@ pub mod google_ {
                 Ok(())
             }
         }
+        /// Inner types for `FieldOptions`
+        pub mod FieldOptions_ {
+            #[derive(Debug, Default)]
+            pub struct EditionDefault {
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#edition: super::Edition,
+                /// Textproto value.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#value: ::std::string::String,
+                /// Tracks presence of optional and message fields
+                pub _has: EditionDefault_::_Hazzer,
+            }
+            impl EditionDefault {
+                /// Return a reference to `edition` as an `Option`
+                #[inline]
+                pub fn r#edition(&self) -> ::core::option::Option<&super::Edition> {
+                    self._has.r#edition().then_some(&self.r#edition)
+                }
+                /// Set the value and presence of `edition`
+                #[inline]
+                pub fn set_edition(&mut self, value: super::Edition) -> &mut Self {
+                    self._has.set_edition();
+                    self.r#edition = value.into();
+                    self
+                }
+                /// Return a mutable reference to `edition` as an `Option`
+                #[inline]
+                pub fn mut_edition(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::Edition> {
+                    self._has.r#edition().then_some(&mut self.r#edition)
+                }
+                /// Clear the presence of `edition`
+                #[inline]
+                pub fn clear_edition(&mut self) -> &mut Self {
+                    self._has.clear_edition();
+                    self
+                }
+                /// Take the value of `edition` and clear its presence
+                #[inline]
+                pub fn take_edition(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition()
+                        .then(|| ::core::mem::take(&mut self.r#edition));
+                    self._has.clear_edition();
+                    val
+                }
+                /// Builder method that sets the value of `edition`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition(mut self, value: super::Edition) -> Self {
+                    self.set_edition(value);
+                    self
+                }
+                /// Return a reference to `value` as an `Option`
+                #[inline]
+                pub fn r#value(&self) -> ::core::option::Option<&::std::string::String> {
+                    self._has.r#value().then_some(&self.r#value)
+                }
+                /// Set the value and presence of `value`
+                #[inline]
+                pub fn set_value(&mut self, value: ::std::string::String) -> &mut Self {
+                    self._has.set_value();
+                    self.r#value = value.into();
+                    self
+                }
+                /// Return a mutable reference to `value` as an `Option`
+                #[inline]
+                pub fn mut_value(
+                    &mut self,
+                ) -> ::core::option::Option<&mut ::std::string::String> {
+                    self._has.r#value().then_some(&mut self.r#value)
+                }
+                /// Clear the presence of `value`
+                #[inline]
+                pub fn clear_value(&mut self) -> &mut Self {
+                    self._has.clear_value();
+                    self
+                }
+                /// Take the value of `value` and clear its presence
+                #[inline]
+                pub fn take_value(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#value()
+                        .then(|| ::core::mem::take(&mut self.r#value));
+                    self._has.clear_value();
+                    val
+                }
+                /// Builder method that sets the value of `value`. Useful for initializing the message.
+                #[inline]
+                pub fn init_value(mut self, value: ::std::string::String) -> Self {
+                    self.set_value(value);
+                    self
+                }
+            }
+            impl ::micropb::MessageDecode for EditionDefault {
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                    &mut self,
+                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                    let before = decoder.bytes_read();
+                    while decoder.bytes_read() - before < len {
+                        let tag = decoder.decode_tag()?;
+                        match tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            3u32 => {
+                                let mut_ref = &mut self.r#edition;
+                                {
+                                    let val = decoder
+                                        .decode_int32()
+                                        .map(|n| super::Edition(n as _))?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_edition();
+                            }
+                            2u32 => {
+                                let mut_ref = &mut self.r#value;
+                                {
+                                    decoder
+                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                                };
+                                self._has.set_value();
+                            }
+                            _ => {
+                                decoder.skip_wire_value(tag.wire_type())?;
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            }
+            /// Inner types for `EditionDefault`
+            pub mod EditionDefault_ {
+                /// Compact bitfield for tracking presence of optional and message fields
+                #[derive(Debug, Default, PartialEq, Clone)]
+                pub struct _Hazzer([u8; 1]);
+                impl _Hazzer {
+                    /// New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
+                    /// Query presence of `edition`
+                    #[inline]
+                    pub const fn r#edition(&self) -> bool {
+                        (self.0[0] & 1) != 0
+                    }
+                    /// Set presence of `edition`
+                    #[inline]
+                    pub const fn set_edition(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 1;
+                        self
+                    }
+                    /// Clear presence of `edition`
+                    #[inline]
+                    pub const fn clear_edition(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !1;
+                        self
+                    }
+                    /// Builder method that sets the presence of `edition`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_edition(mut self) -> Self {
+                        self.set_edition();
+                        self
+                    }
+                    /// Query presence of `value`
+                    #[inline]
+                    pub const fn r#value(&self) -> bool {
+                        (self.0[0] & 2) != 0
+                    }
+                    /// Set presence of `value`
+                    #[inline]
+                    pub const fn set_value(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 2;
+                        self
+                    }
+                    /// Clear presence of `value`
+                    #[inline]
+                    pub const fn clear_value(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !2;
+                        self
+                    }
+                    /// Builder method that sets the presence of `value`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_value(mut self) -> Self {
+                        self.set_value();
+                        self
+                    }
+                }
+            }
+            /// Information about the support window of a feature.
+            #[derive(Debug, Default)]
+            pub struct FeatureSupport {
+                /// The edition that this feature was first available in.  In editions
+                /// earlier than this one, the default assigned to EDITION_LEGACY will be
+                /// used, and proto files will not be able to override it.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#edition_introduced: super::Edition,
+                /// The edition this feature becomes deprecated in.  Using this after this
+                /// edition may trigger warnings.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#edition_deprecated: super::Edition,
+                /// The deprecation warning text if this feature is used after the edition it
+                /// was marked deprecated in.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#deprecation_warning: ::std::string::String,
+                /// The edition this feature is no longer available in.  In editions after
+                /// this one, the last default assigned will be used, and proto files will
+                /// not be able to override it.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#edition_removed: super::Edition,
+                /// Tracks presence of optional and message fields
+                pub _has: FeatureSupport_::_Hazzer,
+            }
+            impl FeatureSupport {
+                /// Return a reference to `edition_introduced` as an `Option`
+                #[inline]
+                pub fn r#edition_introduced(
+                    &self,
+                ) -> ::core::option::Option<&super::Edition> {
+                    self._has
+                        .r#edition_introduced()
+                        .then_some(&self.r#edition_introduced)
+                }
+                /// Set the value and presence of `edition_introduced`
+                #[inline]
+                pub fn set_edition_introduced(
+                    &mut self,
+                    value: super::Edition,
+                ) -> &mut Self {
+                    self._has.set_edition_introduced();
+                    self.r#edition_introduced = value.into();
+                    self
+                }
+                /// Return a mutable reference to `edition_introduced` as an `Option`
+                #[inline]
+                pub fn mut_edition_introduced(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::Edition> {
+                    self._has
+                        .r#edition_introduced()
+                        .then_some(&mut self.r#edition_introduced)
+                }
+                /// Clear the presence of `edition_introduced`
+                #[inline]
+                pub fn clear_edition_introduced(&mut self) -> &mut Self {
+                    self._has.clear_edition_introduced();
+                    self
+                }
+                /// Take the value of `edition_introduced` and clear its presence
+                #[inline]
+                pub fn take_edition_introduced(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_introduced()
+                        .then(|| ::core::mem::take(&mut self.r#edition_introduced));
+                    self._has.clear_edition_introduced();
+                    val
+                }
+                /// Builder method that sets the value of `edition_introduced`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_introduced(mut self, value: super::Edition) -> Self {
+                    self.set_edition_introduced(value);
+                    self
+                }
+                /// Return a reference to `edition_deprecated` as an `Option`
+                #[inline]
+                pub fn r#edition_deprecated(
+                    &self,
+                ) -> ::core::option::Option<&super::Edition> {
+                    self._has
+                        .r#edition_deprecated()
+                        .then_some(&self.r#edition_deprecated)
+                }
+                /// Set the value and presence of `edition_deprecated`
+                #[inline]
+                pub fn set_edition_deprecated(
+                    &mut self,
+                    value: super::Edition,
+                ) -> &mut Self {
+                    self._has.set_edition_deprecated();
+                    self.r#edition_deprecated = value.into();
+                    self
+                }
+                /// Return a mutable reference to `edition_deprecated` as an `Option`
+                #[inline]
+                pub fn mut_edition_deprecated(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::Edition> {
+                    self._has
+                        .r#edition_deprecated()
+                        .then_some(&mut self.r#edition_deprecated)
+                }
+                /// Clear the presence of `edition_deprecated`
+                #[inline]
+                pub fn clear_edition_deprecated(&mut self) -> &mut Self {
+                    self._has.clear_edition_deprecated();
+                    self
+                }
+                /// Take the value of `edition_deprecated` and clear its presence
+                #[inline]
+                pub fn take_edition_deprecated(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_deprecated()
+                        .then(|| ::core::mem::take(&mut self.r#edition_deprecated));
+                    self._has.clear_edition_deprecated();
+                    val
+                }
+                /// Builder method that sets the value of `edition_deprecated`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_deprecated(mut self, value: super::Edition) -> Self {
+                    self.set_edition_deprecated(value);
+                    self
+                }
+                /// Return a reference to `deprecation_warning` as an `Option`
+                #[inline]
+                pub fn r#deprecation_warning(
+                    &self,
+                ) -> ::core::option::Option<&::std::string::String> {
+                    self._has
+                        .r#deprecation_warning()
+                        .then_some(&self.r#deprecation_warning)
+                }
+                /// Set the value and presence of `deprecation_warning`
+                #[inline]
+                pub fn set_deprecation_warning(
+                    &mut self,
+                    value: ::std::string::String,
+                ) -> &mut Self {
+                    self._has.set_deprecation_warning();
+                    self.r#deprecation_warning = value.into();
+                    self
+                }
+                /// Return a mutable reference to `deprecation_warning` as an `Option`
+                #[inline]
+                pub fn mut_deprecation_warning(
+                    &mut self,
+                ) -> ::core::option::Option<&mut ::std::string::String> {
+                    self._has
+                        .r#deprecation_warning()
+                        .then_some(&mut self.r#deprecation_warning)
+                }
+                /// Clear the presence of `deprecation_warning`
+                #[inline]
+                pub fn clear_deprecation_warning(&mut self) -> &mut Self {
+                    self._has.clear_deprecation_warning();
+                    self
+                }
+                /// Take the value of `deprecation_warning` and clear its presence
+                #[inline]
+                pub fn take_deprecation_warning(
+                    &mut self,
+                ) -> ::core::option::Option<::std::string::String> {
+                    let val = self
+                        ._has
+                        .r#deprecation_warning()
+                        .then(|| ::core::mem::take(&mut self.r#deprecation_warning));
+                    self._has.clear_deprecation_warning();
+                    val
+                }
+                /// Builder method that sets the value of `deprecation_warning`. Useful for initializing the message.
+                #[inline]
+                pub fn init_deprecation_warning(
+                    mut self,
+                    value: ::std::string::String,
+                ) -> Self {
+                    self.set_deprecation_warning(value);
+                    self
+                }
+                /// Return a reference to `edition_removed` as an `Option`
+                #[inline]
+                pub fn r#edition_removed(
+                    &self,
+                ) -> ::core::option::Option<&super::Edition> {
+                    self._has.r#edition_removed().then_some(&self.r#edition_removed)
+                }
+                /// Set the value and presence of `edition_removed`
+                #[inline]
+                pub fn set_edition_removed(
+                    &mut self,
+                    value: super::Edition,
+                ) -> &mut Self {
+                    self._has.set_edition_removed();
+                    self.r#edition_removed = value.into();
+                    self
+                }
+                /// Return a mutable reference to `edition_removed` as an `Option`
+                #[inline]
+                pub fn mut_edition_removed(
+                    &mut self,
+                ) -> ::core::option::Option<&mut super::Edition> {
+                    self._has.r#edition_removed().then_some(&mut self.r#edition_removed)
+                }
+                /// Clear the presence of `edition_removed`
+                #[inline]
+                pub fn clear_edition_removed(&mut self) -> &mut Self {
+                    self._has.clear_edition_removed();
+                    self
+                }
+                /// Take the value of `edition_removed` and clear its presence
+                #[inline]
+                pub fn take_edition_removed(
+                    &mut self,
+                ) -> ::core::option::Option<super::Edition> {
+                    let val = self
+                        ._has
+                        .r#edition_removed()
+                        .then(|| ::core::mem::take(&mut self.r#edition_removed));
+                    self._has.clear_edition_removed();
+                    val
+                }
+                /// Builder method that sets the value of `edition_removed`. Useful for initializing the message.
+                #[inline]
+                pub fn init_edition_removed(mut self, value: super::Edition) -> Self {
+                    self.set_edition_removed(value);
+                    self
+                }
+            }
+            impl ::micropb::MessageDecode for FeatureSupport {
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                    &mut self,
+                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                    let before = decoder.bytes_read();
+                    while decoder.bytes_read() - before < len {
+                        let tag = decoder.decode_tag()?;
+                        match tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            1u32 => {
+                                let mut_ref = &mut self.r#edition_introduced;
+                                {
+                                    let val = decoder
+                                        .decode_int32()
+                                        .map(|n| super::Edition(n as _))?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_edition_introduced();
+                            }
+                            2u32 => {
+                                let mut_ref = &mut self.r#edition_deprecated;
+                                {
+                                    let val = decoder
+                                        .decode_int32()
+                                        .map(|n| super::Edition(n as _))?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_edition_deprecated();
+                            }
+                            3u32 => {
+                                let mut_ref = &mut self.r#deprecation_warning;
+                                {
+                                    decoder
+                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                                };
+                                self._has.set_deprecation_warning();
+                            }
+                            4u32 => {
+                                let mut_ref = &mut self.r#edition_removed;
+                                {
+                                    let val = decoder
+                                        .decode_int32()
+                                        .map(|n| super::Edition(n as _))?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_edition_removed();
+                            }
+                            _ => {
+                                decoder.skip_wire_value(tag.wire_type())?;
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            }
+            /// Inner types for `FeatureSupport`
+            pub mod FeatureSupport_ {
+                /// Compact bitfield for tracking presence of optional and message fields
+                #[derive(Debug, Default, PartialEq, Clone)]
+                pub struct _Hazzer([u8; 1]);
+                impl _Hazzer {
+                    /// New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
+                    /// Query presence of `edition_introduced`
+                    #[inline]
+                    pub const fn r#edition_introduced(&self) -> bool {
+                        (self.0[0] & 1) != 0
+                    }
+                    /// Set presence of `edition_introduced`
+                    #[inline]
+                    pub const fn set_edition_introduced(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 1;
+                        self
+                    }
+                    /// Clear presence of `edition_introduced`
+                    #[inline]
+                    pub const fn clear_edition_introduced(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !1;
+                        self
+                    }
+                    /// Builder method that sets the presence of `edition_introduced`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_edition_introduced(mut self) -> Self {
+                        self.set_edition_introduced();
+                        self
+                    }
+                    /// Query presence of `edition_deprecated`
+                    #[inline]
+                    pub const fn r#edition_deprecated(&self) -> bool {
+                        (self.0[0] & 2) != 0
+                    }
+                    /// Set presence of `edition_deprecated`
+                    #[inline]
+                    pub const fn set_edition_deprecated(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 2;
+                        self
+                    }
+                    /// Clear presence of `edition_deprecated`
+                    #[inline]
+                    pub const fn clear_edition_deprecated(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !2;
+                        self
+                    }
+                    /// Builder method that sets the presence of `edition_deprecated`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_edition_deprecated(mut self) -> Self {
+                        self.set_edition_deprecated();
+                        self
+                    }
+                    /// Query presence of `deprecation_warning`
+                    #[inline]
+                    pub const fn r#deprecation_warning(&self) -> bool {
+                        (self.0[0] & 4) != 0
+                    }
+                    /// Set presence of `deprecation_warning`
+                    #[inline]
+                    pub const fn set_deprecation_warning(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 4;
+                        self
+                    }
+                    /// Clear presence of `deprecation_warning`
+                    #[inline]
+                    pub const fn clear_deprecation_warning(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !4;
+                        self
+                    }
+                    /// Builder method that sets the presence of `deprecation_warning`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_deprecation_warning(mut self) -> Self {
+                        self.set_deprecation_warning();
+                        self
+                    }
+                    /// Query presence of `edition_removed`
+                    #[inline]
+                    pub const fn r#edition_removed(&self) -> bool {
+                        (self.0[0] & 8) != 0
+                    }
+                    /// Set presence of `edition_removed`
+                    #[inline]
+                    pub const fn set_edition_removed(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 8;
+                        self
+                    }
+                    /// Clear presence of `edition_removed`
+                    #[inline]
+                    pub const fn clear_edition_removed(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !8;
+                        self
+                    }
+                    /// Builder method that sets the presence of `edition_removed`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_edition_removed(mut self) -> Self {
+                        self.set_edition_removed();
+                        self
+                    }
+                }
+            }
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[repr(transparent)]
+            pub struct CType(pub i32);
+            impl CType {
+                /// Maximum encoded size of the enum
+                pub const _MAX_SIZE: usize = 10usize;
+                /// Default mode.
+                pub const String: Self = Self(0);
+                /// The option [ctype=CORD] may be applied to a non-repeated field of type
+                /// "bytes". It indicates that in C++, the data should be stored in a Cord
+                /// instead of a string.  For very large strings, this may reduce memory
+                /// fragmentation. It may also allow better performance when parsing from a
+                /// Cord, or when parsing with aliasing enabled, as the parsed Cord may then
+                /// alias the original buffer.
+                pub const Cord: Self = Self(1);
+                pub const StringPiece: Self = Self(2);
+            }
+            impl core::default::Default for CType {
+                fn default() -> Self {
+                    Self(0)
+                }
+            }
+            impl core::convert::From<i32> for CType {
+                fn from(val: i32) -> Self {
+                    Self(val)
+                }
+            }
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[repr(transparent)]
+            pub struct JSType(pub i32);
+            impl JSType {
+                /// Maximum encoded size of the enum
+                pub const _MAX_SIZE: usize = 10usize;
+                /// Use the default type.
+                pub const JsNormal: Self = Self(0);
+                /// Use JavaScript strings.
+                pub const JsString: Self = Self(1);
+                /// Use JavaScript numbers.
+                pub const JsNumber: Self = Self(2);
+            }
+            impl core::default::Default for JSType {
+                fn default() -> Self {
+                    Self(0)
+                }
+            }
+            impl core::convert::From<i32> for JSType {
+                fn from(val: i32) -> Self {
+                    Self(val)
+                }
+            }
+            /// If set to RETENTION_SOURCE, the option will be omitted from the binary.
+            /// Note: as of January 2023, support for this is in progress and does not yet
+            /// have an effect (b/264593489).
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[repr(transparent)]
+            pub struct OptionRetention(pub i32);
+            impl OptionRetention {
+                /// Maximum encoded size of the enum
+                pub const _MAX_SIZE: usize = 10usize;
+                pub const RetentionUnknown: Self = Self(0);
+                pub const RetentionRuntime: Self = Self(1);
+                pub const RetentionSource: Self = Self(2);
+            }
+            impl core::default::Default for OptionRetention {
+                fn default() -> Self {
+                    Self(0)
+                }
+            }
+            impl core::convert::From<i32> for OptionRetention {
+                fn from(val: i32) -> Self {
+                    Self(val)
+                }
+            }
+            /// This indicates the types of entities that the field may apply to when used
+            /// as an option. If it is unset, then the field may be freely used as an
+            /// option on any kind of entity. Note: as of January 2023, support for this is
+            /// in progress and does not yet have an effect (b/264593489).
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[repr(transparent)]
+            pub struct OptionTargetType(pub i32);
+            impl OptionTargetType {
+                /// Maximum encoded size of the enum
+                pub const _MAX_SIZE: usize = 10usize;
+                pub const TargetTypeUnknown: Self = Self(0);
+                pub const TargetTypeFile: Self = Self(1);
+                pub const TargetTypeExtensionRange: Self = Self(2);
+                pub const TargetTypeMessage: Self = Self(3);
+                pub const TargetTypeField: Self = Self(4);
+                pub const TargetTypeOneof: Self = Self(5);
+                pub const TargetTypeEnum: Self = Self(6);
+                pub const TargetTypeEnumEntry: Self = Self(7);
+                pub const TargetTypeService: Self = Self(8);
+                pub const TargetTypeMethod: Self = Self(9);
+            }
+            impl core::default::Default for OptionTargetType {
+                fn default() -> Self {
+                    Self(0)
+                }
+            }
+            impl core::convert::From<i32> for OptionTargetType {
+                fn from(val: i32) -> Self {
+                    Self(val)
+                }
+            }
+            /// Compact bitfield for tracking presence of optional and message fields
+            #[derive(Debug, Default, PartialEq, Clone)]
+            pub struct _Hazzer([u8; 2]);
+            impl _Hazzer {
+                /// New hazzer with all fields set to off
+                #[inline]
+                pub const fn _new() -> Self {
+                    Self([0; 2])
+                }
+                /// Query presence of `ctype`
+                #[inline]
+                pub const fn r#ctype(&self) -> bool {
+                    (self.0[0] & 1) != 0
+                }
+                /// Set presence of `ctype`
+                #[inline]
+                pub const fn set_ctype(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 1;
+                    self
+                }
+                /// Clear presence of `ctype`
+                #[inline]
+                pub const fn clear_ctype(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !1;
+                    self
+                }
+                /// Builder method that sets the presence of `ctype`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_ctype(mut self) -> Self {
+                    self.set_ctype();
+                    self
+                }
+                /// Query presence of `packed`
+                #[inline]
+                pub const fn r#packed(&self) -> bool {
+                    (self.0[0] & 2) != 0
+                }
+                /// Set presence of `packed`
+                #[inline]
+                pub const fn set_packed(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 2;
+                    self
+                }
+                /// Clear presence of `packed`
+                #[inline]
+                pub const fn clear_packed(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !2;
+                    self
+                }
+                /// Builder method that sets the presence of `packed`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_packed(mut self) -> Self {
+                    self.set_packed();
+                    self
+                }
+                /// Query presence of `jstype`
+                #[inline]
+                pub const fn r#jstype(&self) -> bool {
+                    (self.0[0] & 4) != 0
+                }
+                /// Set presence of `jstype`
+                #[inline]
+                pub const fn set_jstype(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 4;
+                    self
+                }
+                /// Clear presence of `jstype`
+                #[inline]
+                pub const fn clear_jstype(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !4;
+                    self
+                }
+                /// Builder method that sets the presence of `jstype`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_jstype(mut self) -> Self {
+                    self.set_jstype();
+                    self
+                }
+                /// Query presence of `lazy`
+                #[inline]
+                pub const fn r#lazy(&self) -> bool {
+                    (self.0[0] & 8) != 0
+                }
+                /// Set presence of `lazy`
+                #[inline]
+                pub const fn set_lazy(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 8;
+                    self
+                }
+                /// Clear presence of `lazy`
+                #[inline]
+                pub const fn clear_lazy(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !8;
+                    self
+                }
+                /// Builder method that sets the presence of `lazy`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_lazy(mut self) -> Self {
+                    self.set_lazy();
+                    self
+                }
+                /// Query presence of `unverified_lazy`
+                #[inline]
+                pub const fn r#unverified_lazy(&self) -> bool {
+                    (self.0[0] & 16) != 0
+                }
+                /// Set presence of `unverified_lazy`
+                #[inline]
+                pub const fn set_unverified_lazy(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 16;
+                    self
+                }
+                /// Clear presence of `unverified_lazy`
+                #[inline]
+                pub const fn clear_unverified_lazy(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !16;
+                    self
+                }
+                /// Builder method that sets the presence of `unverified_lazy`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_unverified_lazy(mut self) -> Self {
+                    self.set_unverified_lazy();
+                    self
+                }
+                /// Query presence of `deprecated`
+                #[inline]
+                pub const fn r#deprecated(&self) -> bool {
+                    (self.0[0] & 32) != 0
+                }
+                /// Set presence of `deprecated`
+                #[inline]
+                pub const fn set_deprecated(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 32;
+                    self
+                }
+                /// Clear presence of `deprecated`
+                #[inline]
+                pub const fn clear_deprecated(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !32;
+                    self
+                }
+                /// Builder method that sets the presence of `deprecated`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_deprecated(mut self) -> Self {
+                    self.set_deprecated();
+                    self
+                }
+                /// Query presence of `weak`
+                #[inline]
+                pub const fn r#weak(&self) -> bool {
+                    (self.0[0] & 64) != 0
+                }
+                /// Set presence of `weak`
+                #[inline]
+                pub const fn set_weak(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 64;
+                    self
+                }
+                /// Clear presence of `weak`
+                #[inline]
+                pub const fn clear_weak(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !64;
+                    self
+                }
+                /// Builder method that sets the presence of `weak`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_weak(mut self) -> Self {
+                    self.set_weak();
+                    self
+                }
+                /// Query presence of `debug_redact`
+                #[inline]
+                pub const fn r#debug_redact(&self) -> bool {
+                    (self.0[0] & 128) != 0
+                }
+                /// Set presence of `debug_redact`
+                #[inline]
+                pub const fn set_debug_redact(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem |= 128;
+                    self
+                }
+                /// Clear presence of `debug_redact`
+                #[inline]
+                pub const fn clear_debug_redact(&mut self) -> &mut Self {
+                    let elem = &mut self.0[0];
+                    *elem &= !128;
+                    self
+                }
+                /// Builder method that sets the presence of `debug_redact`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_debug_redact(mut self) -> Self {
+                    self.set_debug_redact();
+                    self
+                }
+                /// Query presence of `retention`
+                #[inline]
+                pub const fn r#retention(&self) -> bool {
+                    (self.0[1] & 1) != 0
+                }
+                /// Set presence of `retention`
+                #[inline]
+                pub const fn set_retention(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem |= 1;
+                    self
+                }
+                /// Clear presence of `retention`
+                #[inline]
+                pub const fn clear_retention(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem &= !1;
+                    self
+                }
+                /// Builder method that sets the presence of `retention`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_retention(mut self) -> Self {
+                    self.set_retention();
+                    self
+                }
+                /// Query presence of `features`
+                #[inline]
+                pub const fn r#features(&self) -> bool {
+                    (self.0[1] & 2) != 0
+                }
+                /// Set presence of `features`
+                #[inline]
+                pub const fn set_features(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem |= 2;
+                    self
+                }
+                /// Clear presence of `features`
+                #[inline]
+                pub const fn clear_features(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem &= !2;
+                    self
+                }
+                /// Builder method that sets the presence of `features`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_features(mut self) -> Self {
+                    self.set_features();
+                    self
+                }
+                /// Query presence of `feature_support`
+                #[inline]
+                pub const fn r#feature_support(&self) -> bool {
+                    (self.0[1] & 4) != 0
+                }
+                /// Set presence of `feature_support`
+                #[inline]
+                pub const fn set_feature_support(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem |= 4;
+                    self
+                }
+                /// Clear presence of `feature_support`
+                #[inline]
+                pub const fn clear_feature_support(&mut self) -> &mut Self {
+                    let elem = &mut self.0[1];
+                    *elem &= !4;
+                    self
+                }
+                /// Builder method that sets the presence of `feature_support`. Useful for initializing the Hazzer.
+                #[inline]
+                pub const fn init_feature_support(mut self) -> Self {
+                    self.set_feature_support();
+                    self
+                }
+            }
+        }
+        #[derive(Debug, Default)]
+        pub struct OneofOptions {
+            /// Any features defined in the specific edition.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#features: FeatureSet,
+            /// The parser stores options it doesn't recognize here. See above.
+            pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
+            /// Tracks presence of optional and message fields
+            pub _has: OneofOptions_::_Hazzer,
+        }
+        impl OneofOptions {
+            /// Return a reference to `features` as an `Option`
+            #[inline]
+            pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
+                self._has.r#features().then_some(&self.r#features)
+            }
+        }
+        impl ::micropb::MessageDecode for OneofOptions {
+            fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                &mut self,
+                decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                len: usize,
+            ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                let before = decoder.bytes_read();
+                while decoder.bytes_read() - before < len {
+                    let tag = decoder.decode_tag()?;
+                    match tag.field_num() {
+                        0 => return Err(::micropb::DecodeError::ZeroField),
+                        1u32 => {
+                            let mut_ref = &mut self.r#features;
+                            {
+                                mut_ref.decode_len_delimited(decoder)?;
+                            };
+                            self._has.set_features();
+                        }
+                        999u32 => {
+                            let mut val: UninterpretedOption = ::core::default::Default::default();
+                            let mut_ref = &mut val;
+                            {
+                                mut_ref.decode_len_delimited(decoder)?;
+                            };
+                            if let (Err(_), false) = (
+                                self.r#uninterpreted_option.pb_push(val),
+                                decoder.ignore_repeated_cap_err,
+                            ) {
+                                return Err(::micropb::DecodeError::Capacity);
+                            }
+                        }
+                        _ => {
+                            decoder.skip_wire_value(tag.wire_type())?;
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
         /// Inner types for `OneofOptions`
         pub mod OneofOptions_ {
             /// Compact bitfield for tracking presence of optional and message fields
@@ -7342,8 +7400,29 @@ pub mod google_ {
                 }
             }
         }
-        #[derive(Debug, Default)]
-        pub struct OneofOptions {
+        #[derive(Debug)]
+        pub struct EnumOptions {
+            /// Set this option to true to allow mapping different tag names to the same
+            /// value.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#allow_alias: bool,
+            /// Is this enum deprecated?
+            /// Depending on the target platform, this can emit Deprecated annotations
+            /// for the enum, or it will be completely ignored; in the very least, this
+            /// is a formalization for deprecating enums.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#deprecated: bool,
+            /// Enable the legacy handling of JSON field name conflicts.  This lowercases
+            /// and strips underscored from the fields before comparison in proto3 only.
+            /// The new behavior takes `json_name` into account and applies to proto2 as
+            /// well.
+            /// TODO Remove this legacy behavior once downstream teams have
+            /// had time to migrate.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#deprecated_legacy_json_field_conflicts: bool,
             /// Any features defined in the specific edition.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
@@ -7351,16 +7430,47 @@ pub mod google_ {
             /// The parser stores options it doesn't recognize here. See above.
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
             /// Tracks presence of optional and message fields
-            pub _has: OneofOptions_::_Hazzer,
+            pub _has: EnumOptions_::_Hazzer,
         }
-        impl OneofOptions {
+        impl ::core::default::Default for EnumOptions {
+            fn default() -> Self {
+                Self {
+                    r#allow_alias: ::core::default::Default::default(),
+                    r#deprecated: false as _,
+                    r#deprecated_legacy_json_field_conflicts: ::core::default::Default::default(),
+                    r#features: ::core::default::Default::default(),
+                    r#uninterpreted_option: ::core::default::Default::default(),
+                    _has: ::core::default::Default::default(),
+                }
+            }
+        }
+        impl EnumOptions {
+            /// Return a reference to `allow_alias` as an `Option`
+            #[inline]
+            pub fn r#allow_alias(&self) -> ::core::option::Option<&bool> {
+                self._has.r#allow_alias().then_some(&self.r#allow_alias)
+            }
+            /// Return a reference to `deprecated` as an `Option`
+            #[inline]
+            pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
+                self._has.r#deprecated().then_some(&self.r#deprecated)
+            }
+            /// Return a reference to `deprecated_legacy_json_field_conflicts` as an `Option`
+            #[inline]
+            pub fn r#deprecated_legacy_json_field_conflicts(
+                &self,
+            ) -> ::core::option::Option<&bool> {
+                self._has
+                    .r#deprecated_legacy_json_field_conflicts()
+                    .then_some(&self.r#deprecated_legacy_json_field_conflicts)
+            }
             /// Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
             }
         }
-        impl ::micropb::MessageDecode for OneofOptions {
+        impl ::micropb::MessageDecode for EnumOptions {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -7372,7 +7482,32 @@ pub mod google_ {
                     let tag = decoder.decode_tag()?;
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
-                        1u32 => {
+                        2u32 => {
+                            let mut_ref = &mut self.r#allow_alias;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_allow_alias();
+                        }
+                        3u32 => {
+                            let mut_ref = &mut self.r#deprecated;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_deprecated();
+                        }
+                        6u32 => {
+                            let mut_ref = &mut self
+                                .r#deprecated_legacy_json_field_conflicts;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_deprecated_legacy_json_field_conflicts();
+                        }
+                        7u32 => {
                             let mut_ref = &mut self.r#features;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
@@ -7520,76 +7655,70 @@ pub mod google_ {
             }
         }
         #[derive(Debug)]
-        pub struct EnumOptions {
-            /// Set this option to true to allow mapping different tag names to the same
-            /// value.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#allow_alias: bool,
-            /// Is this enum deprecated?
+        pub struct EnumValueOptions {
+            /// Is this enum value deprecated?
             /// Depending on the target platform, this can emit Deprecated annotations
-            /// for the enum, or it will be completely ignored; in the very least, this
-            /// is a formalization for deprecating enums.
+            /// for the enum value, or it will be completely ignored; in the very least,
+            /// this is a formalization for deprecating enum values.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
             pub r#deprecated: bool,
-            /// Enable the legacy handling of JSON field name conflicts.  This lowercases
-            /// and strips underscored from the fields before comparison in proto3 only.
-            /// The new behavior takes `json_name` into account and applies to proto2 as
-            /// well.
-            /// TODO Remove this legacy behavior once downstream teams have
-            /// had time to migrate.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#deprecated_legacy_json_field_conflicts: bool,
             /// Any features defined in the specific edition.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
             pub r#features: FeatureSet,
+            /// Indicate that fields annotated with this enum value should not be printed
+            /// out when using debug formats, e.g. when the field contains sensitive
+            /// credentials.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#debug_redact: bool,
+            /// Information about the support window of a feature value.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#feature_support: FieldOptions_::FeatureSupport,
             /// The parser stores options it doesn't recognize here. See above.
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
             /// Tracks presence of optional and message fields
-            pub _has: EnumOptions_::_Hazzer,
+            pub _has: EnumValueOptions_::_Hazzer,
         }
-        impl ::core::default::Default for EnumOptions {
+        impl ::core::default::Default for EnumValueOptions {
             fn default() -> Self {
                 Self {
-                    r#allow_alias: ::core::default::Default::default(),
                     r#deprecated: false as _,
-                    r#deprecated_legacy_json_field_conflicts: ::core::default::Default::default(),
                     r#features: ::core::default::Default::default(),
+                    r#debug_redact: false as _,
+                    r#feature_support: ::core::default::Default::default(),
                     r#uninterpreted_option: ::core::default::Default::default(),
                     _has: ::core::default::Default::default(),
                 }
             }
         }
-        impl EnumOptions {
-            /// Return a reference to `allow_alias` as an `Option`
-            #[inline]
-            pub fn r#allow_alias(&self) -> ::core::option::Option<&bool> {
-                self._has.r#allow_alias().then_some(&self.r#allow_alias)
-            }
+        impl EnumValueOptions {
             /// Return a reference to `deprecated` as an `Option`
             #[inline]
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
                 self._has.r#deprecated().then_some(&self.r#deprecated)
-            }
-            /// Return a reference to `deprecated_legacy_json_field_conflicts` as an `Option`
-            #[inline]
-            pub fn r#deprecated_legacy_json_field_conflicts(
-                &self,
-            ) -> ::core::option::Option<&bool> {
-                self._has
-                    .r#deprecated_legacy_json_field_conflicts()
-                    .then_some(&self.r#deprecated_legacy_json_field_conflicts)
             }
             /// Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
             }
+            /// Return a reference to `debug_redact` as an `Option`
+            #[inline]
+            pub fn r#debug_redact(&self) -> ::core::option::Option<&bool> {
+                self._has.r#debug_redact().then_some(&self.r#debug_redact)
+            }
+            /// Return a reference to `feature_support` as an `Option`
+            #[inline]
+            pub fn r#feature_support(
+                &self,
+            ) -> ::core::option::Option<&FieldOptions_::FeatureSupport> {
+                self._has.r#feature_support().then_some(&self.r#feature_support)
+            }
         }
-        impl ::micropb::MessageDecode for EnumOptions {
+        impl ::micropb::MessageDecode for EnumValueOptions {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -7601,15 +7730,7 @@ pub mod google_ {
                     let tag = decoder.decode_tag()?;
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
-                        2u32 => {
-                            let mut_ref = &mut self.r#allow_alias;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_allow_alias();
-                        }
-                        3u32 => {
+                        1u32 => {
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
@@ -7617,21 +7738,27 @@ pub mod google_ {
                             };
                             self._has.set_deprecated();
                         }
-                        6u32 => {
-                            let mut_ref = &mut self
-                                .r#deprecated_legacy_json_field_conflicts;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_deprecated_legacy_json_field_conflicts();
-                        }
-                        7u32 => {
+                        2u32 => {
                             let mut_ref = &mut self.r#features;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
                             };
                             self._has.set_features();
+                        }
+                        3u32 => {
+                            let mut_ref = &mut self.r#debug_redact;
+                            {
+                                let val = decoder.decode_bool()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_debug_redact();
+                        }
+                        4u32 => {
+                            let mut_ref = &mut self.r#feature_support;
+                            {
+                                mut_ref.decode_len_delimited(decoder)?;
+                            };
+                            self._has.set_feature_support();
                         }
                         999u32 => {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
@@ -7768,70 +7895,46 @@ pub mod google_ {
             }
         }
         #[derive(Debug)]
-        pub struct EnumValueOptions {
-            /// Is this enum value deprecated?
-            /// Depending on the target platform, this can emit Deprecated annotations
-            /// for the enum value, or it will be completely ignored; in the very least,
-            /// this is a formalization for deprecating enum values.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#deprecated: bool,
+        pub struct ServiceOptions {
             /// Any features defined in the specific edition.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
             pub r#features: FeatureSet,
-            /// Indicate that fields annotated with this enum value should not be printed
-            /// out when using debug formats, e.g. when the field contains sensitive
-            /// credentials.
+            /// Is this service deprecated?
+            /// Depending on the target platform, this can emit Deprecated annotations
+            /// for the service, or it will be completely ignored; in the very least,
+            /// this is a formalization for deprecating services.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#debug_redact: bool,
-            /// Information about the support window of a feature value.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#feature_support: FieldOptions_::FeatureSupport,
+            pub r#deprecated: bool,
             /// The parser stores options it doesn't recognize here. See above.
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
             /// Tracks presence of optional and message fields
-            pub _has: EnumValueOptions_::_Hazzer,
+            pub _has: ServiceOptions_::_Hazzer,
         }
-        impl ::core::default::Default for EnumValueOptions {
+        impl ::core::default::Default for ServiceOptions {
             fn default() -> Self {
                 Self {
-                    r#deprecated: false as _,
                     r#features: ::core::default::Default::default(),
-                    r#debug_redact: false as _,
-                    r#feature_support: ::core::default::Default::default(),
+                    r#deprecated: false as _,
                     r#uninterpreted_option: ::core::default::Default::default(),
                     _has: ::core::default::Default::default(),
                 }
             }
         }
-        impl EnumValueOptions {
-            /// Return a reference to `deprecated` as an `Option`
-            #[inline]
-            pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
-                self._has.r#deprecated().then_some(&self.r#deprecated)
-            }
+        impl ServiceOptions {
             /// Return a reference to `features` as an `Option`
             #[inline]
             pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
                 self._has.r#features().then_some(&self.r#features)
             }
-            /// Return a reference to `debug_redact` as an `Option`
+            /// Return a reference to `deprecated` as an `Option`
             #[inline]
-            pub fn r#debug_redact(&self) -> ::core::option::Option<&bool> {
-                self._has.r#debug_redact().then_some(&self.r#debug_redact)
-            }
-            /// Return a reference to `feature_support` as an `Option`
-            #[inline]
-            pub fn r#feature_support(
-                &self,
-            ) -> ::core::option::Option<&FieldOptions_::FeatureSupport> {
-                self._has.r#feature_support().then_some(&self.r#feature_support)
+            pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
+                self._has.r#deprecated().then_some(&self.r#deprecated)
             }
         }
-        impl ::micropb::MessageDecode for EnumValueOptions {
+        impl ::micropb::MessageDecode for ServiceOptions {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -7843,35 +7946,20 @@ pub mod google_ {
                     let tag = decoder.decode_tag()?;
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
-                        1u32 => {
-                            let mut_ref = &mut self.r#deprecated;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_deprecated();
-                        }
-                        2u32 => {
+                        34u32 => {
                             let mut_ref = &mut self.r#features;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
                             };
                             self._has.set_features();
                         }
-                        3u32 => {
-                            let mut_ref = &mut self.r#debug_redact;
+                        33u32 => {
+                            let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
                                 *mut_ref = val as _;
                             };
-                            self._has.set_debug_redact();
-                        }
-                        4u32 => {
-                            let mut_ref = &mut self.r#feature_support;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            self._has.set_feature_support();
+                            self._has.set_deprecated();
                         }
                         999u32 => {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
@@ -7958,46 +8046,56 @@ pub mod google_ {
             }
         }
         #[derive(Debug)]
-        pub struct ServiceOptions {
+        pub struct MethodOptions {
+            /// Is this method deprecated?
+            /// Depending on the target platform, this can emit Deprecated annotations
+            /// for the method, or it will be completely ignored; in the very least,
+            /// this is a formalization for deprecating methods.
+            ///
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#deprecated: bool,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#idempotency_level: MethodOptions_::IdempotencyLevel,
             /// Any features defined in the specific edition.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
             pub r#features: FeatureSet,
-            /// Is this service deprecated?
-            /// Depending on the target platform, this can emit Deprecated annotations
-            /// for the service, or it will be completely ignored; in the very least,
-            /// this is a formalization for deprecating services.
-            ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#deprecated: bool,
             /// The parser stores options it doesn't recognize here. See above.
             pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
             /// Tracks presence of optional and message fields
-            pub _has: ServiceOptions_::_Hazzer,
+            pub _has: MethodOptions_::_Hazzer,
         }
-        impl ::core::default::Default for ServiceOptions {
+        impl ::core::default::Default for MethodOptions {
             fn default() -> Self {
                 Self {
-                    r#features: ::core::default::Default::default(),
                     r#deprecated: false as _,
+                    r#idempotency_level: MethodOptions_::IdempotencyLevel::IdempotencyUnknown,
+                    r#features: ::core::default::Default::default(),
                     r#uninterpreted_option: ::core::default::Default::default(),
                     _has: ::core::default::Default::default(),
                 }
             }
         }
-        impl ServiceOptions {
-            /// Return a reference to `features` as an `Option`
-            #[inline]
-            pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
-                self._has.r#features().then_some(&self.r#features)
-            }
+        impl MethodOptions {
             /// Return a reference to `deprecated` as an `Option`
             #[inline]
             pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
                 self._has.r#deprecated().then_some(&self.r#deprecated)
             }
+            /// Return a reference to `idempotency_level` as an `Option`
+            #[inline]
+            pub fn r#idempotency_level(
+                &self,
+            ) -> ::core::option::Option<&MethodOptions_::IdempotencyLevel> {
+                self._has.r#idempotency_level().then_some(&self.r#idempotency_level)
+            }
+            /// Return a reference to `features` as an `Option`
+            #[inline]
+            pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
+                self._has.r#features().then_some(&self.r#features)
+            }
         }
-        impl ::micropb::MessageDecode for ServiceOptions {
+        impl ::micropb::MessageDecode for MethodOptions {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -8009,13 +8107,6 @@ pub mod google_ {
                     let tag = decoder.decode_tag()?;
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
-                        34u32 => {
-                            let mut_ref = &mut self.r#features;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            self._has.set_features();
-                        }
                         33u32 => {
                             let mut_ref = &mut self.r#deprecated;
                             {
@@ -8023,6 +8114,23 @@ pub mod google_ {
                                 *mut_ref = val as _;
                             };
                             self._has.set_deprecated();
+                        }
+                        34u32 => {
+                            let mut_ref = &mut self.r#idempotency_level;
+                            {
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| MethodOptions_::IdempotencyLevel(n as _))?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_idempotency_level();
+                        }
+                        35u32 => {
+                            let mut_ref = &mut self.r#features;
+                            {
+                                mut_ref.decode_len_delimited(decoder)?;
+                            };
+                            self._has.set_features();
                         }
                         999u32 => {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
@@ -8158,57 +8266,72 @@ pub mod google_ {
                 }
             }
         }
-        #[derive(Debug)]
-        pub struct MethodOptions {
-            /// Is this method deprecated?
-            /// Depending on the target platform, this can emit Deprecated annotations
-            /// for the method, or it will be completely ignored; in the very least,
-            /// this is a formalization for deprecating methods.
+        /// A message representing a option the parser does not recognize. This only
+        /// appears in options protos created by the compiler::Parser class.
+        /// DescriptorPool resolves these when building Descriptor objects. Therefore,
+        /// options protos in descriptor objects (e.g. returned by Descriptor::options(),
+        /// or produced by Descriptor::CopyTo()) will never have UninterpretedOptions
+        /// in them.
+        #[derive(Debug, Default)]
+        pub struct UninterpretedOption {
+            pub r#name: ::std::vec::Vec<UninterpretedOption_::NamePart>,
+            /// The value of the uninterpreted option, in whatever type the tokenizer
+            /// identified it as during parsing. Exactly one of these should be set.
             ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#deprecated: bool,
+            pub r#identifier_value: ::std::string::String,
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#idempotency_level: MethodOptions_::IdempotencyLevel,
-            /// Any features defined in the specific edition.
-            ///
+            pub r#positive_int_value: u64,
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#features: FeatureSet,
-            /// The parser stores options it doesn't recognize here. See above.
-            pub r#uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
+            pub r#negative_int_value: i64,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#double_value: f64,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#string_value: ::std::vec::Vec<u8>,
+            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+            pub r#aggregate_value: ::std::string::String,
             /// Tracks presence of optional and message fields
-            pub _has: MethodOptions_::_Hazzer,
+            pub _has: UninterpretedOption_::_Hazzer,
         }
-        impl ::core::default::Default for MethodOptions {
-            fn default() -> Self {
-                Self {
-                    r#deprecated: false as _,
-                    r#idempotency_level: MethodOptions_::IdempotencyLevel::IdempotencyUnknown,
-                    r#features: ::core::default::Default::default(),
-                    r#uninterpreted_option: ::core::default::Default::default(),
-                    _has: ::core::default::Default::default(),
-                }
-            }
-        }
-        impl MethodOptions {
-            /// Return a reference to `deprecated` as an `Option`
+        impl UninterpretedOption {
+            /// Return a reference to `identifier_value` as an `Option`
             #[inline]
-            pub fn r#deprecated(&self) -> ::core::option::Option<&bool> {
-                self._has.r#deprecated().then_some(&self.r#deprecated)
-            }
-            /// Return a reference to `idempotency_level` as an `Option`
-            #[inline]
-            pub fn r#idempotency_level(
+            pub fn r#identifier_value(
                 &self,
-            ) -> ::core::option::Option<&MethodOptions_::IdempotencyLevel> {
-                self._has.r#idempotency_level().then_some(&self.r#idempotency_level)
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#identifier_value().then_some(&self.r#identifier_value)
             }
-            /// Return a reference to `features` as an `Option`
+            /// Return a reference to `positive_int_value` as an `Option`
             #[inline]
-            pub fn r#features(&self) -> ::core::option::Option<&FeatureSet> {
-                self._has.r#features().then_some(&self.r#features)
+            pub fn r#positive_int_value(&self) -> ::core::option::Option<&u64> {
+                self._has.r#positive_int_value().then_some(&self.r#positive_int_value)
+            }
+            /// Return a reference to `negative_int_value` as an `Option`
+            #[inline]
+            pub fn r#negative_int_value(&self) -> ::core::option::Option<&i64> {
+                self._has.r#negative_int_value().then_some(&self.r#negative_int_value)
+            }
+            /// Return a reference to `double_value` as an `Option`
+            #[inline]
+            pub fn r#double_value(&self) -> ::core::option::Option<&f64> {
+                self._has.r#double_value().then_some(&self.r#double_value)
+            }
+            /// Return a reference to `string_value` as an `Option`
+            #[inline]
+            pub fn r#string_value(
+                &self,
+            ) -> ::core::option::Option<&::std::vec::Vec<u8>> {
+                self._has.r#string_value().then_some(&self.r#string_value)
+            }
+            /// Return a reference to `aggregate_value` as an `Option`
+            #[inline]
+            pub fn r#aggregate_value(
+                &self,
+            ) -> ::core::option::Option<&::std::string::String> {
+                self._has.r#aggregate_value().then_some(&self.r#aggregate_value)
             }
         }
-        impl ::micropb::MessageDecode for MethodOptions {
+        impl ::micropb::MessageDecode for UninterpretedOption {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -8220,43 +8343,66 @@ pub mod google_ {
                     let tag = decoder.decode_tag()?;
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
-                        33u32 => {
-                            let mut_ref = &mut self.r#deprecated;
-                            {
-                                let val = decoder.decode_bool()?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_deprecated();
-                        }
-                        34u32 => {
-                            let mut_ref = &mut self.r#idempotency_level;
-                            {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| MethodOptions_::IdempotencyLevel(n as _))?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_idempotency_level();
-                        }
-                        35u32 => {
-                            let mut_ref = &mut self.r#features;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            self._has.set_features();
-                        }
-                        999u32 => {
-                            let mut val: UninterpretedOption = ::core::default::Default::default();
+                        2u32 => {
+                            let mut val: UninterpretedOption_::NamePart = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
                             };
                             if let (Err(_), false) = (
-                                self.r#uninterpreted_option.pb_push(val),
+                                self.r#name.pb_push(val),
                                 decoder.ignore_repeated_cap_err,
                             ) {
                                 return Err(::micropb::DecodeError::Capacity);
                             }
+                        }
+                        3u32 => {
+                            let mut_ref = &mut self.r#identifier_value;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_identifier_value();
+                        }
+                        4u32 => {
+                            let mut_ref = &mut self.r#positive_int_value;
+                            {
+                                let val = decoder.decode_varint64()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_positive_int_value();
+                        }
+                        5u32 => {
+                            let mut_ref = &mut self.r#negative_int_value;
+                            {
+                                let val = decoder.decode_int64()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_negative_int_value();
+                        }
+                        6u32 => {
+                            let mut_ref = &mut self.r#double_value;
+                            {
+                                let val = decoder.decode_double()?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_double_value();
+                        }
+                        7u32 => {
+                            let mut_ref = &mut self.r#string_value;
+                            {
+                                decoder
+                                    .decode_bytes(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_string_value();
+                        }
+                        8u32 => {
+                            let mut_ref = &mut self.r#aggregate_value;
+                            {
+                                decoder
+                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                            };
+                            self._has.set_aggregate_value();
                         }
                         _ => {
                             decoder.skip_wire_value(tag.wire_type())?;
@@ -8268,69 +8414,6 @@ pub mod google_ {
         }
         /// Inner types for `UninterpretedOption`
         pub mod UninterpretedOption_ {
-            /// Inner types for `NamePart`
-            pub mod NamePart_ {
-                /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
-                pub struct _Hazzer([u8; 1]);
-                impl _Hazzer {
-                    /// New hazzer with all fields set to off
-                    #[inline]
-                    pub const fn _new() -> Self {
-                        Self([0; 1])
-                    }
-                    /// Query presence of `name_part`
-                    #[inline]
-                    pub const fn r#name_part(&self) -> bool {
-                        (self.0[0] & 1) != 0
-                    }
-                    /// Set presence of `name_part`
-                    #[inline]
-                    pub const fn set_name_part(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 1;
-                        self
-                    }
-                    /// Clear presence of `name_part`
-                    #[inline]
-                    pub const fn clear_name_part(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !1;
-                        self
-                    }
-                    /// Builder method that sets the presence of `name_part`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_name_part(mut self) -> Self {
-                        self.set_name_part();
-                        self
-                    }
-                    /// Query presence of `is_extension`
-                    #[inline]
-                    pub const fn r#is_extension(&self) -> bool {
-                        (self.0[0] & 2) != 0
-                    }
-                    /// Set presence of `is_extension`
-                    #[inline]
-                    pub const fn set_is_extension(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 2;
-                        self
-                    }
-                    /// Clear presence of `is_extension`
-                    #[inline]
-                    pub const fn clear_is_extension(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !2;
-                        self
-                    }
-                    /// Builder method that sets the presence of `is_extension`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_is_extension(mut self) -> Self {
-                        self.set_is_extension();
-                        self
-                    }
-                }
-            }
             /// The name of the uninterpreted option.  Each string represents a segment in
             /// a dot-separated name.  is_extension is true iff a segment represents an
             /// extension (denoted with parentheses in options specs in .proto files).
@@ -8393,6 +8476,69 @@ pub mod google_ {
                         }
                     }
                     Ok(())
+                }
+            }
+            /// Inner types for `NamePart`
+            pub mod NamePart_ {
+                /// Compact bitfield for tracking presence of optional and message fields
+                #[derive(Debug, Default, PartialEq, Clone)]
+                pub struct _Hazzer([u8; 1]);
+                impl _Hazzer {
+                    /// New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
+                    /// Query presence of `name_part`
+                    #[inline]
+                    pub const fn r#name_part(&self) -> bool {
+                        (self.0[0] & 1) != 0
+                    }
+                    /// Set presence of `name_part`
+                    #[inline]
+                    pub const fn set_name_part(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 1;
+                        self
+                    }
+                    /// Clear presence of `name_part`
+                    #[inline]
+                    pub const fn clear_name_part(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !1;
+                        self
+                    }
+                    /// Builder method that sets the presence of `name_part`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_name_part(mut self) -> Self {
+                        self.set_name_part();
+                        self
+                    }
+                    /// Query presence of `is_extension`
+                    #[inline]
+                    pub const fn r#is_extension(&self) -> bool {
+                        (self.0[0] & 2) != 0
+                    }
+                    /// Set presence of `is_extension`
+                    #[inline]
+                    pub const fn set_is_extension(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 2;
+                        self
+                    }
+                    /// Clear presence of `is_extension`
+                    #[inline]
+                    pub const fn clear_is_extension(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !2;
+                        self
+                    }
+                    /// Builder method that sets the presence of `is_extension`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_is_extension(mut self) -> Self {
+                        self.set_is_extension();
+                        self
+                    }
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
@@ -8556,72 +8702,74 @@ pub mod google_ {
                 }
             }
         }
-        /// A message representing a option the parser does not recognize. This only
-        /// appears in options protos created by the compiler::Parser class.
-        /// DescriptorPool resolves these when building Descriptor objects. Therefore,
-        /// options protos in descriptor objects (e.g. returned by Descriptor::options(),
-        /// or produced by Descriptor::CopyTo()) will never have UninterpretedOptions
-        /// in them.
+        /// TODO Enums in C++ gencode (and potentially other languages) are
+        /// not well scoped.  This means that each of the feature enums below can clash
+        /// with each other.  The short names we've chosen maximize call-site
+        /// readability, but leave us very open to this scenario.  A future feature will
+        /// be designed and implemented to handle this, hopefully before we ever hit a
+        /// conflict here.
         #[derive(Debug, Default)]
-        pub struct UninterpretedOption {
-            pub r#name: ::std::vec::Vec<UninterpretedOption_::NamePart>,
-            /// The value of the uninterpreted option, in whatever type the tokenizer
-            /// identified it as during parsing. Exactly one of these should be set.
-            ///
+        pub struct FeatureSet {
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#identifier_value: ::std::string::String,
+            pub r#field_presence: FeatureSet_::FieldPresence,
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#positive_int_value: u64,
+            pub r#enum_type: FeatureSet_::EnumType,
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#negative_int_value: i64,
+            pub r#repeated_field_encoding: FeatureSet_::RepeatedFieldEncoding,
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#double_value: f64,
+            pub r#utf8_validation: FeatureSet_::Utf8Validation,
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#string_value: ::std::vec::Vec<u8>,
+            pub r#message_encoding: FeatureSet_::MessageEncoding,
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#aggregate_value: ::std::string::String,
+            pub r#json_format: FeatureSet_::JsonFormat,
             /// Tracks presence of optional and message fields
-            pub _has: UninterpretedOption_::_Hazzer,
+            pub _has: FeatureSet_::_Hazzer,
         }
-        impl UninterpretedOption {
-            /// Return a reference to `identifier_value` as an `Option`
+        impl FeatureSet {
+            /// Return a reference to `field_presence` as an `Option`
             #[inline]
-            pub fn r#identifier_value(
+            pub fn r#field_presence(
                 &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#identifier_value().then_some(&self.r#identifier_value)
+            ) -> ::core::option::Option<&FeatureSet_::FieldPresence> {
+                self._has.r#field_presence().then_some(&self.r#field_presence)
             }
-            /// Return a reference to `positive_int_value` as an `Option`
+            /// Return a reference to `enum_type` as an `Option`
             #[inline]
-            pub fn r#positive_int_value(&self) -> ::core::option::Option<&u64> {
-                self._has.r#positive_int_value().then_some(&self.r#positive_int_value)
+            pub fn r#enum_type(&self) -> ::core::option::Option<&FeatureSet_::EnumType> {
+                self._has.r#enum_type().then_some(&self.r#enum_type)
             }
-            /// Return a reference to `negative_int_value` as an `Option`
+            /// Return a reference to `repeated_field_encoding` as an `Option`
             #[inline]
-            pub fn r#negative_int_value(&self) -> ::core::option::Option<&i64> {
-                self._has.r#negative_int_value().then_some(&self.r#negative_int_value)
-            }
-            /// Return a reference to `double_value` as an `Option`
-            #[inline]
-            pub fn r#double_value(&self) -> ::core::option::Option<&f64> {
-                self._has.r#double_value().then_some(&self.r#double_value)
-            }
-            /// Return a reference to `string_value` as an `Option`
-            #[inline]
-            pub fn r#string_value(
+            pub fn r#repeated_field_encoding(
                 &self,
-            ) -> ::core::option::Option<&::std::vec::Vec<u8>> {
-                self._has.r#string_value().then_some(&self.r#string_value)
+            ) -> ::core::option::Option<&FeatureSet_::RepeatedFieldEncoding> {
+                self._has
+                    .r#repeated_field_encoding()
+                    .then_some(&self.r#repeated_field_encoding)
             }
-            /// Return a reference to `aggregate_value` as an `Option`
+            /// Return a reference to `utf8_validation` as an `Option`
             #[inline]
-            pub fn r#aggregate_value(
+            pub fn r#utf8_validation(
                 &self,
-            ) -> ::core::option::Option<&::std::string::String> {
-                self._has.r#aggregate_value().then_some(&self.r#aggregate_value)
+            ) -> ::core::option::Option<&FeatureSet_::Utf8Validation> {
+                self._has.r#utf8_validation().then_some(&self.r#utf8_validation)
+            }
+            /// Return a reference to `message_encoding` as an `Option`
+            #[inline]
+            pub fn r#message_encoding(
+                &self,
+            ) -> ::core::option::Option<&FeatureSet_::MessageEncoding> {
+                self._has.r#message_encoding().then_some(&self.r#message_encoding)
+            }
+            /// Return a reference to `json_format` as an `Option`
+            #[inline]
+            pub fn r#json_format(
+                &self,
+            ) -> ::core::option::Option<&FeatureSet_::JsonFormat> {
+                self._has.r#json_format().then_some(&self.r#json_format)
             }
         }
-        impl ::micropb::MessageDecode for UninterpretedOption {
+        impl ::micropb::MessageDecode for FeatureSet {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -8633,66 +8781,65 @@ pub mod google_ {
                     let tag = decoder.decode_tag()?;
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
-                        2u32 => {
-                            let mut val: UninterpretedOption_::NamePart = ::core::default::Default::default();
-                            let mut_ref = &mut val;
+                        1u32 => {
+                            let mut_ref = &mut self.r#field_presence;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| FeatureSet_::FieldPresence(n as _))?;
+                                *mut_ref = val as _;
                             };
-                            if let (Err(_), false) = (
-                                self.r#name.pb_push(val),
-                                decoder.ignore_repeated_cap_err,
-                            ) {
-                                return Err(::micropb::DecodeError::Capacity);
-                            }
+                            self._has.set_field_presence();
+                        }
+                        2u32 => {
+                            let mut_ref = &mut self.r#enum_type;
+                            {
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| FeatureSet_::EnumType(n as _))?;
+                                *mut_ref = val as _;
+                            };
+                            self._has.set_enum_type();
                         }
                         3u32 => {
-                            let mut_ref = &mut self.r#identifier_value;
+                            let mut_ref = &mut self.r#repeated_field_encoding;
                             {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| FeatureSet_::RepeatedFieldEncoding(n as _))?;
+                                *mut_ref = val as _;
                             };
-                            self._has.set_identifier_value();
+                            self._has.set_repeated_field_encoding();
                         }
                         4u32 => {
-                            let mut_ref = &mut self.r#positive_int_value;
+                            let mut_ref = &mut self.r#utf8_validation;
                             {
-                                let val = decoder.decode_varint64()?;
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| FeatureSet_::Utf8Validation(n as _))?;
                                 *mut_ref = val as _;
                             };
-                            self._has.set_positive_int_value();
+                            self._has.set_utf8_validation();
                         }
                         5u32 => {
-                            let mut_ref = &mut self.r#negative_int_value;
+                            let mut_ref = &mut self.r#message_encoding;
                             {
-                                let val = decoder.decode_int64()?;
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| FeatureSet_::MessageEncoding(n as _))?;
                                 *mut_ref = val as _;
                             };
-                            self._has.set_negative_int_value();
+                            self._has.set_message_encoding();
                         }
                         6u32 => {
-                            let mut_ref = &mut self.r#double_value;
+                            let mut_ref = &mut self.r#json_format;
                             {
-                                let val = decoder.decode_double()?;
+                                let val = decoder
+                                    .decode_int32()
+                                    .map(|n| FeatureSet_::JsonFormat(n as _))?;
                                 *mut_ref = val as _;
                             };
-                            self._has.set_double_value();
-                        }
-                        7u32 => {
-                            let mut_ref = &mut self.r#string_value;
-                            {
-                                decoder
-                                    .decode_bytes(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_string_value();
-                        }
-                        8u32 => {
-                            let mut_ref = &mut self.r#aggregate_value;
-                            {
-                                decoder
-                                    .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                            };
-                            self._has.set_aggregate_value();
+                            self._has.set_json_format();
                         }
                         _ => {
                             decoder.skip_wire_value(tag.wire_type())?;
@@ -8986,74 +9133,41 @@ pub mod google_ {
                 }
             }
         }
-        /// TODO Enums in C++ gencode (and potentially other languages) are
-        /// not well scoped.  This means that each of the feature enums below can clash
-        /// with each other.  The short names we've chosen maximize call-site
-        /// readability, but leave us very open to this scenario.  A future feature will
-        /// be designed and implemented to handle this, hopefully before we ever hit a
-        /// conflict here.
+        /// A compiled specification for the defaults of a set of features.  These
+        /// messages are generated from FeatureSet extensions and can be used to seed
+        /// feature resolution. The resolution with this object becomes a simple search
+        /// for the closest matching edition, followed by proto merges.
         #[derive(Debug, Default)]
-        pub struct FeatureSet {
+        pub struct FeatureSetDefaults {
+            pub r#defaults: ::std::vec::Vec<
+                FeatureSetDefaults_::FeatureSetEditionDefault,
+            >,
+            /// The minimum supported edition (inclusive) when this was constructed.
+            /// Editions before this will not have defaults.
+            ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#field_presence: FeatureSet_::FieldPresence,
+            pub r#minimum_edition: Edition,
+            /// The maximum known edition (inclusive) when this was constructed. Editions
+            /// after this will not have reliable defaults.
+            ///
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#enum_type: FeatureSet_::EnumType,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#repeated_field_encoding: FeatureSet_::RepeatedFieldEncoding,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#utf8_validation: FeatureSet_::Utf8Validation,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#message_encoding: FeatureSet_::MessageEncoding,
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#json_format: FeatureSet_::JsonFormat,
+            pub r#maximum_edition: Edition,
             /// Tracks presence of optional and message fields
-            pub _has: FeatureSet_::_Hazzer,
+            pub _has: FeatureSetDefaults_::_Hazzer,
         }
-        impl FeatureSet {
-            /// Return a reference to `field_presence` as an `Option`
+        impl FeatureSetDefaults {
+            /// Return a reference to `minimum_edition` as an `Option`
             #[inline]
-            pub fn r#field_presence(
-                &self,
-            ) -> ::core::option::Option<&FeatureSet_::FieldPresence> {
-                self._has.r#field_presence().then_some(&self.r#field_presence)
+            pub fn r#minimum_edition(&self) -> ::core::option::Option<&Edition> {
+                self._has.r#minimum_edition().then_some(&self.r#minimum_edition)
             }
-            /// Return a reference to `enum_type` as an `Option`
+            /// Return a reference to `maximum_edition` as an `Option`
             #[inline]
-            pub fn r#enum_type(&self) -> ::core::option::Option<&FeatureSet_::EnumType> {
-                self._has.r#enum_type().then_some(&self.r#enum_type)
-            }
-            /// Return a reference to `repeated_field_encoding` as an `Option`
-            #[inline]
-            pub fn r#repeated_field_encoding(
-                &self,
-            ) -> ::core::option::Option<&FeatureSet_::RepeatedFieldEncoding> {
-                self._has
-                    .r#repeated_field_encoding()
-                    .then_some(&self.r#repeated_field_encoding)
-            }
-            /// Return a reference to `utf8_validation` as an `Option`
-            #[inline]
-            pub fn r#utf8_validation(
-                &self,
-            ) -> ::core::option::Option<&FeatureSet_::Utf8Validation> {
-                self._has.r#utf8_validation().then_some(&self.r#utf8_validation)
-            }
-            /// Return a reference to `message_encoding` as an `Option`
-            #[inline]
-            pub fn r#message_encoding(
-                &self,
-            ) -> ::core::option::Option<&FeatureSet_::MessageEncoding> {
-                self._has.r#message_encoding().then_some(&self.r#message_encoding)
-            }
-            /// Return a reference to `json_format` as an `Option`
-            #[inline]
-            pub fn r#json_format(
-                &self,
-            ) -> ::core::option::Option<&FeatureSet_::JsonFormat> {
-                self._has.r#json_format().then_some(&self.r#json_format)
+            pub fn r#maximum_edition(&self) -> ::core::option::Option<&Edition> {
+                self._has.r#maximum_edition().then_some(&self.r#maximum_edition)
             }
         }
-        impl ::micropb::MessageDecode for FeatureSet {
+        impl ::micropb::MessageDecode for FeatureSetDefaults {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -9066,64 +9180,33 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
-                            let mut_ref = &mut self.r#field_presence;
+                            let mut val: FeatureSetDefaults_::FeatureSetEditionDefault = ::core::default::Default::default();
+                            let mut_ref = &mut val;
                             {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| FeatureSet_::FieldPresence(n as _))?;
-                                *mut_ref = val as _;
+                                mut_ref.decode_len_delimited(decoder)?;
                             };
-                            self._has.set_field_presence();
-                        }
-                        2u32 => {
-                            let mut_ref = &mut self.r#enum_type;
-                            {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| FeatureSet_::EnumType(n as _))?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_enum_type();
-                        }
-                        3u32 => {
-                            let mut_ref = &mut self.r#repeated_field_encoding;
-                            {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| FeatureSet_::RepeatedFieldEncoding(n as _))?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_repeated_field_encoding();
+                            if let (Err(_), false) = (
+                                self.r#defaults.pb_push(val),
+                                decoder.ignore_repeated_cap_err,
+                            ) {
+                                return Err(::micropb::DecodeError::Capacity);
+                            }
                         }
                         4u32 => {
-                            let mut_ref = &mut self.r#utf8_validation;
+                            let mut_ref = &mut self.r#minimum_edition;
                             {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| FeatureSet_::Utf8Validation(n as _))?;
+                                let val = decoder.decode_int32().map(|n| Edition(n as _))?;
                                 *mut_ref = val as _;
                             };
-                            self._has.set_utf8_validation();
+                            self._has.set_minimum_edition();
                         }
                         5u32 => {
-                            let mut_ref = &mut self.r#message_encoding;
+                            let mut_ref = &mut self.r#maximum_edition;
                             {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| FeatureSet_::MessageEncoding(n as _))?;
+                                let val = decoder.decode_int32().map(|n| Edition(n as _))?;
                                 *mut_ref = val as _;
                             };
-                            self._has.set_message_encoding();
-                        }
-                        6u32 => {
-                            let mut_ref = &mut self.r#json_format;
-                            {
-                                let val = decoder
-                                    .decode_int32()
-                                    .map(|n| FeatureSet_::JsonFormat(n as _))?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_json_format();
+                            self._has.set_maximum_edition();
                         }
                         _ => {
                             decoder.skip_wire_value(tag.wire_type())?;
@@ -9135,6 +9218,92 @@ pub mod google_ {
         }
         /// Inner types for `FeatureSetDefaults`
         pub mod FeatureSetDefaults_ {
+            /// A map from every known edition with a unique set of defaults to its
+            /// defaults. Not all editions may be contained here.  For a given edition,
+            /// the defaults at the closest matching edition ordered at or before it should
+            /// be used.  This field must be in strict ascending order by edition.
+            #[derive(Debug, Default)]
+            pub struct FeatureSetEditionDefault {
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#edition: super::Edition,
+                /// Defaults of features that can be overridden in this edition.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#overridable_features: super::FeatureSet,
+                /// Defaults of features that can't be overridden in this edition.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#fixed_features: super::FeatureSet,
+                /// Tracks presence of optional and message fields
+                pub _has: FeatureSetEditionDefault_::_Hazzer,
+            }
+            impl FeatureSetEditionDefault {
+                /// Return a reference to `edition` as an `Option`
+                #[inline]
+                pub fn r#edition(&self) -> ::core::option::Option<&super::Edition> {
+                    self._has.r#edition().then_some(&self.r#edition)
+                }
+                /// Return a reference to `overridable_features` as an `Option`
+                #[inline]
+                pub fn r#overridable_features(
+                    &self,
+                ) -> ::core::option::Option<&super::FeatureSet> {
+                    self._has
+                        .r#overridable_features()
+                        .then_some(&self.r#overridable_features)
+                }
+                /// Return a reference to `fixed_features` as an `Option`
+                #[inline]
+                pub fn r#fixed_features(
+                    &self,
+                ) -> ::core::option::Option<&super::FeatureSet> {
+                    self._has.r#fixed_features().then_some(&self.r#fixed_features)
+                }
+            }
+            impl ::micropb::MessageDecode for FeatureSetEditionDefault {
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                    &mut self,
+                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                    let before = decoder.bytes_read();
+                    while decoder.bytes_read() - before < len {
+                        let tag = decoder.decode_tag()?;
+                        match tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            3u32 => {
+                                let mut_ref = &mut self.r#edition;
+                                {
+                                    let val = decoder
+                                        .decode_int32()
+                                        .map(|n| super::Edition(n as _))?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_edition();
+                            }
+                            4u32 => {
+                                let mut_ref = &mut self.r#overridable_features;
+                                {
+                                    mut_ref.decode_len_delimited(decoder)?;
+                                };
+                                self._has.set_overridable_features();
+                            }
+                            5u32 => {
+                                let mut_ref = &mut self.r#fixed_features;
+                                {
+                                    mut_ref.decode_len_delimited(decoder)?;
+                                };
+                                self._has.set_fixed_features();
+                            }
+                            _ => {
+                                decoder.skip_wire_value(tag.wire_type())?;
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            }
             /// Inner types for `FeatureSetEditionDefault`
             pub mod FeatureSetEditionDefault_ {
                 /// Compact bitfield for tracking presence of optional and message fields
@@ -9223,92 +9392,6 @@ pub mod google_ {
                     }
                 }
             }
-            /// A map from every known edition with a unique set of defaults to its
-            /// defaults. Not all editions may be contained here.  For a given edition,
-            /// the defaults at the closest matching edition ordered at or before it should
-            /// be used.  This field must be in strict ascending order by edition.
-            #[derive(Debug, Default)]
-            pub struct FeatureSetEditionDefault {
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#edition: super::Edition,
-                /// Defaults of features that can be overridden in this edition.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#overridable_features: super::FeatureSet,
-                /// Defaults of features that can't be overridden in this edition.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#fixed_features: super::FeatureSet,
-                /// Tracks presence of optional and message fields
-                pub _has: FeatureSetEditionDefault_::_Hazzer,
-            }
-            impl FeatureSetEditionDefault {
-                /// Return a reference to `edition` as an `Option`
-                #[inline]
-                pub fn r#edition(&self) -> ::core::option::Option<&super::Edition> {
-                    self._has.r#edition().then_some(&self.r#edition)
-                }
-                /// Return a reference to `overridable_features` as an `Option`
-                #[inline]
-                pub fn r#overridable_features(
-                    &self,
-                ) -> ::core::option::Option<&super::FeatureSet> {
-                    self._has
-                        .r#overridable_features()
-                        .then_some(&self.r#overridable_features)
-                }
-                /// Return a reference to `fixed_features` as an `Option`
-                #[inline]
-                pub fn r#fixed_features(
-                    &self,
-                ) -> ::core::option::Option<&super::FeatureSet> {
-                    self._has.r#fixed_features().then_some(&self.r#fixed_features)
-                }
-            }
-            impl ::micropb::MessageDecode for FeatureSetEditionDefault {
-                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                    &mut self,
-                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                    len: usize,
-                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                    let before = decoder.bytes_read();
-                    while decoder.bytes_read() - before < len {
-                        let tag = decoder.decode_tag()?;
-                        match tag.field_num() {
-                            0 => return Err(::micropb::DecodeError::ZeroField),
-                            3u32 => {
-                                let mut_ref = &mut self.r#edition;
-                                {
-                                    let val = decoder
-                                        .decode_int32()
-                                        .map(|n| super::Edition(n as _))?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_edition();
-                            }
-                            4u32 => {
-                                let mut_ref = &mut self.r#overridable_features;
-                                {
-                                    mut_ref.decode_len_delimited(decoder)?;
-                                };
-                                self._has.set_overridable_features();
-                            }
-                            5u32 => {
-                                let mut_ref = &mut self.r#fixed_features;
-                                {
-                                    mut_ref.decode_len_delimited(decoder)?;
-                                };
-                                self._has.set_fixed_features();
-                            }
-                            _ => {
-                                decoder.skip_wire_value(tag.wire_type())?;
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-            }
             /// Compact bitfield for tracking presence of optional and message fields
             #[derive(Debug, Default, PartialEq, Clone)]
             pub struct _Hazzer([u8; 1]);
@@ -9370,41 +9453,57 @@ pub mod google_ {
                 }
             }
         }
-        /// A compiled specification for the defaults of a set of features.  These
-        /// messages are generated from FeatureSet extensions and can be used to seed
-        /// feature resolution. The resolution with this object becomes a simple search
-        /// for the closest matching edition, followed by proto merges.
+        /// Encapsulates information about the original source file from which a
+        /// FileDescriptorProto was generated.
         #[derive(Debug, Default)]
-        pub struct FeatureSetDefaults {
-            pub r#defaults: ::std::vec::Vec<
-                FeatureSetDefaults_::FeatureSetEditionDefault,
-            >,
-            /// The minimum supported edition (inclusive) when this was constructed.
-            /// Editions before this will not have defaults.
+        pub struct SourceCodeInfo {
+            /// A Location identifies a piece of source code in a .proto file which
+            /// corresponds to a particular definition.  This information is intended
+            /// to be useful to IDEs, code indexers, documentation generators, and similar
+            /// tools.
             ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#minimum_edition: Edition,
-            /// The maximum known edition (inclusive) when this was constructed. Editions
-            /// after this will not have reliable defaults.
+            /// For example, say we have a file like:
+            ///   message Foo {
+            ///     optional string foo = 1;
+            ///   }
+            /// Let's look at just the field definition:
+            ///   optional string foo = 1;
+            ///   ^       ^^     ^^  ^  ^^^
+            ///   a       bc     de  f  ghi
+            /// We have the following locations:
+            ///   span   path               represents
+            ///   [a,i)  [ 4, 0, 2, 0 ]     The whole field definition.
+            ///   [a,b)  [ 4, 0, 2, 0, 4 ]  The label (optional).
+            ///   [c,d)  [ 4, 0, 2, 0, 5 ]  The type (string).
+            ///   [e,f)  [ 4, 0, 2, 0, 1 ]  The name (foo).
+            ///   [g,h)  [ 4, 0, 2, 0, 3 ]  The number (1).
             ///
-            /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-            pub r#maximum_edition: Edition,
-            /// Tracks presence of optional and message fields
-            pub _has: FeatureSetDefaults_::_Hazzer,
+            /// Notes:
+            /// - A location may refer to a repeated field itself (i.e. not to any
+            ///   particular index within it).  This is used whenever a set of elements are
+            ///   logically enclosed in a single code segment.  For example, an entire
+            ///   extend block (possibly containing multiple extension definitions) will
+            ///   have an outer location whose path refers to the "extensions" repeated
+            ///   field without an index.
+            /// - Multiple locations may have the same path.  This happens when a single
+            ///   logical declaration is spread out across multiple places.  The most
+            ///   obvious example is the "extend" block again -- there may be multiple
+            ///   extend blocks in the same scope, each of which will have the same path.
+            /// - A location's span is not always a subset of its parent's span.  For
+            ///   example, the "extendee" of an extension declaration appears at the
+            ///   beginning of the "extend" block and is shared by all extensions within
+            ///   the block.
+            /// - Just because a location's span is a subset of some other location's span
+            ///   does not mean that it is a descendant.  For example, a "group" defines
+            ///   both a type and a field in a single declaration.  Thus, the locations
+            ///   corresponding to the type and field and their components will overlap.
+            /// - Code which tries to interpret locations should probably be designed to
+            ///   ignore those that it doesn't understand, as more types of locations could
+            ///   be recorded in the future.
+            pub r#location: ::std::vec::Vec<SourceCodeInfo_::Location>,
         }
-        impl FeatureSetDefaults {
-            /// Return a reference to `minimum_edition` as an `Option`
-            #[inline]
-            pub fn r#minimum_edition(&self) -> ::core::option::Option<&Edition> {
-                self._has.r#minimum_edition().then_some(&self.r#minimum_edition)
-            }
-            /// Return a reference to `maximum_edition` as an `Option`
-            #[inline]
-            pub fn r#maximum_edition(&self) -> ::core::option::Option<&Edition> {
-                self._has.r#maximum_edition().then_some(&self.r#maximum_edition)
-            }
-        }
-        impl ::micropb::MessageDecode for FeatureSetDefaults {
+        impl SourceCodeInfo {}
+        impl ::micropb::MessageDecode for SourceCodeInfo {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -9417,33 +9516,17 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
-                            let mut val: FeatureSetDefaults_::FeatureSetEditionDefault = ::core::default::Default::default();
+                            let mut val: SourceCodeInfo_::Location = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
                             };
                             if let (Err(_), false) = (
-                                self.r#defaults.pb_push(val),
+                                self.r#location.pb_push(val),
                                 decoder.ignore_repeated_cap_err,
                             ) {
                                 return Err(::micropb::DecodeError::Capacity);
                             }
-                        }
-                        4u32 => {
-                            let mut_ref = &mut self.r#minimum_edition;
-                            {
-                                let val = decoder.decode_int32().map(|n| Edition(n as _))?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_minimum_edition();
-                        }
-                        5u32 => {
-                            let mut_ref = &mut self.r#maximum_edition;
-                            {
-                                let val = decoder.decode_int32().map(|n| Edition(n as _))?;
-                                *mut_ref = val as _;
-                            };
-                            self._has.set_maximum_edition();
                         }
                         _ => {
                             decoder.skip_wire_value(tag.wire_type())?;
@@ -9455,69 +9538,6 @@ pub mod google_ {
         }
         /// Inner types for `SourceCodeInfo`
         pub mod SourceCodeInfo_ {
-            /// Inner types for `Location`
-            pub mod Location_ {
-                /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
-                pub struct _Hazzer([u8; 1]);
-                impl _Hazzer {
-                    /// New hazzer with all fields set to off
-                    #[inline]
-                    pub const fn _new() -> Self {
-                        Self([0; 1])
-                    }
-                    /// Query presence of `leading_comments`
-                    #[inline]
-                    pub const fn r#leading_comments(&self) -> bool {
-                        (self.0[0] & 1) != 0
-                    }
-                    /// Set presence of `leading_comments`
-                    #[inline]
-                    pub const fn set_leading_comments(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 1;
-                        self
-                    }
-                    /// Clear presence of `leading_comments`
-                    #[inline]
-                    pub const fn clear_leading_comments(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !1;
-                        self
-                    }
-                    /// Builder method that sets the presence of `leading_comments`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_leading_comments(mut self) -> Self {
-                        self.set_leading_comments();
-                        self
-                    }
-                    /// Query presence of `trailing_comments`
-                    #[inline]
-                    pub const fn r#trailing_comments(&self) -> bool {
-                        (self.0[0] & 2) != 0
-                    }
-                    /// Set presence of `trailing_comments`
-                    #[inline]
-                    pub const fn set_trailing_comments(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem |= 2;
-                        self
-                    }
-                    /// Clear presence of `trailing_comments`
-                    #[inline]
-                    pub const fn clear_trailing_comments(&mut self) -> &mut Self {
-                        let elem = &mut self.0[0];
-                        *elem &= !2;
-                        self
-                    }
-                    /// Builder method that sets the presence of `trailing_comments`. Useful for initializing the Hazzer.
-                    #[inline]
-                    pub const fn init_trailing_comments(mut self) -> Self {
-                        self.set_trailing_comments();
-                        self
-                    }
-                }
-            }
             #[derive(Debug, Default)]
             pub struct Location {
                 /// Identifies which part of the FileDescriptorProto was defined at this
@@ -9704,58 +9724,81 @@ pub mod google_ {
                     Ok(())
                 }
             }
+            /// Inner types for `Location`
+            pub mod Location_ {
+                /// Compact bitfield for tracking presence of optional and message fields
+                #[derive(Debug, Default, PartialEq, Clone)]
+                pub struct _Hazzer([u8; 1]);
+                impl _Hazzer {
+                    /// New hazzer with all fields set to off
+                    #[inline]
+                    pub const fn _new() -> Self {
+                        Self([0; 1])
+                    }
+                    /// Query presence of `leading_comments`
+                    #[inline]
+                    pub const fn r#leading_comments(&self) -> bool {
+                        (self.0[0] & 1) != 0
+                    }
+                    /// Set presence of `leading_comments`
+                    #[inline]
+                    pub const fn set_leading_comments(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 1;
+                        self
+                    }
+                    /// Clear presence of `leading_comments`
+                    #[inline]
+                    pub const fn clear_leading_comments(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !1;
+                        self
+                    }
+                    /// Builder method that sets the presence of `leading_comments`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_leading_comments(mut self) -> Self {
+                        self.set_leading_comments();
+                        self
+                    }
+                    /// Query presence of `trailing_comments`
+                    #[inline]
+                    pub const fn r#trailing_comments(&self) -> bool {
+                        (self.0[0] & 2) != 0
+                    }
+                    /// Set presence of `trailing_comments`
+                    #[inline]
+                    pub const fn set_trailing_comments(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem |= 2;
+                        self
+                    }
+                    /// Clear presence of `trailing_comments`
+                    #[inline]
+                    pub const fn clear_trailing_comments(&mut self) -> &mut Self {
+                        let elem = &mut self.0[0];
+                        *elem &= !2;
+                        self
+                    }
+                    /// Builder method that sets the presence of `trailing_comments`. Useful for initializing the Hazzer.
+                    #[inline]
+                    pub const fn init_trailing_comments(mut self) -> Self {
+                        self.set_trailing_comments();
+                        self
+                    }
+                }
+            }
         }
-        /// Encapsulates information about the original source file from which a
-        /// FileDescriptorProto was generated.
+        /// Describes the relationship between generated code and its original source
+        /// file. A GeneratedCodeInfo message is associated with only one generated
+        /// source file, but may contain references to different source .proto files.
         #[derive(Debug, Default)]
-        pub struct SourceCodeInfo {
-            /// A Location identifies a piece of source code in a .proto file which
-            /// corresponds to a particular definition.  This information is intended
-            /// to be useful to IDEs, code indexers, documentation generators, and similar
-            /// tools.
-            ///
-            /// For example, say we have a file like:
-            ///   message Foo {
-            ///     optional string foo = 1;
-            ///   }
-            /// Let's look at just the field definition:
-            ///   optional string foo = 1;
-            ///   ^       ^^     ^^  ^  ^^^
-            ///   a       bc     de  f  ghi
-            /// We have the following locations:
-            ///   span   path               represents
-            ///   [a,i)  [ 4, 0, 2, 0 ]     The whole field definition.
-            ///   [a,b)  [ 4, 0, 2, 0, 4 ]  The label (optional).
-            ///   [c,d)  [ 4, 0, 2, 0, 5 ]  The type (string).
-            ///   [e,f)  [ 4, 0, 2, 0, 1 ]  The name (foo).
-            ///   [g,h)  [ 4, 0, 2, 0, 3 ]  The number (1).
-            ///
-            /// Notes:
-            /// - A location may refer to a repeated field itself (i.e. not to any
-            ///   particular index within it).  This is used whenever a set of elements are
-            ///   logically enclosed in a single code segment.  For example, an entire
-            ///   extend block (possibly containing multiple extension definitions) will
-            ///   have an outer location whose path refers to the "extensions" repeated
-            ///   field without an index.
-            /// - Multiple locations may have the same path.  This happens when a single
-            ///   logical declaration is spread out across multiple places.  The most
-            ///   obvious example is the "extend" block again -- there may be multiple
-            ///   extend blocks in the same scope, each of which will have the same path.
-            /// - A location's span is not always a subset of its parent's span.  For
-            ///   example, the "extendee" of an extension declaration appears at the
-            ///   beginning of the "extend" block and is shared by all extensions within
-            ///   the block.
-            /// - Just because a location's span is a subset of some other location's span
-            ///   does not mean that it is a descendant.  For example, a "group" defines
-            ///   both a type and a field in a single declaration.  Thus, the locations
-            ///   corresponding to the type and field and their components will overlap.
-            /// - Code which tries to interpret locations should probably be designed to
-            ///   ignore those that it doesn't understand, as more types of locations could
-            ///   be recorded in the future.
-            pub r#location: ::std::vec::Vec<SourceCodeInfo_::Location>,
+        pub struct GeneratedCodeInfo {
+            /// An Annotation connects some span of text in generated code to an element
+            /// of its generating .proto file.
+            pub r#annotation: ::std::vec::Vec<GeneratedCodeInfo_::Annotation>,
         }
-        impl SourceCodeInfo {}
-        impl ::micropb::MessageDecode for SourceCodeInfo {
+        impl GeneratedCodeInfo {}
+        impl ::micropb::MessageDecode for GeneratedCodeInfo {
             fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                 &mut self,
                 decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
@@ -9768,13 +9811,13 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
-                            let mut val: SourceCodeInfo_::Location = ::core::default::Default::default();
+                            let mut val: GeneratedCodeInfo_::Annotation = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
                                 mut_ref.decode_len_delimited(decoder)?;
                             };
                             if let (Err(_), false) = (
-                                self.r#location.pb_push(val),
+                                self.r#annotation.pb_push(val),
                                 decoder.ignore_repeated_cap_err,
                             ) {
                                 return Err(::micropb::DecodeError::Capacity);
@@ -9790,6 +9833,127 @@ pub mod google_ {
         }
         /// Inner types for `GeneratedCodeInfo`
         pub mod GeneratedCodeInfo_ {
+            #[derive(Debug, Default)]
+            pub struct Annotation {
+                /// Identifies the element in the original source .proto file. This field
+                /// is formatted the same as SourceCodeInfo.Location.path.
+                pub r#path: ::std::vec::Vec<i32>,
+                /// Identifies the filesystem path to the original source .proto.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#source_file: ::std::string::String,
+                /// Identifies the starting offset in bytes in the generated code
+                /// that relates to the identified object.
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#begin: i32,
+                /// Identifies the ending offset in bytes in the generated code that
+                /// relates to the identified object. The end offset should be one past
+                /// the last relevant byte (so the length of the text = end - begin).
+                ///
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#end: i32,
+                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
+                pub r#semantic: Annotation_::Semantic,
+                /// Tracks presence of optional and message fields
+                pub _has: Annotation_::_Hazzer,
+            }
+            impl Annotation {
+                /// Return a reference to `source_file` as an `Option`
+                #[inline]
+                pub fn r#source_file(
+                    &self,
+                ) -> ::core::option::Option<&::std::string::String> {
+                    self._has.r#source_file().then_some(&self.r#source_file)
+                }
+                /// Return a reference to `begin` as an `Option`
+                #[inline]
+                pub fn r#begin(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#begin().then_some(&self.r#begin)
+                }
+                /// Return a reference to `end` as an `Option`
+                #[inline]
+                pub fn r#end(&self) -> ::core::option::Option<&i32> {
+                    self._has.r#end().then_some(&self.r#end)
+                }
+                /// Return a reference to `semantic` as an `Option`
+                #[inline]
+                pub fn r#semantic(
+                    &self,
+                ) -> ::core::option::Option<&Annotation_::Semantic> {
+                    self._has.r#semantic().then_some(&self.r#semantic)
+                }
+            }
+            impl ::micropb::MessageDecode for Annotation {
+                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
+                    &mut self,
+                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
+                    len: usize,
+                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
+                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
+                    let before = decoder.bytes_read();
+                    while decoder.bytes_read() - before < len {
+                        let tag = decoder.decode_tag()?;
+                        match tag.field_num() {
+                            0 => return Err(::micropb::DecodeError::ZeroField),
+                            1u32 => {
+                                if tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
+                                    decoder
+                                        .decode_packed(
+                                            &mut self.r#path,
+                                            |decoder| decoder.decode_int32().map(|v| v as _),
+                                        )?;
+                                } else {
+                                    if let (Err(_), false) = (
+                                        self.r#path.pb_push(decoder.decode_int32()? as _),
+                                        decoder.ignore_repeated_cap_err,
+                                    ) {
+                                        return Err(::micropb::DecodeError::Capacity);
+                                    }
+                                }
+                            }
+                            2u32 => {
+                                let mut_ref = &mut self.r#source_file;
+                                {
+                                    decoder
+                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
+                                };
+                                self._has.set_source_file();
+                            }
+                            3u32 => {
+                                let mut_ref = &mut self.r#begin;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_begin();
+                            }
+                            4u32 => {
+                                let mut_ref = &mut self.r#end;
+                                {
+                                    let val = decoder.decode_int32()?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_end();
+                            }
+                            5u32 => {
+                                let mut_ref = &mut self.r#semantic;
+                                {
+                                    let val = decoder
+                                        .decode_int32()
+                                        .map(|n| Annotation_::Semantic(n as _))?;
+                                    *mut_ref = val as _;
+                                };
+                                self._has.set_semantic();
+                            }
+                            _ => {
+                                decoder.skip_wire_value(tag.wire_type())?;
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            }
             /// Inner types for `Annotation`
             pub mod Annotation_ {
                 /// Represents the identified object's effect on the element in the original
@@ -9927,170 +10091,6 @@ pub mod google_ {
                         self
                     }
                 }
-            }
-            #[derive(Debug, Default)]
-            pub struct Annotation {
-                /// Identifies the element in the original source .proto file. This field
-                /// is formatted the same as SourceCodeInfo.Location.path.
-                pub r#path: ::std::vec::Vec<i32>,
-                /// Identifies the filesystem path to the original source .proto.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#source_file: ::std::string::String,
-                /// Identifies the starting offset in bytes in the generated code
-                /// that relates to the identified object.
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#begin: i32,
-                /// Identifies the ending offset in bytes in the generated code that
-                /// relates to the identified object. The end offset should be one past
-                /// the last relevant byte (so the length of the text = end - begin).
-                ///
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#end: i32,
-                /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
-                pub r#semantic: Annotation_::Semantic,
-                /// Tracks presence of optional and message fields
-                pub _has: Annotation_::_Hazzer,
-            }
-            impl Annotation {
-                /// Return a reference to `source_file` as an `Option`
-                #[inline]
-                pub fn r#source_file(
-                    &self,
-                ) -> ::core::option::Option<&::std::string::String> {
-                    self._has.r#source_file().then_some(&self.r#source_file)
-                }
-                /// Return a reference to `begin` as an `Option`
-                #[inline]
-                pub fn r#begin(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#begin().then_some(&self.r#begin)
-                }
-                /// Return a reference to `end` as an `Option`
-                #[inline]
-                pub fn r#end(&self) -> ::core::option::Option<&i32> {
-                    self._has.r#end().then_some(&self.r#end)
-                }
-                /// Return a reference to `semantic` as an `Option`
-                #[inline]
-                pub fn r#semantic(
-                    &self,
-                ) -> ::core::option::Option<&Annotation_::Semantic> {
-                    self._has.r#semantic().then_some(&self.r#semantic)
-                }
-            }
-            impl ::micropb::MessageDecode for Annotation {
-                fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                    &mut self,
-                    decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                    len: usize,
-                ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                    use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                    let before = decoder.bytes_read();
-                    while decoder.bytes_read() - before < len {
-                        let tag = decoder.decode_tag()?;
-                        match tag.field_num() {
-                            0 => return Err(::micropb::DecodeError::ZeroField),
-                            1u32 => {
-                                if tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
-                                    decoder
-                                        .decode_packed(
-                                            &mut self.r#path,
-                                            |decoder| decoder.decode_int32().map(|v| v as _),
-                                        )?;
-                                } else {
-                                    if let (Err(_), false) = (
-                                        self.r#path.pb_push(decoder.decode_int32()? as _),
-                                        decoder.ignore_repeated_cap_err,
-                                    ) {
-                                        return Err(::micropb::DecodeError::Capacity);
-                                    }
-                                }
-                            }
-                            2u32 => {
-                                let mut_ref = &mut self.r#source_file;
-                                {
-                                    decoder
-                                        .decode_string(mut_ref, ::micropb::Presence::Explicit)?;
-                                };
-                                self._has.set_source_file();
-                            }
-                            3u32 => {
-                                let mut_ref = &mut self.r#begin;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_begin();
-                            }
-                            4u32 => {
-                                let mut_ref = &mut self.r#end;
-                                {
-                                    let val = decoder.decode_int32()?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_end();
-                            }
-                            5u32 => {
-                                let mut_ref = &mut self.r#semantic;
-                                {
-                                    let val = decoder
-                                        .decode_int32()
-                                        .map(|n| Annotation_::Semantic(n as _))?;
-                                    *mut_ref = val as _;
-                                };
-                                self._has.set_semantic();
-                            }
-                            _ => {
-                                decoder.skip_wire_value(tag.wire_type())?;
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-            }
-        }
-        /// Describes the relationship between generated code and its original source
-        /// file. A GeneratedCodeInfo message is associated with only one generated
-        /// source file, but may contain references to different source .proto files.
-        #[derive(Debug, Default)]
-        pub struct GeneratedCodeInfo {
-            /// An Annotation connects some span of text in generated code to an element
-            /// of its generating .proto file.
-            pub r#annotation: ::std::vec::Vec<GeneratedCodeInfo_::Annotation>,
-        }
-        impl GeneratedCodeInfo {}
-        impl ::micropb::MessageDecode for GeneratedCodeInfo {
-            fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
-                &mut self,
-                decoder: &mut ::micropb::PbDecoder<IMPL_MICROPB_READ>,
-                len: usize,
-            ) -> Result<(), ::micropb::DecodeError<IMPL_MICROPB_READ::Error>> {
-                use ::micropb::{PbBytes, PbString, PbVec, PbMap, FieldDecode};
-                let before = decoder.bytes_read();
-                while decoder.bytes_read() - before < len {
-                    let tag = decoder.decode_tag()?;
-                    match tag.field_num() {
-                        0 => return Err(::micropb::DecodeError::ZeroField),
-                        1u32 => {
-                            let mut val: GeneratedCodeInfo_::Annotation = ::core::default::Default::default();
-                            let mut_ref = &mut val;
-                            {
-                                mut_ref.decode_len_delimited(decoder)?;
-                            };
-                            if let (Err(_), false) = (
-                                self.r#annotation.pb_push(val),
-                                decoder.ignore_repeated_cap_err,
-                            ) {
-                                return Err(::micropb::DecodeError::Capacity);
-                            }
-                        }
-                        _ => {
-                            decoder.skip_wire_value(tag.wire_type())?;
-                        }
-                    }
-                }
-                Ok(())
             }
         }
         /// The full set of known editions.
