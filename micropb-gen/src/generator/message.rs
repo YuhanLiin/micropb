@@ -8,6 +8,7 @@ use crate::{
     descriptor::DescriptorProto,
     generator::{
         field::{CustomField, FieldType},
+        location::{self, next_comment_node},
         resolve_path_elem, EncodeFunc,
     },
 };
@@ -15,7 +16,9 @@ use crate::{
 use super::{
     derive_msg_attr,
     field::Field,
-    field_error, msg_error,
+    field_error,
+    location::{CommentNode, Comments},
+    msg_error,
     oneof::{Oneof, OneofField, OneofType},
     sanitized_ident,
     type_spec::find_lifetime_from_type,
@@ -38,6 +41,7 @@ pub(crate) struct Message<'a> {
     pub(crate) unknown_handler: Option<syn::Type>,
     pub(crate) lifetime: Option<syn::Lifetime>,
     pub(crate) as_oneof_enum: bool,
+    comments: Option<&'a Comments>,
 }
 
 impl<'a> Message<'a> {
@@ -45,6 +49,7 @@ impl<'a> Message<'a> {
         proto: &'a DescriptorProto,
         gen: &Generator,
         msg_conf: &CurrentConfig,
+        comment_node: Option<&'a CommentNode>,
     ) -> io::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -53,8 +58,13 @@ impl<'a> Message<'a> {
         let msg_name = &proto.name;
         let mut oneofs = vec![];
         for (idx, oneof) in proto.oneof_decl.iter().enumerate() {
-            let oneof = Oneof::from_proto(oneof, msg_conf.next_conf(&oneof.name), idx)
-                .map_err(|e| field_error(&gen.pkg, msg_name, &oneof.name, &e))?;
+            let oneof = Oneof::from_proto(
+                oneof,
+                msg_conf.next_conf(&oneof.name),
+                next_comment_node(comment_node, location::path::msg_oneof(idx)),
+                idx,
+            )
+            .map_err(|e| field_error(&gen.pkg, msg_name, &oneof.name, &e))?;
             if let Some(oneof) = oneof {
                 oneofs.push(oneof);
             }
@@ -70,15 +80,18 @@ impl<'a> Message<'a> {
         let mut synthetic_oneof_idx = vec![];
 
         let mut fields = vec![];
-        for f in proto.field.iter() {
+        for (i, f) in proto.field.iter().enumerate() {
             let field_conf = msg_conf.next_conf(&f.name);
+            let field_comments = next_comment_node(comment_node, location::path::msg_field(i));
+
             let raw_msg_name = f
                 .type_name
                 .rsplit_once('.')
                 .map(|(_, r)| r)
                 .unwrap_or(&f.type_name);
+
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, gen, Some(map_msg))
+                Field::from_proto(f, &field_conf, field_comments, gen, Some(map_msg))
                     .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             } else {
                 if let Some(idx) = f.oneof_index().copied() {
@@ -92,8 +105,9 @@ impl<'a> Message<'a> {
                         {
                             Some(OneofType::Enum { fields, .. }) => {
                                 // Oneof field
-                                if let Some(field) = OneofField::from_proto(f, &field_conf)
-                                    .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
+                                if let Some(field) =
+                                    OneofField::from_proto(f, &field_conf, field_comments)
+                                        .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
                                 {
                                     fields.push(field);
                                 }
@@ -109,7 +123,7 @@ impl<'a> Message<'a> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, gen, None)
+                Field::from_proto(f, &field_conf, field_comments, gen, None)
                     .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {
@@ -159,6 +173,7 @@ impl<'a> Message<'a> {
             unknown_handler,
             lifetime,
             as_oneof_enum: as_enum,
+            comments: location::get_comments(comment_node),
         }))
     }
 
@@ -189,10 +204,10 @@ impl<'a> Message<'a> {
             let idx = Literal::usize_unsuffixed(i / 8);
             let mask = Literal::u8_unsuffixed(1 << (i % 8));
 
-            let getter_doc = format!("Query presence of `{}`", f.rust_name);
-            let setter_doc = format!("Set presence of `{}`", f.rust_name);
-            let clearer_doc = format!("Clear presence of `{}`", f.rust_name);
-            let init_doc = format!("Builder method that sets the presence of `{}`. Useful for initializing the Hazzer.", f.rust_name);
+            let getter_doc = format!(" Query presence of `{}`", f.rust_name);
+            let setter_doc = format!(" Set presence of `{}`", f.rust_name);
+            let clearer_doc = format!(" Clear presence of `{}`", f.rust_name);
+            let init_doc = format!(" Builder method that sets the presence of `{}`. Useful for initializing the Hazzer.", f.rust_name);
 
             quote! {
                 #[doc = #getter_doc]
@@ -228,12 +243,13 @@ impl<'a> Message<'a> {
 
         let bytes = Literal::usize_unsuffixed(count.div_ceil(8));
         let decl = quote! {
+            #[doc = " Compact bitfield for tracking presence of optional and message fields"]
             #derive_msg
             #(#attrs)*
             pub struct #hazzer_name([u8; #bytes]);
 
             impl #hazzer_name {
-                #[doc = "New hazzer with all fields set to off"]
+                #[doc = " New hazzer with all fields set to off"]
                 #[inline]
                 pub const fn _new() -> Self {
                     Self([0; #bytes])
@@ -267,6 +283,7 @@ impl<'a> Message<'a> {
             derive_partial_eq,
             self.derive_clone,
         );
+        let comments = self.comments.map(Comments::lines).into_iter().flatten();
 
         if self.as_oneof_enum {
             let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
@@ -276,6 +293,7 @@ impl<'a> Message<'a> {
             let default_variant_attr = derive_default.then(|| quote! { #[default] });
 
             Ok(quote! {
+                #(#[doc = #comments])*
                 #derive_msg
                 #(#attrs)*
                 pub enum #rust_name<#lifetime> {
@@ -296,19 +314,20 @@ impl<'a> Message<'a> {
                     .config
                     .field_attr_parsed()
                     .map_err(|e| field_error(&gen.pkg, self.name, "_unknown", &e))?;
-                quote! { #(#unknown_field_attr)* pub _unknown: #handler, }
+                quote! { #[doc = " Handler for unknown fields on the wire"] #(#unknown_field_attr)* pub _unknown: #handler, }
             } else {
                 quote! {}
             };
             let hazzer_field_attr = hazzer_field_attr.iter();
 
             Ok(quote! {
+                #(#[doc = #comments])*
                 #derive_msg
                 #(#attrs)*
                 pub struct #rust_name<#lifetime> {
                     #(#msg_fields)*
                     #(#oneof_fields)*
-                    #(#(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
+                    #(#[doc = " Tracks presence of optional and message fields"] #(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
                     #unknown_field
                 }
             })
@@ -723,7 +742,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let gen = Generator::new();
-        assert!(Message::from_proto(&proto, &gen, &msg_conf)
+        assert!(Message::from_proto(&proto, &gen, &msg_conf, None)
             .unwrap()
             .is_none());
     }
@@ -745,6 +764,7 @@ mod tests {
             unknown_handler: None,
             lifetime: None,
             as_oneof_enum: false,
+            comments: None,
         };
         let config = Box::new(Config::new());
         let mut node = Node::default();
@@ -761,7 +781,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -779,7 +799,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -818,7 +838,7 @@ mod tests {
         };
 
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             Message {
@@ -849,7 +869,8 @@ mod tests {
                     derive_partial_eq: true,
                     derive_clone: true,
                     lifetime: None,
-                    idx: 0
+                    idx: 0,
+                    comments: None
                 }],
                 fields: vec![
                     make_test_field(
@@ -878,6 +899,7 @@ mod tests {
                 unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
                 lifetime: None,
                 as_oneof_enum: false,
+                comments: None
             }
         )
     }
@@ -909,7 +931,7 @@ mod tests {
         };
 
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf)
+            Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             Message {
@@ -929,7 +951,8 @@ mod tests {
                 attrs: vec![],
                 unknown_handler: None,
                 as_oneof_enum: false,
-                lifetime: None
+                lifetime: None,
+                comments: None,
             }
         )
     }
@@ -961,6 +984,7 @@ mod tests {
             unknown_handler: None,
             as_oneof_enum: false,
             lifetime: None,
+            comments: None,
         };
         assert!(msg.generate_hazzer_decl(config).unwrap().is_none());
     }

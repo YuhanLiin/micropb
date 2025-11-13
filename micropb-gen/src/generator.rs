@@ -9,6 +9,7 @@ use std::{
 };
 
 use convert_case::{Case, Casing};
+use location::{add_location_comments, get_comments, next_comment_node, CommentNode, Comments};
 use micropb::size::sizeof_varint32;
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
@@ -28,6 +29,7 @@ use self::message::Message;
 use super::WarningCb;
 
 pub(crate) mod field;
+pub(crate) mod location;
 pub(crate) mod message;
 pub(crate) mod oneof;
 pub(crate) mod type_spec;
@@ -102,7 +104,6 @@ pub(crate) enum Syntax {
     Proto3,
 }
 
-#[derive(Debug)]
 /// Protobuf code generator
 ///
 /// Use this in `build.rs` to compile `.proto` files into a Rust module.
@@ -152,8 +153,10 @@ pub struct Generator {
     pub(crate) protoc_args: Vec<OsString>,
     pub(crate) suffixed_package_names: bool,
     pub(crate) single_oneof_msg_as_enum: bool,
+    pub(crate) comments_to_docs: bool,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
+    pub(crate) comment_tree: PathTree<Comments, (i32, i32)>,
     pub(crate) extern_paths: HashMap<String, TokenStream>,
 }
 
@@ -225,12 +228,26 @@ impl Generator {
             config: Cow::Owned(conf),
         };
 
-        let mut out = TokenStream::new();
-        for m in &fdproto.message_type {
-            out.extend(self.generate_msg(m, cur_config.next_conf(&m.name))?);
+        if let Some(src) = fdproto.source_code_info() {
+            for location in &src.location {
+                add_location_comments(&mut self.comment_tree, location);
+            }
         }
-        for e in &fdproto.enum_type {
-            out.extend(self.generate_enum(e, cur_config.next_conf(&e.name))?);
+
+        let mut out = TokenStream::new();
+        for (i, m) in fdproto.message_type.iter().enumerate() {
+            out.extend(self.generate_msg(
+                m,
+                cur_config.next_conf(&m.name),
+                self.comment_tree.root.next(&location::path::fdset_msg(i)),
+            )?);
+        }
+        for (i, e) in fdproto.enum_type.iter().enumerate() {
+            out.extend(self.generate_enum(
+                e,
+                cur_config.next_conf(&e.name),
+                self.comment_tree.root.next(&location::path::fdset_enum(i)),
+            )?);
         }
 
         Ok(out)
@@ -257,9 +274,20 @@ impl Generator {
         enum_int_type: IntSize,
         signed: bool,
         attrs: &[Attribute],
+        enum_comment_node: Option<&CommentNode>,
     ) -> TokenStream {
-        let nums = values.iter().map(|v| Literal::i32_unsuffixed(v.number));
-        let var_names = values.iter().map(|v| self.enum_variant_name(&v.name, name));
+        let variants = values.iter().enumerate().map(|(i, v)| {
+            let num = Literal::i32_unsuffixed(v.number);
+            let var_name = self.enum_variant_name(&v.name, name);
+            let var_comment_node =
+                next_comment_node(enum_comment_node, location::path::enum_value(i));
+            let var_comments = get_comments(var_comment_node)
+                .map(Comments::lines)
+                .into_iter()
+                .flatten();
+            quote! { #(#[doc = #var_comments])* pub const #var_name: Self = Self(#num); }
+        });
+
         let default_num = Literal::i32_unsuffixed(values[0].number);
         let derive_enum = derive_enum_attr();
         let itype = enum_int_type.type_name(signed);
@@ -268,16 +296,22 @@ impl Generator {
         } else {
             sizeof_varint32(enum_int_type.max_value().try_into().unwrap_or(u32::MAX))
         };
+        let enum_comments = get_comments(enum_comment_node)
+            .map(Comments::lines)
+            .into_iter()
+            .flatten();
 
         quote! {
+            #(#[doc = #enum_comments])*
             #derive_enum
             #[repr(transparent)]
             #(#attrs)*
             pub struct #name(pub #itype);
 
             impl #name {
+                #[doc = " Maximum encoded size of the enum"]
                 pub const _MAX_SIZE: usize = #max_size;
-                #(pub const #var_names: Self = Self(#nums);)*
+                #(#variants)*
             }
 
             impl core::default::Default for #name {
@@ -298,6 +332,7 @@ impl Generator {
         &self,
         enum_type: &EnumDescriptorProto,
         enum_conf: CurrentConfig,
+        comment_node: Option<&CommentNode>,
     ) -> io::Result<TokenStream> {
         if enum_conf.config.skip.unwrap_or(false) {
             return Ok(quote! {});
@@ -310,7 +345,14 @@ impl Generator {
             .type_attr_parsed()
             .map_err(|e| msg_error(&self.pkg, &enum_type.name, &e))?;
         let unsigned = enum_conf.config.enum_unsigned.unwrap_or(false);
-        let out = self.generate_enum_decl(&name, &enum_type.value, enum_int_type, !unsigned, attrs);
+        let out = self.generate_enum_decl(
+            &name,
+            &enum_type.value,
+            enum_int_type,
+            !unsigned,
+            attrs,
+            comment_node,
+        );
         Ok(out)
     }
 
@@ -319,20 +361,30 @@ impl Generator {
         msg: &Message,
         proto: &DescriptorProto,
         msg_conf: &CurrentConfig,
+        comment_node: Option<&CommentNode>,
     ) -> io::Result<(TokenStream, Option<Vec<syn::Attribute>>)> {
         let msg_mod_name = resolve_path_elem(msg.name, self.suffixed_package_names);
         self.type_path.borrow_mut().push(msg.name.to_owned());
 
         let mut msg_mod_body = TokenStream::new();
-        for m in proto
+        for (i, m) in proto
             .nested_type
             .iter()
-            .filter(|m| !m.options().map(|o| o.map_entry).unwrap_or(false))
+            .enumerate()
+            .filter(|(_, m)| !m.options().map(|o| o.map_entry).unwrap_or(false))
         {
-            msg_mod_body.extend(self.generate_msg(m, msg_conf.next_conf(&m.name))?);
+            msg_mod_body.extend(self.generate_msg(
+                m,
+                msg_conf.next_conf(&m.name),
+                next_comment_node(comment_node, location::path::msg_msg(i)),
+            )?);
         }
-        for e in proto.enum_type.iter() {
-            msg_mod_body.extend(self.generate_enum(e, msg_conf.next_conf(&e.name))?);
+        for (i, e) in proto.enum_type.iter().enumerate() {
+            msg_mod_body.extend(self.generate_enum(
+                e,
+                msg_conf.next_conf(&e.name),
+                next_comment_node(comment_node, location::path::msg_enum(i)),
+            )?);
         }
 
         let hazzer_field_attr = if msg.as_oneof_enum {
@@ -357,7 +409,8 @@ impl Generator {
         let msg_mod = if msg_mod_body.is_empty() {
             quote! {}
         } else {
-            quote! { pub mod #msg_mod_name { #msg_mod_body } }
+            let doc = format!(" Inner types for `{}`", msg.name);
+            quote! { #[doc = #doc] pub mod #msg_mod_name { #msg_mod_body } }
         };
         Ok((msg_mod, hazzer_field_attr))
     }
@@ -366,12 +419,14 @@ impl Generator {
         &self,
         proto: &DescriptorProto,
         msg_conf: CurrentConfig,
+        comment_node: Option<&CommentNode>,
     ) -> io::Result<TokenStream> {
-        let Some(msg) = Message::from_proto(proto, self, &msg_conf)? else {
+        let Some(msg) = Message::from_proto(proto, self, &msg_conf, comment_node)? else {
             return Ok(quote! {});
         };
 
-        let (msg_mod, hazzer_field_attr) = self.generate_msg_mod(&msg, proto, &msg_conf)?;
+        let (msg_mod, hazzer_field_attr) =
+            self.generate_msg_mod(&msg, proto, &msg_conf, comment_node)?;
         let proto_default = msg.fields.iter().any(|f| f.default.is_some());
         let unknown_conf = msg_conf.next_conf("_unknown");
 
@@ -395,13 +450,13 @@ impl Generator {
             .then(|| msg.generate_encode_trait(self));
 
         Ok(quote! {
-            #msg_mod
             #decl
             #default
             #partial_eq
             #msg_impl
             #decode
             #encode
+            #msg_mod
         })
     }
 
@@ -507,8 +562,6 @@ pub(crate) fn sanitized_ident(name: &str) -> Ident {
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::parse_attributes, descriptor::EnumValueDescriptorProto};
-
     use super::*;
 
     #[test]
@@ -568,92 +621,6 @@ mod tests {
             gen.resolve_type_name(".abc.d").to_string(),
             quote! { super::super::abc_::r#d }.to_string()
         );
-    }
-
-    #[test]
-    fn enum_basic() {
-        let name = Ident::new("Test", Span::call_site());
-        let mut value = vec![
-            EnumValueDescriptorProto::default(),
-            EnumValueDescriptorProto::default(),
-        ];
-        value[0].set_name("TEST_ONE".to_owned());
-        value[0].set_number(1);
-        value[1].set_name("OTHER_VALUE".to_owned());
-        value[1].set_number(2);
-        let gen = Generator::new();
-
-        let out = gen.generate_enum_decl(&name, &value, IntSize::S32, true, &[]);
-        let expected = quote! {
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-            #[repr(transparent)]
-            pub struct Test(pub i32);
-
-            impl Test {
-                pub const _MAX_SIZE: usize = 10usize;
-
-                pub const One: Self = Self(1);
-                pub const OtherValue: Self = Self(2);
-            }
-
-            impl core::default::Default for Test {
-                fn default() -> Self {
-                    Self(1)
-                }
-            }
-
-            impl core::convert::From<i32> for Test {
-                fn from(val: i32) -> Self {
-                    Self(val)
-                }
-            }
-        };
-        assert_eq!(out.to_string(), expected.to_string());
-    }
-
-    #[test]
-    fn enum_with_config() {
-        let name = Ident::new("Enum", Span::call_site());
-        let mut value = vec![EnumValueDescriptorProto::default()];
-        value[0].set_name("ENUM_ONE".to_owned());
-        value[0].set_number(1);
-        let gen = Generator {
-            retain_enum_prefix: true,
-            ..Generator::new()
-        };
-
-        let out = gen.generate_enum_decl(
-            &name,
-            &value,
-            IntSize::S8,
-            false,
-            &parse_attributes("#[derive(Serialize)]").unwrap(),
-        );
-        let expected = quote! {
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-            #[repr(transparent)]
-            #[derive(Serialize)]
-            pub struct Enum(pub u8);
-
-            impl Enum {
-                pub const _MAX_SIZE: usize = 2usize;
-
-                pub const EnumOne: Self = Self(1);
-            }
-
-            impl core::default::Default for Enum {
-                fn default() -> Self {
-                    Self(1)
-                }
-            }
-
-            impl core::convert::From<u8> for Enum {
-                fn from(val: u8) -> Self {
-                    Self(val)
-                }
-            }
-        };
-        assert_eq!(out.to_string(), expected.to_string());
     }
 
     #[test]

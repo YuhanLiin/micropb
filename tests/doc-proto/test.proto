@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+// This is the outermost message.
+//
+// Comments should be converted to rustdoc
+message Msg {
+  // This is the first field.
+  int32 num = 1;
+  // Trailing comments should also be included.
+
+  // This an optional field with a hazzer
+  optional bytes opt = 5;
+
+  // This is the oneof type
+  oneof variant {
+    // This is a "string" variant
+    string st = 2;
+    // This is a boolean variant
+    bool flag = 3;
+  }
+
+  // Inner message type nested inside Msg
+  message Inner {
+    // This field belongs to the Inner message
+    int32 num = 2;
+  }
+
+  // This is an inner enum, not the outer one
+  enum Count {
+    // Inner variant 0
+    COUNT_ZERO = 0;
+    // Inner variant 1
+    COUNT_ONE = 1;
+  }
+}
+
+// This is an enum
+enum Count {
+  // Variant 0
+  COUNT_ZERO = 0;
+  // Variant 1
+  COUNT_ONE = 1;
+}

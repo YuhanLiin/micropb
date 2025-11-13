@@ -504,6 +504,7 @@ use std::{
 };
 
 pub use config::Config;
+use generator::location::Comments;
 pub use generator::Generator;
 use micropb::{MessageDecode, PbDecoder};
 use pathtree::PathTree;
@@ -549,7 +550,10 @@ impl Generator {
 
     /// Create a generator with a custom callback for emitting warnings
     pub fn with_warning_callback(warning_cb: WarningCb) -> Self {
-        let config_tree = PathTree::new(Box::new(Config::new()));
+        let config_tree = PathTree::new(Box::new(Config::default()));
+        // Unused Comments at the tree root
+        let comment_tree = PathTree::new(Comments::default());
+
         Self {
             syntax: Default::default(),
             pkg_path: Default::default(),
@@ -566,8 +570,10 @@ impl Generator {
             protoc_args: Default::default(),
             suffixed_package_names: true,
             single_oneof_msg_as_enum: false,
+            comments_to_docs: true,
 
             config_tree,
+            comment_tree,
             extern_paths: Default::default(),
         }
     }
@@ -835,6 +841,9 @@ impl Generator {
         // Get protoc command from PROTOC env-var, otherwise just use "protoc"
         let mut cmd = Command::new(env::var("PROTOC").as_deref().unwrap_or("protoc"));
         cmd.arg("-o").arg(fdset_file.as_os_str());
+        if self.comments_to_docs {
+            cmd.arg("--include_source_info");
+        }
         cmd.args(&self.protoc_args);
 
         for proto in protos {
@@ -1070,6 +1079,15 @@ impl Generator {
     /// ignored. Also, [`unknown_handler`](Config::unknown_handler) will be ignored.
     pub fn single_oneof_msg_as_enum(&mut self, as_enum: bool) -> &mut Self {
         self.single_oneof_msg_as_enum = as_enum;
+        self
+    }
+
+    /// If enabled, comments in the Proto file will be used to generate doc comments on the
+    /// messages, enums, oneofs, and fields in the generated code.
+    ///
+    /// Enabled by default.
+    pub fn comments_to_docs(&mut self, flag: bool) -> &mut Self {
+        self.comments_to_docs = flag;
         self
     }
 }

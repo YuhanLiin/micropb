@@ -1,0 +1,10 @@
+[package]
+name = "doc-proto"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+micropb = { path = "../../micropb/", features = ["std"]}
+
+[build-dependencies]
+micropb-gen = { path = "../../micropb-gen/" }

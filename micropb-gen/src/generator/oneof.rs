@@ -8,11 +8,14 @@ use crate::{
     generator::{
         derive_msg_attr,
         field::CustomField,
+        location::get_comments,
         sanitized_ident,
         type_spec::{find_lifetime_from_type, TypeSpec},
         CurrentConfig, EncodeFunc, Generator,
     },
 };
+
+use super::location::{self, CommentNode, Comments};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
@@ -26,12 +29,14 @@ pub(crate) struct OneofField<'a> {
     pub(crate) boxed: bool,
     pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
+    comments: Option<&'a Comments>,
 }
 
 impl<'a> OneofField<'a> {
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
         field_conf: &CurrentConfig,
+        comment_node: Option<&'a CommentNode>,
     ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -58,6 +63,7 @@ impl<'a> OneofField<'a> {
             encoded_max_size: field_conf.config.encoded_max_size,
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs,
+            comments: location::get_comments(comment_node),
         }))
     }
 
@@ -65,7 +71,8 @@ impl<'a> OneofField<'a> {
         let typ = gen.wrapped_type(self.tspec.generate_rust_type(gen), self.boxed, false);
         let name = &self.rust_name;
         let attrs = &self.attrs;
-        quote! { #(#attrs)* #name(#typ), }
+        let comments = self.comments.map(Comments::lines).into_iter().flatten();
+        quote! { #(#[doc = #comments])* #(#attrs)* #name(#typ), }
     }
 
     fn generate_decode_branch(
@@ -219,12 +226,14 @@ pub(crate) struct Oneof<'a> {
     pub(crate) encoded_max_size: Option<usize>,
     pub(crate) lifetime: Option<Lifetime>,
     pub(crate) idx: usize,
+    pub(crate) comments: Option<&'a Comments>,
 }
 
 impl<'a> Oneof<'a> {
     pub(crate) fn from_proto(
         proto: &'a OneofDescriptorProto,
         oneof_conf: CurrentConfig,
+        comment_node: Option<&'a CommentNode>,
         idx: usize,
     ) -> Result<Option<Self>, String> {
         if oneof_conf.config.skip.unwrap_or(false) {
@@ -261,6 +270,7 @@ impl<'a> Oneof<'a> {
             lifetime: None,
             field_attrs,
             type_attrs,
+            comments: get_comments(comment_node),
         }))
     }
 
@@ -282,8 +292,10 @@ impl<'a> Oneof<'a> {
             );
             let attrs = &self.type_attrs;
             let lifetime = &self.lifetime;
+            let comments = self.comments.map(Comments::lines).into_iter().flatten();
 
             quote! {
+                #(#[doc = #comments])*
                 #derive_msg
                 #(#attrs)*
                 pub enum #type_name<#lifetime> {
@@ -317,7 +329,8 @@ impl<'a> Oneof<'a> {
             } => return quote! {},
         };
         let attrs = &self.field_attrs;
-        quote! { #(#attrs)* pub #name: #oneof_type, }
+        let comments = self.comments.map(Comments::lines).into_iter().flatten();
+        quote! { #(#[doc = #comments])* #(#attrs)* pub #name: #oneof_type, }
     }
 
     pub(crate) fn generate_decode_branches(
@@ -460,6 +473,7 @@ pub(crate) fn make_test_oneof_field(
         boxed,
         encoded_max_size: None,
         attrs: vec![],
+        comments: None,
     }
 }
 
@@ -489,11 +503,13 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let field = field_proto(1, "field");
-        assert!(OneofField::from_proto(&field, &oneof_conf)
+        assert!(OneofField::from_proto(&field, &oneof_conf, None)
             .unwrap()
             .is_none());
         let oneof = OneofDescriptorProto::default();
-        assert!(Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().is_none());
+        assert!(Oneof::from_proto(&oneof, oneof_conf, None, 0,)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -505,7 +521,7 @@ mod tests {
         };
         let field = field_proto(1, "field");
         assert_eq!(
-            OneofField::from_proto(&field, &field_conf)
+            OneofField::from_proto(&field, &field_conf, None)
                 .unwrap()
                 .unwrap(),
             OneofField {
@@ -515,7 +531,8 @@ mod tests {
                 rust_name: Ident::new("Field", Span::call_site()),
                 boxed: false,
                 encoded_max_size: None,
-                attrs: vec![]
+                attrs: vec![],
+                comments: None
             }
         );
 
@@ -527,7 +544,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            OneofField::from_proto(&field, &field_conf)
+            OneofField::from_proto(&field, &field_conf, None)
                 .unwrap()
                 .unwrap(),
             OneofField {
@@ -537,7 +554,8 @@ mod tests {
                 rust_name: Ident::new("Renamed", Span::call_site()),
                 encoded_max_size: None,
                 boxed: true,
-                attrs: parse_attributes("#[attr]").unwrap()
+                attrs: parse_attributes("#[attr]").unwrap(),
+                comments: None
             }
         );
     }
@@ -552,7 +570,9 @@ mod tests {
         let mut oneof = OneofDescriptorProto::default();
         oneof.set_name("oneof".to_owned());
         assert_eq!(
-            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
+            Oneof::from_proto(&oneof, oneof_conf, None, 0)
+                .unwrap()
+                .unwrap(),
             Oneof {
                 name: "oneof",
                 san_rust_name: Ident::new_raw("oneof", Span::call_site()),
@@ -568,7 +588,8 @@ mod tests {
                 derive_partial_eq: true,
                 derive_clone: true,
                 lifetime: None,
-                idx: 0
+                idx: 0,
+                comments: None
             }
         );
 
@@ -581,7 +602,9 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Oneof::from_proto(&oneof, oneof_conf, 0).unwrap().unwrap(),
+            Oneof::from_proto(&oneof, oneof_conf, None, 0)
+                .unwrap()
+                .unwrap(),
             Oneof {
                 name: "oneof",
                 san_rust_name: Ident::new("renamed_oneof", Span::call_site()),
@@ -597,7 +620,8 @@ mod tests {
                 derive_partial_eq: true,
                 derive_clone: true,
                 lifetime: None,
-                idx: 0
+                idx: 0,
+                comments: None
             }
         );
     }
@@ -621,6 +645,7 @@ mod tests {
             derive_clone: true,
             lifetime: None,
             idx: 0,
+            comments: None,
         };
         assert!(oneof.generate_decl(&gen).is_empty());
         assert_eq!(
@@ -646,6 +671,7 @@ mod tests {
             derive_clone: true,
             lifetime: None,
             idx: 0,
+            comments: None,
         };
         assert!(oneof.generate_decl(&gen).is_empty());
         assert!(oneof

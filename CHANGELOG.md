@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Comments in proto files are now used to generate doc comments in the Rust file (can be turned off)
+- More doc comments in the generated Rust file
+- Put generated message module after message declaration and impls
+
 ## 0.4.0
 
 ### Added

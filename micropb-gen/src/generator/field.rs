@@ -8,6 +8,7 @@ use crate::descriptor::{
     FieldDescriptorProto_::{Label, Type},
 };
 
+use super::location::{self, CommentNode, Comments};
 use super::Syntax;
 use super::{
     type_spec::{find_lifetime_from_type, TypeSpec},
@@ -57,6 +58,7 @@ pub(crate) struct Field<'a> {
     pub(crate) encoded_max_size: Option<usize>,
     pub(crate) attrs: Vec<syn::Attribute>,
     no_accessors: bool,
+    comments: Option<&'a Comments>,
 }
 
 impl<'a> Field<'a> {
@@ -90,6 +92,7 @@ impl<'a> Field<'a> {
     pub(crate) fn from_proto(
         proto: &'a FieldDescriptorProto,
         field_conf: &CurrentConfig,
+        comment_node: Option<&'a CommentNode>,
         gen: &Generator,
         map_msg: Option<&DescriptorProto>,
     ) -> Result<Option<Self>, String> {
@@ -176,6 +179,7 @@ impl<'a> Field<'a> {
             boxed,
             attrs,
             no_accessors,
+            comments: location::get_comments(comment_node),
         }))
     }
 
@@ -200,7 +204,15 @@ impl<'a> Field<'a> {
         let typ = self.generate_rust_type(gen);
         let name = &self.san_rust_name;
         let attrs = &self.attrs;
-        quote! { #(#attrs)* pub #name : #typ, }
+        let comments = self.comments.map(Comments::lines).into_iter().flatten();
+
+        let hazzer_warning = self.is_hazzer().then(|| {
+            let empty_line = self.comments.map(|_| "").into_iter();
+            let warning = std::iter::once(" *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.");
+            empty_line.chain(warning)
+        }).into_iter().flatten();
+
+        quote! { #(#[doc = #comments])* #(#[doc = #hazzer_warning])* #(#attrs)* pub #name : #typ, }
     }
 
     pub(crate) fn generate_default(&self, gen: &Generator) -> Result<TokenStream, String> {
@@ -235,7 +247,7 @@ impl<'a> Field<'a> {
 
                 let fname = &self.san_rust_name;
                 let getter_doc =
-                    format!("Return a reference to `{}` as an `Option`", self.rust_name);
+                    format!(" Return a reference to `{}` as an `Option`", self.rust_name);
                 let type_name = type_spec.generate_rust_type(gen);
 
                 // Getter is needed for encoding, so we have to generate it
@@ -277,18 +289,18 @@ impl<'a> Field<'a> {
                     let taker_name = format_ident!("take_{}", self.rust_name);
                     let init_name = format_ident!("init_{}", self.rust_name);
 
-                    let setter_doc = format!("Set the value and presence of `{}`", self.rust_name);
+                    let setter_doc = format!(" Set the value and presence of `{}`", self.rust_name);
                     let muter_doc = format!(
-                        "Return a mutable reference to `{}` as an `Option`",
+                        " Return a mutable reference to `{}` as an `Option`",
                         self.rust_name
                     );
-                    let clearer_doc = format!("Clear the presence of `{}`", self.rust_name);
+                    let clearer_doc = format!(" Clear the presence of `{}`", self.rust_name);
                     let taker_doc = format!(
-                        "Take the value of `{}` and clear its presence",
+                        " Take the value of `{}` and clear its presence",
                         self.rust_name
                     );
                     let init_doc = format!(
-                        "Builder method that sets the value of `{}`. Useful for initializing the message.",
+                        " Builder method that sets the value of `{}`. Useful for initializing the message.",
                         self.rust_name
                     );
 
@@ -406,11 +418,11 @@ impl<'a> Field<'a> {
                 let init_name = format_ident!("init_{}", self.rust_name);
                 let fname = &self.san_rust_name;
 
-                let getter_doc = format!("Return a reference to `{}`", self.rust_name);
-                let muter_doc = format!("Return a mutable reference to `{}`", self.rust_name);
-                let setter_doc = format!("Set the value of `{}`", self.rust_name);
+                let getter_doc = format!(" Return a reference to `{}`", self.rust_name);
+                let muter_doc = format!(" Return a mutable reference to `{}`", self.rust_name);
+                let setter_doc = format!(" Set the value of `{}`", self.rust_name);
                 let init_doc = format!(
-                    "Builder method that sets the value of `{}`. Useful for initializing the message.",
+                    " Builder method that sets the value of `{}`. Useful for initializing the message.",
                     self.rust_name
                 );
 
@@ -776,6 +788,7 @@ pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldTyp
         encoded_max_size: None,
         attrs: vec![],
         no_accessors: false,
+        comments: None,
     }
 }
 
@@ -821,7 +834,7 @@ mod tests {
 
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto2;
-        assert!(Field::from_proto(&field, &field_conf, &gen, None)
+        assert!(Field::from_proto(&field, &field_conf, None, &gen, None)
             .unwrap()
             .is_none());
     }
@@ -838,7 +851,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -852,6 +865,7 @@ mod tests {
                 encoded_max_size: None,
                 attrs: vec![],
                 no_accessors: false,
+                comments: None
             }
         );
 
@@ -870,7 +884,7 @@ mod tests {
         field.set_default_value("true".to_owned());
 
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -884,6 +898,7 @@ mod tests {
                 encoded_max_size: None,
                 attrs: parse_attributes("#[attr]").unwrap(),
                 no_accessors: false,
+                comments: None
             }
         );
     }
@@ -900,7 +915,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -908,7 +923,7 @@ mod tests {
         );
         gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -918,7 +933,7 @@ mod tests {
         // Required fields are treated like optionals
         let field = field_proto(0, "field", Some(Label::Required), false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -929,7 +944,7 @@ mod tests {
         gen.syntax = Syntax::Proto3;
         let field = field_proto(0, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -944,7 +959,7 @@ mod tests {
         };
         gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -958,7 +973,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -984,7 +999,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1002,7 +1017,7 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1028,7 +1043,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1042,7 +1057,7 @@ mod tests {
         field.set_options(Default::default());
         field.options.set_packed(true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &gen, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1096,7 +1111,7 @@ mod tests {
         let mut gen = Generator::new();
         gen.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, &gen, Some(&map_elem))
+            Field::from_proto(&field, &field_conf, None, &gen, Some(&map_elem))
                 .unwrap()
                 .unwrap()
                 .ftype,

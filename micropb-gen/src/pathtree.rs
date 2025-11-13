@@ -1,13 +1,13 @@
-use std::cell::Cell;
+use std::{borrow::Borrow, cell::Cell};
 
 #[derive(Debug)]
-pub struct Node<T> {
+pub struct Node<T, S: ?Sized + ToOwned = str> {
     value: Option<T>,
-    children: Vec<(String, Node<T>)>,
+    children: Vec<(S::Owned, Node<T, S>)>,
     accessed: Cell<bool>,
 }
 
-impl<T> Default for Node<T> {
+impl<T, S: ?Sized + ToOwned> Default for Node<T, S> {
     fn default() -> Self {
         Self {
             value: Default::default(),
@@ -17,11 +17,14 @@ impl<T> Default for Node<T> {
     }
 }
 
-impl<T> Node<T> {
-    pub fn next(&self, segment: &str) -> Option<&Self> {
+impl<T, S: ?Sized + ToOwned + PartialEq> Node<T, S>
+where
+    S::Owned: Default,
+{
+    pub fn next(&self, segment: &S) -> Option<&Self> {
         self.children
             .iter()
-            .find(|(c, _)| c == segment)
+            .find(|(c, _)| c.borrow() == segment)
             .map(|(_, next)| next)
     }
 
@@ -34,10 +37,17 @@ impl<T> Node<T> {
         &mut self.value
     }
 
-    pub fn add_path<'a>(&mut self, path: impl Iterator<Item = &'a str>) -> &mut Node<T> {
+    pub fn add_path<'a>(&mut self, path: impl Iterator<Item = &'a S>) -> &mut Node<T, S>
+    where
+        S: 'a,
+    {
         let mut node = self;
         for segment in path {
-            if let Some(pos) = node.children.iter().position(|(c, _)| c == segment) {
+            if let Some(pos) = node
+                .children
+                .iter()
+                .position(|(c, _)| c.borrow() == segment)
+            {
                 node = &mut node.children[pos].1;
             } else {
                 node.children.push((segment.to_owned(), Default::default()));
@@ -49,9 +59,12 @@ impl<T> Node<T> {
 
     pub fn visit_path<'a>(
         &self,
-        path: impl Iterator<Item = &'a str>,
+        path: impl Iterator<Item = &'a S>,
         mut callback: impl FnMut(&T),
-    ) -> Option<&Node<T>> {
+    ) -> Option<&Node<T, S>>
+    where
+        S: 'a,
+    {
         let mut node = self;
         for segment in path {
             if let Some(next) = node.next(segment) {
@@ -64,17 +77,16 @@ impl<T> Node<T> {
         Some(node)
     }
 
-    pub fn children_mut(&mut self) -> impl Iterator<Item = &mut (String, Node<T>)> {
+    pub fn children_mut(&mut self) -> impl Iterator<Item = &mut (S::Owned, Node<T, S>)> {
         self.children.iter_mut()
     }
 }
 
-#[derive(Debug)]
-pub struct PathTree<T> {
-    pub root: Node<T>,
+pub struct PathTree<T, S: ?Sized + ToOwned = str> {
+    pub root: Node<T, S>,
 }
 
-impl<T> PathTree<T> {
+impl<T, S: ?Sized + ToOwned> PathTree<T, S> {
     pub fn new(value: T) -> Self {
         Self {
             root: Node {
@@ -84,7 +96,9 @@ impl<T> PathTree<T> {
             },
         }
     }
+}
 
+impl<T> PathTree<T> {
     pub fn find_all_unaccessed(&self, mut reporter: impl FnMut(&Node<T>, &[&str])) {
         let mut edges = vec![DfsElem::Edge(("", &self.root))];
         let mut path = vec![];
