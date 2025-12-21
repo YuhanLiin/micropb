@@ -704,6 +704,27 @@ impl<'a> Message<'a> {
 }
 
 #[cfg(test)]
+fn make_test_msg(name: &str) -> Message<'_> {
+    Message {
+        name,
+        rust_name: Ident::new(name, Span::call_site()),
+        oneofs: vec![],
+        fields: vec![],
+        message_fields: vec![],
+        derive_dbg: true,
+        impl_default: true,
+        impl_partial_eq: true,
+        derive_clone: true,
+        attrs: vec![],
+        unknown: None,
+        lifetime: None,
+        as_oneof_enum: false,
+        hazzer: None,
+        comments: None,
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use std::borrow::Cow;
 
@@ -811,21 +832,7 @@ mod tests {
     fn from_proto_skip_fields() {
         let gen = Generator::new();
         let proto = test_msg_proto();
-        let empty_msg = Message {
-            name: "Message",
-            rust_name: Ident::new("Message", Span::call_site()),
-            oneofs: vec![],
-            fields: vec![],
-            derive_dbg: true,
-            impl_default: true,
-            impl_partial_eq: true,
-            derive_clone: true,
-            attrs: vec![],
-            unknown_handler: None,
-            lifetime: None,
-            as_oneof_enum: false,
-            comments: None,
-        };
+        let empty_msg = make_test_msg("Message");
         let config = Box::new(Config::new());
         let mut node = Node::default();
 
@@ -897,70 +904,67 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
 
+        let mut expected = make_test_msg("Message");
+        expected.oneofs = vec![Oneof {
+            name: "oneof",
+            san_rust_name: Ident::new_raw("oneof", Span::call_site()),
+            otype: OneofType::Enum {
+                type_name: Ident::new("Oneof", Span::call_site()),
+                fields: vec![
+                    make_test_oneof_field(
+                        2,
+                        "oneof_field",
+                        false,
+                        TypeSpec::Int(PbInt::Sint32, IntSize::S8),
+                    ),
+                    make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
+                ],
+            },
+            encoded_max_size: None,
+            field_attrs: vec![],
+            // Overrides the type attrs of the message
+            type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+            boxed: false,
+            // Inherits the no_debug_derive setting of the message
+            derive_dbg: false,
+            derive_partial_eq: true,
+            derive_clone: true,
+            lifetime: None,
+            idx: 0,
+            comments: None,
+        }];
+        expected.fields = vec![
+            make_test_field(
+                1,
+                "bool_field",
+                true,
+                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
+            ),
+            make_test_field(
+                3,
+                "map_field",
+                false,
+                FieldType::Map {
+                    key: TypeSpec::Int(PbInt::Int64, IntSize::S16),
+                    val: TypeSpec::Int(PbInt::Uint64, IntSize::S16),
+                    type_path: syn::parse_str("Map").unwrap(),
+                    max_len: None,
+                },
+            ),
+        ];
+        expected.derive_dbg = false;
+        expected.impl_default = false;
+        expected.attrs = parse_attributes("#[derive(Self)]").unwrap();
+        expected.unknown = Some(Unknown {
+            handler: syn::parse_str("UnknownType").unwrap(),
+            field_attrs: vec![],
+        });
+
         assert_eq!(
             Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
-            Message {
-                name: "Message",
-                rust_name: Ident::new("Message", Span::call_site()),
-                oneofs: vec![Oneof {
-                    name: "oneof",
-                    san_rust_name: Ident::new_raw("oneof", Span::call_site()),
-                    otype: OneofType::Enum {
-                        type_name: Ident::new("Oneof", Span::call_site()),
-                        fields: vec![
-                            make_test_oneof_field(
-                                2,
-                                "oneof_field",
-                                false,
-                                TypeSpec::Int(PbInt::Sint32, IntSize::S8)
-                            ),
-                            make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
-                        ]
-                    },
-                    encoded_max_size: None,
-                    field_attrs: vec![],
-                    // Overrides the type attrs of the message
-                    type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
-                    boxed: false,
-                    // Inherits the no_debug_derive setting of the message
-                    derive_dbg: false,
-                    derive_partial_eq: true,
-                    derive_clone: true,
-                    lifetime: None,
-                    idx: 0,
-                    comments: None
-                }],
-                fields: vec![
-                    make_test_field(
-                        1,
-                        "bool_field",
-                        true,
-                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
-                    ),
-                    make_test_field(
-                        3,
-                        "map_field",
-                        false,
-                        FieldType::Map {
-                            key: TypeSpec::Int(PbInt::Int64, IntSize::S16),
-                            val: TypeSpec::Int(PbInt::Uint64, IntSize::S16),
-                            type_path: syn::parse_str("Map").unwrap(),
-                            max_len: None
-                        }
-                    ),
-                ],
-                derive_dbg: false,
-                impl_default: false,
-                impl_partial_eq: true,
-                derive_clone: true,
-                attrs: parse_attributes("#[derive(Self)]").unwrap(),
-                unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
-                lifetime: None,
-                as_oneof_enum: false,
-                comments: None
-            }
+            expected
         )
     }
 
@@ -990,62 +994,35 @@ mod tests {
             config: Cow::Owned(Box::new(Config::new())),
         };
 
+        let mut expected = make_test_msg("Msg");
+        expected.fields = vec![make_test_field(
+            1,
+            "opt",
+            false,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
+        )];
+
         assert_eq!(
             Message::from_proto(&proto, &gen, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
-            Message {
-                name: "Msg",
-                rust_name: Ident::new("Msg", Span::call_site()),
-                oneofs: vec![],
-                fields: vec![make_test_field(
-                    1,
-                    "opt",
-                    false,
-                    FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
-                )],
-                derive_dbg: true,
-                impl_default: true,
-                impl_partial_eq: true,
-                derive_clone: true,
-                attrs: vec![],
-                unknown_handler: None,
-                as_oneof_enum: false,
-                lifetime: None,
-                comments: None,
-            }
+            expected
         )
     }
 
     #[test]
     fn hazzer_empty() {
+        let mut gen = Generator::new();
+        gen.syntax = Syntax::Proto3;
+
         let config = CurrentConfig {
             node: None,
             config: Cow::Owned(Box::new(Config::new())),
         };
-        let msg = Message {
-            name: "msg",
-            rust_name: Ident::new("msg", Span::call_site()),
-            oneofs: vec![],
-            fields: vec![
-                make_test_field(2, "field2", false, FieldType::Single(TypeSpec::Bool)),
-                make_test_field(
-                    4,
-                    "field4",
-                    true,
-                    FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
-                ),
-            ],
-            derive_dbg: true,
-            impl_default: true,
-            impl_partial_eq: true,
-            derive_clone: true,
-            attrs: vec![],
-            unknown_handler: None,
-            as_oneof_enum: false,
-            lifetime: None,
-            comments: None,
-        };
-        assert!(msg.generate_hazzer_decl(config).unwrap().is_none());
+        let proto = test_msg_proto();
+        let msg = Message::from_proto(&proto, &gen, &config, None)
+            .unwrap()
+            .unwrap();
+        assert!(msg.hazzer.is_none());
     }
 }
