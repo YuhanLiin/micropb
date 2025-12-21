@@ -599,7 +599,7 @@ impl<'a> Field<'a> {
         if let Some(max_size) = self.max_size_override {
             return match max_size {
                 Some(size) => quote! { ::core::option::Option::Some(#size) },
-                None => quote! { ::core::option::Option::None },
+                None => quote! { ::core::option::Option::<usize>::None },
             };
         }
 

@@ -551,8 +551,6 @@ impl Generator {
     /// Create a generator with a custom callback for emitting warnings
     pub fn with_warning_callback(warning_cb: WarningCb) -> Self {
         let config_tree = PathTree::new(Box::new(Config::default()));
-        // Unused Comments at the tree root
-        let comment_tree = PathTree::new(Comments::default());
 
         Self {
             syntax: Default::default(),
@@ -573,7 +571,6 @@ impl Generator {
             comments_to_docs: true,
 
             config_tree,
-            comment_tree,
             extern_paths: Default::default(),
         }
     }

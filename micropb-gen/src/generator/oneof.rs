@@ -438,7 +438,10 @@ impl<'a> Oneof<'a> {
             OneofType::Enum { fields, .. } => {
                 let variant_sizes = fields.iter().map(|f| {
                     if let Some(max_size) = f.max_size_override {
-                        quote! { ::core::option::Option::Some(#max_size) }
+                        return match max_size {
+                            Some(size) => quote! { ::core::option::Option::Some(#size) },
+                            None => quote! { ::core::option::Option::<usize>::None },
+                        };
                     } else {
                         let wire_type = f.tspec.wire_type();
                         let tag = micropb::Tag::from_parts(f.num, wire_type);

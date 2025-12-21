@@ -517,15 +517,6 @@ config_decl! {
     skip: Option<bool>,
 }
 
-impl Config {
-    /// Ensure proper handling of a recursive field by boxing it and hardcoding its max size to 0
-    ///
-    /// Combination of [`Self::boxed`] and [`Self::encoded_max_size`].
-    pub fn recursive_field(self) -> Self {
-        self.boxed(true).encoded_max_size(0)
-    }
-}
-
 struct Attributes(Vec<syn::Attribute>);
 
 impl syn::parse::Parse for Attributes {

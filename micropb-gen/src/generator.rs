@@ -156,7 +156,6 @@ pub struct Generator {
     pub(crate) comments_to_docs: bool,
 
     pub(crate) config_tree: PathTree<Box<Config>>,
-    pub(crate) comment_tree: PathTree<Comments, (i32, i32)>,
     pub(crate) extern_paths: BTreeMap<String, TokenStream>,
 }
 
@@ -169,10 +168,32 @@ impl Generator {
     }
 
     pub(crate) fn generate_fdset(&mut self, fdset: &FileDescriptorSet) -> io::Result<TokenStream> {
-        let mut mod_tree = PathTree::new(TokenStream::new());
-
+        // Pre-generate the comment trees for every file
+        let mut comment_trees = vec![];
         for file in &fdset.file {
-            let code = self.generate_fdproto(file)?;
+            let mut comment_tree = PathTree::new(Comments::default());
+            if let Some(src) = file.source_code_info() {
+                for location in &src.location {
+                    add_location_comments(&mut comment_tree, location);
+                }
+            }
+            comment_trees.push(comment_tree);
+        }
+
+        // First, convert and accumulate all message and enum types
+        let mut graph = TypeGraph::default();
+        for (file, comment_tree) in fdset.file.iter().zip(comment_trees.iter()) {
+            self.add_fdproto(&mut graph, comment_tree, file)?;
+        }
+
+        // Resolve the type graph
+        graph.box_cyclic_dependencies();
+        graph.max_size_cyclic_dependencies();
+
+        // Generate Rust code
+        let mut mod_tree = PathTree::new(TokenStream::new());
+        for file in &fdset.file {
+            let code = self.generate_fdproto(&graph, file)?;
             if let Some(pkg_name) = file.package() {
                 mod_tree
                     .root
@@ -193,10 +214,7 @@ impl Generator {
         Ok(self.generate_mod_tree(&mut mod_tree.root))
     }
 
-    pub(crate) fn generate_fdproto(
-        &mut self,
-        fdproto: &FileDescriptorProto,
-    ) -> io::Result<TokenStream> {
+    fn setup_file_context(&mut self, fdproto: &FileDescriptorProto) -> io::Result<()> {
         self.syntax = match fdproto.syntax.as_str() {
             "proto3" => Syntax::Proto3,
             "proto2" | "" => Syntax::Proto2,
@@ -212,6 +230,17 @@ impl Generator {
             .map(|s| split_pkg_name(s).map(ToOwned::to_owned).collect())
             .unwrap_or_default();
         self.pkg = fdproto.package().cloned().unwrap_or_default();
+        self.type_path = RefCell::new(vec![]);
+        Ok(())
+    }
+
+    fn add_fdproto<'a>(
+        &mut self,
+        graph: &mut TypeGraph<'a>,
+        comment_tree: &'a PathTree<Comments, (i32, i32)>,
+        fdproto: &'a FileDescriptorProto,
+    ) -> io::Result<()> {
+        self.setup_file_context(fdproto)?;
 
         let root_node = &self.config_tree.root;
         let mut conf = root_node
@@ -228,33 +257,32 @@ impl Generator {
             config: Cow::Owned(conf),
         };
 
-        if let Some(src) = fdproto.source_code_info() {
-            for location in &src.location {
-                add_location_comments(&mut self.comment_tree, location);
-            }
-        }
-
-        // First, convert and accumulate all message and enum types
-        let mut graph = TypeGraph::default();
         for (i, m) in fdproto.message_type.iter().enumerate() {
             self.add_message(
-                &mut graph,
+                graph,
                 m,
                 cur_config.next_conf(&m.name),
-                self.comment_tree.root.next(&location::path::fdset_msg(i)),
+                comment_tree.root.next(&location::path::fdset_msg(i)),
             )?;
         }
         for (i, e) in fdproto.enum_type.iter().enumerate() {
             self.add_enum(
-                &mut graph,
+                graph,
                 e,
                 cur_config.next_conf(&e.name),
-                self.comment_tree.root.next(&location::path::fdset_enum(i)),
+                comment_tree.root.next(&location::path::fdset_enum(i)),
             )?;
         }
 
-        graph.box_cyclic_dependencies();
-        graph.max_size_cyclic_dependencies();
+        Ok(())
+    }
+
+    fn generate_fdproto(
+        &mut self,
+        graph: &TypeGraph,
+        fdproto: &FileDescriptorProto,
+    ) -> io::Result<TokenStream> {
+        self.setup_file_context(fdproto)?;
 
         // Generate Rust code from message and enum types
         let mut out = TokenStream::new();
@@ -459,12 +487,17 @@ impl Generator {
     }
 
     fn fq_proto_name(&self, proto_name: &str) -> String {
+        let pkg_path = &self.pkg_path;
         let type_path = self.type_path.borrow();
-        if type_path.is_empty() {
-            format!(".{proto_name}")
-        } else {
-            format!(".{}.{}", type_path.join("."), proto_name)
+
+        let mut fq_proto_name = String::new();
+        for elem in pkg_path.iter().chain(type_path.iter()) {
+            fq_proto_name.push('.');
+            fq_proto_name.push_str(elem);
         }
+        fq_proto_name.push('.');
+        fq_proto_name.push_str(proto_name);
+        fq_proto_name
     }
 
     /// Convert variant name to Pascal-case, then strip the enum name from it
