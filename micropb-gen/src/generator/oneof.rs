@@ -20,7 +20,7 @@ use super::location::{self, CommentNode, Comments};
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct OneofField<'a> {
     pub(crate) num: u32,
-    pub(crate) tspec: TypeSpec,
+    pub(crate) tspec: TypeSpec<'a>,
     #[allow(unused)]
     /// Protobuf name
     pub(crate) name: &'a str,
@@ -459,12 +459,12 @@ impl<'a> Oneof<'a> {
 }
 
 #[cfg(test)]
-pub(crate) fn make_test_oneof_field(
+pub(crate) fn make_test_oneof_field<'a>(
     num: u32,
-    name: &str,
+    name: &'a str,
     boxed: bool,
-    tspec: TypeSpec,
-) -> OneofField<'_> {
+    tspec: TypeSpec<'a>,
+) -> OneofField<'a> {
     OneofField {
         num,
         name,

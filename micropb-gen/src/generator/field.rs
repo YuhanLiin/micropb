@@ -22,20 +22,20 @@ pub(crate) enum CustomField {
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub(crate) enum FieldType {
+pub(crate) enum FieldType<'a> {
     // Can't be put in oneof, key type can't be message or enum
     Map {
-        key: TypeSpec,
-        val: TypeSpec,
+        key: TypeSpec<'a>,
+        val: TypeSpec<'a>,
         type_path: syn::Type,
         max_len: Option<u32>,
     },
     // Implicit presence
-    Single(TypeSpec),
+    Single(TypeSpec<'a>),
     // Explicit presence
-    Optional(TypeSpec, OptionalRepr),
+    Optional(TypeSpec<'a>, OptionalRepr),
     Repeated {
-        typ: TypeSpec,
+        typ: TypeSpec<'a>,
         packed: bool,
         type_path: syn::Type,
         max_len: Option<u32>,
@@ -46,7 +46,7 @@ pub(crate) enum FieldType {
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Field<'a> {
     pub(crate) num: u32,
-    pub(crate) ftype: FieldType,
+    pub(crate) ftype: FieldType<'a>,
     /// Protobuf name
     pub(crate) name: &'a str,
     /// Non-sanitized Rust name after renaming, used for accessor names
@@ -68,6 +68,21 @@ impl<'a> Field<'a> {
 
     pub(crate) fn is_hazzer(&self) -> bool {
         matches!(self.ftype, FieldType::Optional(_, OptionalRepr::Hazzer))
+    }
+
+    pub(crate) fn message_name(&self) -> Option<&'a str> {
+        let typ = match &self.ftype {
+            FieldType::Map { val, .. } => val,
+            FieldType::Single(type_spec) => type_spec,
+            FieldType::Optional(type_spec, _) => type_spec,
+            FieldType::Repeated { typ, .. } => typ,
+            FieldType::Custom(_) => return None,
+        };
+        if let TypeSpec::Message(name, _) = typ {
+            Some(name)
+        } else {
+            None
+        }
     }
 
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
@@ -94,7 +109,7 @@ impl<'a> Field<'a> {
         field_conf: &CurrentConfig,
         comment_node: Option<&'a CommentNode>,
         gen: &Generator,
-        map_msg: Option<&DescriptorProto>,
+        map_msg: Option<&'a DescriptorProto>,
     ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -776,7 +791,12 @@ impl<'a> Field<'a> {
 }
 
 #[cfg(test)]
-pub(crate) fn make_test_field(num: u32, name: &str, boxed: bool, ftype: FieldType) -> Field<'_> {
+pub(crate) fn make_test_field<'a>(
+    num: u32,
+    name: &'a str,
+    boxed: bool,
+    ftype: FieldType<'a>,
+) -> Field<'a> {
     Field {
         num,
         ftype,

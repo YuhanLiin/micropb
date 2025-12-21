@@ -153,9 +153,9 @@ pub(crate) fn find_lifetime_from_path(tpath: &syn::Path) -> Option<&Lifetime> {
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub(crate) enum TypeSpec {
-    Message(String, Option<syn::Lifetime>),
-    Enum(String),
+pub(crate) enum TypeSpec<'a> {
+    Message(&'a str, Option<syn::Lifetime>),
+    Enum(&'a str),
     Float,
     Double,
     Bool,
@@ -171,7 +171,7 @@ pub(crate) enum TypeSpec {
     },
 }
 
-impl TypeSpec {
+impl<'a> TypeSpec<'a> {
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match self {
             TypeSpec::Message(_, lifetime) => lifetime.as_ref().and_then(filter_lifetime),
@@ -220,7 +220,7 @@ impl TypeSpec {
     }
 
     pub(crate) fn from_proto(
-        proto: &FieldDescriptorProto,
+        proto: &'a FieldDescriptorProto,
         type_conf: &CurrentConfig,
     ) -> Result<Self, String> {
         let conf = &type_conf.config;
@@ -243,10 +243,8 @@ impl TypeSpec {
                 ),
                 max_bytes: conf.max_bytes,
             },
-            Type::Message => {
-                TypeSpec::Message(proto.type_name.clone(), conf.field_lifetime_parsed()?)
-            }
-            Type::Enum => TypeSpec::Enum(proto.type_name.clone()),
+            Type::Message => TypeSpec::Message(&proto.type_name, conf.field_lifetime_parsed()?),
+            Type::Enum => TypeSpec::Enum(&proto.type_name),
             Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_size.unwrap_or(IntSize::S32)),
             Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_size.unwrap_or(IntSize::S64)),
             Type::Uint64 => TypeSpec::Int(PbInt::Uint64, conf.int_size.unwrap_or(IntSize::S64)),
@@ -713,11 +711,11 @@ mod tests {
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Message, ".msg.Message"), &type_conf).unwrap(),
-            TypeSpec::Message(".msg.Message".to_owned(), None)
+            TypeSpec::Message(".msg.Message", None)
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Enum, ".Enum"), &type_conf).unwrap(),
-            TypeSpec::Enum(".Enum".to_owned())
+            TypeSpec::Enum(".Enum")
         );
 
         config.string_type = Some("string::String".to_owned());
