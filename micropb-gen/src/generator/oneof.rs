@@ -26,7 +26,7 @@ pub(crate) struct OneofField<'a> {
     /// Sanitized Rust ident after renaming, used for field name
     pub(crate) rust_name: Ident,
     pub(crate) boxed: bool,
-    pub(crate) encoded_max_size: Option<usize>,
+    pub(crate) max_size_override: Option<Option<usize>>,
     pub(crate) attrs: Vec<syn::Attribute>,
     comments: Option<&'a Comments>,
 }
@@ -59,7 +59,7 @@ impl<'a> OneofField<'a> {
             tspec,
             name,
             rust_name,
-            encoded_max_size: field_conf.config.encoded_max_size,
+            max_size_override: field_conf.config.encoded_max_size.map(Some),
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs,
             comments: location::get_comments(comment_node),
@@ -233,7 +233,6 @@ pub(crate) struct Oneof<'a> {
     pub(crate) derive_dbg: bool,
     pub(crate) derive_partial_eq: bool,
     pub(crate) derive_clone: bool,
-    pub(crate) encoded_max_size: Option<usize>,
     pub(crate) lifetime: Option<Lifetime>,
     pub(crate) idx: usize,
     pub(crate) comments: Option<&'a Comments>,
@@ -273,7 +272,6 @@ impl<'a> Oneof<'a> {
             idx,
             otype,
             boxed,
-            encoded_max_size: oneof_conf.config.encoded_max_size,
             derive_dbg: oneof_conf.derive_dbg(),
             derive_partial_eq: oneof_conf.derive_partial_eq(),
             derive_clone: oneof_conf.derive_clone(),
@@ -425,10 +423,6 @@ impl<'a> Oneof<'a> {
     }
 
     pub(crate) fn generate_max_size(&self, generator: &Generator) -> TokenStream {
-        if let Some(max_size) = self.encoded_max_size {
-            return quote! { ::core::option::Option::Some(#max_size) };
-        }
-
         match &self.otype {
             OneofType::Custom {
                 field: CustomField::Type(custom),
@@ -443,7 +437,7 @@ impl<'a> Oneof<'a> {
 
             OneofType::Enum { fields, .. } => {
                 let variant_sizes = fields.iter().map(|f| {
-                    if let Some(max_size) = f.encoded_max_size {
+                    if let Some(max_size) = f.max_size_override {
                         quote! { ::core::option::Option::Some(#max_size) }
                     } else {
                         let wire_type = f.tspec.wire_type();
@@ -485,7 +479,7 @@ pub(crate) fn make_test_oneof_field<'a>(
         tspec,
         rust_name: Ident::new(&name.to_case(Case::Pascal), Span::call_site()),
         boxed,
-        encoded_max_size: None,
+        max_size_override: None,
         attrs: vec![],
         comments: None,
     }
@@ -548,7 +542,7 @@ mod tests {
                 name: "field",
                 rust_name: Ident::new("Field", Span::call_site()),
                 boxed: false,
-                encoded_max_size: None,
+                max_size_override: None,
                 attrs: vec![],
                 comments: None
             }
@@ -570,7 +564,7 @@ mod tests {
                 tspec: TypeSpec::Bool,
                 name: "field",
                 rust_name: Ident::new("Renamed", Span::call_site()),
-                encoded_max_size: None,
+                max_size_override: None,
                 boxed: true,
                 attrs: parse_attributes("#[attr]").unwrap(),
                 comments: None
@@ -600,7 +594,6 @@ mod tests {
                 },
                 field_attrs: vec![],
                 type_attrs: vec![],
-                encoded_max_size: None,
                 boxed: false,
                 derive_dbg: true,
                 derive_partial_eq: true,
@@ -632,7 +625,6 @@ mod tests {
                 },
                 field_attrs: parse_attributes("#[attr]").unwrap(),
                 type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
-                encoded_max_size: None,
                 boxed: false,
                 derive_dbg: false,
                 derive_partial_eq: true,
@@ -657,7 +649,6 @@ mod tests {
             field_attrs: vec![],
             type_attrs: vec![],
             boxed: false,
-            encoded_max_size: None,
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,
@@ -683,7 +674,6 @@ mod tests {
             field_attrs: vec![],
             type_attrs: vec![],
             boxed: false,
-            encoded_max_size: None,
             derive_dbg: true,
             derive_partial_eq: true,
             derive_clone: true,

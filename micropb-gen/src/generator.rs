@@ -254,6 +254,7 @@ impl Generator {
         }
 
         graph.box_cyclic_dependencies();
+        graph.max_size_cyclic_dependencies();
 
         // Generate Rust code from message and enum types
         let mut out = TokenStream::new();

@@ -55,7 +55,7 @@ pub(crate) struct Field<'a> {
     pub(crate) san_rust_name: Ident,
     pub(crate) default: Option<&'a str>,
     pub(crate) boxed: bool,
-    pub(crate) encoded_max_size: Option<usize>,
+    pub(crate) max_size_override: Option<Option<usize>>,
     pub(crate) attrs: Vec<syn::Attribute>,
     no_accessors: bool,
     comments: Option<&'a Comments>,
@@ -190,7 +190,7 @@ impl<'a> Field<'a> {
             rust_name,
             san_rust_name,
             default: proto.default_value().map(String::as_str),
-            encoded_max_size,
+            max_size_override: encoded_max_size.map(Some),
             boxed,
             attrs,
             no_accessors,
@@ -596,8 +596,11 @@ impl<'a> Field<'a> {
     }
 
     pub(crate) fn generate_max_size(&self, generator: &Generator) -> TokenStream {
-        if let Some(max_size) = self.encoded_max_size {
-            return quote! { ::core::option::Option::Some(#max_size) };
+        if let Some(max_size) = self.max_size_override {
+            return match max_size {
+                Some(size) => quote! { ::core::option::Option::Some(#size) },
+                None => quote! { ::core::option::Option::None },
+            };
         }
 
         let wire_type = self.wire_type();
@@ -809,7 +812,7 @@ pub(crate) fn make_test_field<'a>(
         san_rust_name: Ident::new_raw(name, proc_macro2::Span::call_site()),
         default: None,
         boxed,
-        encoded_max_size: None,
+        max_size_override: None,
         attrs: vec![],
         no_accessors: false,
         comments: None,
@@ -888,7 +891,7 @@ mod tests {
                 san_rust_name: Ident::new_raw("field", Span::call_site()),
                 default: None,
                 boxed: false,
-                encoded_max_size: None,
+                max_size_override: None,
                 attrs: vec![],
                 no_accessors: false,
                 comments: None
@@ -921,7 +924,7 @@ mod tests {
                 san_rust_name: Ident::new("renamed", Span::call_site()),
                 default: Some("true"),
                 boxed: true,
-                encoded_max_size: None,
+                max_size_override: None,
                 attrs: parse_attributes("#[attr]").unwrap(),
                 no_accessors: false,
                 comments: None

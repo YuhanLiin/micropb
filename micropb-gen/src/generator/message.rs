@@ -9,6 +9,7 @@ use crate::{
     generator::{
         EncodeFunc,
         field::{CustomField, FieldType},
+        graph::Position,
         location::{self, next_comment_node},
         resolve_path_elem,
         type_spec::TypeSpec,
@@ -25,38 +26,6 @@ use super::{
     sanitized_ident,
     type_spec::find_lifetime_from_type,
 };
-
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-#[derive(Clone, Copy)]
-pub(crate) enum Position {
-    Field(usize),
-    Oneof(usize, usize),
-}
-
-impl Position {
-    pub(crate) fn is_boxed_mut<'a>(&self, msg: &'a mut Message) -> Option<&'a mut bool> {
-        match self {
-            Position::Field(i) => {
-                let field = &mut msg.fields[*i];
-                // For the purpose of cycle detection, ignore boxing repeated and map fields since
-                // those fields are typically allocated on the heap. The exception is no-std, where
-                // these fields are statically-allocated, but boxing isn't relevant there anyways.
-                if let FieldType::Map { .. } | FieldType::Repeated { .. } = field.ftype {
-                    None
-                } else {
-                    Some(&mut field.boxed)
-                }
-            }
-            Position::Oneof(oi, fi) => Some(
-                &mut msg.oneofs[*oi]
-                    .otype
-                    .fields_mut()
-                    .expect("unexpected custom oneof")[*fi]
-                    .boxed,
-            ),
-        }
-    }
-}
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Hazzer {
@@ -954,7 +923,6 @@ mod tests {
                     make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
                 ],
             },
-            encoded_max_size: None,
             field_attrs: vec![],
             // Overrides the type attrs of the message
             type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
