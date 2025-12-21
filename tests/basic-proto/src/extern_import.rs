@@ -33,6 +33,7 @@ impl MessageDecode for Empty {
 }
 
 #[test]
+#[allow(unused)]
 fn imported_types() {
     let mut nested = proto::nested_::Nested::default();
     let _basic: Empty = nested.basic;

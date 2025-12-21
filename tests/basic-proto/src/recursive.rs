@@ -1,3 +1,4 @@
+use micropb::MessageEncode;
 use proto::Recursive;
 
 mod proto {
@@ -10,9 +11,10 @@ mod proto {
 fn recursive_types() {
     let mut recursive = proto::Recursive::default();
     let _: &Option<Box<proto::Recursive>> = &recursive.recursive;
-    let _: &Option<Box<proto::Recursive_::Of>> = &recursive.of;
-    recursive.of = Some(Box::new(proto::Recursive_::Of::Num(1)));
-    match *recursive.of.unwrap() {
+    let _: &Option<proto::Recursive_::Of> = &recursive.of;
+    let _: &Vec<proto::Recursive> = &recursive.multi; // shouldn't be boxed
+    recursive.of = Some(proto::Recursive_::Of::Num(1));
+    match recursive.of.unwrap() {
         proto::Recursive_::Of::Rec(r) => {
             let _: Box<Recursive> = r;
         }
@@ -20,4 +22,6 @@ fn recursive_types() {
             let _: i32 = i;
         }
     }
+
+    assert_eq!(proto::Recursive::MAX_SIZE, None);
 }

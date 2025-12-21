@@ -6,4 +6,5 @@ message Recursive {
         Recursive rec = 2;
         int32 num = 3;
     }
+    repeated Recursive multi = 4;
 }

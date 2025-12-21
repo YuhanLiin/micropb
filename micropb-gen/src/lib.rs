@@ -505,7 +505,6 @@ use std::{
 
 pub use config::Config;
 pub use generator::Generator;
-use generator::location::Comments;
 use micropb::{MessageDecode, PbDecoder};
 use pathtree::PathTree;
 

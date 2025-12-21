@@ -395,11 +395,9 @@ fn static_lifetime_fields() {
 
 fn recursive() {
     let mut generator = Generator::new();
-    generator.configure_many(
-        &[".Recursive.recursive", ".Recursive.rec"],
-        Config::new().recursive_field(),
-    );
-    generator.configure(".Recursive.of", Config::new().boxed(true));
+    generator.use_container_std();
+    generator.configure(".", Config::new().optional_repr(OptionalRepr::Option));
+    // Should work without any extra configuration
     generator
         .compile_protos(
             &["proto/recursive.proto"],
