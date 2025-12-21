@@ -1,9 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::generator::{
-    message::{Message, Position},
-    r#enum::Enum,
-};
+use crate::generator::{r#enum::Enum, message::Message};
 
 #[derive(Default)]
 pub(super) struct TypeGraph<'a> {
@@ -52,7 +49,9 @@ impl<'a> TypeGraph<'a> {
                     for i in 0..cur_msg.message_edges.len() {
                         let (pos, next_field) = cur_msg.message_edges[i];
                         let is_bool = pos.is_boxed_mut(cur_msg);
-                        if !*is_bool {
+                        if let Some(is_bool) = is_bool
+                            && !*is_bool
+                        {
                             if ancestors.contains(next_field) {
                                 *is_bool = true;
                             } else {
@@ -68,7 +67,8 @@ impl<'a> TypeGraph<'a> {
         }
     }
 
-    fn box_cyclic_dependencies(&mut self) {
+    /// Detect cycles in the message graph via DFS and break those cycles by boxing fields.
+    pub(crate) fn box_cyclic_dependencies(&mut self) {
         let mut visited = BTreeSet::new();
         let fields: Vec<_> = self.messages.keys().cloned().collect();
 
@@ -88,8 +88,8 @@ mod tests {
     use crate::{
         config::OptionalRepr,
         generator::{
-            field::{make_test_field, FieldType},
-            message::make_test_msg,
+            field::{FieldType, make_test_field},
+            message::{Position, make_test_msg},
             type_spec::TypeSpec,
         },
     };

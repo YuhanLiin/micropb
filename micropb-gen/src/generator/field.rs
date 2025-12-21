@@ -8,11 +8,11 @@ use crate::descriptor::{
     FieldDescriptorProto_::{Label, Type},
 };
 
-use super::location::{self, CommentNode, Comments};
 use super::Syntax;
+use super::location::{self, CommentNode, Comments};
 use super::{
-    type_spec::{find_lifetime_from_type, TypeSpec},
     CurrentConfig, EncodeFunc, Generator,
+    type_spec::{TypeSpec, find_lifetime_from_type},
 };
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -108,7 +108,7 @@ impl<'a> Field<'a> {
         proto: &'a FieldDescriptorProto,
         field_conf: &CurrentConfig,
         comment_node: Option<&'a CommentNode>,
-        gen: &Generator,
+        generator: &Generator,
         map_msg: Option<&'a DescriptorProto>,
     ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
@@ -134,8 +134,8 @@ impl<'a> Field<'a> {
                 let type_path = field_conf
                     .config
                     .map_type_parsed(
-                        key.generate_rust_type(gen),
-                        val.generate_rust_type(gen),
+                        key.generate_rust_type(generator),
+                        val.generate_rust_type(generator),
                         max_len,
                     )?
                     .ok_or_else(|| "map_type not configured for map field".to_owned())?;
@@ -153,7 +153,7 @@ impl<'a> Field<'a> {
                 FieldType::Repeated {
                     type_path: field_conf
                         .config
-                        .vec_type_parsed(typ.generate_rust_type(gen), max_len)?
+                        .vec_type_parsed(typ.generate_rust_type(generator), max_len)?
                         .ok_or_else(|| "vec_type not configured for repeated field".to_owned())?,
                     typ,
                     max_len,
@@ -165,7 +165,7 @@ impl<'a> Field<'a> {
             }
 
             (None, None, Label::Required | Label::Optional)
-                if gen.syntax == Syntax::Proto2
+                if generator.syntax == Syntax::Proto2
                     || proto.proto3_optional
                     || proto.r#type == Type::Message =>
             {
@@ -198,10 +198,10 @@ impl<'a> Field<'a> {
         }))
     }
 
-    pub(crate) fn generate_rust_type(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_rust_type(&self, generator: &Generator) -> TokenStream {
         let typ = match &self.ftype {
             FieldType::Map { type_path, .. } => quote! { #type_path },
-            FieldType::Single(t) | FieldType::Optional(t, _) => t.generate_rust_type(gen),
+            FieldType::Single(t) | FieldType::Optional(t, _) => t.generate_rust_type(generator),
             FieldType::Repeated { type_path, .. } => quote! { #type_path },
 
             FieldType::Custom(CustomField::Type(t)) => return quote! {#t},
@@ -209,14 +209,14 @@ impl<'a> Field<'a> {
                 unreachable!("delegate field cannot have a type")
             }
         };
-        gen.wrapped_type(typ, self.boxed, self.is_option())
+        generator.wrapped_type(typ, self.boxed, self.is_option())
     }
 
-    pub(crate) fn generate_field(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_field(&self, generator: &Generator) -> TokenStream {
         if let FieldType::Custom(CustomField::Delegate(_)) = self.ftype {
             return quote! {};
         }
-        let typ = self.generate_rust_type(gen);
+        let typ = self.generate_rust_type(generator);
         let name = &self.san_rust_name;
         let attrs = &self.attrs;
         let comments = self.comments.map(Comments::lines).into_iter().flatten();
@@ -230,18 +230,18 @@ impl<'a> Field<'a> {
         quote! { #(#[doc = #comments])* #(#[doc = #hazzer_warning])* #(#attrs)* pub #name : #typ, }
     }
 
-    pub(crate) fn generate_default(&self, gen: &Generator) -> Result<TokenStream, String> {
+    pub(crate) fn generate_default(&self, generator: &Generator) -> Result<TokenStream, String> {
         match self.ftype {
             FieldType::Single(ref t)
             | FieldType::Optional(ref t, OptionalRepr::Hazzer | OptionalRepr::None) => {
                 if let Some(default) = self.default {
-                    let value = t.generate_default(default, gen)?;
-                    return Ok(gen.wrapped_value(value, self.boxed, false));
+                    let value = t.generate_default(default, generator)?;
+                    return Ok(generator.wrapped_value(value, self.boxed, false));
                 }
             }
             // Options don't use custom defaults, they should just default to None
             FieldType::Optional(_, OptionalRepr::Option) => {
-                return Ok(quote! { ::core::option::Option::None })
+                return Ok(quote! { ::core::option::Option::None });
             }
             FieldType::Custom(CustomField::Delegate(_)) => {
                 unreachable!("delegate field cannot have default")
@@ -251,7 +251,7 @@ impl<'a> Field<'a> {
         Ok(quote! { ::core::default::Default::default() })
     }
 
-    pub(crate) fn generate_accessors(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_accessors(&self, generator: &Generator) -> TokenStream {
         match &self.ftype {
             FieldType::Optional(type_spec, opt) => {
                 let (deref, deref_mut) = if self.boxed {
@@ -263,7 +263,7 @@ impl<'a> Field<'a> {
                 let fname = &self.san_rust_name;
                 let getter_doc =
                     format!(" Return a reference to `{}` as an `Option`", self.rust_name);
-                let type_name = type_spec.generate_rust_type(gen);
+                let type_name = type_spec.generate_rust_type(generator);
 
                 // Getter is needed for encoding, so we have to generate it
                 let mut accessors = match opt {
@@ -297,7 +297,7 @@ impl<'a> Field<'a> {
                 };
 
                 if !self.no_accessors {
-                    let wrapped_type = gen.wrapped_type(type_name.clone(), self.boxed, true);
+                    let wrapped_type = generator.wrapped_type(type_name.clone(), self.boxed, true);
                     let setter_name = format_ident!("set_{}", self.rust_name);
                     let muter_name = format_ident!("mut_{}", self.rust_name);
                     let clearer_name = format_ident!("clear_{}", self.rust_name);
@@ -427,7 +427,7 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Single(type_spec) if !self.no_accessors => {
-                let type_name = type_spec.generate_rust_type(gen);
+                let type_name = type_spec.generate_rust_type(generator);
                 let setter_name = format_ident!("set_{}", self.rust_name);
                 let muter_name = format_ident!("mut_{}", self.rust_name);
                 let init_name = format_ident!("init_{}", self.rust_name);
@@ -475,7 +475,7 @@ impl<'a> Field<'a> {
 
     pub(crate) fn generate_decode_branch(
         &self,
-        gen: &Generator,
+        generator: &Generator,
         tag: &Ident,
         decoder: &Ident,
     ) -> TokenStream {
@@ -486,10 +486,10 @@ impl<'a> Field<'a> {
 
         let decode_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
-                let key_decode_expr = key.generate_decode_mut(gen, false, decoder, &mut_ref);
-                let val_decode_expr = val.generate_decode_mut(gen, false, decoder, &mut_ref);
-                let key_type = key.generate_rust_type(gen);
-                let val_type = val.generate_rust_type(gen);
+                let key_decode_expr = key.generate_decode_mut(generator, false, decoder, &mut_ref);
+                let val_decode_expr = val.generate_decode_mut(generator, false, decoder, &mut_ref);
+                let key_type = key.generate_rust_type(generator);
+                let val_type = val.generate_rust_type(generator);
                 quote! {
                     if let Some((k, v)) = #decoder.decode_map_elem(
                         |#mut_ref: &mut #key_type, #decoder| { #key_decode_expr; Ok(()) },
@@ -504,7 +504,7 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Single(tspec) => {
-                let decode_stmts = tspec.generate_decode_mut(gen, true, decoder, &mut_ref);
+                let decode_stmts = tspec.generate_decode_mut(generator, true, decoder, &mut_ref);
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_stmts };
@@ -512,7 +512,7 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::None) => {
-                let decode_stmts = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
+                let decode_stmts = tspec.generate_decode_mut(generator, false, decoder, &mut_ref);
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_stmts };
@@ -520,7 +520,7 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
-                let decode_expr = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
+                let decode_expr = tspec.generate_decode_mut(generator, false, decoder, &mut_ref);
                 let setter = format_ident!("set_{}", self.rust_name);
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
@@ -530,7 +530,7 @@ impl<'a> Field<'a> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::Option) => {
-                let decode_stmts = tspec.generate_decode_mut(gen, false, decoder, &mut_ref);
+                let decode_stmts = tspec.generate_decode_mut(generator, false, decoder, &mut_ref);
                 quote! {
                     let #mut_ref = &mut #extra_deref *self.#fname.get_or_insert_with(::core::default::Default::default);
                     { #decode_stmts };
@@ -540,7 +540,7 @@ impl<'a> Field<'a> {
             FieldType::Repeated { typ, .. } => {
                 // Type can be packed and is Copy, so we check the wire type to see if we can
                 // do packed decoding
-                if let Some(val) = typ.generate_decode_val(gen, decoder) {
+                if let Some(val) = typ.generate_decode_val(generator, decoder) {
                     quote! {
                         if #tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                             #decoder.decode_packed(&mut #extra_deref self.#fname, |#decoder| #val.map(|v| v as _))?;
@@ -551,8 +551,8 @@ impl<'a> Field<'a> {
                         }
                     }
                 } else {
-                    let decode_expr = typ.generate_decode_mut(gen, false, decoder, &mut_ref);
-                    let rust_type = typ.generate_rust_type(gen);
+                    let decode_expr = typ.generate_decode_mut(generator, false, decoder, &mut_ref);
+                    let rust_type = typ.generate_rust_type(generator);
                     quote! {
                         let mut val: #rust_type = ::core::default::Default::default();
                         let #mut_ref = &mut val;
@@ -595,7 +595,7 @@ impl<'a> Field<'a> {
         }
     }
 
-    pub(crate) fn generate_max_size(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_max_size(&self, generator: &Generator) -> TokenStream {
         if let Some(max_size) = self.encoded_max_size {
             return quote! { ::core::option::Option::Some(#max_size) };
         }
@@ -610,8 +610,8 @@ impl<'a> Field<'a> {
             } => max_len
                 .map(|len| {
                     let len = len as usize;
-                    let key_size = key.generate_max_size(gen);
-                    let val_size = val.generate_max_size(gen);
+                    let key_size = key.generate_max_size(generator);
+                    let val_size = val.generate_max_size(generator);
                     quote! {
                         match (#key_size, #val_size) {
                             (_, ::core::option::Option::None) => ::core::option::Option::<usize>::None,
@@ -626,7 +626,7 @@ impl<'a> Field<'a> {
                 .unwrap_or(quote! {::core::option::Option::<usize>::None}),
 
             FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
-                let size = type_spec.generate_max_size(gen);
+                let size = type_spec.generate_max_size(generator);
                 quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
             }
 
@@ -637,7 +637,7 @@ impl<'a> Field<'a> {
                 ..
             } => max_len.map(|len| {
                 let len = len as usize;
-                let size = typ.generate_max_size(gen);
+                let size = typ.generate_max_size(generator);
                 if *packed {
                     quote! { ::micropb::const_map!(#size, |size| ::micropb::size::sizeof_len_record(#len * size) + #tag_len) }
                 } else {
@@ -650,7 +650,11 @@ impl<'a> Field<'a> {
         }
     }
 
-    pub(crate) fn generate_encode(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
+    pub(crate) fn generate_encode(
+        &self,
+        generator: &Generator,
+        func_type: &EncodeFunc,
+    ) -> TokenStream {
         let fname = &self.san_rust_name;
         let val_ref = Ident::new("val_ref", Span::call_site());
         let extra_deref = self.boxed.then(|| quote! { * });
@@ -661,17 +665,17 @@ impl<'a> Field<'a> {
 
         let sizeof_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
-                let key_sizeof = key.generate_sizeof(gen, &val_ref);
-                let val_sizeof = val.generate_sizeof(gen, &val_ref);
+                let key_sizeof = key.generate_sizeof(generator, &val_ref);
+                let val_sizeof = val.generate_sizeof(generator, &val_ref);
 
                 let stmts = match &func_type {
                     EncodeFunc::Sizeof(size) => {
                         quote! { #size += ::micropb::size::sizeof_len_record(len) + #tag_len; }
                     }
                     EncodeFunc::Encode(encoder) => {
-                        let key_encode = key.generate_encode_expr(gen, encoder, &val_ref);
+                        let key_encode = key.generate_encode_expr(generator, encoder, &val_ref);
                         let key_wtype = key.wire_type();
-                        let val_encode = val.generate_encode_expr(gen, encoder, &val_ref);
+                        let val_encode = val.generate_encode_expr(generator, encoder, &val_ref);
                         let val_wtype = val.wire_type();
                         quote! {
                             #encoder.encode_varint32(#tag_val)?;
@@ -703,11 +707,11 @@ impl<'a> Field<'a> {
                 };
                 let stmts = match &func_type {
                     EncodeFunc::Sizeof(size) => {
-                        let sizeof_expr = tspec.generate_sizeof(gen, &val_ref);
+                        let sizeof_expr = tspec.generate_sizeof(generator, &val_ref);
                         quote! { #size += #tag_len + #sizeof_expr; }
                     }
                     EncodeFunc::Encode(encoder) => {
-                        let encode_expr = tspec.generate_encode_expr(gen, encoder, &val_ref);
+                        let encode_expr = tspec.generate_encode_expr(generator, encoder, &val_ref);
                         quote! {
                             #encoder.encode_varint32(#tag_val)?;
                             #encode_expr?;
@@ -729,11 +733,11 @@ impl<'a> Field<'a> {
                         break 'expr quote! { #size += self.#fname.len() * (#tag_len + #fixed); };
                     }
                     (EncodeFunc::Sizeof(size), None) => {
-                        let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
+                        let sizeof_expr = typ.generate_sizeof(generator, &val_ref);
                         quote! { #size += #tag_len + #sizeof_expr; }
                     }
                     (EncodeFunc::Encode(encoder), _) => {
-                        let encode_expr = typ.generate_encode_expr(gen, encoder, &val_ref);
+                        let encode_expr = typ.generate_encode_expr(generator, encoder, &val_ref);
                         quote! {
                             #encoder.encode_varint32(#tag_val)?;
                             #encode_expr?;
@@ -753,7 +757,7 @@ impl<'a> Field<'a> {
                 let len = if let Some(fixed) = typ.fixed_size() {
                     quote! { self.#fname.len() * #fixed }
                 } else {
-                    let sizeof_expr = typ.generate_sizeof(gen, &val_ref);
+                    let sizeof_expr = typ.generate_sizeof(generator, &val_ref);
                     quote! { ::micropb::size::sizeof_packed(& #extra_deref self.#fname, |#val_ref| #sizeof_expr) }
                 };
                 let stmts = match &func_type {
@@ -761,7 +765,7 @@ impl<'a> Field<'a> {
                         quote! { #size += #tag_len + ::micropb::size::sizeof_len_record(len); }
                     }
                     EncodeFunc::Encode(encoder) => {
-                        let encode_expr = typ.generate_encode_expr(gen, encoder, &val_ref);
+                        let encode_expr = typ.generate_encode_expr(generator, encoder, &val_ref);
                         quote! {
                             #encoder.encode_varint32(#tag_val)?;
                             #encoder.encode_packed(len, & #extra_deref self.#fname, |#encoder, val| {let #val_ref = &val; #encode_expr})?;
@@ -819,7 +823,7 @@ mod tests {
     use proc_macro2::Span;
 
     use crate::{
-        config::{parse_attributes, Config, IntSize},
+        config::{Config, IntSize, parse_attributes},
         generator::type_spec::PbInt,
         pathtree::Node,
     };
@@ -852,11 +856,13 @@ mod tests {
         };
         let field = field_proto(2, "field", None, false);
 
-        let mut gen = Generator::new();
-        gen.syntax = Syntax::Proto2;
-        assert!(Field::from_proto(&field, &field_conf, None, &gen, None)
-            .unwrap()
-            .is_none());
+        let mut generator = Generator::new();
+        generator.syntax = Syntax::Proto2;
+        assert!(
+            Field::from_proto(&field, &field_conf, None, &generator, None)
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[test]
@@ -868,10 +874,10 @@ mod tests {
         };
         let field = field_proto(2, "field", None, false);
 
-        let mut gen = Generator::new();
-        gen.syntax = Syntax::Proto3;
+        let mut generator = Generator::new();
+        generator.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -904,7 +910,7 @@ mod tests {
         field.set_default_value("true".to_owned());
 
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap(),
             Field {
@@ -932,18 +938,18 @@ mod tests {
         };
         let field = field_proto(0, "field", None, false);
 
-        let mut gen = Generator::new();
-        gen.syntax = Syntax::Proto3;
+        let mut generator = Generator::new();
+        generator.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
             FieldType::Single(TypeSpec::Bool)
         );
-        gen.syntax = Syntax::Proto2;
+        generator.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -953,7 +959,7 @@ mod tests {
         // Required fields are treated like optionals
         let field = field_proto(0, "field", Some(Label::Required), false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -961,10 +967,10 @@ mod tests {
         );
 
         // In proto3, if proto3_optional is set then field is optional
-        gen.syntax = Syntax::Proto3;
+        generator.syntax = Syntax::Proto3;
         let field = field_proto(0, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -977,9 +983,9 @@ mod tests {
             node: None,
             config: Cow::Borrowed(&config),
         };
-        gen.syntax = Syntax::Proto2;
+        generator.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -993,7 +999,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1016,10 +1022,10 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
 
-        let mut gen = Generator::new();
-        gen.syntax = Syntax::Proto2;
+        let mut generator = Generator::new();
+        generator.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1037,7 +1043,7 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1060,10 +1066,10 @@ mod tests {
         let mut field = field_proto(0, "field", Some(Label::Repeated), false);
         field.set_type(Type::Int32);
 
-        let mut gen = Generator::new();
-        gen.syntax = Syntax::Proto3;
+        let mut generator = Generator::new();
+        generator.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1077,7 +1083,7 @@ mod tests {
         field.set_options(Default::default());
         field.options.set_packed(true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, None)
+            Field::from_proto(&field, &field_conf, None, &generator, None)
                 .unwrap()
                 .unwrap()
                 .ftype,
@@ -1128,10 +1134,10 @@ mod tests {
         field.set_type(Type::Message);
         field.set_type_name("MapElem".to_owned());
 
-        let mut gen = Generator::new();
-        gen.syntax = Syntax::Proto2;
+        let mut generator = Generator::new();
+        generator.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &gen, Some(&map_elem))
+            Field::from_proto(&field, &field_conf, None, &generator, Some(&map_elem))
                 .unwrap()
                 .unwrap()
                 .ftype,

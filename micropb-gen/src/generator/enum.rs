@@ -5,12 +5,12 @@ use proc_macro2::{Literal, TokenStream};
 use quote::quote;
 use syn::{Attribute, Ident};
 
-use super::location::{get_comments, next_comment_node, CommentNode, Comments};
+use super::location::{CommentNode, Comments, get_comments, next_comment_node};
 use crate::{
+    Generator,
     config::IntSize,
     descriptor::EnumDescriptorProto,
-    generator::{derive_enum_attr, location, msg_error, sanitized_ident, CurrentConfig},
-    Generator,
+    generator::{CurrentConfig, derive_enum_attr, location, msg_error, sanitized_ident},
 };
 
 pub(crate) struct Variant<'a> {
@@ -34,7 +34,7 @@ pub(crate) struct Enum<'a> {
 impl<'a> Enum<'a> {
     pub(crate) fn from_proto(
         proto: &'a EnumDescriptorProto,
-        gen: &Generator,
+        generator: &Generator,
         enum_conf: &CurrentConfig,
         comment_node: Option<&'a CommentNode>,
     ) -> io::Result<Option<Self>> {
@@ -50,7 +50,7 @@ impl<'a> Enum<'a> {
         let attrs = enum_conf
             .config
             .type_attr_parsed()
-            .map_err(|e| msg_error(&gen.pkg, name, &e))?;
+            .map_err(|e| msg_error(&generator.pkg, name, &e))?;
         let comments = get_comments(comment_node);
 
         let variants = proto
@@ -60,7 +60,7 @@ impl<'a> Enum<'a> {
             .map(|(i, v)| {
                 let num = v.number as u32;
                 let var_name = &v.name;
-                let var_rust_name = gen.enum_variant_name(var_name, &rust_name);
+                let var_rust_name = generator.enum_variant_name(var_name, &rust_name);
                 let var_comment_node =
                     next_comment_node(comment_node, location::path::enum_value(i));
                 let var_comments = get_comments(var_comment_node);

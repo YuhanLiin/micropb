@@ -195,11 +195,11 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::IntSize};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // Set type of int32 to `i8`
-    /// gen.configure(".Message.int32_field", Config::new().int_size(IntSize::S8));
+    /// generator.configure(".Message.int32_field", Config::new().int_size(IntSize::S8));
     /// // Set type of uint32 to `u64`
-    /// gen.configure(".Message.uint32_field", Config::new().int_size(IntSize::S64));
+    /// generator.configure(".Message.uint32_field", Config::new().int_size(IntSize::S64));
     /// ```
     ///
     /// # Avoiding 64-bit operations
@@ -218,11 +218,11 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // Set field attribute
-    /// gen.configure(".Message.foo", Config::new().field_attributes("#[serde(skip)]"));
+    /// generator.configure(".Message.foo", Config::new().field_attributes("#[serde(skip)]"));
     /// // Unset field attribute
-    /// gen.configure(".Message.foo", Config::new().field_attributes(""));
+    /// generator.configure(".Message.foo", Config::new().field_attributes(""));
     /// ```
     ///
     /// # Special cases
@@ -241,7 +241,7 @@ config_decl! {
     /// If the field is already wrapped in `Option`, then the field will be of type
     /// `Option<Box<_>>`.
     ///
-    /// This config not apply to elements of repeated and `map` fields.
+    /// This config does not apply to elements of repeated and `map` fields.
     boxed: Option<bool>,
 
     /// Container type that's generated for repeated fields.
@@ -257,13 +257,13 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::IntSize};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // assuming that .pkg.Message.list is a repeated field of booleans:
     ///
     /// // repeated field configured to `Vec<bool>` (dynamic-capacity)
-    /// gen.configure(".pkg.Message.list", Config::new().vec_type("Vec<$T>"));
+    /// generator.configure(".pkg.Message.list", Config::new().vec_type("Vec<$T>"));
     /// // repeated field configured to `arrayvec::ArrayVec<bool, 5>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.list", Config::new().vec_type("arrayvec::ArrayVec<$T, $N>").max_len(5));
+    /// generator.configure(".pkg.Message.list", Config::new().vec_type("arrayvec::ArrayVec<$T, $N>").max_len(5));
     /// ```
     vec_type: [deref] Option<String>,
 
@@ -279,11 +279,11 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // `string` field configured to `String` (dynamic-capacity)
-    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("String"));
+    /// generator.configure(".pkg.Message.string_field", Config::new().string_type("String"));
     /// // `string` field configured to `ArrayString<4>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("ArrayString<$N>").max_bytes(4));
+    /// generator.configure(".pkg.Message.string_field", Config::new().string_type("ArrayString<$N>").max_bytes(4));
     /// ```
     string_type: [deref] Option<String>,
 
@@ -299,11 +299,11 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // `bytes` field configured to `Vec<u8>` (dynamic-capacity)
-    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("Vec<u8>"));
+    /// generator.configure(".pkg.Message.string_field", Config::new().string_type("Vec<u8>"));
     /// // `bytes` field configured to `Vec<u8, 4>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.string_field", Config::new().string_type("Vec<u8, $N>").max_bytes(4));
+    /// generator.configure(".pkg.Message.string_field", Config::new().string_type("Vec<u8, $N>").max_bytes(4));
     /// ```
     bytes_type: [deref] Option<String>,
 
@@ -320,13 +320,13 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::IntSize};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // assume that .pkg.Message.map_field is a `map<int32, float>`:
     ///
     /// // `map` field configured to `BTreeMap<i32, f32>` (dynamic-capacity)
-    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("BTreeMap<$K, $V>"));
+    /// generator.configure(".pkg.Message.map_field", Config::new().map_type("BTreeMap<$K, $V>"));
     /// // `map` field configured to `FnvIndexMap<i32, f32, 4>` (fixed-capacity)
-    /// gen.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap<$K, $V, $N>").max_len(4));
+    /// generator.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap<$K, $V, $N>").max_len(4));
     /// ```
     map_type: [deref] Option<String>,
 
@@ -339,16 +339,16 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::OptionalRepr};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // `optional1: T` with bitfield entry (default unboxed behaviour)
-    /// gen.configure(".Message.optional1", Config::new().optional_repr(OptionalRepr::Hazzer));
+    /// generator.configure(".Message.optional1", Config::new().optional_repr(OptionalRepr::Hazzer));
     /// // `optional2: Option<T>`
-    /// gen.configure(".Message.optional2", Config::new().optional_repr(OptionalRepr::Option));
+    /// generator.configure(".Message.optional2", Config::new().optional_repr(OptionalRepr::Option));
     /// // `optional3: Box<T>` with bitfield entry
-    /// gen.configure(".Message.optional3", Config::new().boxed(true)
+    /// generator.configure(".Message.optional3", Config::new().boxed(true)
     ///                                         .optional_repr(OptionalRepr::Hazzer));
     /// // `optional4: Option<Box<T>>` (default boxed behaviour)
-    /// gen.configure(".Message.optional4", Config::new().boxed(true)
+    /// generator.configure(".Message.optional4", Config::new().boxed(true)
     ///                                         .optional_repr(OptionalRepr::Option));
     /// ```
     optional_repr: Option<OptionalRepr>,
@@ -375,14 +375,14 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::CustomField};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // Make the generator generate `foo: crate::CustomHandler` for field `foo`
-    /// gen.configure(
+    /// generator.configure(
     ///     ".Message.foo",
     ///     Config::new().custom_field(CustomField::from_type("crate::CustomHandler"))
     /// );
     /// // Decoding and encoding of `bar` will also be handled by the `CustomHandler` assigned to `foo`
-    /// gen.configure(
+    /// generator.configure(
     ///     ".Message.bar",
     ///     Config::new().custom_field(CustomField::from_delegate("foo"))
     /// );
@@ -397,11 +397,11 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // `super` can't be a field identifier, so we need to rename it
-    /// gen.configure(".Message.super", Config::new().rename_field("super_"));
+    /// generator.configure(".Message.super", Config::new().rename_field("super_"));
     /// // The oneof field will be renamed to `oneof`, and the oneof type will be `Oneof`
-    /// gen.configure(".Message.my_oneof", Config::new().rename_field("oneof"));
+    /// generator.configure(".Message.my_oneof", Config::new().rename_field("oneof"));
     /// ```
     ///
     /// # Note
@@ -427,12 +427,12 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // `Inner` now has a lifetime param
-    /// gen.configure(".Inner.field", Config::new().string_type("MyString<'a>"));
+    /// generator.configure(".Inner.field", Config::new().string_type("MyString<'a>"));
     /// // Make sure inner is declared as `inner: Inner<'a>`
     /// // Will also automatically add the lifetime param to declaration of `Outer`
-    /// gen.configure(".Outer.inner", Config::new().field_lifetime("'a"));
+    /// generator.configure(".Outer.inner", Config::new().field_lifetime("'a"));
     /// ```
     field_lifetime: [deref] Option<String>,
 
@@ -466,11 +466,11 @@ config_decl! {
     /// # Example
     /// ```no_run
     /// # use micropb_gen::{Generator, Config};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // Set 2 type attributes for Message
-    /// gen.configure(".Message", Config::new().type_attributes("#[derive(Eq)] #[MyDerive]"));
+    /// generator.configure(".Message", Config::new().type_attributes("#[derive(Eq)] #[MyDerive]"));
     /// // Unset type attributes for Message
-    /// gen.configure(".Message", Config::new().type_attributes(""));
+    /// generator.configure(".Message", Config::new().type_attributes(""));
     /// ```
     ///
     /// # Special cases
@@ -696,7 +696,7 @@ fn check_missing_len(typestr: &str, n: Option<u32>, len_param: &str) -> Result<(
 
 #[cfg(test)]
 mod tests {
-    use quote::{format_ident, quote, ToTokens};
+    use quote::{ToTokens, format_ident, quote};
 
     use super::*;
 

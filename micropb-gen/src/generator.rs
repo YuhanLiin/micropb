@@ -9,17 +9,18 @@ use std::{
 };
 
 use convert_case::{Case, Casing};
-use location::{add_location_comments, next_comment_node, CommentNode, Comments};
+use location::{CommentNode, Comments, add_location_comments, next_comment_node};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
+    EncodeDecode,
     config::Config,
     descriptor::{DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet},
-    generator::{graph::TypeGraph, r#enum::Enum},
+    generator::{r#enum::Enum, graph::TypeGraph},
     pathtree::{Node, PathTree},
-    split_pkg_name, EncodeDecode,
+    split_pkg_name,
 };
 
 use self::message::Message;
@@ -122,9 +123,9 @@ pub(crate) enum Syntax {
 /// ```no_run
 /// use micropb_gen::{Generator, Config};
 ///
-/// let mut gen = Generator::new();
+/// let mut generator = Generator::new();
 /// // Use container types from `heapless`
-/// gen.use_container_heapless()
+/// generator.use_container_heapless()
 ///     // Set max length of repeated fields in .test.Data to 4
 ///     .configure(".test.Data", Config::new().max_len(4))
 ///     // Wrap .test.Data.value inside a Box
@@ -203,7 +204,7 @@ impl Generator {
             syntax => {
                 return Err(io::Error::other(format!(
                     "Unexpected Protobuf syntax specifier {syntax}"
-                )))
+                )));
             }
         };
         self.pkg_path = fdproto
@@ -251,6 +252,8 @@ impl Generator {
                 self.comment_tree.root.next(&location::path::fdset_enum(i)),
             )?;
         }
+
+        graph.box_cyclic_dependencies();
 
         // Generate Rust code from message and enum types
         let mut out = TokenStream::new();
@@ -539,59 +542,70 @@ mod tests {
 
     #[test]
     fn enum_variant_name() {
-        let mut gen = Generator::new();
+        let mut generator = Generator::new();
         let enum_name = Ident::new("Enum", Span::call_site());
         assert_eq!(
-            gen.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
+            generator
+                .enum_variant_name("ENUM_VALUE", &enum_name)
+                .to_string(),
             "Value"
         );
         assert_eq!(
-            gen.enum_variant_name("ALIEN", &enum_name).to_string(),
+            generator.enum_variant_name("ALIEN", &enum_name).to_string(),
             "Alien"
         );
 
-        gen.retain_enum_prefix = true;
+        generator.retain_enum_prefix = true;
         assert_eq!(
-            gen.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
+            generator
+                .enum_variant_name("ENUM_VALUE", &enum_name)
+                .to_string(),
             "EnumValue"
         );
     }
 
     #[test]
     fn resolve_type_name() {
-        let mut gen = Generator::new();
+        let mut generator = Generator::new();
         // currently in root-level module
-        assert_eq!(gen.resolve_type_name(".Message").to_string(), "Message");
         assert_eq!(
-            gen.resolve_type_name(".package.Message").to_string(),
+            generator.resolve_type_name(".Message").to_string(),
+            "Message"
+        );
+        assert_eq!(
+            generator.resolve_type_name(".package.Message").to_string(),
             quote! { package_::Message }.to_string()
         );
         assert_eq!(
-            gen.resolve_type_name(".package.Message.Inner").to_string(),
+            generator
+                .resolve_type_name(".package.Message.Inner")
+                .to_string(),
             quote! { package_::Message_::Inner }.to_string()
         );
 
-        gen.pkg_path.push("package".to_owned());
-        gen.type_path.borrow_mut().push("Message".to_owned());
+        generator.pkg_path.push("package".to_owned());
+        generator.type_path.borrow_mut().push("Message".to_owned());
         // currently in package::mod_Message module
         assert_eq!(
-            gen.resolve_type_name(".Message").to_string(),
+            generator.resolve_type_name(".Message").to_string(),
             quote! { super::super::Message }.to_string()
         );
         assert_eq!(
-            gen.resolve_type_name(".package.Message").to_string(),
+            generator.resolve_type_name(".package.Message").to_string(),
             quote! { super::Message }.to_string()
         );
         assert_eq!(
-            gen.resolve_type_name(".Message.Item").to_string(),
+            generator.resolve_type_name(".Message.Item").to_string(),
             quote! { super::super::Message_::Item }.to_string()
         );
         assert_eq!(
-            gen.resolve_type_name(".package.Message.Inner").to_string(),
+            generator
+                .resolve_type_name(".package.Message.Inner")
+                .to_string(),
             "Inner"
         );
         assert_eq!(
-            gen.resolve_type_name(".abc.d").to_string(),
+            generator.resolve_type_name(".abc.d").to_string(),
             quote! { super::super::abc_::r#d }.to_string()
         );
     }
@@ -612,10 +626,10 @@ mod tests {
             mod_tree
         };
 
-        let mut gen = Generator::new();
+        let mut generator = Generator::new();
 
         let mut mod_tree = mk_tree();
-        let out = gen.generate_mod_tree(&mut mod_tree.root);
+        let out = generator.generate_mod_tree(&mut mod_tree.root);
         let expected = quote! {
             Root
 
@@ -628,9 +642,9 @@ mod tests {
         };
         assert_eq!(out.to_string(), expected.to_string());
 
-        gen.suffixed_package_names(false);
+        generator.suffixed_package_names(false);
         let mut mod_tree = mk_tree();
-        let out = gen.generate_mod_tree(&mut mod_tree.root);
+        let out = generator.generate_mod_tree(&mut mod_tree.root);
         let expected = quote! {
             Root
 
