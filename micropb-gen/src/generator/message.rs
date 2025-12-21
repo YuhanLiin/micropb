@@ -1001,6 +1001,10 @@ mod tests {
             false,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
         )];
+        expected.hazzer = Some(Hazzer {
+            type_attrs: vec![],
+            field_attrs: vec![],
+        });
 
         assert_eq!(
             Message::from_proto(&proto, &gen, &msg_conf, None)
@@ -1008,21 +1012,5 @@ mod tests {
                 .unwrap(),
             expected
         )
-    }
-
-    #[test]
-    fn hazzer_empty() {
-        let mut gen = Generator::new();
-        gen.syntax = Syntax::Proto3;
-
-        let config = CurrentConfig {
-            node: None,
-            config: Cow::Owned(Box::new(Config::new())),
-        };
-        let proto = test_msg_proto();
-        let msg = Message::from_proto(&proto, &gen, &config, None)
-            .unwrap()
-            .unwrap();
-        assert!(msg.hazzer.is_none());
     }
 }

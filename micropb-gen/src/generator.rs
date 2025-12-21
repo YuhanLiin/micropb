@@ -280,7 +280,9 @@ impl Generator {
         }
     }
 
-    fn generate_enum(&self, e: &Enum) -> TokenStream {
+    fn generate_enum(&self, e: Option<&Enum>) -> TokenStream {
+        // None means enum has been skipped
+        let Some(e) = e else { return quote! {} };
         e.generate_decl()
     }
 
@@ -385,9 +387,12 @@ impl Generator {
     fn generate_msg(
         &self,
         graph: &TypeGraph,
-        msg: &Message,
+        msg: Option<&Message>,
         proto: &DescriptorProto,
     ) -> io::Result<TokenStream> {
+        // None means message has been skipped
+        let Some(msg) = msg else { return Ok(quote! {}) };
+
         let msg_mod = self.generate_msg_mod(graph, msg, proto)?;
         let proto_default = msg.fields.iter().any(|f| f.default.is_some());
 
@@ -451,7 +456,11 @@ impl Generator {
 
     fn fq_proto_name(&self, proto_name: &str) -> String {
         let type_path = self.type_path.borrow();
-        format!("{}.{}", type_path.join("."), proto_name)
+        if type_path.is_empty() {
+            format!(".{proto_name}")
+        } else {
+            format!(".{}.{}", type_path.join("."), proto_name)
+        }
     }
 
     /// Convert variant name to Pascal-case, then strip the enum name from it

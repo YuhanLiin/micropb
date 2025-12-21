@@ -17,15 +17,11 @@ impl<'a> TypeGraph<'a> {
         self.enums.insert(fq_proto_name, e);
     }
 
-    pub(super) fn get_message(&self, fq_proto_name: &str) -> &Message<'a> {
-        self.messages
-            .get(fq_proto_name)
-            .unwrap_or_else(|| panic!("failed to get message with {fq_proto_name}"))
+    pub(super) fn get_message(&self, fq_proto_name: &str) -> Option<&Message<'a>> {
+        self.messages.get(fq_proto_name)
     }
 
-    pub(super) fn get_enum(&self, fq_proto_name: &str) -> &Enum<'a> {
-        self.enums
-            .get(fq_proto_name)
-            .unwrap_or_else(|| panic!("failed to get enum with {fq_proto_name}"))
+    pub(super) fn get_enum(&self, fq_proto_name: &str) -> Option<&Enum<'a>> {
+        self.enums.get(fq_proto_name)
     }
 }
