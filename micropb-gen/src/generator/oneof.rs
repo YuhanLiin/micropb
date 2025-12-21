@@ -192,7 +192,7 @@ pub(crate) enum OneofType<'a> {
     },
 }
 
-impl OneofType<'_> {
+impl<'a> OneofType<'a> {
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match self {
             OneofType::Custom {
@@ -205,6 +205,14 @@ impl OneofType<'_> {
             } => None,
 
             OneofType::Enum { fields, .. } => find_oneof_field_lifetime(fields),
+        }
+    }
+
+    pub(crate) fn fields_mut<'b>(&'b mut self) -> Option<&'b mut [OneofField<'a>]> {
+        if let OneofType::Enum { fields, .. } = self {
+            Some(fields)
+        } else {
+            None
         }
     }
 }

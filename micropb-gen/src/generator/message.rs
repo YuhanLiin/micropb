@@ -34,6 +34,21 @@ pub(crate) enum Position {
     Oneof(usize, usize),
 }
 
+impl Position {
+    pub(crate) fn is_boxed_mut<'a>(&self, msg: &'a mut Message) -> &'a mut bool {
+        match self {
+            Position::Field(i) => &mut msg.fields[*i].boxed,
+            Position::Oneof(oi, fi) => {
+                &mut msg.oneofs[*oi]
+                    .otype
+                    .fields_mut()
+                    .expect("unexpected custom oneof")[*fi]
+                    .boxed
+            }
+        }
+    }
+}
+
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) struct Hazzer {
     type_attrs: Vec<syn::Attribute>,
@@ -54,7 +69,8 @@ pub(crate) struct Message<'a> {
     pub(crate) rust_name: Ident,
     pub(crate) oneofs: Vec<Oneof<'a>>,
     pub(crate) fields: Vec<Field<'a>>,
-    pub(crate) message_fields: Vec<(Position, &'a str)>,
+    /// Used for cycle detection and lifetime propagation
+    pub(crate) message_edges: Vec<(Position, &'a str)>,
     pub(crate) derive_dbg: bool,
     pub(crate) impl_default: bool,
     pub(crate) impl_partial_eq: bool,
@@ -102,7 +118,7 @@ impl<'a> Message<'a> {
 
         let mut synthetic_oneof_idx = vec![];
 
-        let mut message_fields = vec![];
+        let mut message_edges = vec![];
         let mut fields = vec![];
         for (i, f) in proto.field.iter().enumerate() {
             let field_conf = msg_conf.next_conf(&f.name);
@@ -137,7 +153,7 @@ impl<'a> Message<'a> {
                                         .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
                                 {
                                     if let TypeSpec::Message(field_name, _) = field.tspec {
-                                        message_fields.push((
+                                        message_edges.push((
                                             Position::Oneof(idx as usize, oneof_fields.len()),
                                             field_name,
                                         ));
@@ -161,11 +177,17 @@ impl<'a> Message<'a> {
             };
             if let Some(field) = field {
                 if let Some(field_name) = field.message_name() {
-                    message_fields.push((Position::Field(fields.len()), field_name));
+                    message_edges.push((Position::Field(fields.len()), field_name));
                 }
                 fields.push(field);
             }
         }
+
+        // Only include fields that aren't handled externally
+        let message_edges = message_edges
+            .into_iter()
+            .filter(|(_, fq_proto_name)| !gen.extern_paths.contains_key(*fq_proto_name))
+            .collect();
 
         // Remove all oneofs that are empty enums or synthetic oneofs
         let mut oneofs: Vec<_> = oneofs
@@ -236,7 +258,7 @@ impl<'a> Message<'a> {
             rust_name: sanitized_ident(msg_name),
             oneofs,
             fields,
-            message_fields,
+            message_edges,
             derive_dbg: msg_conf.derive_dbg(),
             impl_default: msg_conf.impl_default(),
             impl_partial_eq: msg_conf.derive_partial_eq(),
@@ -704,13 +726,13 @@ impl<'a> Message<'a> {
 }
 
 #[cfg(test)]
-fn make_test_msg(name: &str) -> Message<'_> {
+pub(crate) fn make_test_msg(name: &str) -> Message<'_> {
     Message {
         name,
         rust_name: Ident::new(name, Span::call_site()),
         oneofs: vec![],
         fields: vec![],
-        message_fields: vec![],
+        message_edges: vec![],
         derive_dbg: true,
         impl_default: true,
         impl_partial_eq: true,
@@ -1005,6 +1027,62 @@ mod tests {
             type_attrs: vec![],
             field_attrs: vec![],
         });
+
+        assert_eq!(
+            Message::from_proto(&proto, &gen, &msg_conf, None)
+                .unwrap()
+                .unwrap(),
+            expected
+        )
+    }
+
+    #[test]
+    fn message_fields() {
+        let mut proto = DescriptorProto::default();
+        proto.set_name("Message".to_owned());
+        proto.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(1);
+            f.set_name("internal".to_owned());
+            f.set_type(Type::Message);
+            f.set_type_name(".Internal".to_owned());
+            f
+        });
+        proto.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(2);
+            f.set_name("external".to_owned());
+            f.set_type(Type::Message);
+            f.set_type_name(".External".to_owned());
+            f
+        });
+
+        let mut gen = Generator::new();
+        gen.extern_type_path(".External", "ex::Ternal");
+
+        let config = Box::new(Config::new().optional_repr(OptionalRepr::Option));
+        let msg_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+
+        let mut expected = make_test_msg("Message");
+        expected.fields = vec![
+            make_test_field(
+                1,
+                "internal",
+                false,
+                FieldType::Optional(TypeSpec::Message(".Internal", None), OptionalRepr::Option),
+            ),
+            make_test_field(
+                2,
+                "external",
+                false,
+                FieldType::Optional(TypeSpec::Message(".External", None), OptionalRepr::Option),
+            ),
+        ];
+        // Only the first field should be an edge, since the second field is external
+        expected.message_edges = vec![(Position::Field(0), ".Internal")];
 
         assert_eq!(
             Message::from_proto(&proto, &gen, &msg_conf, None)
