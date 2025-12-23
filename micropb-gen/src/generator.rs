@@ -187,8 +187,7 @@ impl Generator {
         }
 
         // Resolve the type graph
-        graph.box_cyclic_dependencies();
-        graph.max_size_cyclic_dependencies();
+        graph.resolve_all();
 
         // Generate Rust code
         let mut mod_tree = PathTree::new(TokenStream::new());

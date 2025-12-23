@@ -278,7 +278,7 @@ impl<'a> TypeGraph<'a> {
     }
 
     /// Detect cycles in the message graph via DFS and break those cycles by boxing fields.
-    pub(crate) fn box_cyclic_dependencies(&mut self) {
+    fn box_cyclic_dependencies(&mut self) {
         let mut visited = BTreeSet::new();
         let fields: Vec<_> = self.messages.keys().cloned().collect();
 
@@ -294,7 +294,7 @@ impl<'a> TypeGraph<'a> {
     }
 
     /// Detect cycles in the message graph via DFS and break those cycles by overriding max size
-    pub(crate) fn max_size_cyclic_dependencies(&mut self) {
+    fn max_size_cyclic_dependencies(&mut self) {
         let mut visited = BTreeSet::new();
         let fields: Vec<_> = self.messages.keys().cloned().collect();
 
@@ -309,6 +309,22 @@ impl<'a> TypeGraph<'a> {
                 |max_size_override| *max_size_override = Some(None),
             );
         }
+    }
+
+    pub(crate) fn resolve_all(&mut self) {
+        // Generate parent edges for all messages
+        self.populate_parents();
+
+        // Reverse propagation
+        self.propagate_lifetimes();
+        self.propagate_no_dbg();
+        self.propagate_no_clone();
+        self.propagate_no_default();
+        self.propagate_no_partial_eq();
+
+        // Cyclic dependencies
+        self.box_cyclic_dependencies();
+        self.max_size_cyclic_dependencies();
     }
 }
 
