@@ -219,15 +219,18 @@ impl<'a> TypeGraph<'a> {
         );
     }
 
-    fn propagate_no_default(&mut self) {
-        self.propagate_bool_false(
-            |msg| msg.impl_default,
-            // Oneof will always implement default
-            |__| true,
-            |msg, b| msg.impl_default = b,
-            |_, _| {},
-        );
-    }
+    // Reverse propagating no-default for repeated and map fields is incorrect, because those
+    // fields don't need `T: Default` to be Default. This is a bothersome corner case, so I'll just
+    // leave it unimplemented
+    //fn propagate_no_default(&mut self) {
+    //self.propagate_bool_false(
+    //|msg| msg.impl_default,
+    //// Oneof will always implement default
+    //|__| true,
+    //|msg, b| msg.impl_default = b,
+    //|_, _| {},
+    //);
+    //}
 
     /// Forward DFS that performs conditional cycle detection. Does not care about oneofs.
     fn cycle_breaker_dfs<'b, T>(
@@ -319,8 +322,8 @@ impl<'a> TypeGraph<'a> {
         self.propagate_lifetimes();
         self.propagate_no_dbg();
         self.propagate_no_clone();
-        self.propagate_no_default();
         self.propagate_no_partial_eq();
+        //self.propagate_no_default();
 
         // Cyclic dependencies
         self.box_cyclic_dependencies();
