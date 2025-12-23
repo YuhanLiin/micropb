@@ -218,7 +218,7 @@ impl<'a> OneofType<'a> {
         }
     }
 
-    pub(crate) fn fields_mut<'b>(&'b mut self) -> Option<&'b mut [OneofField<'a>]> {
+    pub(crate) fn fields_mut<'b>(&'b mut self) -> Option<&'b mut Vec<OneofField<'a>>> {
         if let OneofType::Enum { fields, .. } = self {
             Some(fields)
         } else {
@@ -492,6 +492,27 @@ pub(crate) fn make_test_oneof_field<'a>(
         boxed,
         max_size_override: None,
         attrs: vec![],
+        comments: None,
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn make_test_oneof<'a>(name: &'a str, boxed: bool) -> Oneof<'a> {
+    Oneof {
+        name,
+        san_rust_name: Ident::new_raw(name, Span::call_site()),
+        boxed,
+        otype: OneofType::Enum {
+            type_name: Ident::new(&name.to_case(Case::Pascal), Span::call_site()),
+            fields: vec![],
+        },
+        field_attrs: vec![],
+        type_attrs: vec![],
+        derive_dbg: true,
+        derive_clone: true,
+        derive_partial_eq: true,
+        lifetime: None,
+        idx: 0, // Not used at all
         comments: None,
     }
 }

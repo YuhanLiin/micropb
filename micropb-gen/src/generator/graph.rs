@@ -358,6 +358,7 @@ mod tests {
         generator::{
             field::{FieldType, make_test_field},
             message::make_test_msg,
+            oneof::{make_test_oneof, make_test_oneof_field},
             type_spec::TypeSpec,
         },
     };
@@ -384,8 +385,31 @@ mod tests {
         msg.fields.push(field);
     }
 
+    fn add_oneof_field<'a>(
+        msg: &mut Message<'a>,
+        oneof_idx: usize,
+        num: u32,
+        fname: &'a str,
+        type_name: &'a str,
+        boxed: bool,
+        max_size_override: Option<Option<usize>>,
+    ) {
+        let oneof_fields = msg.oneofs[0].otype.fields_mut().unwrap();
+        msg.message_edges
+            .push((Position::Oneof(oneof_idx, oneof_fields.len()), type_name));
+        let mut field =
+            make_test_oneof_field(num, fname, boxed, TypeSpec::Message(type_name, None));
+        field.max_size_override = max_size_override;
+        oneof_fields.push(field);
+    }
+
     #[test]
-    fn box_cyclic_dependencies() {
+    fn cyclic_dependencies() {
+        //    <- G <--
+        //   /       |
+        //  A -----> B     S <-> S
+        //   \       |
+        //    <- O <--
         let mut alpha = make_test_msg("Alpha");
         add_msg_field(&mut alpha, 1, "beta", ".pkg.Beta", false, None);
 
@@ -413,22 +437,109 @@ mod tests {
         graph.box_cyclic_dependencies();
         graph.max_size_cyclic_dependencies();
 
+        // Verification
         let alpha = graph.get_message(".pkg.Alpha").unwrap();
         assert!(!alpha.fields[0].boxed);
         assert_eq!(alpha.fields[0].max_size_override, None);
+
         let beta = graph.get_message(".pkg.Beta").unwrap();
         assert!(!beta.fields[0].boxed);
         assert_eq!(beta.fields[0].max_size_override, None);
         assert!(beta.fields[1].boxed);
         assert_eq!(beta.fields[1].max_size_override, Some(None));
+
         let gamma = graph.get_message(".pkg.Gamma").unwrap();
         assert!(gamma.fields[0].boxed); // Gamma.alpha should have been boxed
         assert_eq!(gamma.fields[0].max_size_override, Some(None));
+
         let omega = graph.get_message(".pkg.Omega").unwrap();
         assert!(!omega.fields[0].boxed); // Omega.alpha should stay unboxed, since Beta.omega was already boxed
         assert_eq!(omega.fields[0].max_size_override, None);
+
         let sigma = graph.get_message(".pkg.Sigma").unwrap();
         assert!(sigma.fields[0].boxed); // Sigma.sigma should have been boxed
         assert_eq!(sigma.fields[0].max_size_override, Some(None));
+    }
+
+    #[test]
+    fn reverse_propagate() {
+        //     <---------------------
+        //    /        --0           \
+        //   /        /               \
+        //  A -----> B --1--> G -----> O
+        //   \               /  \
+        //    -------------->    ----> T
+        let mut alpha = make_test_msg("Alpha");
+        alpha.derive_dbg = false;
+        add_msg_field(&mut alpha, 1, "beta", ".pkg.Beta", false, None);
+        add_msg_field(&mut alpha, 2, "gamma", ".pkg.Gamma", false, None);
+
+        let mut beta = make_test_msg("Beta");
+        add_msg_field(&mut beta, 1, "gamma", ".pkg.Gamma", false, None);
+        beta.oneofs.push(make_test_oneof("empty", false));
+        // Create oneof with a single field
+        beta.oneofs.push(make_test_oneof("omega", false));
+        add_oneof_field(&mut beta, 1, 2, "omega", ".pkg.Omega", false, None);
+
+        let mut gamma = make_test_msg("Gamma");
+        gamma.derive_dbg = false;
+        add_msg_field(&mut gamma, 1, "theta", ".pkg.Theta", false, None);
+
+        let mut omega = make_test_msg("Omega");
+        add_msg_field(&mut omega, 1, "alpha", ".pkg.Alpha", false, None);
+
+        let theta = make_test_msg("Theta");
+
+        let mut graph = TypeGraph::default();
+        graph.add_message(".pkg.Alpha".to_owned(), alpha);
+        graph.add_message(".pkg.Beta".to_owned(), beta);
+        graph.add_message(".pkg.Gamma".to_owned(), gamma);
+        graph.add_message(".pkg.Omega".to_owned(), omega);
+        graph.add_message(".pkg.Theta".to_owned(), theta);
+
+        graph.populate_parents();
+        graph.propagate_no_dbg();
+
+        // Verification
+        // Expect all entities to have no debug except for Theta and Beta.oneofs[0]
+        let alpha = graph.get_message(".pkg.Alpha").unwrap();
+        assert!(!alpha.derive_dbg);
+        assert_eq!(
+            alpha.parent_edges,
+            vec![(Position::Field(0), ".pkg.Omega".to_owned())]
+        );
+
+        let beta = graph.get_message(".pkg.Beta").unwrap();
+        assert!(!beta.derive_dbg);
+        assert_eq!(
+            beta.parent_edges,
+            vec![(Position::Field(0), ".pkg.Alpha".to_owned())]
+        );
+        assert!(beta.oneofs[0].derive_dbg);
+        assert!(!beta.oneofs[1].derive_dbg);
+
+        let gamma = graph.get_message(".pkg.Gamma").unwrap();
+        assert!(!gamma.derive_dbg);
+        assert_eq!(
+            gamma.parent_edges,
+            vec![
+                (Position::Field(1), ".pkg.Alpha".to_owned()),
+                (Position::Field(0), ".pkg.Beta".to_owned())
+            ]
+        );
+
+        let omega = graph.get_message(".pkg.Omega").unwrap();
+        assert!(!omega.derive_dbg);
+        assert_eq!(
+            omega.parent_edges,
+            vec![(Position::Oneof(1, 0), ".pkg.Beta".to_owned()),]
+        );
+
+        let theta = graph.get_message(".pkg.Theta").unwrap();
+        assert!(theta.derive_dbg);
+        assert_eq!(
+            theta.parent_edges,
+            vec![(Position::Field(0), ".pkg.Gamma".to_owned())]
+        );
     }
 }
