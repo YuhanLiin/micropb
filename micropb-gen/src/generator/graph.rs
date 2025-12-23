@@ -231,18 +231,18 @@ impl<'a> TypeGraph<'a> {
     //}
 
     /// Forward DFS that performs conditional cycle detection. Does not care about oneofs.
-    fn cycle_breaker_dfs<'b, T>(
+    fn forward_dfs<'b>(
         &mut self,
-        start: &'b str,
-        visited: &mut BTreeSet<&'b str>,
-        get_property: impl for<'p> Fn(&Position, &'p mut Message) -> Option<&'p mut T>,
-        ignore_edge: impl Fn(&T) -> bool,
-        break_cycle: impl Fn(&mut T),
+        start: &'b [String],
+        pursue_edge: impl Fn(&Position, &mut Message) -> bool,
+        break_cycle: impl Fn(&Position, &mut Message),
+        msg_finish: impl Fn(&mut Message),
     ) where
         'a: 'b,
     {
-        let mut edges = vec![DfsElem::Edge(start)];
+        let mut edges: Vec<_> = start.into_iter().map(|m| DfsElem::Edge(m)).collect();
         let mut ancestors = BTreeSet::new();
+        let mut visited = BTreeSet::new();
 
         while let Some(elem) = edges.pop() {
             match elem {
@@ -250,28 +250,29 @@ impl<'a> TypeGraph<'a> {
                     if visited.contains(cur_field) {
                         continue;
                     }
-                    ancestors.insert(cur_field);
-                    edges.push(DfsElem::NodeEnd(cur_field));
                     visited.insert(cur_field);
 
                     let Some(cur_msg) = self.messages.get_mut(cur_field) else {
                         continue;
                     };
+
+                    ancestors.insert(cur_field);
+                    edges.push(DfsElem::NodeEnd(cur_field));
+
                     for i in 0..cur_msg.message_edges.len() {
                         let (pos, next_field) = cur_msg.message_edges[i];
-                        let prop = get_property(&pos, cur_msg);
-                        if let Some(prop) = prop
-                            && !ignore_edge(prop)
-                        {
+                        if pursue_edge(&pos, cur_msg) {
                             if ancestors.contains(next_field) {
-                                break_cycle(prop);
+                                break_cycle(&pos, cur_msg);
                             } else {
                                 edges.push(DfsElem::Edge(next_field));
                             }
                         }
                     }
                 }
+
                 DfsElem::NodeEnd(field) => {
+                    msg_finish(self.messages.get_mut(field).unwrap());
                     ancestors.remove(field);
                 }
             }
@@ -280,36 +281,29 @@ impl<'a> TypeGraph<'a> {
 
     /// Detect cycles in the message graph via DFS and break those cycles by boxing fields.
     fn box_cyclic_dependencies(&mut self) {
-        let mut visited = BTreeSet::new();
-        let fields: Vec<_> = self.messages.keys().cloned().collect();
+        let messages: Vec<_> = self.messages.keys().cloned().collect();
 
-        for field in &fields {
-            self.cycle_breaker_dfs(
-                field,
-                &mut visited,
-                |pos, msg| pos.is_boxed_mut(msg),
-                |boxed| *boxed,
-                |boxed| *boxed = true,
-            );
-        }
+        self.forward_dfs(
+            &messages,
+            |pos, msg| pos.is_boxed_mut(msg) == Some(&mut false),
+            |pos, msg| *pos.is_boxed_mut(msg).unwrap() = true,
+            |_| {},
+        );
     }
 
     /// Detect cycles in the message graph via DFS and break those cycles by overriding max size
     fn max_size_cyclic_dependencies(&mut self) {
-        let mut visited = BTreeSet::new();
-        let fields: Vec<_> = self.messages.keys().cloned().collect();
+        let messages: Vec<_> = self.messages.keys().cloned().collect();
 
-        for field in &fields {
-            self.cycle_breaker_dfs(
-                field,
-                &mut visited,
-                |pos, msg| pos.max_size_override_mut(msg),
-                |max_size_override| max_size_override.is_some(),
-                // Break the cycle by setting MAX_SIZE to None, resulting in the MAX_SIZE of all
-                // messages in the cycle to become None
-                |max_size_override| *max_size_override = Some(None),
-            );
-        }
+        self.forward_dfs(
+            &messages,
+            // Pursue fields where max size isn't overridden
+            |pos, msg| matches!(pos.max_size_override_mut(msg), Some(None)),
+            // Break the cycle by setting MAX_SIZE to None, resulting in the MAX_SIZE of all
+            // messages in the cycle to become None
+            |pos, msg| *pos.max_size_override_mut(msg).unwrap() = Some(None),
+            |_| {},
+        );
     }
 
     pub(crate) fn resolve_all(&mut self) {
