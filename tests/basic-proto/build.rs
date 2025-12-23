@@ -384,7 +384,16 @@ fn static_lifetime_fields() {
 fn recursive() {
     let mut generator = Generator::new();
     generator.use_container_std();
-    generator.configure(".", Config::new().optional_repr(OptionalRepr::Option));
+    generator
+        .configure(".", Config::new().optional_repr(OptionalRepr::Option))
+        // Should remove Debug, Clone, and PartialEq from both the message and the oneof types
+        .configure(
+            ".Recursive",
+            Config::new()
+                .no_debug_impl(true)
+                .no_clone_impl(true)
+                .no_partial_eq_impl(true),
+        );
     // Should work without any extra configuration
     generator
         .compile_protos(
