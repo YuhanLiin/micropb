@@ -1,8 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::generator::{
-    r#enum::Enum, field::FieldType, message::Message, oneof::Oneof, type_spec::TypeSpec,
-};
+use crate::generator::{r#enum::Enum, field::FieldType, message::Message, oneof::Oneof};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Clone, Copy)]
@@ -381,7 +379,7 @@ mod tests {
             num,
             fname,
             boxed,
-            FieldType::Optional(TypeSpec::Message(type_name, None), OptionalRepr::Option),
+            FieldType::Optional(TypeSpec::Message(type_name), OptionalRepr::Option),
         );
         field.max_size_override = max_size_override;
         msg.fields.push(field);
@@ -399,8 +397,7 @@ mod tests {
         let oneof_fields = msg.oneofs[0].otype.fields_mut().unwrap();
         msg.message_edges
             .push((Position::Oneof(oneof_idx, oneof_fields.len()), type_name));
-        let mut field =
-            make_test_oneof_field(num, fname, boxed, TypeSpec::Message(type_name, None));
+        let mut field = make_test_oneof_field(num, fname, boxed, TypeSpec::Message(type_name));
         field.max_size_override = max_size_override;
         oneof_fields.push(field);
     }

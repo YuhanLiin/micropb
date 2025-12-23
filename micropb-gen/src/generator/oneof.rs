@@ -177,11 +177,6 @@ impl<'a> OneofField<'a> {
     }
 }
 
-fn find_oneof_field_lifetime<'a, 'b: 'a>(fields: &'b [OneofField<'a>]) -> Option<&'a Lifetime> {
-    // Only need to find the first lifetime
-    fields.iter().find_map(|of| of.tspec.find_lifetime())
-}
-
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum OneofType<'a> {
     Enum {
@@ -201,12 +196,13 @@ impl<'a> OneofType<'a> {
                 field: CustomField::Type(ty),
                 ..
             } => find_lifetime_from_type(ty),
+
             OneofType::Custom {
                 field: CustomField::Delegate(..),
                 ..
             } => None,
 
-            OneofType::Enum { fields, .. } => find_oneof_field_lifetime(fields),
+            OneofType::Enum { fields, .. } => fields.iter().find_map(|of| of.tspec.find_lifetime()),
         }
     }
 

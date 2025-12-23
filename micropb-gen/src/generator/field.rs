@@ -78,7 +78,7 @@ impl<'a> Field<'a> {
             FieldType::Repeated { typ, .. } => typ,
             FieldType::Custom(_) => return None,
         };
-        if let TypeSpec::Message(name, _) = typ {
+        if let TypeSpec::Message(name) = typ {
             Some(name)
         } else {
             None

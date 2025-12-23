@@ -133,7 +133,7 @@ impl<'a> Message<'a> {
                                         |e| field_error(&generator.pkg, msg_name, &f.name, &e),
                                     )?
                                 {
-                                    if let TypeSpec::Message(field_name, _) = field.tspec {
+                                    if let TypeSpec::Message(field_name) = field.tspec {
                                         message_edges.push((
                                             Position::Oneof(idx as usize, oneof_fields.len()),
                                             field_name,
@@ -1067,13 +1067,13 @@ mod tests {
                 1,
                 "internal",
                 false,
-                FieldType::Optional(TypeSpec::Message(".Internal", None), OptionalRepr::Option),
+                FieldType::Optional(TypeSpec::Message(".Internal"), OptionalRepr::Option),
             ),
             make_test_field(
                 2,
                 "external",
                 false,
-                FieldType::Optional(TypeSpec::Message(".External", None), OptionalRepr::Option),
+                FieldType::Optional(TypeSpec::Message(".External"), OptionalRepr::Option),
             ),
         ];
         // Only the first field should be an edge, since the second field is external

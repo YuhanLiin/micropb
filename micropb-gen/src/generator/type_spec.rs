@@ -154,7 +154,7 @@ pub(crate) fn find_lifetime_from_path(tpath: &syn::Path) -> Option<&Lifetime> {
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum TypeSpec<'a> {
-    Message(&'a str, Option<syn::Lifetime>),
+    Message(&'a str),
     Enum(&'a str),
     Float,
     Double,
@@ -174,7 +174,6 @@ pub(crate) enum TypeSpec<'a> {
 impl<'a> TypeSpec<'a> {
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match self {
-            TypeSpec::Message(_, lifetime) => lifetime.as_ref().and_then(filter_lifetime),
             TypeSpec::Bytes { type_path, .. } | TypeSpec::String { type_path, .. } => {
                 find_lifetime_from_type(type_path)
             }
@@ -243,7 +242,7 @@ impl<'a> TypeSpec<'a> {
                 ),
                 max_bytes: conf.max_bytes,
             },
-            Type::Message => TypeSpec::Message(&proto.type_name, conf.field_lifetime_parsed()?),
+            Type::Message => TypeSpec::Message(&proto.type_name),
             Type::Enum => TypeSpec::Enum(&proto.type_name),
             Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_size.unwrap_or(IntSize::S32)),
             Type::Int64 => TypeSpec::Int(PbInt::Int64, conf.int_size.unwrap_or(IntSize::S64)),
@@ -272,9 +271,9 @@ impl<'a> TypeSpec<'a> {
             TypeSpec::String { type_path, .. } => quote! { #type_path },
             TypeSpec::Bytes { type_path, .. } => quote! { #type_path },
 
-            TypeSpec::Message(tname, lifetime) => {
+            TypeSpec::Message(tname) => {
                 let rust_type = generator.resolve_type_name(tname);
-                quote! { #rust_type<#lifetime> }
+                quote! { #rust_type }
             }
             TypeSpec::Enum(tname) => {
                 let rust_type = generator.resolve_type_name(tname);
@@ -285,7 +284,7 @@ impl<'a> TypeSpec<'a> {
 
     pub(crate) fn generate_max_size(&self, generator: &Generator) -> TokenStream {
         match self {
-            TypeSpec::Message(tname, _) => {
+            TypeSpec::Message(tname) => {
                 let rust_type = generator.resolve_type_name(tname);
                 return quote! { ::micropb::const_map!(<#rust_type as ::micropb::MessageEncode>::MAX_SIZE, |size| ::micropb::size::sizeof_len_record(size)) };
             }
@@ -718,7 +717,7 @@ mod tests {
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Message, ".msg.Message"), &type_conf).unwrap(),
-            TypeSpec::Message(".msg.Message", None)
+            TypeSpec::Message(".msg.Message")
         );
         assert_eq!(
             TypeSpec::from_proto(&field_proto(Type::Enum, ".Enum"), &type_conf).unwrap(),
