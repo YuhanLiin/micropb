@@ -215,15 +215,13 @@ fn container_alloc() {
 
 fn container_cow() {
     let mut generator = Generator::new();
-    generator
-        .configure(
-            ".",
-            Config::new()
-                .string_type("::alloc::borrow::Cow<'a, str>")
-                .vec_type("::alloc::borrow::Cow<'a, [$T]>")
-                .bytes_type("::alloc::borrow::Cow<'a, [u8]>"),
-        )
-        .configure(".List.list", Config::new().field_lifetime("'a"));
+    generator.configure(
+        ".",
+        Config::new()
+            .string_type("::alloc::borrow::Cow<'a, str>")
+            .vec_type("::alloc::borrow::Cow<'a, [$T]>")
+            .bytes_type("::alloc::borrow::Cow<'a, [u8]>"),
+    );
 
     generator
         .compile_protos(
@@ -331,29 +329,23 @@ fn lifetime_fields() {
     let mut generator = Generator::new();
     generator.encode_decode(EncodeDecode::EncodeOnly);
     generator.configure(".", Config::new().no_debug_impl(true).no_default_impl(true));
-    // InnerMsg has a lifetime param
+    // InnerMsg has a lifetime param, so we expect it to propagate everywhere
     generator.configure(
         ".nested.Nested.InnerMsg",
         Config::new().unknown_handler("Option<crate::lifetime_fields::RefField<'a>>"),
     );
-    // So the inner_msg field must have a lifetime
-    generator.configure(
-        ".nested.Nested.inner_msg",
-        Config::new().field_lifetime("'a"),
-    );
     generator.configure(".nested.Nested.basic", Config::new().skip(true));
 
     // Configurations for collections.proto
-    generator
-        .configure(
-            ".",
-            Config::new()
-                .string_type("&'a str")
-                .bytes_type("&'a [u8]")
-                .vec_type("&'a [$T]")
-                .map_type("&'a std::collections::HashMap<$K, $V>"),
-        )
-        .configure(".List.list", Config::new().field_lifetime("'a"));
+    // The lifetimes should propagate to the correct types
+    generator.configure(
+        ".",
+        Config::new()
+            .string_type("&'a str")
+            .bytes_type("&'a [u8]")
+            .vec_type("&'a [$T]")
+            .map_type("&'a std::collections::HashMap<$K, $V>"),
+    );
 
     generator
         .compile_protos(
@@ -380,10 +372,6 @@ fn static_lifetime_fields() {
             .vec_type("&'static [$T]")
             .map_type("&'static std::collections::HashMap<$K, $V>"),
     );
-    // Use non-static lifetime for Data.b, so Data should have a lifetime param
-    generator.configure(".Data.b", Config::new().bytes_type("&'a [u8]"));
-    // Force List.list to use Data<'static>, so List shouldn't have a lifetime param
-    generator.configure(".List.list", Config::new().field_lifetime("'static"));
 
     generator
         .compile_protos(
