@@ -164,6 +164,11 @@ impl<'proto> Message<'proto> {
                 fields.push(field);
             }
         }
+        // Only include fields that aren't handled externally
+        let message_edges = message_edges
+            .into_iter()
+            .filter(|(_, fq_proto_name)| !ctx.params.extern_paths.contains_key(*fq_proto_name))
+            .collect();
 
         // Remove all oneofs that are empty enums or synthetic oneofs
         let mut oneofs: Vec<_> = oneofs
@@ -750,7 +755,7 @@ mod tests {
             Syntax,
             field::{FieldType, make_test_field},
             make_ctx,
-            oneof::make_test_oneof_field,
+            oneof::{make_test_oneof, make_test_oneof_field},
             type_spec::{PbInt, TypeSpec},
         },
         pathtree::Node,
@@ -1084,5 +1089,67 @@ mod tests {
                 .unwrap(),
             expected
         )
+    }
+
+    #[test]
+    fn is_copy() {
+        let ctx = make_ctx();
+
+        // Not copy (boxed oneof)
+        let mut msg = make_test_msg("Msg");
+        msg.oneofs.push(make_test_oneof("empty", true));
+        assert!(!msg.is_copy(&ctx));
+
+        // Not copy (boxed field)
+        let mut msg = make_test_msg("Msg");
+        msg.fields.push(make_test_field(
+            1,
+            "good",
+            false,
+            FieldType::Single(TypeSpec::Bool),
+        ));
+        msg.fields.push(make_test_field(
+            2,
+            "bad",
+            true,
+            FieldType::Single(TypeSpec::Bool),
+        ));
+        assert!(!msg.is_copy(&ctx));
+
+        // Not copy (boxed oneof field)
+        let mut msg = make_test_msg("Msg");
+        msg.oneofs.push(make_test_oneof("content", false));
+        msg.oneofs[0]
+            .otype
+            .fields_mut()
+            .unwrap()
+            .push(make_test_oneof_field(1, "bad", true, TypeSpec::Bool));
+        assert!(!msg.is_copy(&ctx));
+
+        // Not copy (custom field)
+        let mut msg = make_test_msg("Msg");
+        msg.fields.push(make_test_field(
+            1,
+            "custom",
+            false,
+            FieldType::Custom(CustomField::Type(syn::parse_str("Custom").unwrap())),
+        ));
+        assert!(!msg.is_copy(&ctx));
+
+        // Copy
+        let mut msg = make_test_msg("Msg");
+        msg.oneofs.push(make_test_oneof("content", false));
+        msg.oneofs[0]
+            .otype
+            .fields_mut()
+            .unwrap()
+            .push(make_test_oneof_field(1, "good", false, TypeSpec::Bool));
+        msg.fields.push(make_test_field(
+            2,
+            "e",
+            false,
+            FieldType::Single(TypeSpec::Enum(".Enum")),
+        ));
+        assert!(msg.is_copy(&ctx));
     }
 }

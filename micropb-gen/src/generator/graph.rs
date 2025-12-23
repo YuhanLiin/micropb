@@ -569,4 +569,39 @@ mod tests {
         assert!(!sigma.oneofs[0].derive_dbg);
         assert_eq!(sigma.parent_edges, vec![])
     }
+
+    #[test]
+    fn copy_propagate() {
+        let mut alpha = make_test_msg("Alpha");
+        add_msg_field(&mut alpha, 1, "beta", ".pkg.Beta", true, None);
+        add_msg_field(&mut alpha, 2, "gamma", ".pkg.Gamma", false, None);
+
+        let beta = make_test_msg("Beta");
+
+        let mut gamma = make_test_msg("Gamma");
+        add_msg_field(&mut gamma, 2, "omega", ".pkg.Omega", false, None);
+
+        let omega = make_test_msg("Omega");
+
+        let mut ctx = make_ctx();
+        ctx.graph.add_message(".pkg.Alpha".to_owned(), alpha);
+        ctx.graph.add_message(".pkg.Beta".to_owned(), beta);
+        ctx.graph.add_message(".pkg.Gamma".to_owned(), gamma);
+        ctx.graph.add_message(".pkg.Omega".to_owned(), omega);
+
+        ctx.propagate_derive_copy();
+
+        // Verification
+        let alpha = ctx.graph.get_message(".pkg.Alpha").unwrap();
+        assert!(!alpha.is_copy);
+
+        let beta = ctx.graph.get_message(".pkg.Beta").unwrap();
+        assert!(beta.is_copy);
+
+        let gamma = ctx.graph.get_message(".pkg.Gamma").unwrap();
+        assert!(gamma.is_copy);
+
+        let omega = ctx.graph.get_message(".pkg.Omega").unwrap();
+        assert!(omega.is_copy);
+    }
 }
