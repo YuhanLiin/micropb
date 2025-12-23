@@ -85,17 +85,6 @@ impl<'a> Field<'a> {
         }
     }
 
-    /// Return two types to account for key and value types for map fields
-    pub(crate) fn type_specs(&self) -> (Option<&TypeSpec>, Option<&TypeSpec>) {
-        match &self.ftype {
-            FieldType::Map { key, val, .. } => (Some(key), Some(val)),
-            FieldType::Single(type_spec) => (Some(type_spec), None),
-            FieldType::Optional(type_spec, _) => (Some(type_spec), None),
-            FieldType::Repeated { typ, .. } => (Some(typ), None),
-            FieldType::Custom(_) => (None, None),
-        }
-    }
-
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match &self.ftype {
             FieldType::Custom(CustomField::Type(ty)) => find_lifetime_from_type(ty),

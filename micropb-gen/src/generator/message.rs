@@ -255,15 +255,6 @@ impl<'a> Message<'a> {
         }))
     }
 
-    pub(crate) fn oneof_fields(&self) -> impl Iterator<Item = &OneofField> {
-        self.oneofs.iter().flat_map(|o| {
-            o.otype
-                .fields()
-                .into_iter()
-                .flat_map(|fields| fields.into_iter())
-        })
-    }
-
     pub(crate) fn generate_hazzer_decl(&self) -> Option<TokenStream> {
         let Some(Hazzer { type_attrs, .. }) = &self.hazzer else {
             return None;

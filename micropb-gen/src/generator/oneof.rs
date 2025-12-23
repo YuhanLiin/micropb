@@ -206,14 +206,6 @@ impl<'a> OneofType<'a> {
         }
     }
 
-    pub(crate) fn fields<'b>(&'b self) -> Option<&'b [OneofField<'a>]> {
-        if let OneofType::Enum { fields, .. } = self {
-            Some(fields)
-        } else {
-            None
-        }
-    }
-
     pub(crate) fn fields_mut<'b>(&'b mut self) -> Option<&'b mut Vec<OneofField<'a>>> {
         if let OneofType::Enum { fields, .. } = self {
             Some(fields)
