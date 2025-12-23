@@ -355,11 +355,15 @@ impl<'proto> Context<'proto> {
         msg_conf: CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
     ) -> io::Result<()> {
+        let fq_name = self.fq_proto_name(&proto.name);
+        if self.params.extern_paths.contains_key(&fq_name) {
+            return Ok(());
+        }
         let Some(msg) = Message::from_proto(proto, self, &msg_conf, comment_node)? else {
             return Ok(());
         };
         let msg_name = msg.name;
-        self.graph.add_message(self.fq_proto_name(msg_name), msg);
+        self.graph.add_message(fq_name, msg);
 
         self.type_path.borrow_mut().push(msg_name.to_owned());
         for (i, m) in proto
@@ -392,10 +396,14 @@ impl<'proto> Context<'proto> {
         enum_conf: CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
     ) -> io::Result<()> {
+        let fq_name = self.fq_proto_name(&proto.name);
+        if self.params.extern_paths.contains_key(&fq_name) {
+            return Ok(());
+        }
         let Some(e) = Enum::from_proto(proto, self, &enum_conf, comment_node)? else {
             return Ok(());
         };
-        self.graph.add_enum(self.fq_proto_name(e.name), e);
+        self.graph.add_enum(fq_name, e);
         Ok(())
     }
 

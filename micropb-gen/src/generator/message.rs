@@ -165,12 +165,6 @@ impl<'proto> Message<'proto> {
             }
         }
 
-        // Only include fields that aren't handled externally
-        let message_edges = message_edges
-            .into_iter()
-            .filter(|(_, fq_proto_name)| !ctx.params.extern_paths.contains_key(*fq_proto_name))
-            .collect();
-
         // Remove all oneofs that are empty enums or synthetic oneofs
         let mut oneofs: Vec<_> = oneofs
             .into_iter()

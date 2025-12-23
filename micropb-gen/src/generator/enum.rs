@@ -19,8 +19,6 @@ pub(crate) struct Variant<'proto> {
 }
 
 pub(crate) struct Enum<'proto> {
-    /// Protobuf name
-    pub(crate) name: &'proto str,
     /// Sanitized Rust ident, used for struct name
     pub(crate) rust_name: Ident,
     pub(crate) int_type: IntSize,
@@ -72,7 +70,6 @@ impl<'proto> Enum<'proto> {
             .collect();
 
         Ok(Some(Self {
-            name,
             rust_name,
             int_type,
             signed,
