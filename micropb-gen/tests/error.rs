@@ -9,7 +9,7 @@ fn warn_panic(args: Arguments) {
     panic!("Unexpected warning: {args}");
 }
 
-fn compile(mut generator: Generator) -> String {
+fn compile(generator: Generator) -> String {
     let file = NamedTempFile::new().unwrap();
     let err = generator
         .compile_protos(&["tests/test.proto"], file.path())

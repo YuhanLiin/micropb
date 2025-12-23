@@ -23,7 +23,7 @@ fn main() {
                 ".google.protobuf.EnumValueDescriptorProto",
             ],
             Config::new().no_accessors(false),
-        )
-        .compile_protos(&["google/protobuf/descriptor.proto"], "descriptor.rs")
+        );
+    gen.compile_protos(&["google/protobuf/descriptor.proto"], "descriptor.rs")
         .unwrap();
 }

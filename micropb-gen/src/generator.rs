@@ -2,10 +2,8 @@ use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
     collections::BTreeMap,
-    ffi::OsString,
     fmt::Display,
     io,
-    path::PathBuf,
 };
 
 use convert_case::{Case, Casing};
@@ -15,7 +13,7 @@ use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
-    EncodeDecode,
+    EncodeDecode, Generator, WarningCb,
     config::Config,
     descriptor::{DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet},
     generator::{r#enum::Enum, graph::TypeGraph},
@@ -24,7 +22,6 @@ use crate::{
 };
 
 use self::message::Message;
-use super::WarningCb;
 
 pub(crate) mod r#enum;
 pub(crate) mod field;
@@ -104,70 +101,62 @@ pub(crate) enum Syntax {
     Proto3,
 }
 
-/// Protobuf code generator
-///
-/// Use this in `build.rs` to compile `.proto` files into a Rust module.
-///
-/// The main way to control the compilation process is to call [`configure`](Generator::configure),
-/// which allows the user to customize how code is generated from Protobuf types and fields of
-/// their choosing.
-///
-/// # Note
-/// It's recommended to call one of [`use_container_alloc`](Self::use_container_alloc),
-/// [`use_container_heapless`](Self::use_container_heapless), or
-/// [`use_container_alloc`](Self::use_container_alloc) to ensure that container types are
-/// configured for `string`, `bytes`, repeated, and `map` fields. The generator will throw an
-/// error if it reaches any such field that doesn't have a container configured.
-///
-/// # Example
-/// ```no_run
-/// use micropb_gen::{Generator, Config};
-///
-/// let mut generator = Generator::new();
-/// // Use container types from `heapless`
-/// generator.use_container_heapless()
-///     // Set max length of repeated fields in .test.Data to 4
-///     .configure(".test.Data", Config::new().max_len(4))
-///     // Wrap .test.Data.value inside a Box
-///     .configure(".test.Data.value", Config::new().boxed(true))
-///     // Compile test.proto into a Rust module
-///     .compile_protos(
-///         &["test.proto"],
-///         std::env::var("OUT_DIR").unwrap() + "/test_proto.rs",
-///     )
-///     .unwrap();
-/// ```
-pub struct Generator {
+#[derive(Default)]
+pub(crate) struct Params {
+    pub(crate) extern_paths: BTreeMap<String, TokenStream>,
+    pub(crate) encode_decode: EncodeDecode,
+    pub(crate) calculate_max_size: bool,
+    pub(crate) retain_enum_prefix: bool,
+    pub(crate) suffixed_package_names: bool,
+    pub(crate) single_oneof_msg_as_enum: bool,
+}
+
+pub(crate) struct Context<'proto> {
+    // FileDescriptorSet-level context
+    pub(crate) params: Params,
+    pub(crate) graph: TypeGraph<'proto>,
+    pub(crate) warning_cb: WarningCb,
+
+    // File-level context
     pub(crate) syntax: Syntax,
     pub(crate) pkg_path: Vec<String>,
     pub(crate) pkg: String,
     pub(crate) type_path: RefCell<Vec<String>>,
-
-    pub(crate) warning_cb: WarningCb,
-
-    pub(crate) encode_decode: EncodeDecode,
-    pub(crate) calculate_max_size: bool,
-    pub(crate) retain_enum_prefix: bool,
-    pub(crate) format: bool,
-    pub(crate) fdset_path: Option<PathBuf>,
-    pub(crate) protoc_args: Vec<OsString>,
-    pub(crate) suffixed_package_names: bool,
-    pub(crate) single_oneof_msg_as_enum: bool,
-    pub(crate) comments_to_docs: bool,
-
-    pub(crate) config_tree: PathTree<Box<Config>>,
-    pub(crate) extern_paths: BTreeMap<String, TokenStream>,
 }
 
-impl Generator {
-    pub(crate) fn warn_unused_configs(&self) {
-        self.config_tree.find_all_unaccessed(|_node, path| {
+impl<'proto> Context<'proto> {
+    pub(crate) fn new(generator: Generator) -> (Self, PathTree<Box<Config>>) {
+        let ctx = Self {
+            params: Params {
+                extern_paths: generator.extern_paths,
+                encode_decode: generator.encode_decode,
+                calculate_max_size: generator.calculate_max_size,
+                retain_enum_prefix: generator.retain_enum_prefix,
+                suffixed_package_names: generator.suffixed_package_names,
+                single_oneof_msg_as_enum: generator.single_oneof_msg_as_enum,
+            },
+            warning_cb: generator.warning_cb,
+            graph: TypeGraph::default(),
+
+            syntax: Default::default(),
+            pkg_path: Default::default(),
+            pkg: Default::default(),
+            type_path: Default::default(),
+        };
+        (ctx, generator.config_tree)
+    }
+
+    fn warn_unused_configs(&self, config_tree: &PathTree<Box<Config>>) {
+        config_tree.find_all_unaccessed(|_node, path| {
             let path = path.join(".");
             (self.warning_cb)(format_args!("Unused configuration path: \"{path}\". Make sure the path points to an actual Protobuf type or module."));
         });
     }
 
-    pub(crate) fn generate_fdset(&mut self, fdset: &FileDescriptorSet) -> io::Result<TokenStream> {
+    pub(crate) fn generate_fdset(
+        generator: Generator,
+        fdset: &'proto FileDescriptorSet,
+    ) -> io::Result<TokenStream> {
         // Pre-generate the comment trees for every file
         let mut comment_trees = vec![];
         for file in &fdset.file {
@@ -180,19 +169,20 @@ impl Generator {
             comment_trees.push(comment_tree);
         }
 
+        let (mut ctx, config_tree) = Context::new(generator);
+
         // First, convert and accumulate all message and enum types
-        let mut graph = TypeGraph::default();
         for (file, comment_tree) in fdset.file.iter().zip(comment_trees.iter()) {
-            self.add_fdproto(&mut graph, comment_tree, file)?;
+            ctx.add_fdproto(&config_tree, comment_tree, file)?;
         }
 
         // Resolve the type graph
-        graph.resolve_all();
+        ctx.graph.resolve_all();
 
         // Generate Rust code
         let mut mod_tree = PathTree::new(TokenStream::new());
         for file in &fdset.file {
-            let code = self.generate_fdproto(&graph, file)?;
+            let code = ctx.generate_fdproto(file)?;
             if let Some(pkg_name) = file.package() {
                 mod_tree
                     .root
@@ -210,7 +200,9 @@ impl Generator {
             }
         }
 
-        Ok(self.generate_mod_tree(&mut mod_tree.root))
+        let module = ctx.generate_mod_tree(&mut mod_tree.root);
+        ctx.warn_unused_configs(&config_tree);
+        Ok(module)
     }
 
     fn setup_file_context(&mut self, fdproto: &FileDescriptorProto) -> io::Result<()> {
@@ -233,15 +225,15 @@ impl Generator {
         Ok(())
     }
 
-    fn add_fdproto<'a>(
+    fn add_fdproto(
         &mut self,
-        graph: &mut TypeGraph<'a>,
-        comment_tree: &'a PathTree<Comments, (i32, i32)>,
-        fdproto: &'a FileDescriptorProto,
+        config_tree: &PathTree<Box<Config>>,
+        comment_tree: &'proto PathTree<Comments, (i32, i32)>,
+        fdproto: &'proto FileDescriptorProto,
     ) -> io::Result<()> {
         self.setup_file_context(fdproto)?;
 
-        let root_node = &self.config_tree.root;
+        let root_node = &config_tree.root;
         let mut conf = root_node
             .access_value()
             .as_ref()
@@ -258,7 +250,6 @@ impl Generator {
 
         for (i, m) in fdproto.message_type.iter().enumerate() {
             self.add_message(
-                graph,
                 m,
                 cur_config.next_conf(&m.name),
                 comment_tree.root.next(&location::path::fdset_msg(i)),
@@ -266,7 +257,6 @@ impl Generator {
         }
         for (i, e) in fdproto.enum_type.iter().enumerate() {
             self.add_enum(
-                graph,
                 e,
                 cur_config.next_conf(&e.name),
                 comment_tree.root.next(&location::path::fdset_enum(i)),
@@ -276,21 +266,17 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_fdproto(
-        &mut self,
-        graph: &TypeGraph,
-        fdproto: &FileDescriptorProto,
-    ) -> io::Result<TokenStream> {
+    fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> io::Result<TokenStream> {
         self.setup_file_context(fdproto)?;
 
         // Generate Rust code from message and enum types
         let mut out = TokenStream::new();
         for proto in fdproto.message_type.iter() {
-            let m = graph.get_message(&self.fq_proto_name(&proto.name));
-            out.extend(self.generate_msg(&graph, m, proto)?);
+            let m = self.graph.get_message(&self.fq_proto_name(&proto.name));
+            out.extend(self.generate_msg(m, proto)?);
         }
         for proto in fdproto.enum_type.iter() {
-            let e = graph.get_enum(&self.fq_proto_name(&proto.name));
+            let e = self.graph.get_enum(&self.fq_proto_name(&proto.name));
             out.extend(self.generate_enum(e));
         }
 
@@ -300,7 +286,7 @@ impl Generator {
     fn generate_mod_tree(&self, mod_node: &mut Node<TokenStream>) -> TokenStream {
         let code = mod_node.value_mut().take().unwrap_or_default();
         let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
-            let submod_name = resolve_path_elem(submod_name, self.suffixed_package_names);
+            let submod_name = resolve_path_elem(submod_name, self.params.suffixed_package_names);
             let inner = self.generate_mod_tree(inner_node);
             quote! { pub mod #submod_name { #inner } }
         });
@@ -317,13 +303,8 @@ impl Generator {
         e.generate_decl()
     }
 
-    fn generate_msg_mod(
-        &self,
-        messages: &TypeGraph,
-        msg: &Message,
-        proto: &DescriptorProto,
-    ) -> io::Result<TokenStream> {
-        let msg_mod_name = resolve_path_elem(msg.name, self.suffixed_package_names);
+    fn generate_msg_mod(&self, msg: &Message, proto: &DescriptorProto) -> io::Result<TokenStream> {
+        let msg_mod_name = resolve_path_elem(msg.name, self.params.suffixed_package_names);
 
         self.type_path.borrow_mut().push(msg.name.to_owned());
         let mut msg_mod_body = TokenStream::new();
@@ -333,12 +314,12 @@ impl Generator {
             .filter(|m| !m.options().map(|o| o.map_entry).unwrap_or(false))
         {
             let sub_msg_fq_name = self.fq_proto_name(&m.name);
-            let sub_msg = messages.get_message(&sub_msg_fq_name);
-            msg_mod_body.extend(self.generate_msg(messages, sub_msg, m)?);
+            let sub_msg = self.graph.get_message(&sub_msg_fq_name);
+            msg_mod_body.extend(self.generate_msg(sub_msg, m)?);
         }
         for e in proto.enum_type.iter() {
             let enum_fq_name = self.fq_proto_name(&e.name);
-            let e = messages.get_enum(&enum_fq_name);
+            let e = self.graph.get_enum(&enum_fq_name);
             msg_mod_body.extend(self.generate_enum(e));
         }
 
@@ -361,18 +342,17 @@ impl Generator {
         Ok(msg_mod)
     }
 
-    fn add_message<'a>(
-        &self,
-        graph: &mut TypeGraph<'a>,
-        proto: &'a DescriptorProto,
+    fn add_message(
+        &mut self,
+        proto: &'proto DescriptorProto,
         msg_conf: CurrentConfig,
-        comment_node: Option<&'a CommentNode>,
+        comment_node: Option<&'proto CommentNode>,
     ) -> io::Result<()> {
         let Some(msg) = Message::from_proto(proto, self, &msg_conf, comment_node)? else {
             return Ok(());
         };
         let msg_name = msg.name;
-        graph.add_message(self.fq_proto_name(msg_name), msg);
+        self.graph.add_message(self.fq_proto_name(msg_name), msg);
 
         self.type_path.borrow_mut().push(msg_name.to_owned());
         for (i, m) in proto
@@ -382,7 +362,6 @@ impl Generator {
             .filter(|(_, m)| !m.options().map(|o| o.map_entry).unwrap_or(false))
         {
             self.add_message(
-                graph,
                 m,
                 msg_conf.next_conf(&m.name),
                 next_comment_node(comment_node, location::path::msg_msg(i)),
@@ -390,7 +369,6 @@ impl Generator {
         }
         for (i, e) in proto.enum_type.iter().enumerate() {
             self.add_enum(
-                graph,
                 e,
                 msg_conf.next_conf(&e.name),
                 next_comment_node(comment_node, location::path::msg_enum(i)),
@@ -401,30 +379,28 @@ impl Generator {
         Ok(())
     }
 
-    fn add_enum<'a>(
-        &self,
-        graph: &mut TypeGraph<'a>,
-        proto: &'a EnumDescriptorProto,
+    fn add_enum(
+        &mut self,
+        proto: &'proto EnumDescriptorProto,
         enum_conf: CurrentConfig,
-        comment_node: Option<&'a CommentNode>,
+        comment_node: Option<&'proto CommentNode>,
     ) -> io::Result<()> {
         let Some(e) = Enum::from_proto(proto, self, &enum_conf, comment_node)? else {
             return Ok(());
         };
-        graph.add_enum(self.fq_proto_name(e.name), e);
+        self.graph.add_enum(self.fq_proto_name(e.name), e);
         Ok(())
     }
 
     fn generate_msg(
         &self,
-        graph: &TypeGraph,
         msg: Option<&Message>,
         proto: &DescriptorProto,
     ) -> io::Result<TokenStream> {
         // None means message has been skipped
         let Some(msg) = msg else { return Ok(quote! {}) };
 
-        let msg_mod = self.generate_msg_mod(graph, msg, proto)?;
+        let msg_mod = self.generate_msg_mod(msg, proto)?;
         let proto_default = msg.fields.iter().any(|f| f.default.is_some());
 
         // Only manually implement Default if there's a Protobuf default specification
@@ -436,10 +412,12 @@ impl Generator {
         let decl = msg.generate_decl(self, proto_default)?;
         let msg_impl = msg.generate_impl(self);
         let decode = self
+            .params
             .encode_decode
             .is_decode()
             .then(|| msg.generate_decode_trait(self));
         let encode = self
+            .params
             .encode_decode
             .is_encode()
             .then(|| msg.generate_encode_trait(self));
@@ -460,7 +438,7 @@ impl Generator {
         assert_eq!(".", &pb_fq_type_name[..1]);
 
         // Check if we're substituting with an extern type
-        if let Some(rust_type) = self.extern_paths.get(pb_fq_type_name) {
+        if let Some(rust_type) = self.params.extern_paths.get(pb_fq_type_name) {
             return rust_type.clone();
         }
 
@@ -479,9 +457,9 @@ impl Generator {
             ident_path.next();
         }
 
-        let path = local_path
-            .map(|_| format_ident!("super"))
-            .chain(ident_path.map(|elem| resolve_path_elem(elem, self.suffixed_package_names)));
+        let path = local_path.map(|_| format_ident!("super")).chain(
+            ident_path.map(|elem| resolve_path_elem(elem, self.params.suffixed_package_names)),
+        );
         quote! { #(#path ::)* #ident_type }
     }
 
@@ -502,7 +480,7 @@ impl Generator {
     /// Convert variant name to Pascal-case, then strip the enum name from it
     fn enum_variant_name(&self, variant_name: &str, enum_name: &Ident) -> Ident {
         let variant_name_cased = variant_name.to_case(Case::Pascal);
-        let stripped = if !self.retain_enum_prefix {
+        let stripped = if !self.params.retain_enum_prefix {
             variant_name_cased
                 .strip_prefix(&enum_name.to_string())
                 .unwrap_or(&variant_name_cased)
@@ -570,75 +548,78 @@ pub(crate) fn sanitized_ident(name: &str) -> Ident {
 }
 
 #[cfg(test)]
+fn make_ctx() -> Context<'static> {
+    Context {
+        params: Params::default(),
+        graph: TypeGraph::default(),
+        syntax: Default::default(),
+        pkg_path: Default::default(),
+        pkg: Default::default(),
+        type_path: Default::default(),
+        warning_cb: |_| {},
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn enum_variant_name() {
-        let mut generator = Generator::new();
+        let mut ctx = make_ctx();
         let enum_name = Ident::new("Enum", Span::call_site());
         assert_eq!(
-            generator
-                .enum_variant_name("ENUM_VALUE", &enum_name)
-                .to_string(),
+            ctx.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
             "Value"
         );
         assert_eq!(
-            generator.enum_variant_name("ALIEN", &enum_name).to_string(),
+            ctx.enum_variant_name("ALIEN", &enum_name).to_string(),
             "Alien"
         );
 
-        generator.retain_enum_prefix = true;
+        ctx.params.retain_enum_prefix = true;
         assert_eq!(
-            generator
-                .enum_variant_name("ENUM_VALUE", &enum_name)
-                .to_string(),
+            ctx.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
             "EnumValue"
         );
     }
 
     #[test]
     fn resolve_type_name() {
-        let mut generator = Generator::new();
+        let mut ctx = make_ctx();
+        ctx.params.suffixed_package_names = true;
         // currently in root-level module
+        assert_eq!(ctx.resolve_type_name(".Message").to_string(), "Message");
         assert_eq!(
-            generator.resolve_type_name(".Message").to_string(),
-            "Message"
-        );
-        assert_eq!(
-            generator.resolve_type_name(".package.Message").to_string(),
+            ctx.resolve_type_name(".package.Message").to_string(),
             quote! { package_::Message }.to_string()
         );
         assert_eq!(
-            generator
-                .resolve_type_name(".package.Message.Inner")
-                .to_string(),
+            ctx.resolve_type_name(".package.Message.Inner").to_string(),
             quote! { package_::Message_::Inner }.to_string()
         );
 
-        generator.pkg_path.push("package".to_owned());
-        generator.type_path.borrow_mut().push("Message".to_owned());
+        ctx.pkg_path.push("package".to_owned());
+        ctx.type_path.borrow_mut().push("Message".to_owned());
         // currently in package::mod_Message module
         assert_eq!(
-            generator.resolve_type_name(".Message").to_string(),
+            ctx.resolve_type_name(".Message").to_string(),
             quote! { super::super::Message }.to_string()
         );
         assert_eq!(
-            generator.resolve_type_name(".package.Message").to_string(),
+            ctx.resolve_type_name(".package.Message").to_string(),
             quote! { super::Message }.to_string()
         );
         assert_eq!(
-            generator.resolve_type_name(".Message.Item").to_string(),
+            ctx.resolve_type_name(".Message.Item").to_string(),
             quote! { super::super::Message_::Item }.to_string()
         );
         assert_eq!(
-            generator
-                .resolve_type_name(".package.Message.Inner")
-                .to_string(),
+            ctx.resolve_type_name(".package.Message.Inner").to_string(),
             "Inner"
         );
         assert_eq!(
-            generator.resolve_type_name(".abc.d").to_string(),
+            ctx.resolve_type_name(".abc.d").to_string(),
             quote! { super::super::abc_::r#d }.to_string()
         );
     }
@@ -659,10 +640,11 @@ mod tests {
             mod_tree
         };
 
-        let mut generator = Generator::new();
+        let mut ctx = make_ctx();
 
+        ctx.params.suffixed_package_names = true;
         let mut mod_tree = mk_tree();
-        let out = generator.generate_mod_tree(&mut mod_tree.root);
+        let out = ctx.generate_mod_tree(&mut mod_tree.root);
         let expected = quote! {
             Root
 
@@ -675,9 +657,9 @@ mod tests {
         };
         assert_eq!(out.to_string(), expected.to_string());
 
-        generator.suffixed_package_names(false);
+        ctx.params.suffixed_package_names = false;
         let mut mod_tree = mk_tree();
-        let out = generator.generate_mod_tree(&mut mod_tree.root);
+        let out = ctx.generate_mod_tree(&mut mod_tree.root);
         let expected = quote! {
             Root
 

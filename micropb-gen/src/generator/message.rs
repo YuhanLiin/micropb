@@ -7,7 +7,7 @@ use syn::Ident;
 use crate::{
     descriptor::DescriptorProto,
     generator::{
-        EncodeFunc,
+        Context, EncodeFunc,
         field::{CustomField, FieldType},
         graph::Position,
         location::{self, next_comment_node},
@@ -17,7 +17,7 @@ use crate::{
 };
 
 use super::{
-    CurrentConfig, Generator, derive_msg_attr,
+    CurrentConfig, derive_msg_attr,
     field::Field,
     field_error,
     location::{CommentNode, Comments},
@@ -40,13 +40,13 @@ pub(crate) struct Unknown {
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub(crate) struct Message<'a> {
+pub(crate) struct Message<'proto> {
     /// Protobuf name
-    pub(crate) name: &'a str,
+    pub(crate) name: &'proto str,
     /// Sanitized Rust ident, used for struct name
     pub(crate) rust_name: Ident,
-    pub(crate) oneofs: Vec<Oneof<'a>>,
-    pub(crate) fields: Vec<Field<'a>>,
+    pub(crate) oneofs: Vec<Oneof<'proto>>,
+    pub(crate) fields: Vec<Field<'proto>>,
     pub(crate) derive_dbg: bool,
     pub(crate) impl_default: bool,
     pub(crate) impl_partial_eq: bool,
@@ -56,19 +56,19 @@ pub(crate) struct Message<'a> {
     pub(crate) lifetime: Option<syn::Lifetime>,
     pub(crate) as_oneof_enum: bool,
     pub(crate) hazzer: Option<Hazzer>,
-    comments: Option<&'a Comments>,
+    comments: Option<&'proto Comments>,
 
     /// Used for cycle detection and lifetime propagation
-    pub(crate) message_edges: Vec<(Position, &'a str)>,
+    pub(crate) message_edges: Vec<(Position, &'proto str)>,
     pub(crate) parent_edges: Vec<(Position, String)>,
 }
 
-impl<'a> Message<'a> {
+impl<'proto> Message<'proto> {
     pub(crate) fn from_proto(
-        proto: &'a DescriptorProto,
-        generator: &Generator,
+        proto: &'proto DescriptorProto,
+        ctx: &Context<'proto>,
         msg_conf: &CurrentConfig,
-        comment_node: Option<&'a CommentNode>,
+        comment_node: Option<&'proto CommentNode>,
     ) -> io::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -83,7 +83,7 @@ impl<'a> Message<'a> {
                 next_comment_node(comment_node, location::path::msg_oneof(idx)),
                 idx,
             )
-            .map_err(|e| field_error(&generator.pkg, msg_name, &oneof.name, &e))?;
+            .map_err(|e| field_error(&ctx.pkg, msg_name, &oneof.name, &e))?;
             if let Some(oneof) = oneof {
                 oneofs.push(oneof);
             }
@@ -111,8 +111,8 @@ impl<'a> Message<'a> {
                 .unwrap_or(&f.type_name);
 
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, field_comments, generator, Some(map_msg))
-                    .map_err(|e| field_error(&generator.pkg, msg_name, &f.name, &e))?
+                Field::from_proto(f, &field_conf, field_comments, ctx, Some(map_msg))
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
             } else {
                 if let Some(idx) = f.oneof_index().copied() {
                     if f.proto3_optional {
@@ -129,9 +129,8 @@ impl<'a> Message<'a> {
                             }) => {
                                 // Oneof field
                                 if let Some(field) =
-                                    OneofField::from_proto(f, &field_conf, field_comments).map_err(
-                                        |e| field_error(&generator.pkg, msg_name, &f.name, &e),
-                                    )?
+                                    OneofField::from_proto(f, &field_conf, field_comments)
+                                        .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
                                 {
                                     if let TypeSpec::Message(field_name) = field.tspec {
                                         message_edges.push((
@@ -153,8 +152,8 @@ impl<'a> Message<'a> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, field_comments, generator, None)
-                    .map_err(|e| field_error(&generator.pkg, msg_name, &f.name, &e))?
+                Field::from_proto(f, &field_conf, field_comments, ctx, None)
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {
                 if let Some(field_name) = field.message_name() {
@@ -167,7 +166,7 @@ impl<'a> Message<'a> {
         // Only include fields that aren't handled externally
         let message_edges = message_edges
             .into_iter()
-            .filter(|(_, fq_proto_name)| !generator.extern_paths.contains_key(*fq_proto_name))
+            .filter(|(_, fq_proto_name)| !ctx.params.extern_paths.contains_key(*fq_proto_name))
             .collect();
 
         // Remove all oneofs that are empty enums or synthetic oneofs
@@ -180,9 +179,9 @@ impl<'a> Message<'a> {
         let attrs = msg_conf
             .config
             .type_attr_parsed()
-            .map_err(|e| msg_error(&generator.pkg, msg_name, &e))?;
+            .map_err(|e| msg_error(&ctx.pkg, msg_name, &e))?;
 
-        let as_enum = generator.single_oneof_msg_as_enum
+        let as_enum = ctx.params.single_oneof_msg_as_enum
             && fields.is_empty()
             && oneofs.len() == 1
             && matches!(oneofs[0].otype, OneofType::Enum { .. });
@@ -190,7 +189,7 @@ impl<'a> Message<'a> {
         let unknown = if let Some(handler) = msg_conf
             .config
             .unknown_handler_parsed()
-            .map_err(|e| msg_error(&generator.pkg, msg_name, &e))?
+            .map_err(|e| msg_error(&ctx.pkg, msg_name, &e))?
         {
             let unknown_conf = msg_conf.next_conf("_unknown");
             Some(Unknown {
@@ -198,7 +197,7 @@ impl<'a> Message<'a> {
                 field_attrs: unknown_conf
                     .config
                     .field_attr_parsed()
-                    .map_err(|e| field_error(&generator.pkg, msg_name, "_unknown", &e))?,
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, "_unknown", &e))?,
             })
         } else {
             None
@@ -211,11 +210,11 @@ impl<'a> Message<'a> {
                 type_attrs: hazzer_conf
                     .config
                     .type_attr_parsed()
-                    .map_err(|e| field_error(&generator.pkg, msg_name, "_has", &e))?,
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, "_has", &e))?,
                 field_attrs: hazzer_conf
                     .config
                     .field_attr_parsed()
-                    .map_err(|e| field_error(&generator.pkg, msg_name, "_has", &e))?,
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, "_has", &e))?,
             })
         } else {
             None
@@ -333,7 +332,7 @@ impl<'a> Message<'a> {
 
     pub(crate) fn generate_decl(
         &self,
-        generator: &Generator,
+        ctx: &Context<'proto>,
         proto_default: bool,
     ) -> io::Result<TokenStream> {
         let msg_mod_name = resolve_path_elem(self.name, true);
@@ -357,7 +356,7 @@ impl<'a> Message<'a> {
             let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
                 unreachable!("shouldn't generate enum with custom oneof")
             };
-            let variants = fields.iter().map(|f| f.generate_field(generator));
+            let variants = fields.iter().map(|f| f.generate_field(ctx));
             let default_variant_attr = derive_default.then(|| quote! { #[default] });
 
             Ok(quote! {
@@ -372,11 +371,11 @@ impl<'a> Message<'a> {
                 }
             })
         } else {
-            let msg_fields = self.fields.iter().map(|f| f.generate_field(generator));
+            let msg_fields = self.fields.iter().map(|f| f.generate_field(ctx));
             let oneof_fields = self
                 .oneofs
                 .iter()
-                .map(|oneof| oneof.generate_field(generator, &msg_mod_name));
+                .map(|oneof| oneof.generate_field(ctx, &msg_mod_name));
             let unknown_field = if let Some(unknown) = &self.unknown {
                 let handler = &unknown.handler;
                 let field_attr = &unknown.field_attrs;
@@ -400,7 +399,7 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub(crate) fn generate_default_impl(&self, generator: &Generator) -> io::Result<TokenStream> {
+    pub(crate) fn generate_default_impl(&self, ctx: &Context<'proto>) -> io::Result<TokenStream> {
         if !self.impl_default {
             return Ok(quote! {});
         }
@@ -415,8 +414,8 @@ impl<'a> Message<'a> {
             if !matches!(f.ftype, FieldType::Custom(CustomField::Delegate(_))) {
                 let name = &f.san_rust_name;
                 let default = f
-                    .generate_default(generator)
-                    .map_err(|e| field_error(&generator.pkg, self.name, f.name, &e))?;
+                    .generate_default(ctx)
+                    .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))?;
                 field_defaults.extend(quote! { #name: #default, });
             }
         }
@@ -507,12 +506,12 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub(crate) fn generate_impl(&self, generator: &Generator) -> TokenStream {
+    pub(crate) fn generate_impl(&self, ctx: &Context<'proto>) -> TokenStream {
         if self.as_oneof_enum {
             return quote! {};
         }
 
-        let accessors = self.fields.iter().map(|f| f.generate_accessors(generator));
+        let accessors = self.fields.iter().map(|f| f.generate_accessors(ctx));
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
         quote! {
@@ -522,7 +521,7 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub(crate) fn generate_decode_trait(&self, generator: &Generator) -> TokenStream {
+    pub(crate) fn generate_decode_trait(&self, ctx: &Context<'proto>) -> TokenStream {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
         let tag = Ident::new("tag", Span::call_site());
@@ -535,7 +534,7 @@ impl<'a> Message<'a> {
             };
             let variant_branches = fields
                 .iter()
-                .map(|f| f.generate_decode_branch_in_enum_msg(&decoder, generator));
+                .map(|f| f.generate_decode_branch_in_enum_msg(&decoder, ctx));
 
             quote! {
                 #(#variant_branches)*
@@ -544,11 +543,11 @@ impl<'a> Message<'a> {
             let field_branches = self
                 .fields
                 .iter()
-                .map(|f| f.generate_decode_branch(generator, &tag, &decoder));
+                .map(|f| f.generate_decode_branch(ctx, &tag, &decoder));
             let oneof_branches = self
                 .oneofs
                 .iter()
-                .map(|o| o.generate_decode_branches(generator, &mod_name, &tag, &decoder));
+                .map(|o| o.generate_decode_branches(ctx, &mod_name, &tag, &decoder));
 
             quote! {
                 #(#field_branches)*
@@ -589,7 +588,7 @@ impl<'a> Message<'a> {
         }
     }
 
-    fn generate_encode_func(&self, generator: &Generator, func_type: &EncodeFunc) -> TokenStream {
+    fn generate_encode_func(&self, ctx: &Context<'proto>, func_type: &EncodeFunc) -> TokenStream {
         let mod_name = resolve_path_elem(self.name, true);
 
         if self.as_oneof_enum {
@@ -598,7 +597,7 @@ impl<'a> Message<'a> {
             };
             let variant_branches = fields
                 .iter()
-                .map(|f| f.generate_encode_branch(&quote! {Self}, generator, func_type));
+                .map(|f| f.generate_encode_branch(&quote! {Self}, ctx, func_type));
 
             quote! {
                 match &self {
@@ -610,11 +609,11 @@ impl<'a> Message<'a> {
             let field_logic = self
                 .fields
                 .iter()
-                .map(|f| f.generate_encode(generator, func_type));
+                .map(|f| f.generate_encode(ctx, func_type));
             let oneof_logic = self
                 .oneofs
                 .iter()
-                .map(|o| o.generate_encode(generator, &mod_name, func_type));
+                .map(|o| o.generate_encode(ctx, &mod_name, func_type));
 
             let unknown_logic = if self.unknown.is_some() {
                 match func_type {
@@ -637,13 +636,13 @@ impl<'a> Message<'a> {
         }
     }
 
-    fn generate_max_size(&self, generator: &Generator) -> TokenStream {
-        if !generator.calculate_max_size {
+    fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
+        if !ctx.params.calculate_max_size {
             return quote! { const MAX_SIZE: ::core::option::Option<usize> = ::core::option::Option::None; };
         }
 
-        let field_sizes = self.fields.iter().map(|f| f.generate_max_size(generator));
-        let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(generator));
+        let field_sizes = self.fields.iter().map(|f| f.generate_max_size(ctx));
+        let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(ctx));
         let unknown_size = if self.as_oneof_enum {
             // Ignore unknown field if generating an enum msg
             None
@@ -670,18 +669,18 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub(crate) fn generate_encode_trait(&self, generator: &Generator) -> TokenStream {
+    pub(crate) fn generate_encode_trait(&self, ctx: &Context<'proto>) -> TokenStream {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
         let sizeof = self.generate_encode_func(
-            generator,
+            ctx,
             &EncodeFunc::Sizeof(Ident::new("size", Span::call_site())),
         );
         let encode = self.generate_encode_func(
-            generator,
+            ctx,
             &EncodeFunc::Encode(Ident::new("encoder", Span::call_site())),
         );
-        let max_size_decl = self.generate_max_size(generator);
+        let max_size_decl = self.generate_max_size(ctx);
 
         quote! {
             impl<#lifetime> ::micropb::MessageEncode for #name<#lifetime> {
@@ -745,6 +744,7 @@ mod tests {
         generator::{
             Syntax,
             field::{FieldType, make_test_field},
+            make_ctx,
             oneof::make_test_oneof_field,
             type_spec::{PbInt, TypeSpec},
         },
@@ -829,9 +829,9 @@ mod tests {
             node: None,
             config: Cow::Borrowed(&config),
         };
-        let generator = Generator::new();
+        let ctx = make_ctx();
         assert!(
-            Message::from_proto(&proto, &generator, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .is_none()
         );
@@ -839,7 +839,7 @@ mod tests {
 
     #[test]
     fn from_proto_skip_fields() {
-        let generator = Generator::new();
+        let ctx = make_ctx();
         let proto = test_msg_proto();
         let empty_msg = make_test_msg("Message");
         let config = Box::new(Config::new());
@@ -857,7 +857,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, &generator, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -875,7 +875,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, &generator, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -884,7 +884,7 @@ mod tests {
 
     #[test]
     fn from_proto() {
-        let generator = Generator::new();
+        let ctx = make_ctx();
         let proto = test_msg_proto();
         let config = Box::new(
             Config::new()
@@ -969,7 +969,7 @@ mod tests {
         });
 
         assert_eq!(
-            Message::from_proto(&proto, &generator, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             expected
@@ -978,8 +978,8 @@ mod tests {
 
     #[test]
     fn synthetic_oneof() {
-        let mut generator = Generator::new();
-        generator.syntax = Syntax::Proto3;
+        let mut ctx = make_ctx();
+        ctx.syntax = Syntax::Proto3;
 
         let mut proto = DescriptorProto::default();
         proto.set_name("Msg".to_owned());
@@ -1015,7 +1015,7 @@ mod tests {
         });
 
         assert_eq!(
-            Message::from_proto(&proto, &generator, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             expected
@@ -1043,8 +1043,11 @@ mod tests {
             f
         });
 
-        let mut generator = Generator::new();
-        generator.extern_type_path(".External", "ex::Ternal");
+        let mut ctx = make_ctx();
+        ctx.params.extern_paths.insert(
+            ".External".to_owned(),
+            syn::parse_str("ex::Ternal").unwrap(),
+        );
 
         let config = Box::new(Config::new().optional_repr(OptionalRepr::Option));
         let msg_conf = CurrentConfig {
@@ -1071,7 +1074,7 @@ mod tests {
         expected.message_edges = vec![(Position::Field(0), ".Internal")];
 
         assert_eq!(
-            Message::from_proto(&proto, &generator, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             expected

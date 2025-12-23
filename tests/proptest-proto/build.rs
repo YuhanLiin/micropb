@@ -24,13 +24,13 @@ fn main() {
         .unwrap();
 
     // Generate the test oneof as an enum
-    micropb_configured()
-        .single_oneof_msg_as_enum(true)
-        .compile_protos(
-            &["all_types.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/micropb_oneof_enum.rs",
-        )
-        .unwrap();
+    let mut gen = micropb_configured();
+    gen.single_oneof_msg_as_enum(true);
+    gen.compile_protos(
+        &["all_types.proto"],
+        std::env::var("OUT_DIR").unwrap() + "/micropb_oneof_enum.rs",
+    )
+    .unwrap();
 
     // Prost module
     prost_build::compile_protos(&["all_types.proto"], &["."]).unwrap();

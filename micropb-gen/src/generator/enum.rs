@@ -7,36 +7,35 @@ use syn::{Attribute, Ident};
 
 use super::location::{CommentNode, Comments, get_comments, next_comment_node};
 use crate::{
-    Generator,
     config::IntSize,
     descriptor::EnumDescriptorProto,
-    generator::{CurrentConfig, derive_enum_attr, location, msg_error, sanitized_ident},
+    generator::{Context, CurrentConfig, derive_enum_attr, location, msg_error, sanitized_ident},
 };
 
-pub(crate) struct Variant<'a> {
+pub(crate) struct Variant<'proto> {
     pub(crate) num: u32,
     pub(crate) rust_name: Ident,
-    pub(crate) comments: Option<&'a Comments>,
+    pub(crate) comments: Option<&'proto Comments>,
 }
 
-pub(crate) struct Enum<'a> {
+pub(crate) struct Enum<'proto> {
     /// Protobuf name
-    pub(crate) name: &'a str,
+    pub(crate) name: &'proto str,
     /// Sanitized Rust ident, used for struct name
     pub(crate) rust_name: Ident,
     pub(crate) int_type: IntSize,
     pub(crate) signed: bool,
-    pub(crate) variants: Vec<Variant<'a>>,
+    pub(crate) variants: Vec<Variant<'proto>>,
     pub(crate) attrs: Vec<Attribute>,
-    pub(crate) comments: Option<&'a Comments>,
+    pub(crate) comments: Option<&'proto Comments>,
 }
 
-impl<'a> Enum<'a> {
+impl<'proto> Enum<'proto> {
     pub(crate) fn from_proto(
-        proto: &'a EnumDescriptorProto,
-        generator: &Generator,
+        proto: &'proto EnumDescriptorProto,
+        ctx: &Context<'proto>,
         enum_conf: &CurrentConfig,
-        comment_node: Option<&'a CommentNode>,
+        comment_node: Option<&'proto CommentNode>,
     ) -> io::Result<Option<Self>> {
         if enum_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -50,7 +49,7 @@ impl<'a> Enum<'a> {
         let attrs = enum_conf
             .config
             .type_attr_parsed()
-            .map_err(|e| msg_error(&generator.pkg, name, &e))?;
+            .map_err(|e| msg_error(&ctx.pkg, name, &e))?;
         let comments = get_comments(comment_node);
 
         let variants = proto
@@ -60,7 +59,7 @@ impl<'a> Enum<'a> {
             .map(|(i, v)| {
                 let num = v.number as u32;
                 let var_name = &v.name;
-                let var_rust_name = generator.enum_variant_name(var_name, &rust_name);
+                let var_rust_name = ctx.enum_variant_name(var_name, &rust_name);
                 let var_comment_node =
                     next_comment_node(comment_node, location::path::enum_value(i));
                 let var_comments = get_comments(var_comment_node);

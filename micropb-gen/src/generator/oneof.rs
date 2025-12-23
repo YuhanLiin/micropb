@@ -6,7 +6,7 @@ use syn::{Ident, Lifetime};
 use crate::{
     descriptor::{FieldDescriptorProto, OneofDescriptorProto},
     generator::{
-        CurrentConfig, EncodeFunc, Generator, derive_msg_attr,
+        Context, CurrentConfig, EncodeFunc, derive_msg_attr,
         field::CustomField,
         location::get_comments,
         sanitized_ident,
@@ -17,25 +17,25 @@ use crate::{
 use super::location::{self, CommentNode, Comments};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub(crate) struct OneofField<'a> {
+pub(crate) struct OneofField<'proto> {
     pub(crate) num: u32,
-    pub(crate) tspec: TypeSpec<'a>,
+    pub(crate) tspec: TypeSpec<'proto>,
     #[allow(unused)]
     /// Protobuf name
-    pub(crate) name: &'a str,
+    pub(crate) name: &'proto str,
     /// Sanitized Rust ident after renaming, used for field name
     pub(crate) rust_name: Ident,
     pub(crate) boxed: bool,
     pub(crate) max_size_override: Option<Option<usize>>,
     pub(crate) attrs: Vec<syn::Attribute>,
-    comments: Option<&'a Comments>,
+    comments: Option<&'proto Comments>,
 }
 
-impl<'a> OneofField<'a> {
+impl<'proto> OneofField<'proto> {
     pub(crate) fn from_proto(
-        proto: &'a FieldDescriptorProto,
+        proto: &'proto FieldDescriptorProto,
         field_conf: &CurrentConfig,
-        comment_node: Option<&'a CommentNode>,
+        comment_node: Option<&'proto CommentNode>,
     ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -66,9 +66,8 @@ impl<'a> OneofField<'a> {
         }))
     }
 
-    pub(crate) fn generate_field(&self, generator: &Generator) -> TokenStream {
-        let typ =
-            generator.wrapped_type(self.tspec.generate_rust_type(generator), self.boxed, false);
+    pub(crate) fn generate_field(&self, ctx: &Context<'proto>) -> TokenStream {
+        let typ = ctx.wrapped_type(self.tspec.generate_rust_type(ctx), self.boxed, false);
         let name = &self.rust_name;
         let attrs = &self.attrs;
         let comments = self.comments.map(Comments::lines).into_iter().flatten();
@@ -80,7 +79,7 @@ impl<'a> OneofField<'a> {
         oneof_name: &Ident,
         oneof_type: &TokenStream,
         oneof_boxed: bool,
-        generator: &Generator,
+        ctx: &Context<'proto>,
         decoder: &Ident,
     ) -> TokenStream {
         let fnum = self.num;
@@ -91,8 +90,8 @@ impl<'a> OneofField<'a> {
 
         let decode_stmts = self
             .tspec
-            .generate_decode_mut(generator, false, decoder, &mut_ref);
-        let value = generator.wrapped_value(
+            .generate_decode_mut(ctx, false, decoder, &mut_ref);
+        let value = ctx.wrapped_value(
             quote! { #oneof_type::#variant_name(::core::default::Default::default()) },
             oneof_boxed,
             true,
@@ -115,7 +114,7 @@ impl<'a> OneofField<'a> {
     pub(crate) fn generate_decode_branch_in_enum_msg(
         &self,
         decoder: &Ident,
-        generator: &Generator,
+        ctx: &Context<'proto>,
     ) -> TokenStream {
         let fnum = self.num;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
@@ -124,7 +123,7 @@ impl<'a> OneofField<'a> {
 
         let decode_stmts = self
             .tspec
-            .generate_decode_mut(generator, false, decoder, &mut_ref);
+            .generate_decode_mut(ctx, false, decoder, &mut_ref);
         quote! {
             #fnum => {
                 let #mut_ref = loop {
@@ -141,7 +140,7 @@ impl<'a> OneofField<'a> {
     pub(crate) fn generate_encode_branch(
         &self,
         oneof_type: &TokenStream,
-        generator: &Generator,
+        ctx: &Context<'proto>,
         func_type: &EncodeFunc,
     ) -> TokenStream {
         let val_ref = Ident::new("val_ref", Span::call_site());
@@ -154,13 +153,11 @@ impl<'a> OneofField<'a> {
 
         let stmts = match &func_type {
             EncodeFunc::Sizeof(size) => {
-                let sizeof_expr = self.tspec.generate_sizeof(generator, &val_ref);
+                let sizeof_expr = self.tspec.generate_sizeof(ctx, &val_ref);
                 quote! { #size += #tag_len + #sizeof_expr; }
             }
             EncodeFunc::Encode(encoder) => {
-                let encode_expr = self
-                    .tspec
-                    .generate_encode_expr(generator, encoder, &val_ref);
+                let encode_expr = self.tspec.generate_encode_expr(ctx, encoder, &val_ref);
                 quote! {
                     #encoder.encode_varint32(#tag_val)?;
                     #encode_expr?;
@@ -189,7 +186,7 @@ pub(crate) enum OneofType<'a> {
     },
 }
 
-impl<'a> OneofType<'a> {
+impl<'proto> OneofType<'proto> {
     pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
         match self {
             OneofType::Custom {
@@ -206,7 +203,7 @@ impl<'a> OneofType<'a> {
         }
     }
 
-    pub(crate) fn fields_mut<'b>(&'b mut self) -> Option<&'b mut Vec<OneofField<'a>>> {
+    pub(crate) fn fields_mut<'b>(&'b mut self) -> Option<&'b mut Vec<OneofField<'proto>>> {
         if let OneofType::Enum { fields, .. } = self {
             Some(fields)
         } else {
@@ -216,13 +213,13 @@ impl<'a> OneofType<'a> {
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub(crate) struct Oneof<'a> {
+pub(crate) struct Oneof<'proto> {
     /// Protobuf name
     #[allow(unused)]
-    pub(crate) name: &'a str,
+    pub(crate) name: &'proto str,
     /// Sanitized Rust ident after renaming, used for field name
     pub(crate) san_rust_name: Ident,
-    pub(crate) otype: OneofType<'a>,
+    pub(crate) otype: OneofType<'proto>,
     pub(crate) field_attrs: Vec<syn::Attribute>,
     pub(crate) type_attrs: Vec<syn::Attribute>,
     pub(crate) boxed: bool,
@@ -231,14 +228,14 @@ pub(crate) struct Oneof<'a> {
     pub(crate) derive_clone: bool,
     pub(crate) lifetime: Option<Lifetime>,
     pub(crate) idx: usize,
-    pub(crate) comments: Option<&'a Comments>,
+    pub(crate) comments: Option<&'proto Comments>,
 }
 
-impl<'a> Oneof<'a> {
+impl<'proto> Oneof<'proto> {
     pub(crate) fn from_proto(
-        proto: &'a OneofDescriptorProto,
+        proto: &'proto OneofDescriptorProto,
         oneof_conf: CurrentConfig,
-        comment_node: Option<&'a CommentNode>,
+        comment_node: Option<&'proto CommentNode>,
         idx: usize,
     ) -> Result<Option<Self>, String> {
         if oneof_conf.config.skip.unwrap_or(false) {
@@ -284,10 +281,10 @@ impl<'a> Oneof<'a> {
         self.lifetime.as_ref()
     }
 
-    pub(crate) fn generate_decl(&self, generator: &Generator) -> TokenStream {
+    pub(crate) fn generate_decl(&self, ctx: &Context<'proto>) -> TokenStream {
         if let OneofType::Enum { type_name, fields } = &self.otype {
             assert!(!fields.is_empty(), "empty enums should have been filtered");
-            let fields = fields.iter().map(|f| f.generate_field(generator));
+            let fields = fields.iter().map(|f| f.generate_field(ctx));
             let derive_msg = derive_msg_attr(
                 self.derive_dbg,
                 false,
@@ -313,14 +310,14 @@ impl<'a> Oneof<'a> {
 
     pub(crate) fn generate_field(
         &self,
-        generator: &Generator,
+        ctx: &Context<'proto>,
         msg_mod_name: &Ident,
     ) -> TokenStream {
         let name = &self.san_rust_name;
         let oneof_type = match &self.otype {
             OneofType::Enum { type_name, .. } => {
                 let lifetime = &self.lifetime;
-                generator.wrapped_type(
+                ctx.wrapped_type(
                     quote! { #msg_mod_name::#type_name<#lifetime> },
                     self.boxed,
                     true,
@@ -343,7 +340,7 @@ impl<'a> Oneof<'a> {
 
     pub(crate) fn generate_decode_branches(
         &self,
-        generator: &Generator,
+        ctx: &Context<'proto>,
         msg_mod_name: &Ident,
         tag: &Ident,
         decoder: &Ident,
@@ -352,9 +349,9 @@ impl<'a> Oneof<'a> {
         match &self.otype {
             OneofType::Enum { fields, type_name } => {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
-                let branches = fields.iter().map(|f| {
-                    f.generate_decode_branch(name, &oneof_type, self.boxed, generator, decoder)
-                });
+                let branches = fields
+                    .iter()
+                    .map(|f| f.generate_decode_branch(name, &oneof_type, self.boxed, ctx, decoder));
                 quote! {
                     #(#branches)*
                 }
@@ -382,7 +379,7 @@ impl<'a> Oneof<'a> {
 
     pub(crate) fn generate_encode(
         &self,
-        generator: &Generator,
+        ctx: &Context<'proto>,
         msg_mod_name: &Ident,
         func_type: &EncodeFunc,
     ) -> TokenStream {
@@ -393,7 +390,7 @@ impl<'a> Oneof<'a> {
                 let extra_deref = self.boxed.then(|| quote! { * });
                 let branches = fields
                     .iter()
-                    .map(|f| f.generate_encode_branch(&oneof_type, generator, func_type));
+                    .map(|f| f.generate_encode_branch(&oneof_type, ctx, func_type));
                 quote! {
                     if let Some(oneof) = & self.#name {
                         match &#extra_deref *oneof {
@@ -418,7 +415,7 @@ impl<'a> Oneof<'a> {
         }
     }
 
-    pub(crate) fn generate_max_size(&self, generator: &Generator) -> TokenStream {
+    pub(crate) fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
         match &self.otype {
             OneofType::Custom {
                 field: CustomField::Type(custom),
@@ -442,7 +439,7 @@ impl<'a> Oneof<'a> {
                         let wire_type = f.tspec.wire_type();
                         let tag = micropb::Tag::from_parts(f.num, wire_type);
                         let tag_len = ::micropb::size::sizeof_tag(tag);
-                        let size = f.tspec.generate_max_size(generator);
+                        let size = f.tspec.generate_max_size(ctx);
                         quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
                     }
                 });
@@ -512,6 +509,7 @@ mod tests {
     use crate::descriptor::FieldDescriptorProto_::Type;
 
     use crate::config::{Config, parse_attributes};
+    use crate::generator::make_ctx;
 
     use super::*;
 
@@ -658,7 +656,7 @@ mod tests {
 
     #[test]
     fn oneof_custom() {
-        let generator = Generator::new();
+        let ctx = make_ctx();
         let oneof = Oneof {
             name: "oneof",
             san_rust_name: Ident::new_raw("oneof", Span::call_site()),
@@ -676,10 +674,10 @@ mod tests {
             idx: 0,
             comments: None,
         };
-        assert!(oneof.generate_decl(&generator).is_empty());
+        assert!(oneof.generate_decl(&ctx).is_empty());
         assert_eq!(
             oneof
-                .generate_field(&generator, &Ident::new("Msg", Span::call_site()))
+                .generate_field(&ctx, &Ident::new("Msg", Span::call_site()))
                 .to_string(),
             quote! { pub r#oneof: Custom<f32>, }.to_string()
         );
@@ -701,10 +699,10 @@ mod tests {
             idx: 0,
             comments: None,
         };
-        assert!(oneof.generate_decl(&generator).is_empty());
+        assert!(oneof.generate_decl(&ctx).is_empty());
         assert!(
             oneof
-                .generate_field(&generator, &Ident::new("Msg", Span::call_site()))
+                .generate_field(&ctx, &Ident::new("Msg", Span::call_site()))
                 .to_string()
                 .is_empty()
         );

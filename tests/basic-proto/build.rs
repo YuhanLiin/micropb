@@ -6,7 +6,7 @@ use micropb_gen::{
 };
 
 fn no_config() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &[
@@ -145,7 +145,7 @@ fn skip() {
 }
 
 fn keyword_fields() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/keyword_fields.proto"],
@@ -308,7 +308,7 @@ fn implicit_presence() {
 }
 
 fn extern_import() {
-    let mut gen1 = Generator::new();
+    let gen1 = Generator::new();
     gen1.compile_protos(
         &["proto/basic.proto"],
         std::env::var("OUT_DIR").unwrap() + "/import_basic.rs",
@@ -319,12 +319,12 @@ fn extern_import() {
     // Replace `BasicTypes` with an empty message
     gen2.extern_type_path(".basic.BasicTypes", "crate::extern_import::Empty")
         // Replace `Enum` with the generated enum type
-        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic_::Enum")
-        .compile_protos(
-            &["proto/nested.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/import_nested.rs",
-        )
-        .unwrap();
+        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic_::Enum");
+    gen2.compile_protos(
+        &["proto/nested.proto"],
+        std::env::var("OUT_DIR").unwrap() + "/import_nested.rs",
+    )
+    .unwrap();
 }
 
 fn lifetime_fields() {
@@ -407,7 +407,7 @@ fn recursive() {
 }
 
 fn conflicting_names() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/conflicting_names.proto"],
@@ -418,8 +418,8 @@ fn conflicting_names() {
 
 fn default_str_escape() {
     let mut generator = Generator::new();
+    generator.use_container_alloc();
     generator
-        .use_container_alloc()
         .compile_protos(
             &["proto/default_str_escape.proto"],
             std::env::var("OUT_DIR").unwrap() + "/default_str_escape.rs",
@@ -428,7 +428,7 @@ fn default_str_escape() {
 }
 
 fn extension() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/extension.proto"],
@@ -438,7 +438,7 @@ fn extension() {
 }
 
 fn files_with_same_package() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/basic.proto", "proto/basic-dup.proto"],
@@ -448,7 +448,7 @@ fn files_with_same_package() {
 }
 
 fn large_field_nums() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/large_field_nums.proto"],

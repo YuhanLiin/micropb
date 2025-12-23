@@ -495,8 +495,9 @@ mod descriptor {
 }
 
 use std::{
+    collections::BTreeMap,
     env,
-    ffi::OsStr,
+    ffi::{OsStr, OsString},
     fmt, fs,
     io::{self, Write},
     path::{Path, PathBuf},
@@ -504,9 +505,11 @@ use std::{
 };
 
 pub use config::Config;
-pub use generator::Generator;
 use micropb::{MessageDecode, PbDecoder};
 use pathtree::PathTree;
+use proc_macro2::TokenStream;
+
+use crate::generator::Context;
 
 #[derive(Debug, Clone, Copy, Default)]
 /// Whether to include encode and decode logic
@@ -536,6 +539,55 @@ fn warn_cargo_build(args: fmt::Arguments) {
     println!("cargo::warning={args}");
 }
 
+/// Protobuf code generator
+///
+/// Use this in `build.rs` to compile `.proto` files into a Rust module.
+///
+/// The main way to control the compilation process is to call [`configure`](Generator::configure),
+/// which allows the user to customize how code is generated from Protobuf types and fields of
+/// their choosing.
+///
+/// # Note
+/// It's recommended to call one of [`use_container_alloc`](Self::use_container_alloc),
+/// [`use_container_heapless`](Self::use_container_heapless), or
+/// [`use_container_alloc`](Self::use_container_alloc) to ensure that container types are
+/// configured for `string`, `bytes`, repeated, and `map` fields. The generator will throw an
+/// error if it reaches any such field that doesn't have a container configured.
+///
+/// # Example
+/// ```no_run
+/// use micropb_gen::{Generator, Config};
+///
+/// let mut generator = Generator::new();
+/// // Use container types from `heapless`
+/// generator.use_container_heapless()
+///     // Set max length of repeated fields in .test.Data to 4
+///     .configure(".test.Data", Config::new().max_len(4))
+///     // Wrap .test.Data.value inside a Box
+///     .configure(".test.Data.value", Config::new().boxed(true));
+/// // Compile test.proto into a Rust module
+/// generator.compile_protos(
+///     &["test.proto"],
+///     std::env::var("OUT_DIR").unwrap() + "/test_proto.rs",
+/// )
+/// .unwrap();
+/// ```
+pub struct Generator {
+    pub(crate) config_tree: PathTree<Box<Config>>,
+
+    pub(crate) warning_cb: WarningCb,
+    pub(crate) extern_paths: BTreeMap<String, TokenStream>,
+    pub(crate) encode_decode: EncodeDecode,
+    pub(crate) calculate_max_size: bool,
+    pub(crate) retain_enum_prefix: bool,
+    pub(crate) format: bool,
+    pub(crate) fdset_path: Option<PathBuf>,
+    pub(crate) protoc_args: Vec<OsString>,
+    pub(crate) suffixed_package_names: bool,
+    pub(crate) single_oneof_msg_as_enum: bool,
+    pub(crate) comments_to_docs: bool,
+}
+
 #[allow(clippy::new_without_default)]
 impl Generator {
     /// Create new generator with default settings
@@ -552,13 +604,10 @@ impl Generator {
         let config_tree = PathTree::new(Box::new(Config::default()));
 
         Self {
-            syntax: Default::default(),
-            pkg_path: Default::default(),
-            pkg: Default::default(),
-            type_path: Default::default(),
+            config_tree,
 
             warning_cb,
-
+            extern_paths: Default::default(),
             encode_decode: Default::default(),
             retain_enum_prefix: Default::default(),
             format: true,
@@ -568,9 +617,6 @@ impl Generator {
             suffixed_package_names: true,
             single_oneof_msg_as_enum: false,
             comments_to_docs: true,
-
-            config_tree,
-            extern_paths: Default::default(),
         }
     }
 
@@ -822,7 +868,7 @@ impl Generator {
     ///                     std::env::var("OUT_DIR").unwrap() + "/output.rs").unwrap();
     /// ```
     pub fn compile_protos(
-        &mut self,
+        self,
         protos: &[impl AsRef<Path>],
         out_filename: impl AsRef<Path>,
     ) -> io::Result<()> {
@@ -867,22 +913,22 @@ impl Generator {
     /// Similar to [`compile_protos`](Self::compile_protos), but it does not invoke `protoc` and
     /// instead takes a file descriptor set.
     pub fn compile_fdset_file(
-        &mut self,
+        self,
         fdset_file: impl AsRef<Path>,
         out_filename: impl AsRef<Path>,
     ) -> io::Result<()> {
+        let format = self.format;
+
         let bytes = fs::read(fdset_file)?;
         let mut decoder = PbDecoder::new(bytes.as_slice());
         let mut fdset = descriptor::FileDescriptorSet::default();
         fdset
             .decode(&mut decoder, bytes.len())
             .expect("file descriptor set decode failed");
-        let code = self.generate_fdset(&fdset)?;
-
-        self.warn_unused_configs();
+        let code = Context::generate_fdset(self, &fdset)?;
 
         #[cfg(feature = "format")]
-        let output = if self.format {
+        let output = if format {
             prettyplease::unparse(
                 &syn::parse2(code).expect("output code should be parseable as a file"),
             )
