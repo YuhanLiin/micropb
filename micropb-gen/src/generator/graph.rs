@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::generator::{r#enum::Enum, field::FieldType, message::Message};
+use crate::generator::{
+    r#enum::Enum, field::FieldType, message::Message, oneof::Oneof, type_spec::TypeSpec,
+};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Clone, Copy)]
@@ -23,13 +25,15 @@ impl Position {
                     Some(&mut field.boxed)
                 }
             }
-            Position::Oneof(oi, fi) => Some(
-                &mut msg.oneofs[*oi]
-                    .otype
-                    .fields_mut()
-                    .expect("unexpected custom oneof")[*fi]
-                    .boxed,
-            ),
+            Position::Oneof(oi, fi) => {
+                let oneof = &mut msg.oneofs[*oi];
+                // If the oneof itself is boxed, then return None since there's no need for cycle
+                // detection
+                let not_boxed = !oneof.boxed;
+                not_boxed.then(|| {
+                    &mut oneof.otype.fields_mut().expect("unexpected custom oneof")[*fi].boxed
+                })
+            }
         }
     }
 
@@ -84,6 +88,165 @@ impl<'a> TypeGraph<'a> {
         self.enums.get(fq_proto_name)
     }
 
+    fn populate_parents(&mut self) {
+        let names: Vec<_> = self.messages.keys().cloned().collect();
+        for name in &names {
+            let msg = self.messages.get_mut(name).unwrap();
+            let edges = msg.message_edges.clone();
+            for (pos, next_name) in edges {
+                // At this point it's still possible for edges to point to non-existent messages,
+                // due to messages being skipped, so we can't unwrap here
+                if let Some(next_msg) = self.messages.get_mut(next_name) {
+                    next_msg.parent_edges.push((pos, name.clone()));
+                }
+            }
+        }
+    }
+
+    fn reverse_propagate(
+        &mut self,
+        starting_elems: Vec<RevElem>,
+        mark_msg: impl Fn(&mut Message, &RevElem),
+    ) -> BTreeSet<RevElem> {
+        let mut elems = starting_elems;
+        let mut visited = BTreeSet::new();
+
+        while let Some(elem) = elems.pop() {
+            if visited.contains(&elem) {
+                continue;
+            }
+
+            let msg_name = elem.name();
+            let Some(cur_msg) = self.messages.get_mut(msg_name) else {
+                continue;
+            };
+            mark_msg(cur_msg, &elem);
+
+            match &elem {
+                RevElem::Oneof(name, _) => elems.push(RevElem::Msg(name.clone())),
+                RevElem::Msg(_) => {
+                    for (pos, parent) in cur_msg.parent_edges.iter() {
+                        let next_elem = match pos {
+                            Position::Field(_) => RevElem::Msg(parent.clone()),
+                            Position::Oneof(oneof_idx, _) => {
+                                RevElem::Oneof(parent.clone(), *oneof_idx)
+                            }
+                        };
+                        elems.push(next_elem);
+                    }
+                }
+            }
+
+            visited.insert(elem);
+        }
+        visited
+    }
+
+    fn trim_skipped(&mut self, skipped: &BTreeSet<String>) {
+        let is_skipped = |typ: &_| match typ {
+            TypeSpec::Message(name, _) | TypeSpec::Enum(name) => skipped.contains(*name),
+            _ => false,
+        };
+
+        // Begin with all messages that have an enum or message field that has been skipped
+        let msgs_with_skipped_field = self
+            .messages
+            .iter()
+            .filter(|(_, msg)| {
+                let missing_field = msg.fields.iter().any(|f| {
+                    let (typ1, typ2) = f.type_specs();
+                    typ1.map(is_skipped) == Some(true) || typ2.map(is_skipped) == Some(true)
+                });
+                let missing_oneof_field = msg.oneof_fields().any(|of| is_skipped(&of.tspec));
+                missing_field || missing_oneof_field
+            })
+            .map(|(name, _)| RevElem::Msg(name.clone()))
+            .collect();
+
+        // Propagate the skipped messages upwards, then delete all the visited messages
+        let visited = self.reverse_propagate(msgs_with_skipped_field, |_, _| {});
+        for to_delete in visited.iter().filter_map(|e| match e {
+            RevElem::Msg(name) => Some(name),
+            // We don't care about the oneofs, since the owning message will be deleted anyways
+            RevElem::Oneof(_, _) => None,
+        }) {
+            self.messages.remove(to_delete);
+        }
+    }
+
+    fn propagate_lifetimes(&mut self) {
+        let mut lifetime = None;
+        let msgs_with_lifetime = self
+            .messages
+            .iter()
+            .filter(|(_, msg)| {
+                if lifetime.is_none() {
+                    lifetime = msg.lifetime.clone();
+                }
+                msg.lifetime.is_some()
+            })
+            .map(|(name, _)| RevElem::Msg(name.clone()))
+            .collect();
+
+        self.reverse_propagate(msgs_with_lifetime, |msg, elem| match elem {
+            RevElem::Msg(_) => msg.lifetime = lifetime.clone(),
+            RevElem::Oneof(_, idx) => msg.oneofs[*idx].lifetime = lifetime.clone(),
+        });
+    }
+
+    /// Propagate the falseness of a boolean flag up the graph
+    fn propagate_bool_false(
+        &mut self,
+        getter: impl Fn(&Message) -> bool,
+        set_msg: impl Fn(&mut Message, bool),
+        set_oneof: impl Fn(&mut Oneof, bool),
+    ) {
+        let starting_msgs = self
+            .messages
+            .iter()
+            .filter(|(_, msg)| !getter(msg))
+            .map(|(name, _)| RevElem::Msg(name.clone()))
+            .collect();
+
+        self.reverse_propagate(starting_msgs, |msg, elem| match elem {
+            RevElem::Msg(_) => set_msg(msg, false),
+            RevElem::Oneof(_, idx) => set_oneof(&mut msg.oneofs[*idx], false),
+        });
+    }
+
+    fn propagate_no_dbg(&mut self) {
+        self.propagate_bool_false(
+            |msg| msg.derive_dbg,
+            |msg, b| msg.derive_dbg = b,
+            |oneof, b| oneof.derive_dbg = b,
+        );
+    }
+
+    fn propagate_no_clone(&mut self) {
+        self.propagate_bool_false(
+            |msg| msg.derive_clone,
+            |msg, b| msg.derive_clone = b,
+            |oneof, b| oneof.derive_clone = b,
+        );
+    }
+
+    fn propagate_no_partial_eq(&mut self) {
+        self.propagate_bool_false(
+            |msg| msg.impl_partial_eq,
+            |msg, b| msg.impl_partial_eq = b,
+            |oneof, b| oneof.derive_partial_eq = b,
+        );
+    }
+
+    fn propagate_no_default(&mut self) {
+        self.propagate_bool_false(
+            |msg| msg.impl_default,
+            |msg, b| msg.impl_default = b,
+            // Oneof will always implement default
+            |_, _| {},
+        );
+    }
+
     fn cycle_breaker_dfs<'b, T>(
         &mut self,
         start: &'b str,
@@ -107,10 +270,9 @@ impl<'a> TypeGraph<'a> {
                     edges.push(DfsElem::NodeEnd(cur_field));
                     visited.insert(cur_field);
 
-                    let cur_msg = self
-                        .messages
-                        .get_mut(cur_field)
-                        .unwrap_or_else(|| panic!("{cur_field} not found"));
+                    let Some(cur_msg) = self.messages.get_mut(cur_field) else {
+                        continue;
+                    };
                     for i in 0..cur_msg.message_edges.len() {
                         let (pos, next_field) = cur_msg.message_edges[i];
                         let prop = get_property(&pos, cur_msg);
@@ -167,6 +329,23 @@ impl<'a> TypeGraph<'a> {
     }
 }
 
+/// Represents either a message or a oneof. Used for reverse propagation.
+#[derive(PartialEq, PartialOrd, Eq, Ord)]
+enum RevElem {
+    Msg(String),
+    Oneof(String, usize),
+}
+
+impl RevElem {
+    fn name(&self) -> &str {
+        match self {
+            RevElem::Msg(name) => name,
+            RevElem::Oneof(name, _) => name,
+        }
+    }
+}
+
+/// Used for cycle detection
 enum DfsElem<'a> {
     Edge(&'a str),
     NodeEnd(&'a str),

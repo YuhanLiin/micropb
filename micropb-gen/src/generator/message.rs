@@ -47,8 +47,6 @@ pub(crate) struct Message<'a> {
     pub(crate) rust_name: Ident,
     pub(crate) oneofs: Vec<Oneof<'a>>,
     pub(crate) fields: Vec<Field<'a>>,
-    /// Used for cycle detection and lifetime propagation
-    pub(crate) message_edges: Vec<(Position, &'a str)>,
     pub(crate) derive_dbg: bool,
     pub(crate) impl_default: bool,
     pub(crate) impl_partial_eq: bool,
@@ -59,6 +57,10 @@ pub(crate) struct Message<'a> {
     pub(crate) as_oneof_enum: bool,
     pub(crate) hazzer: Option<Hazzer>,
     comments: Option<&'a Comments>,
+
+    /// Used for cycle detection and lifetime propagation
+    pub(crate) message_edges: Vec<(Position, &'a str)>,
+    pub(crate) parent_edges: Vec<(Position, String)>,
 }
 
 impl<'a> Message<'a> {
@@ -237,7 +239,6 @@ impl<'a> Message<'a> {
             rust_name: sanitized_ident(msg_name),
             oneofs,
             fields,
-            message_edges,
             derive_dbg: msg_conf.derive_dbg(),
             impl_default: msg_conf.impl_default(),
             impl_partial_eq: msg_conf.derive_partial_eq(),
@@ -248,7 +249,19 @@ impl<'a> Message<'a> {
             as_oneof_enum: as_enum,
             hazzer,
             comments: location::get_comments(comment_node),
+
+            message_edges,
+            parent_edges: vec![],
         }))
+    }
+
+    pub(crate) fn oneof_fields(&self) -> impl Iterator<Item = &OneofField> {
+        self.oneofs.iter().flat_map(|o| {
+            o.otype
+                .fields()
+                .into_iter()
+                .flat_map(|fields| fields.into_iter())
+        })
     }
 
     pub(crate) fn generate_hazzer_decl(&self) -> Option<TokenStream> {
@@ -711,7 +724,6 @@ pub(crate) fn make_test_msg(name: &str) -> Message<'_> {
         rust_name: Ident::new(name, Span::call_site()),
         oneofs: vec![],
         fields: vec![],
-        message_edges: vec![],
         derive_dbg: true,
         impl_default: true,
         impl_partial_eq: true,
@@ -722,6 +734,9 @@ pub(crate) fn make_test_msg(name: &str) -> Message<'_> {
         as_oneof_enum: false,
         hazzer: None,
         comments: None,
+
+        message_edges: vec![],
+        parent_edges: vec![],
     }
 }
 
