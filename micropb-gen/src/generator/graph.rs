@@ -163,18 +163,30 @@ impl<'a> TypeGraph<'a> {
     /// Propagate the falseness of a boolean flag up the graph
     fn propagate_bool_false(
         &mut self,
-        getter: impl Fn(&Message) -> bool,
+        get_msg: impl Fn(&Message) -> bool,
+        get_oneof: impl Fn(&Oneof) -> bool,
         set_msg: impl Fn(&mut Message, bool),
         set_oneof: impl Fn(&mut Oneof, bool),
     ) {
         let starting_msgs = self
             .messages
             .iter()
-            .filter(|(_, msg)| !getter(msg))
-            .map(|(name, _)| RevElem::Msg(name.clone()))
-            .collect();
+            .filter(|(_, msg)| !get_msg(msg))
+            .map(|(name, _)| RevElem::Msg(name.clone()));
+        let starting_oneofs = self
+            .messages
+            .iter()
+            .flat_map(|(name, msg)| {
+                msg.oneofs
+                    .iter()
+                    .enumerate()
+                    .map(move |(i, oneof)| (name, i, oneof))
+            })
+            .filter(|(_, _, oneof)| !get_oneof(oneof))
+            .map(|(name, i, _)| RevElem::Oneof(name.clone(), i));
+        let starting_elems = starting_msgs.chain(starting_oneofs).collect();
 
-        self.reverse_propagate(starting_msgs, |msg, elem| match elem {
+        self.reverse_propagate(starting_elems, |msg, elem| match elem {
             RevElem::Msg(_) => set_msg(msg, false),
             RevElem::Oneof(_, idx) => set_oneof(&mut msg.oneofs[*idx], false),
         });
@@ -183,6 +195,7 @@ impl<'a> TypeGraph<'a> {
     fn propagate_no_dbg(&mut self) {
         self.propagate_bool_false(
             |msg| msg.derive_dbg,
+            |oneof| oneof.derive_dbg,
             |msg, b| msg.derive_dbg = b,
             |oneof, b| oneof.derive_dbg = b,
         );
@@ -191,6 +204,7 @@ impl<'a> TypeGraph<'a> {
     fn propagate_no_clone(&mut self) {
         self.propagate_bool_false(
             |msg| msg.derive_clone,
+            |oneof| oneof.derive_clone,
             |msg, b| msg.derive_clone = b,
             |oneof, b| oneof.derive_clone = b,
         );
@@ -199,6 +213,7 @@ impl<'a> TypeGraph<'a> {
     fn propagate_no_partial_eq(&mut self) {
         self.propagate_bool_false(
             |msg| msg.impl_partial_eq,
+            |oneof| oneof.derive_partial_eq,
             |msg, b| msg.impl_partial_eq = b,
             |oneof, b| oneof.derive_partial_eq = b,
         );
@@ -207,8 +222,9 @@ impl<'a> TypeGraph<'a> {
     fn propagate_no_default(&mut self) {
         self.propagate_bool_false(
             |msg| msg.impl_default,
-            |msg, b| msg.impl_default = b,
             // Oneof will always implement default
+            |__| true,
+            |msg, b| msg.impl_default = b,
             |_, _| {},
         );
     }
@@ -433,7 +449,7 @@ mod tests {
         //     <---------------------
         //    /        --0           \
         //   /        /               \
-        //  A -----> B --1--> G -----> O
+        //  A* ----> B --1--> G* ----> O    S --0*
         //   \               /  \
         //    -------------->    ----> T
         let mut alpha = make_test_msg("Alpha");
@@ -457,12 +473,17 @@ mod tests {
 
         let theta = make_test_msg("Theta");
 
+        let mut sigma = make_test_msg("Sigma");
+        sigma.oneofs.push(make_test_oneof("sigma", false));
+        sigma.oneofs[0].derive_dbg = false; // Sigma has debug, but the oneof doesn't
+
         let mut graph = TypeGraph::default();
         graph.add_message(".pkg.Alpha".to_owned(), alpha);
         graph.add_message(".pkg.Beta".to_owned(), beta);
         graph.add_message(".pkg.Gamma".to_owned(), gamma);
         graph.add_message(".pkg.Omega".to_owned(), omega);
         graph.add_message(".pkg.Theta".to_owned(), theta);
+        graph.add_message(".pkg.Sigma".to_owned(), sigma);
 
         graph.populate_parents();
         graph.propagate_no_dbg();
@@ -508,5 +529,10 @@ mod tests {
             theta.parent_edges,
             vec![(Position::Field(0), ".pkg.Gamma".to_owned())]
         );
+
+        let sigma = graph.get_message(".pkg.Sigma").unwrap();
+        assert!(!sigma.derive_dbg);
+        assert!(!sigma.oneofs[0].derive_dbg);
+        assert_eq!(sigma.parent_edges, vec![])
     }
 }
