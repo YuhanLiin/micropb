@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::generator::{r#enum::Enum, field::FieldType, message::Message, oneof::Oneof};
+use crate::generator::{Context, r#enum::Enum, field::FieldType, message::Message, oneof::Oneof};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Clone, Copy)]
@@ -64,35 +64,37 @@ impl Position {
 }
 
 #[derive(Default)]
-pub(crate) struct TypeGraph<'a> {
-    messages: BTreeMap<String, Message<'a>>,
-    enums: BTreeMap<String, Enum<'a>>,
+pub(crate) struct TypeGraph<'proto> {
+    messages: BTreeMap<String, Message<'proto>>,
+    enums: BTreeMap<String, Enum<'proto>>,
 }
 
-impl<'a> TypeGraph<'a> {
-    pub(crate) fn add_message(&mut self, fq_proto_name: String, msg: Message<'a>) {
+impl<'proto> TypeGraph<'proto> {
+    pub(crate) fn add_message(&mut self, fq_proto_name: String, msg: Message<'proto>) {
         self.messages.insert(fq_proto_name, msg);
     }
 
-    pub(crate) fn add_enum(&mut self, fq_proto_name: String, e: Enum<'a>) {
+    pub(crate) fn add_enum(&mut self, fq_proto_name: String, e: Enum<'proto>) {
         self.enums.insert(fq_proto_name, e);
     }
 
-    pub(crate) fn get_message(&self, fq_proto_name: &str) -> Option<&Message<'a>> {
+    pub(crate) fn get_message(&self, fq_proto_name: &str) -> Option<&Message<'proto>> {
         self.messages.get(fq_proto_name)
     }
 
-    pub(crate) fn get_enum(&self, fq_proto_name: &str) -> Option<&Enum<'a>> {
+    pub(crate) fn get_enum(&self, fq_proto_name: &str) -> Option<&Enum<'proto>> {
         self.enums.get(fq_proto_name)
     }
+}
 
+impl<'proto> Context<'proto> {
     fn populate_parents(&mut self) {
-        let names: Vec<_> = self.messages.keys().cloned().collect();
+        let names: Vec<_> = self.graph.messages.keys().cloned().collect();
         for name in &names {
-            let msg = self.messages.get_mut(name).unwrap();
+            let msg = self.graph.messages.get_mut(name).unwrap();
             let edges = msg.message_edges.clone();
             for (pos, next_name) in edges {
-                if let Some(next_msg) = self.messages.get_mut(next_name) {
+                if let Some(next_msg) = self.graph.messages.get_mut(next_name) {
                     next_msg.parent_edges.push((pos, name.clone()));
                 }
             }
@@ -113,7 +115,7 @@ impl<'a> TypeGraph<'a> {
             }
 
             let msg_name = elem.name();
-            let Some(cur_msg) = self.messages.get_mut(msg_name) else {
+            let Some(cur_msg) = self.graph.messages.get_mut(msg_name) else {
                 continue;
             };
             mark_msg(cur_msg, &elem);
@@ -141,6 +143,7 @@ impl<'a> TypeGraph<'a> {
     fn propagate_lifetimes(&mut self) {
         let mut lifetime = None;
         let msgs_with_lifetime = self
+            .graph
             .messages
             .iter()
             .filter(|(_, msg)| {
@@ -167,11 +170,13 @@ impl<'a> TypeGraph<'a> {
         set_oneof: impl Fn(&mut Oneof, bool),
     ) {
         let starting_msgs = self
+            .graph
             .messages
             .iter()
             .filter(|(_, msg)| !get_msg(msg))
             .map(|(name, _)| RevElem::Msg(name.clone()));
         let starting_oneofs = self
+            .graph
             .messages
             .iter()
             .flat_map(|(name, msg)| {
@@ -238,7 +243,7 @@ impl<'a> TypeGraph<'a> {
         break_cycle: impl Fn(&Position, &mut Message),
         msg_finish: impl Fn(&mut Self, &str),
     ) where
-        'a: 'b,
+        'proto: 'b,
     {
         let mut edges: Vec<_> = start.into_iter().map(|m| DfsElem::Edge(m)).collect();
         let mut ancestors = BTreeSet::new();
@@ -252,7 +257,7 @@ impl<'a> TypeGraph<'a> {
                     }
                     visited.insert(cur_field);
 
-                    let Some(cur_msg) = self.messages.get_mut(cur_field) else {
+                    let Some(cur_msg) = self.graph.messages.get_mut(cur_field) else {
                         continue;
                     };
 
@@ -281,7 +286,7 @@ impl<'a> TypeGraph<'a> {
 
     /// Detect cycles in the message graph via DFS and break those cycles by boxing fields.
     fn box_cyclic_dependencies(&mut self) {
-        let messages: Vec<_> = self.messages.keys().cloned().collect();
+        let messages: Vec<_> = self.graph.messages.keys().cloned().collect();
 
         self.forward_dfs(
             &messages,
@@ -293,7 +298,7 @@ impl<'a> TypeGraph<'a> {
 
     /// Detect cycles in the message graph via DFS and break those cycles by overriding max size
     fn max_size_cyclic_dependencies(&mut self) {
-        let messages: Vec<_> = self.messages.keys().cloned().collect();
+        let messages: Vec<_> = self.graph.messages.keys().cloned().collect();
 
         self.forward_dfs(
             &messages,
@@ -307,24 +312,17 @@ impl<'a> TypeGraph<'a> {
     }
 
     fn propagate_derive_copy(&mut self) {
-        let messages: Vec<_> = self.messages.keys().cloned().collect();
+        let messages: Vec<_> = self.graph.messages.keys().cloned().collect();
 
         self.forward_dfs(
             &messages,
             |_, _| true,
             |_, _| {},
             |this, msg_name| {
-                // msg_name must be present in the graph, otherwise it wouldn't have been processed by
-                // the DFS
-                let msg = this.get_message(msg_name).unwrap();
-                // Check sub-messages
-                let sub_msgs_copy = msg
-                    .message_edges
-                    .iter()
-                    .all(|(_, child)| this.get_message(child).map(|c| c.is_copy).unwrap_or(false));
-
-                let msg = this.messages.get_mut(msg_name).unwrap();
-                msg.check_is_copy(sub_msgs_copy);
+                // msg_name must be present in the graph, otherwise it wouldn't have been processed
+                let msg = this.graph.get_message(msg_name).unwrap();
+                let is_copy = msg.is_copy(this);
+                this.graph.messages.get_mut(msg_name).unwrap().is_copy = is_copy;
             },
         );
     }
@@ -376,6 +374,7 @@ mod tests {
         config::OptionalRepr,
         generator::{
             field::{FieldType, make_test_field},
+            make_ctx,
             message::make_test_msg,
             oneof::{make_test_oneof, make_test_oneof_field},
             type_spec::TypeSpec,
@@ -445,36 +444,36 @@ mod tests {
         let mut sigma = make_test_msg("Sigma");
         add_msg_field(&mut sigma, 1, "sigma", ".pkg.Sigma", false, None);
 
-        let mut graph = TypeGraph::default();
-        graph.add_message(".pkg.Alpha".to_owned(), alpha);
-        graph.add_message(".pkg.Beta".to_owned(), beta);
-        graph.add_message(".pkg.Gamma".to_owned(), gamma);
-        graph.add_message(".pkg.Omega".to_owned(), omega);
-        graph.add_message(".pkg.Sigma".to_owned(), sigma);
+        let mut ctx = make_ctx();
+        ctx.graph.add_message(".pkg.Alpha".to_owned(), alpha);
+        ctx.graph.add_message(".pkg.Beta".to_owned(), beta);
+        ctx.graph.add_message(".pkg.Gamma".to_owned(), gamma);
+        ctx.graph.add_message(".pkg.Omega".to_owned(), omega);
+        ctx.graph.add_message(".pkg.Sigma".to_owned(), sigma);
 
-        graph.box_cyclic_dependencies();
-        graph.max_size_cyclic_dependencies();
+        ctx.box_cyclic_dependencies();
+        ctx.max_size_cyclic_dependencies();
 
         // Verification
-        let alpha = graph.get_message(".pkg.Alpha").unwrap();
+        let alpha = ctx.graph.get_message(".pkg.Alpha").unwrap();
         assert!(!alpha.fields[0].boxed);
         assert_eq!(alpha.fields[0].max_size_override, None);
 
-        let beta = graph.get_message(".pkg.Beta").unwrap();
+        let beta = ctx.graph.get_message(".pkg.Beta").unwrap();
         assert!(!beta.fields[0].boxed);
         assert_eq!(beta.fields[0].max_size_override, None);
         assert!(beta.fields[1].boxed);
         assert_eq!(beta.fields[1].max_size_override, Some(None));
 
-        let gamma = graph.get_message(".pkg.Gamma").unwrap();
+        let gamma = ctx.graph.get_message(".pkg.Gamma").unwrap();
         assert!(gamma.fields[0].boxed); // Gamma.alpha should have been boxed
         assert_eq!(gamma.fields[0].max_size_override, Some(None));
 
-        let omega = graph.get_message(".pkg.Omega").unwrap();
+        let omega = ctx.graph.get_message(".pkg.Omega").unwrap();
         assert!(!omega.fields[0].boxed); // Omega.alpha should stay unboxed, since Beta.omega was already boxed
         assert_eq!(omega.fields[0].max_size_override, None);
 
-        let sigma = graph.get_message(".pkg.Sigma").unwrap();
+        let sigma = ctx.graph.get_message(".pkg.Sigma").unwrap();
         assert!(sigma.fields[0].boxed); // Sigma.sigma should have been boxed
         assert_eq!(sigma.fields[0].max_size_override, Some(None));
     }
@@ -512,27 +511,27 @@ mod tests {
         sigma.oneofs.push(make_test_oneof("sigma", false));
         sigma.oneofs[0].derive_dbg = false; // Sigma has debug, but the oneof doesn't
 
-        let mut graph = TypeGraph::default();
-        graph.add_message(".pkg.Alpha".to_owned(), alpha);
-        graph.add_message(".pkg.Beta".to_owned(), beta);
-        graph.add_message(".pkg.Gamma".to_owned(), gamma);
-        graph.add_message(".pkg.Omega".to_owned(), omega);
-        graph.add_message(".pkg.Theta".to_owned(), theta);
-        graph.add_message(".pkg.Sigma".to_owned(), sigma);
+        let mut ctx = make_ctx();
+        ctx.graph.add_message(".pkg.Alpha".to_owned(), alpha);
+        ctx.graph.add_message(".pkg.Beta".to_owned(), beta);
+        ctx.graph.add_message(".pkg.Gamma".to_owned(), gamma);
+        ctx.graph.add_message(".pkg.Omega".to_owned(), omega);
+        ctx.graph.add_message(".pkg.Theta".to_owned(), theta);
+        ctx.graph.add_message(".pkg.Sigma".to_owned(), sigma);
 
-        graph.populate_parents();
-        graph.propagate_no_dbg();
+        ctx.populate_parents();
+        ctx.propagate_no_dbg();
 
         // Verification
         // Expect all entities to have no debug except for Theta and Beta.oneofs[0]
-        let alpha = graph.get_message(".pkg.Alpha").unwrap();
+        let alpha = ctx.graph.get_message(".pkg.Alpha").unwrap();
         assert!(!alpha.derive_dbg);
         assert_eq!(
             alpha.parent_edges,
             vec![(Position::Field(0), ".pkg.Omega".to_owned())]
         );
 
-        let beta = graph.get_message(".pkg.Beta").unwrap();
+        let beta = ctx.graph.get_message(".pkg.Beta").unwrap();
         assert!(!beta.derive_dbg);
         assert_eq!(
             beta.parent_edges,
@@ -541,7 +540,7 @@ mod tests {
         assert!(beta.oneofs[0].derive_dbg);
         assert!(!beta.oneofs[1].derive_dbg);
 
-        let gamma = graph.get_message(".pkg.Gamma").unwrap();
+        let gamma = ctx.graph.get_message(".pkg.Gamma").unwrap();
         assert!(!gamma.derive_dbg);
         assert_eq!(
             gamma.parent_edges,
@@ -551,21 +550,21 @@ mod tests {
             ]
         );
 
-        let omega = graph.get_message(".pkg.Omega").unwrap();
+        let omega = ctx.graph.get_message(".pkg.Omega").unwrap();
         assert!(!omega.derive_dbg);
         assert_eq!(
             omega.parent_edges,
             vec![(Position::Oneof(1, 0), ".pkg.Beta".to_owned()),]
         );
 
-        let theta = graph.get_message(".pkg.Theta").unwrap();
+        let theta = ctx.graph.get_message(".pkg.Theta").unwrap();
         assert!(theta.derive_dbg);
         assert_eq!(
             theta.parent_edges,
             vec![(Position::Field(0), ".pkg.Gamma".to_owned())]
         );
 
-        let sigma = graph.get_message(".pkg.Sigma").unwrap();
+        let sigma = ctx.graph.get_message(".pkg.Sigma").unwrap();
         assert!(!sigma.derive_dbg);
         assert!(!sigma.oneofs[0].derive_dbg);
         assert_eq!(sigma.parent_edges, vec![])

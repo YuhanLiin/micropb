@@ -184,7 +184,7 @@ impl<'proto> Context<'proto> {
         }
 
         // Resolve the type graph
-        ctx.graph.resolve_all();
+        ctx.resolve_all();
 
         // Generate Rust code
         let mut mod_tree = PathTree::new(TokenStream::new());

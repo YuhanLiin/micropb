@@ -105,11 +105,11 @@ impl<'proto> Field<'proto> {
         }
     }
 
-    pub(crate) fn is_copy(&self) -> bool {
+    pub(crate) fn is_copy(&self, ctx: &Context<'proto>) -> bool {
         !self.boxed
             && match &self.ftype {
                 FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
-                    type_spec.is_copy()
+                    type_spec.is_copy(ctx)
                 }
                 FieldType::Repeated { .. } | FieldType::Map { .. } | FieldType::Custom(_) => false,
             }

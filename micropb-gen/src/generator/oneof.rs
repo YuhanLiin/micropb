@@ -32,8 +32,8 @@ pub(crate) struct OneofField<'proto> {
 }
 
 impl<'proto> OneofField<'proto> {
-    fn is_copy(&self) -> bool {
-        !self.boxed && self.tspec.is_copy()
+    fn is_copy(&self, ctx: &Context<'proto>) -> bool {
+        !self.boxed && self.tspec.is_copy(ctx)
     }
 
     pub(crate) fn from_proto(
@@ -207,10 +207,10 @@ impl<'proto> OneofType<'proto> {
         }
     }
 
-    pub(crate) fn is_copy(&self) -> bool {
+    pub(crate) fn is_copy(&self, ctx: &Context<'proto>) -> bool {
         match self {
             OneofType::Custom { .. } => false,
-            OneofType::Enum { fields, .. } => fields.iter().all(|of| of.is_copy()),
+            OneofType::Enum { fields, .. } => fields.iter().all(|of| of.is_copy(ctx)),
         }
     }
 
@@ -292,8 +292,8 @@ impl<'proto> Oneof<'proto> {
         self.lifetime.as_ref()
     }
 
-    pub(crate) fn is_copy(&self) -> bool {
-        !self.boxed && self.otype.is_copy()
+    pub(crate) fn is_copy(&self, ctx: &Context<'proto>) -> bool {
+        !self.boxed && self.otype.is_copy(ctx)
     }
 
     pub(crate) fn generate_decl(&self, ctx: &Context<'proto>, msg_is_copy: bool) -> TokenStream {

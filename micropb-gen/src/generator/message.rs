@@ -251,12 +251,10 @@ impl<'proto> Message<'proto> {
         }))
     }
 
-    pub(crate) fn check_is_copy(&mut self, sub_msgs_is_copy: bool) {
-        let is_copy = sub_msgs_is_copy
-            && self.unknown.is_none()
-            && self.oneofs.iter().all(|oneof| oneof.is_copy())
-            && self.fields.iter().all(|f| f.is_copy());
-        self.is_copy = is_copy;
+    pub(crate) fn is_copy(&self, ctx: &Context<'proto>) -> bool {
+        self.unknown.is_none()
+            && self.oneofs.iter().all(|oneof| oneof.is_copy(ctx))
+            && self.fields.iter().all(|f| f.is_copy(ctx))
     }
 
     pub(crate) fn generate_hazzer_decl(&self) -> Option<TokenStream> {

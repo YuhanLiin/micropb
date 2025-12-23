@@ -218,11 +218,13 @@ impl<'proto> TypeSpec<'proto> {
         }
     }
 
-    pub(crate) fn is_copy(&self) -> bool {
+    pub(crate) fn is_copy(&self, ctx: &Context<'proto>) -> bool {
         match self {
-            // Return true here, since is_copy for message fields will be checked by the graph
-            // resolver before this is called
-            TypeSpec::Message(_) => true,
+            TypeSpec::Message(name) => ctx
+                .graph
+                .get_message(name)
+                .map(|msg| msg.is_copy)
+                .unwrap_or(false),
 
             TypeSpec::Enum(_)
             | TypeSpec::Float
