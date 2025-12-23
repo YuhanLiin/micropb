@@ -236,7 +236,7 @@ impl<'a> TypeGraph<'a> {
         start: &'b [String],
         pursue_edge: impl Fn(&Position, &mut Message) -> bool,
         break_cycle: impl Fn(&Position, &mut Message),
-        msg_finish: impl Fn(&mut Message),
+        msg_finish: impl Fn(&mut Self, &str),
     ) where
         'a: 'b,
     {
@@ -271,9 +271,9 @@ impl<'a> TypeGraph<'a> {
                     }
                 }
 
-                DfsElem::NodeEnd(field) => {
-                    msg_finish(self.messages.get_mut(field).unwrap());
-                    ancestors.remove(field);
+                DfsElem::NodeEnd(msg) => {
+                    msg_finish(self, msg);
+                    ancestors.remove(msg);
                 }
             }
         }
@@ -287,7 +287,7 @@ impl<'a> TypeGraph<'a> {
             &messages,
             |pos, msg| pos.is_boxed_mut(msg) == Some(&mut false),
             |pos, msg| *pos.is_boxed_mut(msg).unwrap() = true,
-            |_| {},
+            |_, _| {},
         );
     }
 
@@ -302,7 +302,30 @@ impl<'a> TypeGraph<'a> {
             // Break the cycle by setting MAX_SIZE to None, resulting in the MAX_SIZE of all
             // messages in the cycle to become None
             |pos, msg| *pos.max_size_override_mut(msg).unwrap() = Some(None),
-            |_| {},
+            |_, _| {},
+        );
+    }
+
+    fn propagate_derive_copy(&mut self) {
+        let messages: Vec<_> = self.messages.keys().cloned().collect();
+
+        self.forward_dfs(
+            &messages,
+            |_, _| true,
+            |_, _| {},
+            |this, msg_name| {
+                // msg_name must be present in the graph, otherwise it wouldn't have been processed by
+                // the DFS
+                let msg = this.get_message(msg_name).unwrap();
+                // Check sub-messages
+                let sub_msgs_copy = msg
+                    .message_edges
+                    .iter()
+                    .all(|(_, child)| this.get_message(child).map(|c| c.is_copy).unwrap_or(false));
+
+                let msg = this.messages.get_mut(msg_name).unwrap();
+                msg.check_is_copy(sub_msgs_copy);
+            },
         );
     }
 
@@ -320,6 +343,8 @@ impl<'a> TypeGraph<'a> {
         // Cyclic dependencies
         self.box_cyclic_dependencies();
         self.max_size_cyclic_dependencies();
+
+        self.propagate_derive_copy();
     }
 }
 

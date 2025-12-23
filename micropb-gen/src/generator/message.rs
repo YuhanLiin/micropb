@@ -51,6 +51,8 @@ pub(crate) struct Message<'proto> {
     pub(crate) impl_default: bool,
     pub(crate) impl_partial_eq: bool,
     pub(crate) derive_clone: bool,
+    // Will be populated by graph resolver
+    pub(crate) is_copy: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
     pub(crate) unknown: Option<Unknown>,
     pub(crate) lifetime: Option<syn::Lifetime>,
@@ -242,6 +244,7 @@ impl<'proto> Message<'proto> {
             impl_default: msg_conf.impl_default(),
             impl_partial_eq: msg_conf.derive_partial_eq(),
             derive_clone: msg_conf.derive_clone(),
+            is_copy: false,
             attrs,
             unknown,
             lifetime,
@@ -254,13 +257,21 @@ impl<'proto> Message<'proto> {
         }))
     }
 
+    pub(crate) fn check_is_copy(&mut self, sub_msgs_is_copy: bool) {
+        let is_copy = sub_msgs_is_copy
+            && self.unknown.is_none()
+            && self.oneofs.iter().all(|oneof| oneof.is_copy())
+            && self.fields.iter().all(|f| f.is_copy());
+        self.is_copy = is_copy;
+    }
+
     pub(crate) fn generate_hazzer_decl(&self) -> Option<TokenStream> {
         let Some(Hazzer { type_attrs, .. }) = &self.hazzer else {
             return None;
         };
 
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
-        let derive_msg = derive_msg_attr(true, true, true, true);
+        let derive_msg = derive_msg_attr(true, true, true, true, true);
 
         let hazzers = self.fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
@@ -349,6 +360,7 @@ impl<'proto> Message<'proto> {
             derive_default,
             derive_partial_eq,
             self.derive_clone,
+            self.is_copy,
         );
         let comments = self.comments.map(Comments::lines).into_iter().flatten();
 
@@ -718,6 +730,7 @@ pub(crate) fn make_test_msg(name: &str) -> Message<'_> {
         impl_default: true,
         impl_partial_eq: true,
         derive_clone: true,
+        is_copy: false,
         attrs: vec![],
         unknown: None,
         lifetime: None,

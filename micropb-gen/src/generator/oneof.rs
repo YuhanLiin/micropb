@@ -32,6 +32,10 @@ pub(crate) struct OneofField<'proto> {
 }
 
 impl<'proto> OneofField<'proto> {
+    fn is_copy(&self) -> bool {
+        !self.boxed && self.tspec.is_copy()
+    }
+
     pub(crate) fn from_proto(
         proto: &'proto FieldDescriptorProto,
         field_conf: &CurrentConfig,
@@ -203,6 +207,13 @@ impl<'proto> OneofType<'proto> {
         }
     }
 
+    pub(crate) fn is_copy(&self) -> bool {
+        match self {
+            OneofType::Custom { .. } => false,
+            OneofType::Enum { fields, .. } => fields.iter().all(|of| of.is_copy()),
+        }
+    }
+
     pub(crate) fn fields_mut<'b>(&'b mut self) -> Option<&'b mut Vec<OneofField<'proto>>> {
         if let OneofType::Enum { fields, .. } = self {
             Some(fields)
@@ -281,7 +292,11 @@ impl<'proto> Oneof<'proto> {
         self.lifetime.as_ref()
     }
 
-    pub(crate) fn generate_decl(&self, ctx: &Context<'proto>) -> TokenStream {
+    pub(crate) fn is_copy(&self) -> bool {
+        !self.boxed && self.otype.is_copy()
+    }
+
+    pub(crate) fn generate_decl(&self, ctx: &Context<'proto>, msg_is_copy: bool) -> TokenStream {
         if let OneofType::Enum { type_name, fields } = &self.otype {
             assert!(!fields.is_empty(), "empty enums should have been filtered");
             let fields = fields.iter().map(|f| f.generate_field(ctx));
@@ -290,6 +305,8 @@ impl<'proto> Oneof<'proto> {
                 false,
                 self.derive_partial_eq,
                 self.derive_clone,
+                // Only derive Copy if the message type is Copy
+                msg_is_copy,
             );
             let attrs = &self.type_attrs;
             let lifetime = &self.lifetime;
@@ -674,7 +691,7 @@ mod tests {
             idx: 0,
             comments: None,
         };
-        assert!(oneof.generate_decl(&ctx).is_empty());
+        assert!(oneof.generate_decl(&ctx, false).is_empty());
         assert_eq!(
             oneof
                 .generate_field(&ctx, &Ident::new("Msg", Span::call_site()))
@@ -699,7 +716,7 @@ mod tests {
             idx: 0,
             comments: None,
         };
-        assert!(oneof.generate_decl(&ctx).is_empty());
+        assert!(oneof.generate_decl(&ctx, false).is_empty());
         assert!(
             oneof
                 .generate_field(&ctx, &Ident::new("Msg", Span::call_site()))

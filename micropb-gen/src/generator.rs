@@ -31,12 +31,19 @@ pub(crate) mod message;
 pub(crate) mod oneof;
 pub(crate) mod type_spec;
 
-fn derive_msg_attr(debug: bool, default: bool, partial_eq: bool, clone: bool) -> TokenStream {
+fn derive_msg_attr(
+    debug: bool,
+    default: bool,
+    partial_eq: bool,
+    clone: bool,
+    copy: bool,
+) -> TokenStream {
     let debug = debug.then(|| quote! { Debug, });
     let default = default.then(|| quote! { Default, });
     let partial_eq = partial_eq.then(|| quote! { PartialEq, });
+    let copy = (clone && copy).then(|| quote! { Copy, });
     let clone = clone.then(|| quote! { Clone, });
-    quote! { #[derive(#debug #default #partial_eq #clone)] }
+    quote! { #[derive(#debug #default #partial_eq #clone #copy)] }
 }
 
 fn derive_enum_attr() -> TokenStream {
@@ -325,7 +332,7 @@ impl<'proto> Context<'proto> {
 
         if !msg.as_oneof_enum {
             for o in &msg.oneofs {
-                msg_mod_body.extend(o.generate_decl(self));
+                msg_mod_body.extend(o.generate_decl(self, msg.is_copy));
             }
         }
 

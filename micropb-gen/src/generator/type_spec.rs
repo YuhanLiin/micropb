@@ -218,6 +218,22 @@ impl<'proto> TypeSpec<'proto> {
         }
     }
 
+    pub(crate) fn is_copy(&self) -> bool {
+        match self {
+            // Return true here, since is_copy for message fields will be checked by the graph
+            // resolver before this is called
+            TypeSpec::Message(_) => true,
+
+            TypeSpec::Enum(_)
+            | TypeSpec::Float
+            | TypeSpec::Double
+            | TypeSpec::Bool
+            | TypeSpec::Int(..) => true,
+
+            TypeSpec::String { .. } | TypeSpec::Bytes { .. } => false,
+        }
+    }
+
     pub(crate) fn from_proto(
         proto: &'proto FieldDescriptorProto,
         type_conf: &CurrentConfig,

@@ -105,6 +105,16 @@ impl<'proto> Field<'proto> {
         }
     }
 
+    pub(crate) fn is_copy(&self) -> bool {
+        !self.boxed
+            && match &self.ftype {
+                FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
+                    type_spec.is_copy()
+                }
+                FieldType::Repeated { .. } | FieldType::Map { .. } | FieldType::Custom(_) => false,
+            }
+    }
+
     pub(crate) fn from_proto(
         proto: &'proto FieldDescriptorProto,
         field_conf: &CurrentConfig,
