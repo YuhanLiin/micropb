@@ -94,8 +94,6 @@ impl<'a> TypeGraph<'a> {
             let msg = self.messages.get_mut(name).unwrap();
             let edges = msg.message_edges.clone();
             for (pos, next_name) in edges {
-                // At this point it's still possible for edges to point to non-existent messages,
-                // due to messages being skipped, so we can't unwrap here
                 if let Some(next_msg) = self.messages.get_mut(next_name) {
                     next_msg.parent_edges.push((pos, name.clone()));
                 }
@@ -140,38 +138,6 @@ impl<'a> TypeGraph<'a> {
             visited.insert(elem);
         }
         visited
-    }
-
-    fn trim_skipped(&mut self, skipped: &BTreeSet<String>) {
-        let is_skipped = |typ: &_| match typ {
-            TypeSpec::Message(name, _) | TypeSpec::Enum(name) => skipped.contains(*name),
-            _ => false,
-        };
-
-        // Begin with all messages that have an enum or message field that has been skipped
-        let msgs_with_skipped_field = self
-            .messages
-            .iter()
-            .filter(|(_, msg)| {
-                let missing_field = msg.fields.iter().any(|f| {
-                    let (typ1, typ2) = f.type_specs();
-                    typ1.map(is_skipped) == Some(true) || typ2.map(is_skipped) == Some(true)
-                });
-                let missing_oneof_field = msg.oneof_fields().any(|of| is_skipped(&of.tspec));
-                missing_field || missing_oneof_field
-            })
-            .map(|(name, _)| RevElem::Msg(name.clone()))
-            .collect();
-
-        // Propagate the skipped messages upwards, then delete all the visited messages
-        let visited = self.reverse_propagate(msgs_with_skipped_field, |_, _| {});
-        for to_delete in visited.iter().filter_map(|e| match e {
-            RevElem::Msg(name) => Some(name),
-            // We don't care about the oneofs, since the owning message will be deleted anyways
-            RevElem::Oneof(_, _) => None,
-        }) {
-            self.messages.remove(to_delete);
-        }
     }
 
     fn propagate_lifetimes(&mut self) {
@@ -247,6 +213,7 @@ impl<'a> TypeGraph<'a> {
         );
     }
 
+    /// Forward DFS that performs conditional cycle detection. Does not care about oneofs.
     fn cycle_breaker_dfs<'b, T>(
         &mut self,
         start: &'b str,
