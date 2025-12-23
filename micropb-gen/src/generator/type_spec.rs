@@ -273,7 +273,15 @@ impl<'proto> TypeSpec<'proto> {
 
             TypeSpec::Message(tname) => {
                 let rust_type = ctx.resolve_type_name(tname);
-                quote! { #rust_type }
+                if let Some(lifetime) = ctx
+                    .graph
+                    .get_message(tname)
+                    .and_then(|m| m.lifetime.as_ref())
+                {
+                    quote! { #rust_type<#lifetime> }
+                } else {
+                    quote! { #rust_type }
+                }
             }
             TypeSpec::Enum(tname) => {
                 let rust_type = ctx.resolve_type_name(tname);
