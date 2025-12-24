@@ -1,8 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::generator::{
-    Context, r#enum::Enum, field::FieldType, field_error_str, message::Message, oneof::Oneof,
-};
+use crate::generator::{Context, r#enum::Enum, field::FieldType, message::Message, oneof::Oneof};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Clone, Copy)]
@@ -61,19 +59,6 @@ impl Position {
                     .expect("unexpected custom oneof")[*fi]
                     .max_size_override,
             ),
-        }
-    }
-
-    pub(crate) fn name<'a>(&self, msg: &'a Message) -> &'a str {
-        match self {
-            Position::Field(i) => msg.fields[*i].name,
-            Position::Oneof(oi, fi) => {
-                msg.oneofs[*oi]
-                    .otype
-                    .fields()
-                    .expect("unexpected custom oneof")[*fi]
-                    .name
-            }
         }
     }
 }
@@ -314,17 +299,16 @@ impl<'proto> Context<'proto> {
     /// Detect cycles in the message graph via DFS and break those cycles by overriding max size
     fn max_size_cyclic_dependencies(&mut self) {
         let messages: Vec<_> = self.graph.messages.keys().cloned().collect();
-        let pkg_name = self.pkg.clone();
 
         self.forward_dfs(
             &messages,
             // Pursue fields where max size isn't overridden
             |pos, msg| matches!(pos.max_size_override_mut(msg), Some(None)),
-            // Break the cycle by setting MAX_SIZE to None, resulting in the MAX_SIZE of all
-            // messages in the cycle to become None
+            // Break the cycle by setting MAX_SIZE to to Err, resulting in the MAX_SIZE of all
+            // messages in the cycle to become Err
             |pos, msg| {
-                let err = field_error_str(&pkg_name, msg.name, pos.name(msg), "cyclical reference");
-                *pos.max_size_override_mut(msg).unwrap() = Some(Err(err));
+                *pos.max_size_override_mut(msg).unwrap() =
+                    Some(Err("cyclical reference".to_owned()));
             },
             |_, _| {},
         );

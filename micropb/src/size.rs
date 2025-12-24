@@ -3,6 +3,13 @@
 
 use crate::Tag;
 
+pub const fn max_encoded_size<T: crate::MessageEncode>() -> usize {
+    match T::MAX_SIZE {
+        Ok(n) => n,
+        Err(err) => panic!("{}", err),
+    }
+}
+
 /// Calculate size of `uint32` on the wire.
 pub const fn sizeof_varint32(v: u32) -> usize {
     match v {

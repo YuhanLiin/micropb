@@ -9,7 +9,7 @@ mod proto {
 #[test]
 fn sanity_check() {
     let mut basic = proto::basic_::BasicTypes::default();
-    assert_eq!(proto::basic_::BasicTypes::MAX_SIZE, None);
+    assert!(proto::basic_::BasicTypes::MAX_SIZE.is_err());
     assert!(!basic._has.dbl());
     assert_eq!(basic.dbl, 0.0);
     assert_eq!(basic.dbl(), None);
@@ -23,7 +23,7 @@ fn sanity_check() {
     assert_eq!(basic.flt(), Some(&1.0));
 
     let mut nested = proto::nested_::Nested::default();
-    assert_eq!(proto::nested_::Nested::MAX_SIZE, None);
+    assert!(proto::nested_::Nested::MAX_SIZE.is_err());
     assert_eq!(nested.basic(), None);
     nested.basic = Some(basic);
     assert!(nested.basic().is_some());

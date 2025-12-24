@@ -1,4 +1,4 @@
-use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
+use micropb::{size::max_encoded_size, MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
 mod example {
     #![allow(clippy::all)]
@@ -17,7 +17,7 @@ fn main() {
     };
 
     // Maximum size of the message type on the wire, scaled to the next power of 2 due to heapless::Vec
-    const CAPACITY: usize = example::Example::MAX_SIZE.unwrap().next_power_of_two();
+    const CAPACITY: usize = max_encoded_size::<example::Example>().next_power_of_two();
     // For the example message above we can use a smaller capacity
     // const CAPACITY: usize = 32;
 

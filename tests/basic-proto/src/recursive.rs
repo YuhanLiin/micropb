@@ -23,5 +23,8 @@ fn recursive_types() {
         }
     }
 
-    assert_eq!(proto::Recursive::MAX_SIZE, None);
+    assert_eq!(
+        proto::Recursive::MAX_SIZE,
+        Err("(.Recursive.recursive) cyclical reference")
+    );
 }

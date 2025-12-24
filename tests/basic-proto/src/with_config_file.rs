@@ -20,7 +20,7 @@ impl FieldDecode for CustomField {
 }
 
 impl FieldEncode for CustomField {
-    const MAX_SIZE: Option<usize> = Some(0);
+    const MAX_SIZE: Result<usize, &'static str> = Ok(0);
 
     fn encode_fields<W: micropb::PbWrite>(
         &self,

@@ -11,5 +11,5 @@ mod proto {
 #[test]
 fn empty_msg() {
     assert_eq!(size_of::<proto::nested_::Nested>(), size_of::<bool>());
-    assert_eq!(proto::nested_::Nested::MAX_SIZE, Some(1 + 1));
+    assert_eq!(proto::nested_::Nested::MAX_SIZE, Ok(1 + 1));
 }

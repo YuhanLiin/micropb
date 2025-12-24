@@ -221,14 +221,6 @@ impl<'proto> OneofType<'proto> {
             None
         }
     }
-
-    pub(crate) fn fields<'b>(&'b self) -> Option<&'b [OneofField<'proto>]> {
-        if let OneofType::Enum { fields, .. } = self {
-            Some(fields)
-        } else {
-            None
-        }
-    }
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]

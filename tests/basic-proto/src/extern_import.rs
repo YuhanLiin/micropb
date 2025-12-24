@@ -11,7 +11,7 @@ mod proto {
 struct Empty;
 
 impl MessageEncode for Empty {
-    const MAX_SIZE: Option<usize> = Some(0);
+    const MAX_SIZE: Result<usize, &'static str> = Ok(0);
 
     fn encode<W: micropb::PbWrite>(&self, _encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         Ok(())
@@ -66,5 +66,5 @@ fn decode_imported() {
 fn max_size() {
     let inner_max_size = (2/* tags */) + 5 + 5;
     let nested_max_size = (2/* tags */) + 1/* empty msg */ + (1 + inner_max_size);
-    assert_eq!(proto::nested_::Nested::MAX_SIZE, Some(nested_max_size));
+    assert_eq!(proto::nested_::Nested::MAX_SIZE, Ok(nested_max_size));
 }

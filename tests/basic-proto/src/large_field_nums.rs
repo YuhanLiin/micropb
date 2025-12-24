@@ -51,5 +51,5 @@ fn decode() {
 #[test]
 fn max_size() {
     let max_size = 2/* tag */ + 10 + 5/* tag */ + 10;
-    assert_eq!(proto::Msg::MAX_SIZE, Some(max_size));
+    assert_eq!(proto::Msg::MAX_SIZE, Ok(max_size));
 }
