@@ -916,6 +916,7 @@ impl Generator {
         fdset_file: impl AsRef<Path>,
         out_filename: impl AsRef<Path>,
     ) -> io::Result<()> {
+        #[allow(unused)]
         let format = self.format;
 
         let bytes = fs::read(fdset_file)?;
