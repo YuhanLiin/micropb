@@ -14,6 +14,7 @@ use crate::{
         resolve_path_elem,
         type_spec::TypeSpec,
     },
+    utils::{TryIntoTokens, find_lifetime_from_type},
 };
 
 use super::{
@@ -24,7 +25,6 @@ use super::{
     msg_error,
     oneof::{Oneof, OneofField, OneofType},
     sanitized_ident,
-    type_spec::find_lifetime_from_type,
 };
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -171,7 +171,7 @@ impl<'proto> Message<'proto> {
             .collect();
 
         // Remove all oneofs that are empty enums or synthetic oneofs
-        let mut oneofs: Vec<_> = oneofs
+        let oneofs: Vec<_> = oneofs
             .into_iter()
             .filter(|o| !matches!(&o.otype, OneofType::Enum { fields, .. } if fields.is_empty()))
             .filter(|o| !synthetic_oneof_idx.contains(&o.idx))
@@ -249,14 +249,19 @@ impl<'proto> Message<'proto> {
             .fields
             .iter()
             .find_map(|f| f.find_lifetime())
-            .or_else(|| self.oneofs.iter_mut().find_map(|o| o.find_lifetime()))
+            .or_else(|| {
+                self.oneofs
+                    .iter_mut()
+                    .find_map(|o| o.find_lifetime())
+                    .cloned()
+            })
             .or_else(|| {
                 self.unknown
                     .as_ref()
                     .map(|u| &u.handler)
                     .and_then(find_lifetime_from_type)
-            })
-            .cloned();
+                    .cloned()
+            });
         self.lifetime.as_ref()
     }
 
@@ -369,7 +374,13 @@ impl<'proto> Message<'proto> {
             let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
                 unreachable!("shouldn't generate enum with custom oneof")
             };
-            let variants = fields.iter().map(|f| f.generate_field(ctx));
+            let variants = fields
+                .iter()
+                .map(|f| {
+                    f.generate_field(ctx)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
+                })
+                .try_into_tokens()?;
             let default_variant_attr = derive_default.then(|| quote! { #[default] });
 
             Ok(quote! {
@@ -377,14 +388,21 @@ impl<'proto> Message<'proto> {
                 #derive_msg
                 #(#attrs)*
                 pub enum #rust_name<#lifetime> {
-                    #(#variants)*
+                    #variants
 
                     #default_variant_attr
                     None
                 }
             })
         } else {
-            let msg_fields = self.fields.iter().map(|f| f.generate_field(ctx));
+            let msg_fields = self
+                .fields
+                .iter()
+                .map(|f| {
+                    f.generate_field(ctx)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
+                })
+                .try_into_tokens()?;
             let oneof_fields = self
                 .oneofs
                 .iter()
@@ -403,7 +421,7 @@ impl<'proto> Message<'proto> {
                 #derive_msg
                 #(#attrs)*
                 pub struct #rust_name<#lifetime> {
-                    #(#msg_fields)*
+                    #msg_fields
                     #(#oneof_fields)*
                     #(#[doc = " Tracks presence of optional and message fields"] #(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
                     #unknown_field
@@ -519,22 +537,32 @@ impl<'proto> Message<'proto> {
         }
     }
 
-    pub(crate) fn generate_impl(&self, ctx: &Context<'proto>) -> TokenStream {
+    pub(crate) fn generate_impl(&self, ctx: &Context<'proto>) -> Result<TokenStream, io::Error> {
         if self.as_oneof_enum {
-            return quote! {};
+            return Ok(quote! {});
         }
 
-        let accessors = self.fields.iter().map(|f| f.generate_accessors(ctx));
+        let accessors = self
+            .fields
+            .iter()
+            .map(|f| {
+                f.generate_accessors(ctx)
+                    .map_err(|e| field_error(&ctx.pkg, self.name, &f.name, &e))
+            })
+            .try_into_tokens()?;
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
-        quote! {
+        Ok(quote! {
             impl<#lifetime> #name<#lifetime> {
-                #(#accessors)*
+                #accessors
             }
-        }
+        })
     }
 
-    pub(crate) fn generate_decode_trait(&self, ctx: &Context<'proto>) -> TokenStream {
+    pub(crate) fn generate_decode_trait(
+        &self,
+        ctx: &Context<'proto>,
+    ) -> Result<TokenStream, io::Error> {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
         let tag = Ident::new("tag", Span::call_site());
@@ -547,24 +575,33 @@ impl<'proto> Message<'proto> {
             };
             let variant_branches = fields
                 .iter()
-                .map(|f| f.generate_decode_branch_in_enum_msg(&decoder, ctx));
-
-            quote! {
-                #(#variant_branches)*
-            }
+                .map(|f| {
+                    f.generate_decode_branch_in_enum_msg(&decoder, ctx)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, &f.name, &e))
+                })
+                .try_into_tokens()?;
+            quote! { #variant_branches }
         } else {
             let field_branches = self
                 .fields
                 .iter()
-                .map(|f| f.generate_decode_branch(ctx, &tag, &decoder));
+                .map(|f| {
+                    f.generate_decode_branch(ctx, &tag, &decoder)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, &f.name, &e))
+                })
+                .try_into_tokens()?;
             let oneof_branches = self
                 .oneofs
                 .iter()
-                .map(|o| o.generate_decode_branches(ctx, &mod_name, &tag, &decoder));
+                .map(|o| {
+                    o.generate_decode_branches(ctx, &mod_name, &tag, &decoder)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, &o.name, &e))
+                })
+                .try_into_tokens()?;
 
             quote! {
-                #(#field_branches)*
-                #(#oneof_branches)*
+                #field_branches
+                #oneof_branches
             }
         };
 
@@ -576,7 +613,7 @@ impl<'proto> Message<'proto> {
             quote! { #decoder.skip_wire_value(#tag.wire_type())?; }
         };
 
-        quote! {
+        let tok = quote! {
             impl<#lifetime> ::micropb::MessageDecode for #name<#lifetime> {
                 fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                     &mut self,
@@ -598,7 +635,8 @@ impl<'proto> Message<'proto> {
                     Ok(())
                 }
             }
-        }
+        };
+        Ok(tok)
     }
 
     fn generate_encode_func(&self, ctx: &Context<'proto>, func_type: &EncodeFunc) -> TokenStream {
@@ -969,7 +1007,7 @@ mod tests {
                 FieldType::Map {
                     key: TypeSpec::Int(PbInt::Int64, IntSize::S16),
                     val: TypeSpec::Int(PbInt::Uint64, IntSize::S16),
-                    type_path: syn::parse_str("Map").unwrap(),
+                    typestr: "Map".to_owned(),
                     max_len: None,
                 },
             ),

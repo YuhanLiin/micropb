@@ -539,70 +539,6 @@ impl Config {
         }
     }
 
-    pub(crate) fn string_type_parsed(&self, n: Option<u32>) -> Result<Option<syn::Type>, String> {
-        self.string_type
-            .as_ref()
-            .map(|t| {
-                check_missing_len(t, n, "max_bytes")?;
-                let typestr = substitute_param(t.into(), "$N", n);
-                syn::parse_str(&typestr).map_err(|e| {
-                    format!("Failed to parse string_type \"{typestr}\" as type path: {e}")
-                })
-            })
-            .transpose()
-    }
-
-    pub(crate) fn bytes_type_parsed(&self, n: Option<u32>) -> Result<Option<syn::Type>, String> {
-        self.bytes_type
-            .as_ref()
-            .map(|t| {
-                check_missing_len(t, n, "max_bytes")?;
-                let typestr = substitute_param(t.into(), "$N", n);
-                syn::parse_str(&typestr).map_err(|e| {
-                    format!("Failed to parse bytes_type \"{typestr}\" as type path: {e}")
-                })
-            })
-            .transpose()
-    }
-
-    pub(crate) fn vec_type_parsed(
-        &self,
-        t: TokenStream,
-        n: Option<u32>,
-    ) -> Result<Option<syn::Type>, String> {
-        self.vec_type
-            .as_ref()
-            .map(|typestr| {
-                let typestr = substitute_param(typestr.into(), "$T", Some(t));
-                let typestr = substitute_param(typestr, "$N", n);
-                check_missing_len(&typestr, n, "max_len")?;
-                syn::parse_str(&typestr).map_err(|e| {
-                    format!("Failed to parse vec_type \"{typestr}\" as type path: {e}")
-                })
-            })
-            .transpose()
-    }
-
-    pub(crate) fn map_type_parsed(
-        &self,
-        k: TokenStream,
-        v: TokenStream,
-        n: Option<u32>,
-    ) -> Result<Option<syn::Type>, String> {
-        self.map_type
-            .as_ref()
-            .map(|t| {
-                let typestr = substitute_param(t.into(), "$K", Some(k));
-                let typestr = substitute_param(typestr, "$V", Some(v));
-                let typestr = substitute_param(typestr, "$N", n);
-                check_missing_len(&typestr, n, "max_len")?;
-                syn::parse_str(&typestr).map_err(|e| {
-                    format!("Failed to parse map_type \"{typestr}\" as type path: {e}")
-                })
-            })
-            .transpose()
-    }
-
     pub(crate) fn unknown_handler_parsed(&self) -> Result<Option<syn::Type>, String> {
         self.unknown_handler
             .as_ref()
@@ -632,6 +568,40 @@ impl Config {
         };
         Ok(res)
     }
+}
+
+pub(crate) fn byte_string_type_parsed(typestr: &str, n: Option<u32>) -> Result<syn::Type, String> {
+    check_missing_len(typestr, n, "max_bytes")?;
+    let typestr = substitute_param(typestr.into(), "$N", n);
+    syn::parse_str(&typestr).map_err(|e| {
+        format!("Failed to parse string or bytes type \"{typestr}\" as type path: {e}")
+    })
+}
+
+pub(crate) fn vec_type_parsed(
+    typestr: &str,
+    t: TokenStream,
+    n: Option<u32>,
+) -> Result<syn::Type, String> {
+    let typestr = substitute_param(typestr.into(), "$T", Some(t));
+    let typestr = substitute_param(typestr, "$N", n);
+    check_missing_len(&typestr, n, "max_len")?;
+    syn::parse_str(&typestr)
+        .map_err(|e| format!("Failed to parse vec_type \"{typestr}\" as type path: {e}"))
+}
+
+pub(crate) fn map_type_parsed(
+    typestr: &str,
+    k: TokenStream,
+    v: TokenStream,
+    n: Option<u32>,
+) -> Result<syn::Type, String> {
+    let typestr = substitute_param(typestr.into(), "$K", Some(k));
+    let typestr = substitute_param(typestr, "$V", Some(v));
+    let typestr = substitute_param(typestr, "$N", n);
+    check_missing_len(&typestr, n, "max_len")?;
+    syn::parse_str(&typestr)
+        .map_err(|e| format!("Failed to parse map_type \"{typestr}\" as type path: {e}"))
 }
 
 fn substitute_param<'a>(
@@ -683,46 +653,36 @@ mod tests {
 
     #[test]
     fn parse() {
-        let mut config = Config::new()
-            .vec_type("heapless::Vec<$T, $N>")
-            .string_type("heapless::String<$N>")
-            .map_type("Map<$K, $V, $N>")
-            .bytes_type("Bytes")
-            .type_attributes("#[derive(Hash)]");
-
         assert_eq!(
-            config
-                .vec_type_parsed(quote! {u8}, Some(5))
+            vec_type_parsed("heapless::Vec<$T, $N>", quote! {u8}, Some(5))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
             quote! { heapless::Vec<u8, 5> }.to_string()
         );
         assert_eq!(
-            config
-                .string_type_parsed(Some(12))
+            byte_string_type_parsed("heapless::String<$N>", Some(12))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
             quote! { heapless::String<12> }.to_string()
         );
         assert_eq!(
-            config
-                .map_type_parsed(quote! {u32}, quote! {bool}, Some(14))
+            map_type_parsed("Map<$K, $V, $N>", quote! {u32}, quote! {bool}, Some(14))
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
             quote! { Map<u32, bool, 14> }.to_string()
         );
         assert_eq!(
-            config
-                .bytes_type_parsed(None)
+            byte_string_type_parsed("Bytes", None)
                 .unwrap()
                 .to_token_stream()
                 .to_string(),
             "Bytes"
         );
 
+        let mut config = Config::new().type_attributes("#[derive(Hash)]");
         let attrs = config.type_attr_parsed().unwrap();
         assert_eq!(
             quote! { #(#attrs)* }.to_string(),

@@ -6,12 +6,10 @@ use syn::{Ident, Lifetime};
 use crate::{
     descriptor::{FieldDescriptorProto, OneofDescriptorProto},
     generator::{
-        Context, CurrentConfig, EncodeFunc, derive_msg_attr,
-        field::CustomField,
-        location::get_comments,
-        sanitized_ident,
-        type_spec::{TypeSpec, find_lifetime_from_type},
+        Context, CurrentConfig, EncodeFunc, derive_msg_attr, field::CustomField,
+        location::get_comments, sanitized_ident, type_spec::TypeSpec,
     },
+    utils::{TryIntoTokens, find_lifetime_from_type},
 };
 
 use super::location::{self, CommentNode, Comments};
@@ -70,12 +68,12 @@ impl<'proto> OneofField<'proto> {
         }))
     }
 
-    pub(crate) fn generate_field(&self, ctx: &Context<'proto>) -> TokenStream {
-        let typ = ctx.wrapped_type(self.tspec.generate_rust_type(ctx), self.boxed, false);
+    pub(crate) fn generate_field(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
+        let typ = ctx.wrapped_type(self.tspec.generate_rust_type(ctx)?, self.boxed, false);
         let name = &self.rust_name;
         let attrs = &self.attrs;
         let comments = self.comments.map(Comments::lines).into_iter().flatten();
-        quote! { #(#[doc = #comments])* #(#attrs)* #name(#typ), }
+        Ok(quote! { #(#[doc = #comments])* #(#attrs)* #name(#typ), })
     }
 
     fn generate_decode_branch(
@@ -85,7 +83,7 @@ impl<'proto> OneofField<'proto> {
         oneof_boxed: bool,
         ctx: &Context<'proto>,
         decoder: &Ident,
-    ) -> TokenStream {
+    ) -> Result<TokenStream, String> {
         let fnum = self.num;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
         let variant_name = &self.rust_name;
@@ -94,13 +92,13 @@ impl<'proto> OneofField<'proto> {
 
         let decode_stmts = self
             .tspec
-            .generate_decode_mut(ctx, false, decoder, &mut_ref);
+            .generate_decode_mut(ctx, false, decoder, &mut_ref)?;
         let value = ctx.wrapped_value(
             quote! { #oneof_type::#variant_name(::core::default::Default::default()) },
             oneof_boxed,
             true,
         );
-        quote! {
+        let tok = quote! {
             #fnum => {
                 let #mut_ref = loop {
                     if let ::core::option::Option::Some(variant) = &mut self.#oneof_name {
@@ -112,14 +110,15 @@ impl<'proto> OneofField<'proto> {
                 };
                 #decode_stmts;
             }
-        }
+        };
+        Ok(tok)
     }
 
     pub(crate) fn generate_decode_branch_in_enum_msg(
         &self,
         decoder: &Ident,
         ctx: &Context<'proto>,
-    ) -> TokenStream {
+    ) -> Result<TokenStream, String> {
         let fnum = self.num;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
         let variant_name = &self.rust_name;
@@ -127,8 +126,8 @@ impl<'proto> OneofField<'proto> {
 
         let decode_stmts = self
             .tspec
-            .generate_decode_mut(ctx, false, decoder, &mut_ref);
-        quote! {
+            .generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+        let tok = quote! {
             #fnum => {
                 let #mut_ref = loop {
                     if let Self::#variant_name(variant) = self {
@@ -138,7 +137,8 @@ impl<'proto> OneofField<'proto> {
                 };
                 #decode_stmts;
             }
-        }
+        };
+        Ok(tok)
     }
 
     pub(crate) fn generate_encode_branch(
@@ -191,12 +191,12 @@ pub(crate) enum OneofType<'a> {
 }
 
 impl<'proto> OneofType<'proto> {
-    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
+    pub(crate) fn find_lifetime(&self) -> Option<Lifetime> {
         match self {
             OneofType::Custom {
                 field: CustomField::Type(ty),
                 ..
-            } => find_lifetime_from_type(ty),
+            } => find_lifetime_from_type(ty).cloned(),
 
             OneofType::Custom {
                 field: CustomField::Delegate(..),
@@ -288,7 +288,7 @@ impl<'proto> Oneof<'proto> {
 
     /// Find lifetime and set the oneof's lifetime field
     pub(crate) fn find_lifetime(&mut self) -> Option<&Lifetime> {
-        self.lifetime = self.otype.find_lifetime().cloned();
+        self.lifetime = self.otype.find_lifetime();
         self.lifetime.as_ref()
     }
 
@@ -296,10 +296,17 @@ impl<'proto> Oneof<'proto> {
         !self.boxed && self.otype.is_copy(ctx)
     }
 
-    pub(crate) fn generate_decl(&self, ctx: &Context<'proto>, msg_is_copy: bool) -> TokenStream {
+    pub(crate) fn generate_decl(
+        &self,
+        ctx: &Context<'proto>,
+        msg_is_copy: bool,
+    ) -> Result<TokenStream, String> {
         if let OneofType::Enum { type_name, fields } = &self.otype {
             assert!(!fields.is_empty(), "empty enums should have been filtered");
-            let fields = fields.iter().map(|f| f.generate_field(ctx));
+            let fields = fields
+                .iter()
+                .map(|f| f.generate_field(ctx))
+                .try_into_tokens()?;
             let derive_msg = derive_msg_attr(
                 self.derive_dbg,
                 false,
@@ -312,16 +319,16 @@ impl<'proto> Oneof<'proto> {
             let lifetime = &self.lifetime;
             let comments = self.comments.map(Comments::lines).into_iter().flatten();
 
-            quote! {
+            Ok(quote! {
                 #(#[doc = #comments])*
                 #derive_msg
                 #(#attrs)*
                 pub enum #type_name<#lifetime> {
-                    #(#fields)*
+                    #fields
                 }
-            }
+            })
         } else {
-            quote! {}
+            Ok(quote! {})
         }
     }
 
@@ -361,17 +368,16 @@ impl<'proto> Oneof<'proto> {
         msg_mod_name: &Ident,
         tag: &Ident,
         decoder: &Ident,
-    ) -> TokenStream {
+    ) -> Result<TokenStream, String> {
         let name = &self.san_rust_name;
-        match &self.otype {
+        let tok = match &self.otype {
             OneofType::Enum { fields, type_name } => {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
                 let branches = fields
                     .iter()
-                    .map(|f| f.generate_decode_branch(name, &oneof_type, self.boxed, ctx, decoder));
-                quote! {
-                    #(#branches)*
-                }
+                    .map(|f| f.generate_decode_branch(name, &oneof_type, self.boxed, ctx, decoder))
+                    .try_into_tokens()?;
+                quote! { #branches }
             }
             OneofType::Custom {
                 field: CustomField::Type(_),
@@ -391,7 +397,8 @@ impl<'proto> Oneof<'proto> {
                     #(#nums)|* => { if !self.#field.decode_field(#tag, #decoder)? { return Err(::micropb::DecodeError::CustomField) } }
                 }
             }
-        }
+        };
+        Ok(tok)
     }
 
     pub(crate) fn generate_encode(
@@ -691,7 +698,7 @@ mod tests {
             idx: 0,
             comments: None,
         };
-        assert!(oneof.generate_decl(&ctx, false).is_empty());
+        assert!(oneof.generate_decl(&ctx, false).unwrap().is_empty());
         assert_eq!(
             oneof
                 .generate_field(&ctx, &Ident::new("Msg", Span::call_site()))
@@ -716,7 +723,7 @@ mod tests {
             idx: 0,
             comments: None,
         };
-        assert!(oneof.generate_decl(&ctx, false).is_empty());
+        assert!(oneof.generate_decl(&ctx, false).unwrap().is_empty());
         assert!(
             oneof
                 .generate_field(&ctx, &Ident::new("Msg", Span::call_site()))

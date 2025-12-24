@@ -1,3 +1,9 @@
+use std::sync::LazyLock;
+
+use proc_macro2::TokenStream;
+use regex::Regex;
+use syn::Lifetime;
+
 pub(crate) fn unescape_c_escape_string(s: &str) -> Vec<u8> {
     let src = s.as_bytes();
     let len = src.len();
@@ -106,6 +112,68 @@ pub(crate) fn path_suffix(path: &str) -> &str {
         .unwrap_or(path)
 }
 
+/// Ignore static and _ lifetimes
+fn usable_lifetime(lt: &Lifetime) -> bool {
+    lt.ident != "static" && lt.ident != "_"
+}
+
+/// Find the first lifetime embedded in a type
+pub(crate) fn find_lifetime_from_type(ty: &syn::Type) -> Option<&Lifetime> {
+    match ty {
+        syn::Type::Array(tarr) => find_lifetime_from_type(&tarr.elem),
+        syn::Type::Group(t) => find_lifetime_from_type(&t.elem),
+        syn::Type::Paren(t) => find_lifetime_from_type(&t.elem),
+        syn::Type::Reference(tref) => tref
+            .lifetime
+            .as_ref()
+            .filter(|lt| usable_lifetime(lt))
+            .or_else(|| find_lifetime_from_type(&tref.elem)),
+        syn::Type::Slice(tslice) => find_lifetime_from_type(&tslice.elem),
+        syn::Type::Tuple(tuple) => tuple.elems.iter().find_map(find_lifetime_from_type),
+        syn::Type::Path(tpath) => find_lifetime_from_path(&tpath.path),
+        _ => None,
+    }
+}
+
+/// Find the first lifetime embedded in a type path
+pub(crate) fn find_lifetime_from_path(tpath: &syn::Path) -> Option<&Lifetime> {
+    if let syn::PathArguments::AngleBracketed(args) =
+        &tpath.segments.last().expect("empty type path").arguments
+    {
+        args.args.iter().find_map(|arg| match arg {
+            syn::GenericArgument::Lifetime(lt) => usable_lifetime(lt).then_some(lt),
+            syn::GenericArgument::Type(ty) => find_lifetime_from_type(ty),
+            _ => None,
+        })
+    } else {
+        None
+    }
+}
+
+pub(crate) fn find_lifetime_from_str(s: &str) -> Option<Lifetime> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"'[_a-zA-Z][_a-zA-Z0-9]*").unwrap());
+    // The regex should match a valid lifetime, so the parse should always succeed
+    RE.find_iter(s)
+        .map(|m| syn::parse_str(m.as_str()).unwrap())
+        .find(usable_lifetime)
+}
+
+pub(crate) trait TryIntoTokens<E> {
+    fn try_into_tokens(self) -> Result<TokenStream, E>;
+}
+impl<I, E> TryIntoTokens<E> for I
+where
+    I: IntoIterator<Item = Result<TokenStream, E>>,
+{
+    fn try_into_tokens(self) -> Result<TokenStream, E> {
+        let mut tokens = TokenStream::new();
+        for res in self.into_iter() {
+            tokens.extend(res?);
+        }
+        Ok(tokens)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -135,5 +203,38 @@ mod tests {
             &b"\0\x01\x07\x08\x0C\n\r\t\x0B\\\'\"\xFE"[..],
             &unescape_c_escape_string(r#"\0\001\a\b\f\n\r\t\v\\\'\"\xfe"#)[..]
         );
+    }
+
+    #[test]
+    fn find_lifetime() {
+        fn test_lifetime(typestr: &str, expect_some: bool) {
+            assert_eq!(find_lifetime_from_str(typestr).is_some(), expect_some);
+            let ty: syn::Type = syn::parse_str(typestr).unwrap();
+            assert_eq!(find_lifetime_from_type(&ty).is_some(), expect_some);
+        }
+
+        test_lifetime("Vec", false);
+        test_lifetime("Vec<u8>", false);
+
+        test_lifetime("std::Vec<'a>", true);
+        test_lifetime("&'a [u8]", true);
+        test_lifetime("[&'a u8; 10]", true);
+        test_lifetime("([&'a u8; 10])", true);
+        test_lifetime("std::Option<std::Vec<'a>>", true);
+        test_lifetime("([&'a u8])", true);
+        test_lifetime("(u32, u8, &'a bool)", true);
+
+        test_lifetime("std::Vec<'static>", false);
+        test_lifetime("&'static [u8]", false);
+        test_lifetime("[&'static u8; 10]", false);
+        test_lifetime("([&'static u8; 10])", false);
+        test_lifetime("std::Option<std::Vec<'static>>", false);
+        test_lifetime("([&'static u8])", false);
+        test_lifetime("(u32, u8, &'static bool)", false);
+
+        test_lifetime("&'static std::Option<std::Vec<'a>>", true);
+        test_lifetime("&'static std::Option<std::Vec<'static, Ref<'a>>>", true);
+        test_lifetime("&'static [&'a u8]", true);
+        test_lifetime("(&'static u32, &'a u64)", true);
     }
 }

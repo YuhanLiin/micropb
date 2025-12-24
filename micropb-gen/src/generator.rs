@@ -425,12 +425,13 @@ impl<'proto> Context<'proto> {
         // Only manually implement PartialEq if there's a hazzer
         let partial_eq = msg.hazzer.as_ref().map(|_| msg.generate_partial_eq());
         let decl = msg.generate_decl(self, proto_default)?;
-        let msg_impl = msg.generate_impl(self);
+        let msg_impl = msg.generate_impl(self)?;
         let decode = self
             .params
             .encode_decode
             .is_decode()
-            .then(|| msg.generate_decode_trait(self));
+            .then(|| msg.generate_decode_trait(self))
+            .transpose()?;
         let encode = self
             .params
             .encode_decode

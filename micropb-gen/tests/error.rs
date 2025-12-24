@@ -119,7 +119,7 @@ fn parse_string_type() {
     let err = compile(generator);
     dbg!(&err);
     assert!(err.contains("(.test.Msg.st)"));
-    assert!(err.contains("Failed to parse string_type"));
+    assert!(err.contains("Failed to parse string or bytes type"));
 }
 
 #[test]
@@ -136,7 +136,7 @@ fn parse_bytes_type() {
     let err = compile(generator);
     dbg!(&err);
     assert!(err.contains("(.test.Msg.bt)"));
-    assert!(err.contains("Failed to parse bytes_type"));
+    assert!(err.contains("Failed to parse string or bytes"));
 }
 
 #[test]

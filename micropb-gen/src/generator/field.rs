@@ -2,19 +2,17 @@ use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{Ident, Lifetime};
 
-use crate::config::OptionalRepr;
+use crate::config::{OptionalRepr, map_type_parsed, vec_type_parsed};
 use crate::descriptor::{
     DescriptorProto, FieldDescriptorProto,
     FieldDescriptorProto_::{Label, Type},
 };
 use crate::generator::Context;
+use crate::utils::{find_lifetime_from_str, find_lifetime_from_type};
 
 use super::Syntax;
 use super::location::{self, CommentNode, Comments};
-use super::{
-    CurrentConfig, EncodeFunc,
-    type_spec::{TypeSpec, find_lifetime_from_type},
-};
+use super::{CurrentConfig, EncodeFunc, type_spec::TypeSpec};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum CustomField {
@@ -23,22 +21,22 @@ pub(crate) enum CustomField {
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub(crate) enum FieldType<'a> {
+pub(crate) enum FieldType<'proto> {
     // Can't be put in oneof, key type can't be message or enum
     Map {
-        key: TypeSpec<'a>,
-        val: TypeSpec<'a>,
-        type_path: syn::Type,
+        key: TypeSpec<'proto>,
+        val: TypeSpec<'proto>,
+        typestr: String,
         max_len: Option<u32>,
     },
     // Implicit presence
-    Single(TypeSpec<'a>),
+    Single(TypeSpec<'proto>),
     // Explicit presence
-    Optional(TypeSpec<'a>, OptionalRepr),
+    Optional(TypeSpec<'proto>, OptionalRepr),
     Repeated {
-        typ: TypeSpec<'a>,
+        typ: TypeSpec<'proto>,
         packed: bool,
-        type_path: syn::Type,
+        typestr: String,
         max_len: Option<u32>,
     },
     Custom(CustomField),
@@ -86,19 +84,21 @@ impl<'proto> Field<'proto> {
         }
     }
 
-    pub(crate) fn find_lifetime(&self) -> Option<&Lifetime> {
+    pub(crate) fn find_lifetime(&self) -> Option<Lifetime> {
         match &self.ftype {
-            FieldType::Custom(CustomField::Type(ty)) => find_lifetime_from_type(ty),
+            FieldType::Custom(CustomField::Type(ty)) => find_lifetime_from_type(ty).cloned(),
             FieldType::Single(tspec) | FieldType::Optional(tspec, _) => tspec.find_lifetime(),
-            FieldType::Repeated { typ, type_path, .. } => {
-                find_lifetime_from_type(type_path).or_else(|| typ.find_lifetime())
-            }
+            FieldType::Repeated {
+                typ,
+                typestr: type_path,
+                ..
+            } => find_lifetime_from_str(type_path).or_else(|| typ.find_lifetime()),
             FieldType::Map {
                 key,
                 val,
-                type_path,
+                typestr: type_path,
                 ..
-            } => find_lifetime_from_type(type_path)
+            } => find_lifetime_from_str(type_path)
                 .or_else(|| key.find_lifetime())
                 .or_else(|| val.find_lifetime()),
             _ => None,
@@ -142,18 +142,15 @@ impl<'proto> Field<'proto> {
                 let key = TypeSpec::from_proto(&map_msg.field[0], &field_conf.next_conf("key"))?;
                 let val = TypeSpec::from_proto(&map_msg.field[1], &field_conf.next_conf("value"))?;
                 let max_len = field_conf.config.max_len;
-                let type_path = field_conf
+                let typestr = field_conf
                     .config
-                    .map_type_parsed(
-                        key.generate_rust_type(ctx),
-                        val.generate_rust_type(ctx),
-                        max_len,
-                    )?
-                    .ok_or_else(|| "map_type not configured for map field".to_owned())?;
+                    .map_type
+                    .clone()
+                    .ok_or_else(|| "map_type not configured".to_owned())?;
                 FieldType::Map {
                     key,
                     val,
-                    type_path,
+                    typestr,
                     max_len,
                 }
             }
@@ -161,11 +158,13 @@ impl<'proto> Field<'proto> {
             (None, None, Label::Repeated) => {
                 let typ = TypeSpec::from_proto(proto, &field_conf.next_conf("elem"))?;
                 let max_len = field_conf.config.max_len;
+                let typestr = field_conf
+                    .config
+                    .vec_type
+                    .clone()
+                    .ok_or_else(|| "vec_type not configured".to_owned())?;
                 FieldType::Repeated {
-                    type_path: field_conf
-                        .config
-                        .vec_type_parsed(typ.generate_rust_type(ctx), max_len)?
-                        .ok_or_else(|| "vec_type not configured for repeated field".to_owned())?,
+                    typestr,
                     typ,
                     max_len,
                     packed: proto
@@ -209,25 +208,46 @@ impl<'proto> Field<'proto> {
         }))
     }
 
-    pub(crate) fn generate_rust_type(&self, ctx: &Context<'proto>) -> TokenStream {
+    pub(crate) fn generate_rust_type(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
         let typ = match &self.ftype {
-            FieldType::Map { type_path, .. } => quote! { #type_path },
-            FieldType::Single(t) | FieldType::Optional(t, _) => t.generate_rust_type(ctx),
-            FieldType::Repeated { type_path, .. } => quote! { #type_path },
+            FieldType::Map {
+                typestr,
+                key,
+                val,
+                max_len,
+            } => {
+                let key = key.generate_rust_type(ctx)?;
+                let val = val.generate_rust_type(ctx)?;
+                let ty = map_type_parsed(typestr, key, val, *max_len)?;
+                quote! { #ty }
+            }
 
-            FieldType::Custom(CustomField::Type(t)) => return quote! {#t},
+            FieldType::Repeated {
+                typestr,
+                typ,
+                max_len,
+                ..
+            } => {
+                let inner = typ.generate_rust_type(ctx)?;
+                let ty = vec_type_parsed(typestr, inner, *max_len)?;
+                quote! { #ty }
+            }
+
+            FieldType::Single(t) | FieldType::Optional(t, _) => t.generate_rust_type(ctx)?,
+
+            FieldType::Custom(CustomField::Type(t)) => return Ok(quote! {#t}),
             FieldType::Custom(CustomField::Delegate(_)) => {
                 unreachable!("delegate field cannot have a type")
             }
         };
-        ctx.wrapped_type(typ, self.boxed, self.is_option())
+        Ok(ctx.wrapped_type(typ, self.boxed, self.is_option()))
     }
 
-    pub(crate) fn generate_field(&self, ctx: &Context<'proto>) -> TokenStream {
+    pub(crate) fn generate_field(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
         if let FieldType::Custom(CustomField::Delegate(_)) = self.ftype {
-            return quote! {};
+            return Ok(quote! {});
         }
-        let typ = self.generate_rust_type(ctx);
+        let typ = self.generate_rust_type(ctx)?;
         let name = &self.san_rust_name;
         let attrs = &self.attrs;
         let comments = self.comments.map(Comments::lines).into_iter().flatten();
@@ -238,7 +258,9 @@ impl<'proto> Field<'proto> {
             empty_line.chain(warning)
         }).into_iter().flatten();
 
-        quote! { #(#[doc = #comments])* #(#[doc = #hazzer_warning])* #(#attrs)* pub #name : #typ, }
+        Ok(
+            quote! { #(#[doc = #comments])* #(#[doc = #hazzer_warning])* #(#attrs)* pub #name : #typ, },
+        )
     }
 
     pub(crate) fn generate_default(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
@@ -262,7 +284,7 @@ impl<'proto> Field<'proto> {
         Ok(quote! { ::core::default::Default::default() })
     }
 
-    pub(crate) fn generate_accessors(&self, ctx: &Context<'proto>) -> TokenStream {
+    pub(crate) fn generate_accessors(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
         match &self.ftype {
             FieldType::Optional(type_spec, opt) => {
                 let (deref, deref_mut) = if self.boxed {
@@ -274,7 +296,7 @@ impl<'proto> Field<'proto> {
                 let fname = &self.san_rust_name;
                 let getter_doc =
                     format!(" Return a reference to `{}` as an `Option`", self.rust_name);
-                let type_name = type_spec.generate_rust_type(ctx);
+                let type_name = type_spec.generate_rust_type(ctx)?;
 
                 // Getter is needed for encoding, so we have to generate it
                 let mut accessors = match opt {
@@ -434,11 +456,11 @@ impl<'proto> Field<'proto> {
                         }
                     })
                 }
-                accessors
+                Ok(accessors)
             }
 
             FieldType::Single(type_spec) if !self.no_accessors => {
-                let type_name = type_spec.generate_rust_type(ctx);
+                let type_name = type_spec.generate_rust_type(ctx)?;
                 let setter_name = format_ident!("set_{}", self.rust_name);
                 let muter_name = format_ident!("mut_{}", self.rust_name);
                 let init_name = format_ident!("init_{}", self.rust_name);
@@ -452,7 +474,7 @@ impl<'proto> Field<'proto> {
                     self.rust_name
                 );
 
-                quote! {
+                let accessors = quote! {
                     #[doc = #getter_doc]
                     #[inline]
                     pub fn #fname(&self) -> &#type_name {
@@ -478,9 +500,10 @@ impl<'proto> Field<'proto> {
                         self.#fname = value.into();
                         self
                     }
-                }
+                };
+                Ok(accessors)
             }
-            _ => quote! {},
+            _ => Ok(quote! {}),
         }
     }
 
@@ -489,7 +512,7 @@ impl<'proto> Field<'proto> {
         ctx: &Context<'proto>,
         tag: &Ident,
         decoder: &Ident,
-    ) -> TokenStream {
+    ) -> Result<TokenStream, String> {
         let fnum = self.num;
         let fname = &self.san_rust_name;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
@@ -497,10 +520,10 @@ impl<'proto> Field<'proto> {
 
         let decode_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
-                let key_decode_expr = key.generate_decode_mut(ctx, false, decoder, &mut_ref);
-                let val_decode_expr = val.generate_decode_mut(ctx, false, decoder, &mut_ref);
-                let key_type = key.generate_rust_type(ctx);
-                let val_type = val.generate_rust_type(ctx);
+                let key_decode_expr = key.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+                let val_decode_expr = val.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+                let key_type = key.generate_rust_type(ctx)?;
+                let val_type = val.generate_rust_type(ctx)?;
                 quote! {
                     if let Some((k, v)) = #decoder.decode_map_elem(
                         |#mut_ref: &mut #key_type, #decoder| { #key_decode_expr; Ok(()) },
@@ -515,7 +538,7 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Single(tspec) => {
-                let decode_stmts = tspec.generate_decode_mut(ctx, true, decoder, &mut_ref);
+                let decode_stmts = tspec.generate_decode_mut(ctx, true, decoder, &mut_ref)?;
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_stmts };
@@ -523,7 +546,7 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::None) => {
-                let decode_stmts = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref);
+                let decode_stmts = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_stmts };
@@ -531,7 +554,7 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
-                let decode_expr = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref);
+                let decode_expr = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
                 let setter = format_ident!("set_{}", self.rust_name);
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
@@ -541,7 +564,7 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::Option) => {
-                let decode_stmts = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref);
+                let decode_stmts = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
                 quote! {
                     let #mut_ref = &mut #extra_deref *self.#fname.get_or_insert_with(::core::default::Default::default);
                     { #decode_stmts };
@@ -562,8 +585,8 @@ impl<'proto> Field<'proto> {
                         }
                     }
                 } else {
-                    let decode_expr = typ.generate_decode_mut(ctx, false, decoder, &mut_ref);
-                    let rust_type = typ.generate_rust_type(ctx);
+                    let decode_expr = typ.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+                    let rust_type = typ.generate_rust_type(ctx)?;
                     quote! {
                         let mut val: #rust_type = ::core::default::Default::default();
                         let #mut_ref = &mut val;
@@ -584,9 +607,9 @@ impl<'proto> Field<'proto> {
             }
         };
 
-        quote! {
+        Ok(quote! {
             #fnum => { #decode_code }
-        }
+        })
     }
 
     fn wire_type(&self) -> u8 {
@@ -1090,7 +1113,7 @@ mod tests {
             FieldType::Repeated {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: false,
-                type_path: syn::parse_str("Vec").unwrap(),
+                typestr: "Vec".to_owned(),
                 max_len: Some(21)
             }
         );
@@ -1104,7 +1127,7 @@ mod tests {
             FieldType::Repeated {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: true,
-                type_path: syn::parse_str("Vec").unwrap(),
+                typestr: "Vec".to_owned(),
                 max_len: Some(21)
             }
         );
@@ -1158,10 +1181,10 @@ mod tests {
             FieldType::Map {
                 key: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 val: TypeSpec::String {
-                    type_path: syn::parse_str("std::String").unwrap(),
+                    typestr: "std::String".to_owned(),
                     max_bytes: None
                 },
-                type_path: syn::parse_str("std::Map").unwrap(),
+                typestr: "std::Map".to_owned(),
                 max_len: None
             }
         );
