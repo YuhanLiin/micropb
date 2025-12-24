@@ -36,9 +36,9 @@
 //! code generator in `build.rs`:
 //!
 //! ```rust,no_run
-//! let mut gen = micropb_gen::Generator::new();
+//! let mut generator = micropb_gen::Generator::new();
 //! // Compile example.proto into a Rust module
-//! gen.compile_protos(&["example.proto"], std::env::var("OUT_DIR").unwrap() + "/example.rs").unwrap();
+//! generator.compile_protos(&["example.proto"], std::env::var("OUT_DIR").unwrap() + "/example.rs").unwrap();
 //! ```
 //!
 //! Finally, include the generated file in your code:
@@ -110,7 +110,7 @@
 //! `micropb-gen` will generate the following Rust structs and APIs:
 //! ```rust,ignore
 //! pub mod example_ {
-//!     #[derive(Debug, Clone)]
+//!     #[derive(Debug, Clone, Copy)]
 //!     pub struct Example {
 //!         pub f_int32: i32,
 //!         pub f_int64: i64,
@@ -201,7 +201,7 @@
 //!
 //! pub mod Example_ {
 //!     /// Tracks whether the optional fields are present
-//!     #[derive(Debug, Default, Clone, PartialEq)]
+//!     #[derive(Debug, Default, Clone, PartialEq, Copy)]
 //!     pub struct _Hazzer([u8; 1]);
 //!
 //!     impl _Hazzer {
@@ -276,13 +276,13 @@
 //!
 //! `micropb-gen` generates the following definition:
 //! ```rust,no_run
-//! #[derive(Debug, Clone, PartialEq)]
+//! #[derive(Debug, Clone, PartialEq, Copy)]
 //! pub struct Example {
 //!     pub number: Option<Example_::Number>,
 //! }
 //!
 //! pub mod Example_ {
-//!     #[derive(Debug, Clone, PartialEq)]
+//!     #[derive(Debug, Clone, PartialEq, Copy)]
 //!     pub enum Number {
 //!         Int(i32),
 //!         Decimal(f32),
@@ -311,9 +311,9 @@
 //!
 //! and the following configuration in `build.rs`:
 //! ```rust,no_run
-//! let mut gen = micropb_gen::Generator::new();
+//! let mut generator = micropb_gen::Generator::new();
 //! // Configure our own container types
-//! gen.configure(".",
+//! generator.configure(".",
 //!     micropb_gen::Config::new()
 //!         .string_type("crate::MyString<$N>")
 //!         .bytes_type("crate::MyVec<u8, $N>")
@@ -322,16 +322,16 @@
 //! );
 //!
 //! // We can also use container types from `heapless`, which have fixed capacity
-//! gen.use_container_heapless();
+//! generator.use_container_heapless();
 //!
 //! // Same shorthand exists for containers from `arrayvec` or `alloc`
-//! // gen.use_container_arrayvec();
-//! // gen.use_container_alloc();
+//! // generator.use_container_arrayvec();
+//! // generator.use_container_alloc();
 //!
 //!
 //! // Since we're using fixed containers, we need to specify the max capacity of each field.
 //! // For simplicity, configure capacity of all repeated/map fields to 4 and string/bytes to 8.
-//! gen.configure(".", micropb_gen::Config::new().max_len(4).max_bytes(8));
+//! generator.configure(".", micropb_gen::Config::new().max_len(4).max_bytes(8));
 //! ```
 //!
 //! The following Rust struct will be generated:
@@ -365,16 +365,16 @@
 //! config:
 //! ```rust,no_run
 //! # use micropb_gen::{Generator, Config, config::CustomField};
-//! # let mut gen = Generator::new();
+//! # let mut generator = Generator::new();
 //! // Use `Cow` as container type with lifetime of 'a
-//! gen.configure(".",
+//! generator.configure(".",
 //!     Config::new()
 //!         .string_type("alloc::borrow::Cow<'a, str>")
 //!         .bytes_type("alloc::borrow::Cow<'a, [u8]>")
 //!         .vec_type("alloc::borrow::Cow<'a, [$T]>")
 //! );
 //! // Use a custom type for the `f_map` field, also with lifetime of 'a
-//! gen.configure(".Containers.f_map",
+//! generator.configure(".Containers.f_map",
 //!     Config::new().custom_field(CustomField::from_type("MyField<'a>"))
 //! );
 //! ```
@@ -391,9 +391,8 @@
 //! }
 //! ```
 //!
-//! ### Note
-//! `micropb-gen` cannot detect if a message field contains a lifetime or not, so any field that's
-//! a message with a lifetime must be configured with [`field_lifetime`](Config::field_lifetime).
+//! Note that message types can only have a single lifetime, so don't mix multiple lifetime
+//! identifiers in your configuration.
 //!
 //! # Enums
 //!
@@ -495,8 +494,9 @@ mod descriptor {
 }
 
 use std::{
+    collections::BTreeMap,
     env,
-    ffi::OsStr,
+    ffi::{OsStr, OsString},
     fmt, fs,
     io::{self, Write},
     path::{Path, PathBuf},
@@ -504,10 +504,11 @@ use std::{
 };
 
 pub use config::Config;
-use generator::location::Comments;
-pub use generator::Generator;
 use micropb::{MessageDecode, PbDecoder};
 use pathtree::PathTree;
+use proc_macro2::TokenStream;
+
+use crate::generator::Context;
 
 #[derive(Debug, Clone, Copy, Default)]
 /// Whether to include encode and decode logic
@@ -537,6 +538,55 @@ fn warn_cargo_build(args: fmt::Arguments) {
     println!("cargo::warning={args}");
 }
 
+/// Protobuf code generator
+///
+/// Use this in `build.rs` to compile `.proto` files into a Rust module.
+///
+/// The main way to control the compilation process is to call [`configure`](Generator::configure),
+/// which allows the user to customize how code is generated from Protobuf types and fields of
+/// their choosing.
+///
+/// # Note
+/// It's recommended to call one of [`use_container_alloc`](Self::use_container_alloc),
+/// [`use_container_heapless`](Self::use_container_heapless), or
+/// [`use_container_alloc`](Self::use_container_alloc) to ensure that container types are
+/// configured for `string`, `bytes`, repeated, and `map` fields. The generator will throw an
+/// error if it reaches any such field that doesn't have a container configured.
+///
+/// # Example
+/// ```no_run
+/// use micropb_gen::{Generator, Config};
+///
+/// let mut generator = Generator::new();
+/// // Use container types from `heapless`
+/// generator.use_container_heapless()
+///     // Set max length of repeated fields in .test.Data to 4
+///     .configure(".test.Data", Config::new().max_len(4))
+///     // Wrap .test.Data.value inside a Box
+///     .configure(".test.Data.value", Config::new().boxed(true));
+/// // Compile test.proto into a Rust module
+/// generator.compile_protos(
+///     &["test.proto"],
+///     std::env::var("OUT_DIR").unwrap() + "/test_proto.rs",
+/// )
+/// .unwrap();
+/// ```
+pub struct Generator {
+    pub(crate) config_tree: PathTree<Box<Config>>,
+
+    pub(crate) warning_cb: WarningCb,
+    pub(crate) extern_paths: BTreeMap<String, TokenStream>,
+    pub(crate) encode_decode: EncodeDecode,
+    pub(crate) calculate_max_size: bool,
+    pub(crate) retain_enum_prefix: bool,
+    pub(crate) format: bool,
+    pub(crate) fdset_path: Option<PathBuf>,
+    pub(crate) protoc_args: Vec<OsString>,
+    pub(crate) suffixed_package_names: bool,
+    pub(crate) single_oneof_msg_as_enum: bool,
+    pub(crate) comments_to_docs: bool,
+}
+
 #[allow(clippy::new_without_default)]
 impl Generator {
     /// Create new generator with default settings
@@ -551,17 +601,12 @@ impl Generator {
     /// Create a generator with a custom callback for emitting warnings
     pub fn with_warning_callback(warning_cb: WarningCb) -> Self {
         let config_tree = PathTree::new(Box::new(Config::default()));
-        // Unused Comments at the tree root
-        let comment_tree = PathTree::new(Comments::default());
 
         Self {
-            syntax: Default::default(),
-            pkg_path: Default::default(),
-            pkg: Default::default(),
-            type_path: Default::default(),
+            config_tree,
 
             warning_cb,
-
+            extern_paths: Default::default(),
             encode_decode: Default::default(),
             retain_enum_prefix: Default::default(),
             format: true,
@@ -571,10 +616,6 @@ impl Generator {
             suffixed_package_names: true,
             single_oneof_msg_as_enum: false,
             comments_to_docs: true,
-
-            config_tree,
-            comment_tree,
-            extern_paths: Default::default(),
         }
     }
 
@@ -587,7 +628,7 @@ impl Generator {
     }
 
     /// Apply code generator configurations to Protobuf types and fields. See
-    /// [`Config`](crate::Config) for possible configuration options.
+    /// [`Config`] for possible configuration options.
     ///
     /// The `proto_path` argument is a fully-qualified Protobuf path that points to a package,
     /// type, or field in the compiled `.proto` files. The configurations are applied to the
@@ -596,31 +637,31 @@ impl Generator {
     /// # Example
     /// ```
     /// # use micropb_gen::{Generator, Config, config::IntSize};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // Configure field attributes on a specific field of a message type
-    /// gen.configure(".pkg.Message.int_field", Config::new().field_attributes("#[serde(skip)]"));
+    /// generator.configure(".pkg.Message.int_field", Config::new().field_attributes("#[serde(skip)]"));
     ///
     /// // Configure field attributes on all fields of a message type
-    /// gen.configure(".pkg.Message", Config::new().field_attributes("#[serde(skip)]"));
+    /// generator.configure(".pkg.Message", Config::new().field_attributes("#[serde(skip)]"));
     ///
     /// // Configure field attributes on all fields in a package
-    /// gen.configure(".pkg", Config::new().field_attributes("#[serde(skip)]"));
+    /// generator.configure(".pkg", Config::new().field_attributes("#[serde(skip)]"));
     ///
     /// // Configure field attributes on all fields
-    /// gen.configure(".", Config::new().field_attributes("#[serde(skip)]"));
+    /// generator.configure(".", Config::new().field_attributes("#[serde(skip)]"));
     ///
     /// // Configure types attributes on a specific message type
-    /// gen.configure(".pkg.Message", Config::new().type_attributes("#[derive(Serialize)]"));
+    /// generator.configure(".pkg.Message", Config::new().type_attributes("#[derive(Serialize)]"));
     ///
     /// // Configure boxing behaviour on an oneof in a message type
-    /// gen.configure(".pkg.Message.my_oneof", Config::new().boxed(true));
+    /// generator.configure(".pkg.Message.my_oneof", Config::new().boxed(true));
     ///
     /// // Configure the int size on a variant of an oneof
-    /// gen.configure(".pkg.Message.my_oneof_variant", Config::new().int_size(IntSize::S8));
+    /// generator.configure(".pkg.Message.my_oneof_variant", Config::new().int_size(IntSize::S8));
     ///
     /// // Configure the int size of an enum
     /// // Note that enum variants cannot be configured
-    /// gen.configure(".pkg.Enum", Config::new().enum_int_size(IntSize::S8));
+    /// generator.configure(".pkg.Enum", Config::new().enum_int_size(IntSize::S8));
     /// ```
     ///
     /// # Special paths
@@ -628,22 +669,22 @@ impl Generator {
     /// code that don't have a corresponding Protobuf path.
     /// ```no_run
     /// # use micropb_gen::{Generator, Config, config::IntSize};
-    /// # let mut gen = micropb_gen::Generator::new();
+    /// # let mut generator = micropb_gen::Generator::new();
     /// // Configure the int size of the elements in a repeated field via ".elem"
-    /// gen.configure(".pkg.Message.repeated_field.elem", Config::new().int_size(IntSize::S8));
+    /// generator.configure(".pkg.Message.repeated_field.elem", Config::new().int_size(IntSize::S8));
     ///
     /// // Configure the int size of the keys in a map field via ".key"
-    /// gen.configure(".pkg.Message.map_field.key", Config::new().int_size(IntSize::S8));
+    /// generator.configure(".pkg.Message.map_field.key", Config::new().int_size(IntSize::S8));
     /// // Configure the int size of the values in a map field via ".value"
-    /// gen.configure(".pkg.Message.map_field.value", Config::new().int_size(IntSize::S16));
+    /// generator.configure(".pkg.Message.map_field.value", Config::new().int_size(IntSize::S16));
     ///
     /// // Configure the field attributes of hazzer field and the type attributes of
     /// // the hazzer struct in the message via "._has"
-    /// gen.configure(".pkg.Message._has",
+    /// generator.configure(".pkg.Message._has",
     ///     Config::new().field_attributes("#[serde(skip)]").type_attributes("#[derive(Serialize)]"));
     ///
     /// // Configure the field attributes for the unknown handler field of the message via "._unknown"
-    /// gen.configure(".pkg.Message._unknown", Config::new().field_attributes("#[serde(skip)]"));
+    /// generator.configure(".pkg.Message._unknown", Config::new().field_attributes("#[serde(skip)]"));
     ///
     /// ```
     pub fn configure(&mut self, proto_path: &str, config: Config) -> &mut Self {
@@ -682,19 +723,19 @@ impl Generator {
     ///
     /// ```
     /// # use micropb_gen::{Config, config::{IntSize, OptionalRepr}};
-    /// let mut gen = micropb_gen::Generator::new();
-    /// gen.configure(
+    /// let mut generator = micropb_gen::Generator::new();
+    /// generator.configure(
     ///     ".my.pkg.Message.int_field",
     ///     Config::new().int_size(IntSize::S16).optional_repr(OptionalRepr::Option)
     /// );
-    /// gen.configure("my.pkg.Message.bad_field", Config::new().skip(true));
+    /// generator.configure("my.pkg.Message.bad_field", Config::new().skip(true));
     /// ```
     ///
     /// We can instead load the configuration for `.my.pkg` from a TOML file:
     /// ```no_run
     /// # use std::path::Path;
-    /// # let mut gen = micropb_gen::Generator::new();
-    /// gen.parse_config_file(Path::new("my.pkg.toml"), ".my.pkg")?;
+    /// # let mut generator = micropb_gen::Generator::new();
+    /// generator.parse_config_file(Path::new("my.pkg.toml"), ".my.pkg")?;
     /// # Ok::<_, std::io::Error>(())
     /// ```
     ///
@@ -821,12 +862,12 @@ impl Generator {
     /// # Example
     /// ```no_run
     /// // build.rs
-    /// let mut gen = micropb_gen::Generator::new();
-    /// gen.compile_protos(&["server.proto", "client.proto"],
+    /// let mut generator = micropb_gen::Generator::new();
+    /// generator.compile_protos(&["server.proto", "client.proto"],
     ///                     std::env::var("OUT_DIR").unwrap() + "/output.rs").unwrap();
     /// ```
     pub fn compile_protos(
-        &mut self,
+        self,
         protos: &[impl AsRef<Path>],
         out_filename: impl AsRef<Path>,
     ) -> io::Result<()> {
@@ -871,22 +912,23 @@ impl Generator {
     /// Similar to [`compile_protos`](Self::compile_protos), but it does not invoke `protoc` and
     /// instead takes a file descriptor set.
     pub fn compile_fdset_file(
-        &mut self,
+        self,
         fdset_file: impl AsRef<Path>,
         out_filename: impl AsRef<Path>,
     ) -> io::Result<()> {
+        #[allow(unused)]
+        let format = self.format;
+
         let bytes = fs::read(fdset_file)?;
         let mut decoder = PbDecoder::new(bytes.as_slice());
         let mut fdset = descriptor::FileDescriptorSet::default();
         fdset
             .decode(&mut decoder, bytes.len())
             .expect("file descriptor set decode failed");
-        let code = self.generate_fdset(&fdset)?;
-
-        self.warn_unused_configs();
+        let code = Context::generate_fdset(self, &fdset)?;
 
         #[cfg(feature = "format")]
-        let output = if self.format {
+        let output = if format {
             prettyplease::unparse(
                 &syn::parse2(code).expect("output code should be parseable as a file"),
             )
@@ -993,13 +1035,13 @@ impl Generator {
     /// ```no_run
     /// // build.rs of app
     ///
-    /// let mut gen = micropb_gen::Generator::new();
+    /// let mut generator = micropb_gen::Generator::new();
     /// // Substitute Timestamp message
-    /// gen.extern_type_path(".time.Timestamp", "time::Timestamp");
+    /// generator.extern_type_path(".time.Timestamp", "time::Timestamp");
     /// // Substitute TZ enum
-    /// gen.extern_type_path(".time.TZ", "time::Tz");
+    /// generator.extern_type_path(".time.TZ", "time::Tz");
     /// // Compile only app.proto, not time.proto
-    /// gen.compile_protos(&["app.proto"], std::env::var("OUT_DIR").unwrap() + "/output.rs").unwrap();
+    /// generator.compile_protos(&["app.proto"], std::env::var("OUT_DIR").unwrap() + "/output.rs").unwrap();
     /// ```
     ///
     /// # Note
@@ -1026,7 +1068,7 @@ impl Generator {
     ///
     /// By default, `micropb-gen` generates code to calculate the `MAX_SIZE` associated constant
     /// for each message struct, which determines the max buffer size needed to encode it. If this
-    /// is set to false, then it replaces the calculations with `None`, effectively disabling the
+    /// is set to false, then it replaces the calculations with `Err`, effectively disabling the
     /// use of `MAX_SIZE`. This has no runtime impact, but it can reduce the size of the output
     /// file.
     pub fn calculate_max_size(&mut self, flag: bool) -> &mut Self {

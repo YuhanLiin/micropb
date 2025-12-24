@@ -37,7 +37,7 @@
 //! #     }
 //! # }
 //! # impl MessageEncode for ProtoMessage {
-//! #     const MAX_SIZE: Option<usize> = None;
+//! #     const MAX_SIZE: Result<usize, &str> = Ok(0);
 //! #
 //! #     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
 //! #         Ok(())
@@ -159,10 +159,10 @@ pub use message::MessageEncode;
 #[macro_export]
 #[doc(hidden)]
 macro_rules! const_map {
-    ($opt:expr, |$val:ident| $body:expr) => {
-        match $opt {
-            ::core::option::Option::Some($val) => ::core::option::Option::Some($body),
-            _ => ::core::option::Option::None,
+    ($res:expr, |$val:ident| $body:expr) => {
+        match $res {
+            ::core::result::Result::Ok($val) => ::core::result::Result::Ok($body),
+            ::core::result::Result::Err(err) => ::core::result::Result::Err(err),
         }
     };
 }
@@ -240,9 +240,9 @@ mod tests {
 
     #[test]
     fn const_macro() {
-        const C1: Option<usize> = const_map!(Some(6), |n| n + 5);
-        const C2: Option<usize> = const_map!(None::<usize>, |n| n + 5);
-        assert_eq!(C1, Some(11));
-        assert_eq!(C2, None);
+        const C1: Result<usize, &'static str> = const_map!(Ok(6), |n| n + 5);
+        const C2: Result<usize, &'static str> = const_map!(Err::<usize, _>("test"), |n| n + 5);
+        assert_eq!(C1, Ok(11));
+        assert_eq!(C2, Err("test"));
     }
 }

@@ -2,7 +2,7 @@ extern crate alloc;
 
 #[cfg(test)]
 mod tests {
-    use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
+    use micropb::{size::max_encoded_size, MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 
     mod micropb_types {
         #![allow(clippy::all)]
@@ -116,9 +116,9 @@ mod tests {
 
         #[test]
         fn max_size(sin1: micropb_types::TestTypesSingular1, opt1: micropb_types::TestTypesOptional1) {
-            const SIN1_MAX: usize = micropb_types::TestTypesSingular1::MAX_SIZE.unwrap();
+            const SIN1_MAX: usize = max_encoded_size::<micropb_types::TestTypesSingular1>();
             assert!(sin1.compute_size() <= SIN1_MAX);
-            const OPT1_MAX: usize = micropb_types::TestTypesOptional1::MAX_SIZE.unwrap();
+            const OPT1_MAX: usize = max_encoded_size::<micropb_types::TestTypesOptional1>();
             assert!(opt1.compute_size() <= OPT1_MAX);
         }
     }

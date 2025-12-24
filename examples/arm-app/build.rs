@@ -12,18 +12,18 @@ fn proto_generate() {
         .configure(".raw.RawMsg.payload", Config::new().max_bytes(8))
         .configure(".packet.Init.version", Config::new().max_bytes(8))
         .configure(".packet.LogBundle.logs", Config::new().max_len(4))
-        .add_protoc_arg("-Iproto")
-        .compile_protos(
-            &[
-                "accel.proto",
-                "gps.proto",
-                "packet.proto",
-                "raw.proto",
-                "google/protobuf/timestamp.proto",
-            ],
-            std::env::var("OUT_DIR").unwrap() + "/arm-example-proto.rs",
-        )
-        .unwrap();
+        .add_protoc_arg("-Iproto");
+    gen.compile_protos(
+        &[
+            "accel.proto",
+            "gps.proto",
+            "packet.proto",
+            "raw.proto",
+            "google/protobuf/timestamp.proto",
+        ],
+        std::env::var("OUT_DIR").unwrap() + "/arm-example-proto.rs",
+    )
+    .unwrap();
     println!("cargo:rerun-if-changed=proto");
 }
 

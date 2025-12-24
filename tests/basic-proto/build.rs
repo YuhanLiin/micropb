@@ -6,7 +6,7 @@ use micropb_gen::{
 };
 
 fn no_config() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &[
@@ -145,7 +145,7 @@ fn skip() {
 }
 
 fn keyword_fields() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/keyword_fields.proto"],
@@ -215,15 +215,13 @@ fn container_alloc() {
 
 fn container_cow() {
     let mut generator = Generator::new();
-    generator
-        .configure(
-            ".",
-            Config::new()
-                .string_type("::alloc::borrow::Cow<'a, str>")
-                .vec_type("::alloc::borrow::Cow<'a, [$T]>")
-                .bytes_type("::alloc::borrow::Cow<'a, [u8]>"),
-        )
-        .configure(".List.list", Config::new().field_lifetime("'a"));
+    generator.configure(
+        ".",
+        Config::new()
+            .string_type("::alloc::borrow::Cow<'a, str>")
+            .vec_type("::alloc::borrow::Cow<'a, [$T]>")
+            .bytes_type("::alloc::borrow::Cow<'a, [u8]>"),
+    );
 
     generator
         .compile_protos(
@@ -308,7 +306,7 @@ fn implicit_presence() {
 }
 
 fn extern_import() {
-    let mut gen1 = Generator::new();
+    let gen1 = Generator::new();
     gen1.compile_protos(
         &["proto/basic.proto"],
         std::env::var("OUT_DIR").unwrap() + "/import_basic.rs",
@@ -319,41 +317,35 @@ fn extern_import() {
     // Replace `BasicTypes` with an empty message
     gen2.extern_type_path(".basic.BasicTypes", "crate::extern_import::Empty")
         // Replace `Enum` with the generated enum type
-        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic_::Enum")
-        .compile_protos(
-            &["proto/nested.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/import_nested.rs",
-        )
-        .unwrap();
+        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic_::Enum");
+    gen2.compile_protos(
+        &["proto/nested.proto"],
+        std::env::var("OUT_DIR").unwrap() + "/import_nested.rs",
+    )
+    .unwrap();
 }
 
 fn lifetime_fields() {
     let mut generator = Generator::new();
     generator.encode_decode(EncodeDecode::EncodeOnly);
     generator.configure(".", Config::new().no_debug_impl(true).no_default_impl(true));
-    // InnerMsg has a lifetime param
+    // InnerMsg has a lifetime param, so we expect it to propagate everywhere
     generator.configure(
         ".nested.Nested.InnerMsg",
         Config::new().unknown_handler("Option<crate::lifetime_fields::RefField<'a>>"),
     );
-    // So the inner_msg field must have a lifetime
-    generator.configure(
-        ".nested.Nested.inner_msg",
-        Config::new().field_lifetime("'a"),
-    );
     generator.configure(".nested.Nested.basic", Config::new().skip(true));
 
     // Configurations for collections.proto
-    generator
-        .configure(
-            ".",
-            Config::new()
-                .string_type("&'a str")
-                .bytes_type("&'a [u8]")
-                .vec_type("&'a [$T]")
-                .map_type("&'a std::collections::HashMap<$K, $V>"),
-        )
-        .configure(".List.list", Config::new().field_lifetime("'a"));
+    // The lifetimes should propagate to the correct types
+    generator.configure(
+        ".",
+        Config::new()
+            .string_type("&'a str")
+            .bytes_type("&'a [u8]")
+            .vec_type("&'a [$T]")
+            .map_type("&'a std::collections::HashMap<$K, $V>"),
+    );
 
     generator
         .compile_protos(
@@ -380,10 +372,6 @@ fn static_lifetime_fields() {
             .vec_type("&'static [$T]")
             .map_type("&'static std::collections::HashMap<$K, $V>"),
     );
-    // Use non-static lifetime for Data.b, so Data should have a lifetime param
-    generator.configure(".Data.b", Config::new().bytes_type("&'a [u8]"));
-    // Force List.list to use Data<'static>, so List shouldn't have a lifetime param
-    generator.configure(".List.list", Config::new().field_lifetime("'static"));
 
     generator
         .compile_protos(
@@ -395,11 +383,18 @@ fn static_lifetime_fields() {
 
 fn recursive() {
     let mut generator = Generator::new();
-    generator.configure_many(
-        &[".Recursive.recursive", ".Recursive.rec"],
-        Config::new().recursive_field(),
-    );
-    generator.configure(".Recursive.of", Config::new().boxed(true));
+    generator.use_container_std();
+    generator
+        .configure(".", Config::new().optional_repr(OptionalRepr::Option))
+        // Should remove Debug, Clone, and PartialEq from both the message and the oneof types
+        .configure(
+            ".Recursive",
+            Config::new()
+                .no_debug_impl(true)
+                .no_clone_impl(true)
+                .no_partial_eq_impl(true),
+        );
+    // Should work without any extra configuration
     generator
         .compile_protos(
             &["proto/recursive.proto"],
@@ -409,7 +404,7 @@ fn recursive() {
 }
 
 fn conflicting_names() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/conflicting_names.proto"],
@@ -420,8 +415,8 @@ fn conflicting_names() {
 
 fn default_str_escape() {
     let mut generator = Generator::new();
+    generator.use_container_alloc();
     generator
-        .use_container_alloc()
         .compile_protos(
             &["proto/default_str_escape.proto"],
             std::env::var("OUT_DIR").unwrap() + "/default_str_escape.rs",
@@ -430,7 +425,7 @@ fn default_str_escape() {
 }
 
 fn extension() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/extension.proto"],
@@ -440,7 +435,7 @@ fn extension() {
 }
 
 fn files_with_same_package() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/basic.proto", "proto/basic-dup.proto"],
@@ -450,7 +445,7 @@ fn files_with_same_package() {
 }
 
 fn large_field_nums() {
-    let mut generator = Generator::new();
+    let generator = Generator::new();
     generator
         .compile_protos(
             &["proto/large_field_nums.proto"],

@@ -336,11 +336,26 @@ fn encode_map() {
 
 #[test]
 fn max_size() {
-    assert_eq!(proto::Data::MAX_SIZE, None);
-    assert_eq!(proto::List::MAX_SIZE, None);
-    assert_eq!(proto::NumList::MAX_SIZE, None);
-    assert_eq!(proto::StrList::MAX_SIZE, None);
-    assert_eq!(proto::FixedList::MAX_SIZE, None);
-    assert_eq!(proto::EnumList::MAX_SIZE, None);
-    assert_eq!(proto::Map::MAX_SIZE, None);
+    assert_eq!(
+        proto::Data::MAX_SIZE,
+        Err("(.Data.s) unbounded string or bytes")
+    );
+    assert_eq!(proto::List::MAX_SIZE, Err("(.List.list) unbounded vec"));
+    assert_eq!(
+        proto::NumList::MAX_SIZE,
+        Err("(.NumList.list) unbounded vec")
+    );
+    assert_eq!(
+        proto::StrList::MAX_SIZE,
+        Err("(.StrList.list) unbounded vec")
+    );
+    assert_eq!(
+        proto::FixedList::MAX_SIZE,
+        Err("(.FixedList.list) unbounded vec")
+    );
+    assert_eq!(
+        proto::EnumList::MAX_SIZE,
+        Err("(.EnumList.list) unbounded vec")
+    );
+    assert_eq!(proto::Map::MAX_SIZE, Err("(.Map.mapping) unbounded map"));
 }

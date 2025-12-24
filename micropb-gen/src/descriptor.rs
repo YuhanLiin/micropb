@@ -289,7 +289,7 @@ pub mod google_ {
         /// Inner types for `FileDescriptorProto`
         pub mod FileDescriptorProto_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -889,7 +889,7 @@ pub mod google_ {
             /// Inner types for `ExtensionRange`
             pub mod ExtensionRange_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -1109,7 +1109,7 @@ pub mod google_ {
             /// Inner types for `ReservedRange`
             pub mod ReservedRange_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -1170,7 +1170,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -1466,7 +1466,7 @@ pub mod google_ {
             /// Inner types for `Declaration`
             pub mod Declaration_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -1623,7 +1623,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -2417,7 +2417,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 2]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -2834,7 +2834,7 @@ pub mod google_ {
         /// Inner types for `OneofDescriptorProto`
         pub mod OneofDescriptorProto_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -3073,7 +3073,7 @@ pub mod google_ {
             /// Inner types for `EnumReservedRange`
             pub mod EnumReservedRange_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -3134,7 +3134,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -3377,7 +3377,7 @@ pub mod google_ {
         /// Inner types for `EnumValueDescriptorProto`
         pub mod EnumValueDescriptorProto_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -3536,7 +3536,7 @@ pub mod google_ {
         /// Inner types for `ServiceDescriptorProto`
         pub mod ServiceDescriptorProto_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -3740,7 +3740,7 @@ pub mod google_ {
         /// Inner types for `MethodDescriptorProto`
         pub mod MethodDescriptorProto_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -4418,7 +4418,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 3]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -5387,7 +5387,7 @@ pub mod google_ {
         /// Inner types for `MessageOptions`
         pub mod MessageOptions_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -6446,7 +6446,7 @@ pub mod google_ {
             /// Inner types for `EditionDefault`
             pub mod EditionDefault_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -6804,7 +6804,7 @@ pub mod google_ {
             /// Inner types for `FeatureSupport`
             pub mod FeatureSupport_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -7019,7 +7019,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 2]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -7365,7 +7365,7 @@ pub mod google_ {
         /// Inner types for `OneofOptions`
         pub mod OneofOptions_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -7538,7 +7538,7 @@ pub mod google_ {
         /// Inner types for `EnumOptions`
         pub mod EnumOptions_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -7784,7 +7784,7 @@ pub mod google_ {
         /// Inner types for `EnumValueOptions`
         pub mod EnumValueOptions_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -7985,7 +7985,7 @@ pub mod google_ {
         /// Inner types for `ServiceOptions`
         pub mod ServiceOptions_ {
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -8181,7 +8181,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -8481,7 +8481,7 @@ pub mod google_ {
             /// Inner types for `NamePart`
             pub mod NamePart_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -8542,7 +8542,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -8973,7 +8973,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -9307,7 +9307,7 @@ pub mod google_ {
             /// Inner types for `FeatureSetEditionDefault`
             pub mod FeatureSetEditionDefault_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -9393,7 +9393,7 @@ pub mod google_ {
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
-            #[derive(Debug, Default, PartialEq, Clone)]
+            #[derive(Debug, Default, PartialEq, Clone, Copy)]
             pub struct _Hazzer([u8; 1]);
             impl _Hazzer {
                 /// New hazzer with all fields set to off
@@ -9727,7 +9727,7 @@ pub mod google_ {
             /// Inner types for `Location`
             pub mod Location_ {
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off
@@ -9982,7 +9982,7 @@ pub mod google_ {
                     }
                 }
                 /// Compact bitfield for tracking presence of optional and message fields
-                #[derive(Debug, Default, PartialEq, Clone)]
+                #[derive(Debug, Default, PartialEq, Clone, Copy)]
                 pub struct _Hazzer([u8; 1]);
                 impl _Hazzer {
                     /// New hazzer with all fields set to off

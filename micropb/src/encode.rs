@@ -108,7 +108,7 @@ impl VarInt for u64 {}
 /// # #[derive(Default)]
 /// # struct ProtoMessage(u32);
 /// # impl micropb::MessageEncode for ProtoMessage {
-/// #   const MAX_SIZE: Option<usize> = None;
+/// #   const MAX_SIZE: Result<usize, &str> = Ok(0);
 /// #   fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> { todo!() }
 /// #   fn compute_size(&self) -> usize { 0 }
 /// # }

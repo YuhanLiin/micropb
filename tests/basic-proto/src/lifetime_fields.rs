@@ -12,7 +12,7 @@ mod proto {
 struct RefField<'a>(&'a i32);
 
 impl FieldEncode for RefField<'_> {
-    const MAX_SIZE: Option<usize> = None;
+    const MAX_SIZE: Result<usize, &'static str> = Err("testing");
 
     fn encode_fields<W: micropb::PbWrite>(
         &self,

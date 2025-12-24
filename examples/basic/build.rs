@@ -1,5 +1,5 @@
 fn main() {
-    let mut gen = micropb_gen::Generator::new();
+    let gen = micropb_gen::Generator::new();
     // Compile example.proto into a Rust module
     gen.compile_protos(
         &["example.proto"],

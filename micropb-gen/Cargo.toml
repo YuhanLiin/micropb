@@ -1,13 +1,13 @@
 [package]
 name = "micropb-gen"
 version = "0.4.1"
-edition = "2021"
+edition = "2024"
 authors = ["Yuhan Lin <yuhanliin@protonmail.com>"]
 description = "Generate Rust module from Protobuf files"
 keywords = ["protobuf", "no_std", "embedded", "serialization"]
 categories = ["embedded", "no-std::no-alloc", "encoding"]
 repository = "https://github.com/YuhanLiin/micropb"
-rust-version = "1.83.0"
+rust-version = "1.85.0"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
@@ -20,6 +20,7 @@ prettyplease = { version = "0.2.17", optional = true }
 micropb = { version = "0.4.1", path = "../micropb", features = ["std"] }
 serde = { version = "1.0", optional = true, features = ["derive"] }
 toml = { version = "0.9.7", optional = true, default-features = false, features = ["std", "serde", "parse"] }
+regex = { version = "1" }
 
 [dev-dependencies]
 syn = { version = "2", default-features = false, features = ["extra-traits"] }

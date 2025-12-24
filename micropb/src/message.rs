@@ -68,9 +68,13 @@ impl<T: MessageDecode> MessageDecode for &mut T {
 pub trait MessageEncode {
     /// Maximum encoded size of the message on the wire.
     ///
-    /// If `MAX_SIZE` is `None`, that means the message size is unbounded, due to having custom
-    /// fields or collections fields without a fixed capacity, such as `Vec`.
-    const MAX_SIZE: Option<usize>;
+    /// If `MAX_SIZE` is `Err`, that means the message size is unbounded, due to having custom
+    /// fields or collections fields without a fixed capacity, such as `Vec`. The generator will
+    /// populate the `Err` with a message indicating the reason.
+    ///
+    /// The recommended way to use `MAX_SIZE` in const context is via
+    /// [`max_encoded_size`](crate::size::max_encoded_size).
+    const MAX_SIZE: Result<usize, &'static str>;
 
     /// Encode this message using the encoder.
     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
@@ -87,7 +91,7 @@ pub trait MessageEncode {
 
 #[cfg(feature = "encode")]
 impl<T: MessageEncode> MessageEncode for &T {
-    const MAX_SIZE: Option<usize> = T::MAX_SIZE;
+    const MAX_SIZE: Result<usize, &'static str> = T::MAX_SIZE;
 
     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         (*self).encode(encoder)

@@ -7,49 +7,70 @@ use syn::Ident;
 use crate::{
     descriptor::DescriptorProto,
     generator::{
+        Context, EncodeFunc,
         field::{CustomField, FieldType},
+        graph::Position,
         location::{self, next_comment_node},
-        resolve_path_elem, EncodeFunc,
+        resolve_path_elem,
+        type_spec::TypeSpec,
     },
+    utils::{TryIntoTokens, find_lifetime_from_type},
 };
 
 use super::{
-    derive_msg_attr,
+    CurrentConfig, derive_msg_attr,
     field::Field,
     field_error,
     location::{CommentNode, Comments},
     msg_error,
     oneof::{Oneof, OneofField, OneofType},
     sanitized_ident,
-    type_spec::find_lifetime_from_type,
-    CurrentConfig, Generator,
 };
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub(crate) struct Message<'a> {
+pub(crate) struct Hazzer {
+    type_attrs: Vec<syn::Attribute>,
+    field_attrs: Vec<syn::Attribute>,
+}
+
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+pub(crate) struct Unknown {
+    handler: syn::Type,
+    field_attrs: Vec<syn::Attribute>,
+}
+
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+pub(crate) struct Message<'proto> {
     /// Protobuf name
-    pub(crate) name: &'a str,
+    pub(crate) name: &'proto str,
     /// Sanitized Rust ident, used for struct name
     pub(crate) rust_name: Ident,
-    pub(crate) oneofs: Vec<Oneof<'a>>,
-    pub(crate) fields: Vec<Field<'a>>,
+    pub(crate) oneofs: Vec<Oneof<'proto>>,
+    pub(crate) fields: Vec<Field<'proto>>,
     pub(crate) derive_dbg: bool,
     pub(crate) impl_default: bool,
     pub(crate) impl_partial_eq: bool,
     pub(crate) derive_clone: bool,
+    // Will be populated by graph resolver
     pub(crate) attrs: Vec<syn::Attribute>,
-    pub(crate) unknown_handler: Option<syn::Type>,
-    pub(crate) lifetime: Option<syn::Lifetime>,
+    pub(crate) unknown: Option<Unknown>,
     pub(crate) as_oneof_enum: bool,
-    comments: Option<&'a Comments>,
+    pub(crate) hazzer: Option<Hazzer>,
+    comments: Option<&'proto Comments>,
+    pub(crate) message_edges: Vec<(Position, &'proto str)>,
+
+    // These fields are populated after the constructor
+    pub(crate) parent_edges: Vec<(Position, String)>,
+    pub(crate) is_copy: bool,
+    pub(crate) lifetime: Option<syn::Lifetime>,
 }
 
-impl<'a> Message<'a> {
+impl<'proto> Message<'proto> {
     pub(crate) fn from_proto(
-        proto: &'a DescriptorProto,
-        gen: &Generator,
+        proto: &'proto DescriptorProto,
+        ctx: &Context<'proto>,
         msg_conf: &CurrentConfig,
-        comment_node: Option<&'a CommentNode>,
+        comment_node: Option<&'proto CommentNode>,
     ) -> io::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
             return Ok(None);
@@ -64,7 +85,7 @@ impl<'a> Message<'a> {
                 next_comment_node(comment_node, location::path::msg_oneof(idx)),
                 idx,
             )
-            .map_err(|e| field_error(&gen.pkg, msg_name, &oneof.name, &e))?;
+            .map_err(|e| field_error(&ctx.pkg, msg_name, &oneof.name, &e))?;
             if let Some(oneof) = oneof {
                 oneofs.push(oneof);
             }
@@ -79,6 +100,7 @@ impl<'a> Message<'a> {
 
         let mut synthetic_oneof_idx = vec![];
 
+        let mut message_edges = vec![];
         let mut fields = vec![];
         for (i, f) in proto.field.iter().enumerate() {
             let field_conf = msg_conf.next_conf(&f.name);
@@ -91,8 +113,8 @@ impl<'a> Message<'a> {
                 .unwrap_or(&f.type_name);
 
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, field_comments, gen, Some(map_msg))
-                    .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
+                Field::from_proto(f, &field_conf, field_comments, ctx, Some(map_msg))
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
             } else {
                 if let Some(idx) = f.oneof_index().copied() {
                     if f.proto3_optional {
@@ -103,13 +125,22 @@ impl<'a> Message<'a> {
                             .find(|o| o.idx == idx as usize)
                             .map(|o| &mut o.otype)
                         {
-                            Some(OneofType::Enum { fields, .. }) => {
+                            Some(OneofType::Enum {
+                                fields: oneof_fields,
+                                ..
+                            }) => {
                                 // Oneof field
                                 if let Some(field) =
                                     OneofField::from_proto(f, &field_conf, field_comments)
-                                        .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
+                                        .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
                                 {
-                                    fields.push(field);
+                                    if let TypeSpec::Message(field_name) = field.tspec {
+                                        message_edges.push((
+                                            Position::Oneof(idx as usize, oneof_fields.len()),
+                                            field_name,
+                                        ));
+                                    }
+                                    oneof_fields.push(field);
                                 }
                             }
                             Some(OneofType::Custom { nums, .. }) => {
@@ -123,16 +154,24 @@ impl<'a> Message<'a> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, field_comments, gen, None)
-                    .map_err(|e| field_error(&gen.pkg, msg_name, &f.name, &e))?
+                Field::from_proto(f, &field_conf, field_comments, ctx, None)
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {
+                if let Some(field_name) = field.message_name() {
+                    message_edges.push((Position::Field(fields.len()), field_name));
+                }
                 fields.push(field);
             }
         }
+        // Only include fields that aren't handled externally
+        let message_edges = message_edges
+            .into_iter()
+            .filter(|(_, fq_proto_name)| !ctx.params.extern_paths.contains_key(*fq_proto_name))
+            .collect();
 
         // Remove all oneofs that are empty enums or synthetic oneofs
-        let mut oneofs: Vec<_> = oneofs
+        let oneofs: Vec<_> = oneofs
             .into_iter()
             .filter(|o| !matches!(&o.otype, OneofType::Enum { fields, .. } if fields.is_empty()))
             .filter(|o| !synthetic_oneof_idx.contains(&o.idx))
@@ -141,24 +180,46 @@ impl<'a> Message<'a> {
         let attrs = msg_conf
             .config
             .type_attr_parsed()
-            .map_err(|e| msg_error(&gen.pkg, msg_name, &e))?;
-        let unknown_handler = msg_conf
-            .config
-            .unknown_handler_parsed()
-            .map_err(|e| msg_error(&gen.pkg, msg_name, &e))?;
+            .map_err(|e| msg_error(&ctx.pkg, msg_name, &e))?;
 
-        // Find any lifetime in the message definition (we only need one)
-        let lifetime = fields
-            .iter()
-            .find_map(|f| f.find_lifetime())
-            .or_else(|| oneofs.iter_mut().find_map(|o| o.find_lifetime()))
-            .or_else(|| unknown_handler.as_ref().and_then(find_lifetime_from_type))
-            .cloned();
-
-        let as_enum = gen.single_oneof_msg_as_enum
+        let as_enum = ctx.params.single_oneof_msg_as_enum
             && fields.is_empty()
             && oneofs.len() == 1
             && matches!(oneofs[0].otype, OneofType::Enum { .. });
+
+        let unknown = if let Some(handler) = msg_conf
+            .config
+            .unknown_handler_parsed()
+            .map_err(|e| msg_error(&ctx.pkg, msg_name, &e))?
+        {
+            let unknown_conf = msg_conf.next_conf("_unknown");
+            Some(Unknown {
+                handler,
+                field_attrs: unknown_conf
+                    .config
+                    .field_attr_parsed()
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, "_unknown", &e))?,
+            })
+        } else {
+            None
+        };
+
+        let is_hazzer = !as_enum && fields.iter().any(|f| f.is_hazzer());
+        let hazzer = if is_hazzer {
+            let hazzer_conf = msg_conf.next_conf("_has");
+            Some(Hazzer {
+                type_attrs: hazzer_conf
+                    .config
+                    .type_attr_parsed()
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, "_has", &e))?,
+                field_attrs: hazzer_conf
+                    .config
+                    .field_attr_parsed()
+                    .map_err(|e| field_error(&ctx.pkg, msg_name, "_has", &e))?,
+            })
+        } else {
+            None
+        };
 
         Ok(Some(Self {
             name: msg_name,
@@ -170,31 +231,56 @@ impl<'a> Message<'a> {
             impl_partial_eq: msg_conf.derive_partial_eq(),
             derive_clone: msg_conf.derive_clone(),
             attrs,
-            unknown_handler,
-            lifetime,
+            unknown,
             as_oneof_enum: as_enum,
+            hazzer,
             comments: location::get_comments(comment_node),
+            message_edges,
+
+            parent_edges: vec![],
+            lifetime: None,
+            is_copy: false,
         }))
     }
 
-    pub(crate) fn generate_hazzer_decl(
-        &self,
-        conf: CurrentConfig,
-    ) -> Result<Option<(TokenStream, Vec<syn::Attribute>)>, String> {
-        assert!(
-            !self.as_oneof_enum,
-            "should not generate hazzer if generating enum message"
-        );
+    pub(crate) fn find_lifetime(&mut self) -> Option<&syn::Lifetime> {
+        // Find any lifetime in the message definition (we only need one)
+        self.lifetime = self
+            .fields
+            .iter()
+            .find_map(|f| f.find_lifetime())
+            .or_else(|| {
+                self.oneofs
+                    .iter_mut()
+                    .find_map(|o| o.find_lifetime())
+                    .cloned()
+            })
+            .or_else(|| {
+                self.unknown
+                    .as_ref()
+                    .map(|u| &u.handler)
+                    .and_then(find_lifetime_from_type)
+                    .cloned()
+            });
+        self.lifetime.as_ref()
+    }
+
+    pub(crate) fn is_copy(&self, ctx: &Context<'proto>) -> bool {
+        self.unknown.is_none()
+            && self.oneofs.iter().all(|oneof| oneof.is_copy(ctx))
+            && self.fields.iter().all(|f| f.is_copy(ctx))
+    }
+
+    pub(crate) fn generate_hazzer_decl(&self) -> Option<TokenStream> {
+        let Some(Hazzer { type_attrs, .. }) = &self.hazzer else {
+            return None;
+        };
 
         let hazzer_name = Ident::new("_Hazzer", Span::call_site());
-        let attrs = &conf.config.type_attr_parsed()?;
-        let derive_msg = derive_msg_attr(true, true, true, true);
+        let derive_msg = derive_msg_attr(true, true, true, true, true);
 
         let hazzers = self.fields.iter().filter(|f| f.is_hazzer());
         let count = hazzers.clone().count();
-        if count == 0 {
-            return Ok(None);
-        }
 
         let methods = hazzers.enumerate().map(|(i, f)| {
             let fname = &f.san_rust_name;
@@ -245,7 +331,7 @@ impl<'a> Message<'a> {
         let decl = quote! {
             #[doc = " Compact bitfield for tracking presence of optional and message fields"]
             #derive_msg
-            #(#attrs)*
+            #(#type_attrs)*
             pub struct #hazzer_name([u8; #bytes]);
 
             impl #hazzer_name {
@@ -258,15 +344,13 @@ impl<'a> Message<'a> {
                 #(#methods)*
             }
         };
-        Ok(Some((decl, conf.config.field_attr_parsed()?)))
+        Some(decl)
     }
 
     pub(crate) fn generate_decl(
         &self,
-        gen: &Generator,
-        hazzer_field_attr: Option<Vec<syn::Attribute>>,
+        ctx: &Context<'proto>,
         proto_default: bool,
-        unknown_conf: &CurrentConfig,
     ) -> io::Result<TokenStream> {
         let msg_mod_name = resolve_path_elem(self.name, true);
         let rust_name = &self.rust_name;
@@ -274,7 +358,7 @@ impl<'a> Message<'a> {
         let attrs = &self.attrs;
 
         // If message has no hazzer, then we can derive PartialEq instead of implementing it
-        let derive_partial_eq = self.impl_partial_eq && hazzer_field_attr.is_none();
+        let derive_partial_eq = self.impl_partial_eq && self.hazzer.is_none();
         // If message has no Proto default specification, then we can derive Default
         let derive_default = self.impl_default && !proto_default;
         let derive_msg = derive_msg_attr(
@@ -282,6 +366,7 @@ impl<'a> Message<'a> {
             derive_default,
             derive_partial_eq,
             self.derive_clone,
+            self.is_copy,
         );
         let comments = self.comments.map(Comments::lines).into_iter().flatten();
 
@@ -289,7 +374,13 @@ impl<'a> Message<'a> {
             let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
                 unreachable!("shouldn't generate enum with custom oneof")
             };
-            let variants = fields.iter().map(|f| f.generate_field(gen));
+            let variants = fields
+                .iter()
+                .map(|f| {
+                    f.generate_field(ctx)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
+                })
+                .try_into_tokens()?;
             let default_variant_attr = derive_default.then(|| quote! { #[default] });
 
             Ok(quote! {
@@ -297,35 +388,40 @@ impl<'a> Message<'a> {
                 #derive_msg
                 #(#attrs)*
                 pub enum #rust_name<#lifetime> {
-                    #(#variants)*
+                    #variants
 
                     #default_variant_attr
                     None
                 }
             })
         } else {
-            let msg_fields = self.fields.iter().map(|f| f.generate_field(gen));
+            let msg_fields = self
+                .fields
+                .iter()
+                .map(|f| {
+                    f.generate_field(ctx)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
+                })
+                .try_into_tokens()?;
             let oneof_fields = self
                 .oneofs
                 .iter()
-                .map(|oneof| oneof.generate_field(gen, &msg_mod_name));
-            let unknown_field = if let Some(handler) = &self.unknown_handler {
-                let unknown_field_attr = unknown_conf
-                    .config
-                    .field_attr_parsed()
-                    .map_err(|e| field_error(&gen.pkg, self.name, "_unknown", &e))?;
-                quote! { #[doc = " Handler for unknown fields on the wire"] #(#unknown_field_attr)* pub _unknown: #handler, }
+                .map(|oneof| oneof.generate_field(ctx, &msg_mod_name));
+            let unknown_field = if let Some(unknown) = &self.unknown {
+                let handler = &unknown.handler;
+                let field_attr = &unknown.field_attrs;
+                quote! { #[doc = " Handler for unknown fields on the wire"] #(#field_attr)* pub _unknown: #handler, }
             } else {
                 quote! {}
             };
-            let hazzer_field_attr = hazzer_field_attr.iter();
+            let hazzer_field_attr = self.hazzer.iter().map(|h| &h.field_attrs);
 
             Ok(quote! {
                 #(#[doc = #comments])*
                 #derive_msg
                 #(#attrs)*
                 pub struct #rust_name<#lifetime> {
-                    #(#msg_fields)*
+                    #msg_fields
                     #(#oneof_fields)*
                     #(#[doc = " Tracks presence of optional and message fields"] #(#hazzer_field_attr)* pub _has: #msg_mod_name::_Hazzer,)*
                     #unknown_field
@@ -334,11 +430,7 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub(crate) fn generate_default_impl(
-        &self,
-        gen: &Generator,
-        use_hazzer: bool,
-    ) -> io::Result<TokenStream> {
+    pub(crate) fn generate_default_impl(&self, ctx: &Context<'proto>) -> io::Result<TokenStream> {
         if !self.impl_default {
             return Ok(quote! {});
         }
@@ -353,8 +445,8 @@ impl<'a> Message<'a> {
             if !matches!(f.ftype, FieldType::Custom(CustomField::Delegate(_))) {
                 let name = &f.san_rust_name;
                 let default = f
-                    .generate_default(gen)
-                    .map_err(|e| field_error(&gen.pkg, self.name, f.name, &e))?;
+                    .generate_default(ctx)
+                    .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))?;
                 field_defaults.extend(quote! { #name: #default, });
             }
         }
@@ -370,10 +462,12 @@ impl<'a> Message<'a> {
                 Some(&o.san_rust_name)
             }
         });
-        let hazzer_default =
-            use_hazzer.then(|| quote! { _has: ::core::default::Default::default(), });
+        let hazzer_default = self
+            .hazzer
+            .as_ref()
+            .map(|_| quote! { _has: ::core::default::Default::default(), });
         let unknown_default = self
-            .unknown_handler
+            .unknown
             .as_ref()
             .map(|_| quote! { _unknown: ::core::default::Default::default(), });
         let rust_name = &self.rust_name;
@@ -443,22 +537,32 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub(crate) fn generate_impl(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_impl(&self, ctx: &Context<'proto>) -> Result<TokenStream, io::Error> {
         if self.as_oneof_enum {
-            return quote! {};
+            return Ok(quote! {});
         }
 
-        let accessors = self.fields.iter().map(|f| f.generate_accessors(gen));
+        let accessors = self
+            .fields
+            .iter()
+            .map(|f| {
+                f.generate_accessors(ctx)
+                    .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
+            })
+            .try_into_tokens()?;
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
-        quote! {
+        Ok(quote! {
             impl<#lifetime> #name<#lifetime> {
-                #(#accessors)*
+                #accessors
             }
-        }
+        })
     }
 
-    pub(crate) fn generate_decode_trait(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_decode_trait(
+        &self,
+        ctx: &Context<'proto>,
+    ) -> Result<TokenStream, io::Error> {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
         let tag = Ident::new("tag", Span::call_site());
@@ -471,36 +575,45 @@ impl<'a> Message<'a> {
             };
             let variant_branches = fields
                 .iter()
-                .map(|f| f.generate_decode_branch_in_enum_msg(&decoder, gen));
-
-            quote! {
-                #(#variant_branches)*
-            }
+                .map(|f| {
+                    f.generate_decode_branch_in_enum_msg(&decoder, ctx)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
+                })
+                .try_into_tokens()?;
+            quote! { #variant_branches }
         } else {
             let field_branches = self
                 .fields
                 .iter()
-                .map(|f| f.generate_decode_branch(gen, &tag, &decoder));
+                .map(|f| {
+                    f.generate_decode_branch(ctx, &tag, &decoder)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
+                })
+                .try_into_tokens()?;
             let oneof_branches = self
                 .oneofs
                 .iter()
-                .map(|o| o.generate_decode_branches(gen, &mod_name, &tag, &decoder));
+                .map(|o| {
+                    o.generate_decode_branches(ctx, &mod_name, &tag, &decoder)
+                        .map_err(|e| field_error(&ctx.pkg, self.name, o.name, &e))
+                })
+                .try_into_tokens()?;
 
             quote! {
-                #(#field_branches)*
-                #(#oneof_branches)*
+                #field_branches
+                #oneof_branches
             }
         };
 
         // Ignore unknown handler if the message is an enum
-        let unknown_branch = if self.unknown_handler.is_some() && !self.as_oneof_enum {
+        let unknown_branch = if self.unknown.is_some() && !self.as_oneof_enum {
             // If the unknown handler can't handle a field, skip it
             quote! { if !self._unknown.decode_field(#tag, #decoder)? { #decoder.skip_wire_value(#tag.wire_type())?; } }
         } else {
             quote! { #decoder.skip_wire_value(#tag.wire_type())?; }
         };
 
-        quote! {
+        let tok = quote! {
             impl<#lifetime> ::micropb::MessageDecode for #name<#lifetime> {
                 fn decode<IMPL_MICROPB_READ: ::micropb::PbRead>(
                     &mut self,
@@ -522,10 +635,11 @@ impl<'a> Message<'a> {
                     Ok(())
                 }
             }
-        }
+        };
+        Ok(tok)
     }
 
-    fn generate_encode_func(&self, gen: &Generator, func_type: &EncodeFunc) -> TokenStream {
+    fn generate_encode_func(&self, ctx: &Context<'proto>, func_type: &EncodeFunc) -> TokenStream {
         let mod_name = resolve_path_elem(self.name, true);
 
         if self.as_oneof_enum {
@@ -534,7 +648,7 @@ impl<'a> Message<'a> {
             };
             let variant_branches = fields
                 .iter()
-                .map(|f| f.generate_encode_branch(&quote! {Self}, gen, func_type));
+                .map(|f| f.generate_encode_branch(&quote! {Self}, ctx, func_type));
 
             quote! {
                 match &self {
@@ -546,13 +660,13 @@ impl<'a> Message<'a> {
             let field_logic = self
                 .fields
                 .iter()
-                .map(|f| f.generate_encode(gen, func_type));
+                .map(|f| f.generate_encode(ctx, func_type));
             let oneof_logic = self
                 .oneofs
                 .iter()
-                .map(|o| o.generate_encode(gen, &mod_name, func_type));
+                .map(|o| o.generate_encode(ctx, &mod_name, func_type));
 
-            let unknown_logic = if self.unknown_handler.is_some() {
+            let unknown_logic = if self.unknown.is_some() {
                 match func_type {
                     EncodeFunc::Sizeof(size) => {
                         quote! { #size += self._unknown.compute_fields_size(); }
@@ -573,50 +687,58 @@ impl<'a> Message<'a> {
         }
     }
 
-    fn generate_max_size(&self, gen: &Generator) -> TokenStream {
-        if !gen.calculate_max_size {
-            return quote! { const MAX_SIZE: ::core::option::Option<usize> = ::core::option::Option::None; };
+    fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
+        if !ctx.params.calculate_max_size {
+            return quote! { const MAX_SIZE: ::core::result::Result<usize, &'static str> = ::core::result::Result::Err("calculate_max_size disabled"); };
         }
 
-        let field_sizes = self.fields.iter().map(|f| f.generate_max_size(gen));
-        let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(gen));
+        let field_sizes = self
+            .fields
+            .iter()
+            .map(|f| f.generate_max_size(ctx, self.name));
+        let oneof_sizes = self
+            .oneofs
+            .iter()
+            .map(|o| o.generate_max_size(ctx, self.name));
         let unknown_size = if self.as_oneof_enum {
             // Ignore unknown field if generating an enum msg
             None
         } else {
-            self.unknown_handler
+            self.unknown
                 .as_ref()
+                .map(|u| &u.handler)
                 .map(|handler| quote! { <#handler as ::micropb::field::FieldEncode>::MAX_SIZE })
         };
         let sizes = field_sizes.chain(oneof_sizes).chain(unknown_size);
 
         quote! {
-            const MAX_SIZE: ::core::option::Option<usize> = 'msg: {
+            const MAX_SIZE: ::core::result::Result<usize, &'static str> = 'msg: {
                 let mut max_size = 0;
                 #(
-                    if let ::core::option::Option::Some(size) = #sizes {
-                        max_size += size;
-                    } else {
-                        break 'msg (::core::option::Option::<usize>::None);
-                    };
+                    match #sizes {
+                        ::core::result::Result::Ok(size) => {
+                            max_size += size;
+                        }
+                        ::core::result::Result::Err(err) => break 'msg (::core::result::Result::<usize, _>::Err(err)),
+                    }
                 )*
-                ::core::option::Option::Some(max_size)
+                ::core::result::Result::Ok(max_size)
             };
         }
     }
 
-    pub(crate) fn generate_encode_trait(&self, gen: &Generator) -> TokenStream {
+    pub(crate) fn generate_encode_trait(&self, ctx: &Context<'proto>) -> TokenStream {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
         let sizeof = self.generate_encode_func(
-            gen,
+            ctx,
             &EncodeFunc::Sizeof(Ident::new("size", Span::call_site())),
         );
         let encode = self.generate_encode_func(
-            gen,
+            ctx,
             &EncodeFunc::Encode(Ident::new("encoder", Span::call_site())),
         );
-        let max_size_decl = self.generate_max_size(gen);
+        let max_size_decl = self.generate_max_size(ctx);
 
         quote! {
             impl<#lifetime> ::micropb::MessageEncode for #name<#lifetime> {
@@ -644,21 +766,46 @@ impl<'a> Message<'a> {
 }
 
 #[cfg(test)]
+pub(crate) fn make_test_msg(name: &str) -> Message<'_> {
+    Message {
+        name,
+        rust_name: Ident::new(name, Span::call_site()),
+        oneofs: vec![],
+        fields: vec![],
+        derive_dbg: true,
+        impl_default: true,
+        impl_partial_eq: true,
+        derive_clone: true,
+        is_copy: false,
+        attrs: vec![],
+        unknown: None,
+        lifetime: None,
+        as_oneof_enum: false,
+        hazzer: None,
+        comments: None,
+
+        message_edges: vec![],
+        parent_edges: vec![],
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use std::borrow::Cow;
 
     use crate::{
-        config::{parse_attributes, Config, IntSize, OptionalRepr},
+        config::{Config, IntSize, OptionalRepr, parse_attributes},
         descriptor::{
             FieldDescriptorProto,
             FieldDescriptorProto_::{Label, Type},
             FieldOptions, MessageOptions, OneofDescriptorProto,
         },
         generator::{
-            field::{make_test_field, FieldType},
-            oneof::make_test_oneof_field,
-            type_spec::{PbInt, TypeSpec},
             Syntax,
+            field::{FieldType, make_test_field},
+            make_ctx,
+            oneof::{make_test_oneof, make_test_oneof_field},
+            type_spec::{PbInt, TypeSpec},
         },
         pathtree::Node,
     };
@@ -741,31 +888,19 @@ mod tests {
             node: None,
             config: Cow::Borrowed(&config),
         };
-        let gen = Generator::new();
-        assert!(Message::from_proto(&proto, &gen, &msg_conf, None)
-            .unwrap()
-            .is_none());
+        let ctx = make_ctx();
+        assert!(
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[test]
     fn from_proto_skip_fields() {
-        let gen = Generator::new();
+        let ctx = make_ctx();
         let proto = test_msg_proto();
-        let empty_msg = Message {
-            name: "Message",
-            rust_name: Ident::new("Message", Span::call_site()),
-            oneofs: vec![],
-            fields: vec![],
-            derive_dbg: true,
-            impl_default: true,
-            impl_partial_eq: true,
-            derive_clone: true,
-            attrs: vec![],
-            unknown_handler: None,
-            lifetime: None,
-            as_oneof_enum: false,
-            comments: None,
-        };
+        let empty_msg = make_test_msg("Message");
         let config = Box::new(Config::new());
         let mut node = Node::default();
 
@@ -781,7 +916,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -799,7 +934,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
             empty_msg
@@ -808,7 +943,7 @@ mod tests {
 
     #[test]
     fn from_proto() {
-        let gen = Generator::new();
+        let ctx = make_ctx();
         let proto = test_msg_proto();
         let config = Box::new(
             Config::new()
@@ -837,77 +972,73 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
 
+        let mut expected = make_test_msg("Message");
+        expected.oneofs = vec![Oneof {
+            name: "oneof",
+            san_rust_name: Ident::new_raw("oneof", Span::call_site()),
+            otype: OneofType::Enum {
+                type_name: Ident::new("Oneof", Span::call_site()),
+                fields: vec![
+                    make_test_oneof_field(
+                        2,
+                        "oneof_field",
+                        false,
+                        TypeSpec::Int(PbInt::Sint32, IntSize::S8),
+                    ),
+                    make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
+                ],
+            },
+            field_attrs: vec![],
+            // Overrides the type attrs of the message
+            type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
+            boxed: false,
+            // Inherits the no_debug_derive setting of the message
+            derive_dbg: false,
+            derive_partial_eq: true,
+            derive_clone: true,
+            lifetime: None,
+            idx: 0,
+            comments: None,
+        }];
+        expected.fields = vec![
+            make_test_field(
+                1,
+                "bool_field",
+                true,
+                FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
+            ),
+            make_test_field(
+                3,
+                "map_field",
+                false,
+                FieldType::Map {
+                    key: TypeSpec::Int(PbInt::Int64, IntSize::S16),
+                    val: TypeSpec::Int(PbInt::Uint64, IntSize::S16),
+                    typestr: "Map".to_owned(),
+                    max_len: None,
+                },
+            ),
+        ];
+        expected.derive_dbg = false;
+        expected.impl_default = false;
+        expected.attrs = parse_attributes("#[derive(Self)]").unwrap();
+        expected.unknown = Some(Unknown {
+            handler: syn::parse_str("UnknownType").unwrap(),
+            field_attrs: vec![],
+        });
+
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
-            Message {
-                name: "Message",
-                rust_name: Ident::new("Message", Span::call_site()),
-                oneofs: vec![Oneof {
-                    name: "oneof",
-                    san_rust_name: Ident::new_raw("oneof", Span::call_site()),
-                    otype: OneofType::Enum {
-                        type_name: Ident::new("Oneof", Span::call_site()),
-                        fields: vec![
-                            make_test_oneof_field(
-                                2,
-                                "oneof_field",
-                                false,
-                                TypeSpec::Int(PbInt::Sint32, IntSize::S8)
-                            ),
-                            make_test_oneof_field(4, "oneof_field2", true, TypeSpec::Float),
-                        ]
-                    },
-                    encoded_max_size: None,
-                    field_attrs: vec![],
-                    // Overrides the type attrs of the message
-                    type_attrs: parse_attributes("#[derive(Eq)]").unwrap(),
-                    boxed: false,
-                    // Inherits the no_debug_derive setting of the message
-                    derive_dbg: false,
-                    derive_partial_eq: true,
-                    derive_clone: true,
-                    lifetime: None,
-                    idx: 0,
-                    comments: None
-                }],
-                fields: vec![
-                    make_test_field(
-                        1,
-                        "bool_field",
-                        true,
-                        FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
-                    ),
-                    make_test_field(
-                        3,
-                        "map_field",
-                        false,
-                        FieldType::Map {
-                            key: TypeSpec::Int(PbInt::Int64, IntSize::S16),
-                            val: TypeSpec::Int(PbInt::Uint64, IntSize::S16),
-                            type_path: syn::parse_str("Map").unwrap(),
-                            max_len: None
-                        }
-                    ),
-                ],
-                derive_dbg: false,
-                impl_default: false,
-                impl_partial_eq: true,
-                derive_clone: true,
-                attrs: parse_attributes("#[derive(Self)]").unwrap(),
-                unknown_handler: Some(syn::parse_str("UnknownType").unwrap()),
-                lifetime: None,
-                as_oneof_enum: false,
-                comments: None
-            }
+            expected
         )
     }
 
     #[test]
     fn synthetic_oneof() {
-        let mut gen = Generator::new();
-        gen.syntax = Syntax::Proto3;
+        let mut ctx = make_ctx();
+        ctx.syntax = Syntax::Proto3;
 
         let mut proto = DescriptorProto::default();
         proto.set_name("Msg".to_owned());
@@ -930,62 +1061,144 @@ mod tests {
             config: Cow::Owned(Box::new(Config::new())),
         };
 
+        let mut expected = make_test_msg("Msg");
+        expected.fields = vec![make_test_field(
+            1,
+            "opt",
+            false,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer),
+        )];
+        expected.hazzer = Some(Hazzer {
+            type_attrs: vec![],
+            field_attrs: vec![],
+        });
+
         assert_eq!(
-            Message::from_proto(&proto, &gen, &msg_conf, None)
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
                 .unwrap()
                 .unwrap(),
-            Message {
-                name: "Msg",
-                rust_name: Ident::new("Msg", Span::call_site()),
-                oneofs: vec![],
-                fields: vec![make_test_field(
-                    1,
-                    "opt",
-                    false,
-                    FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
-                )],
-                derive_dbg: true,
-                impl_default: true,
-                impl_partial_eq: true,
-                derive_clone: true,
-                attrs: vec![],
-                unknown_handler: None,
-                as_oneof_enum: false,
-                lifetime: None,
-                comments: None,
-            }
+            expected
         )
     }
 
     #[test]
-    fn hazzer_empty() {
-        let config = CurrentConfig {
+    fn message_fields() {
+        let mut proto = DescriptorProto::default();
+        proto.set_name("Message".to_owned());
+        proto.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(1);
+            f.set_name("internal".to_owned());
+            f.set_type(Type::Message);
+            f.set_type_name(".Internal".to_owned());
+            f
+        });
+        proto.field.push({
+            let mut f = FieldDescriptorProto::default();
+            f.set_number(2);
+            f.set_name("external".to_owned());
+            f.set_type(Type::Message);
+            f.set_type_name(".External".to_owned());
+            f
+        });
+
+        let mut ctx = make_ctx();
+        ctx.params.extern_paths.insert(
+            ".External".to_owned(),
+            syn::parse_str("ex::Ternal").unwrap(),
+        );
+
+        let config = Box::new(Config::new().optional_repr(OptionalRepr::Option));
+        let msg_conf = CurrentConfig {
             node: None,
-            config: Cow::Owned(Box::new(Config::new())),
+            config: Cow::Borrowed(&config),
         };
-        let msg = Message {
-            name: "msg",
-            rust_name: Ident::new("msg", Span::call_site()),
-            oneofs: vec![],
-            fields: vec![
-                make_test_field(2, "field2", false, FieldType::Single(TypeSpec::Bool)),
-                make_test_field(
-                    4,
-                    "field4",
-                    true,
-                    FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option),
-                ),
-            ],
-            derive_dbg: true,
-            impl_default: true,
-            impl_partial_eq: true,
-            derive_clone: true,
-            attrs: vec![],
-            unknown_handler: None,
-            as_oneof_enum: false,
-            lifetime: None,
-            comments: None,
-        };
-        assert!(msg.generate_hazzer_decl(config).unwrap().is_none());
+
+        let mut expected = make_test_msg("Message");
+        expected.fields = vec![
+            make_test_field(
+                1,
+                "internal",
+                false,
+                FieldType::Optional(TypeSpec::Message(".Internal"), OptionalRepr::Option),
+            ),
+            make_test_field(
+                2,
+                "external",
+                false,
+                FieldType::Optional(TypeSpec::Message(".External"), OptionalRepr::Option),
+            ),
+        ];
+        // Only the first field should be an edge, since the second field is external
+        expected.message_edges = vec![(Position::Field(0), ".Internal")];
+
+        assert_eq!(
+            Message::from_proto(&proto, &ctx, &msg_conf, None)
+                .unwrap()
+                .unwrap(),
+            expected
+        )
+    }
+
+    #[test]
+    fn is_copy() {
+        let ctx = make_ctx();
+
+        // Not copy (boxed oneof)
+        let mut msg = make_test_msg("Msg");
+        msg.oneofs.push(make_test_oneof("empty", true));
+        assert!(!msg.is_copy(&ctx));
+
+        // Not copy (boxed field)
+        let mut msg = make_test_msg("Msg");
+        msg.fields.push(make_test_field(
+            1,
+            "good",
+            false,
+            FieldType::Single(TypeSpec::Bool),
+        ));
+        msg.fields.push(make_test_field(
+            2,
+            "bad",
+            true,
+            FieldType::Single(TypeSpec::Bool),
+        ));
+        assert!(!msg.is_copy(&ctx));
+
+        // Not copy (boxed oneof field)
+        let mut msg = make_test_msg("Msg");
+        msg.oneofs.push(make_test_oneof("content", false));
+        msg.oneofs[0]
+            .otype
+            .fields_mut()
+            .unwrap()
+            .push(make_test_oneof_field(1, "bad", true, TypeSpec::Bool));
+        assert!(!msg.is_copy(&ctx));
+
+        // Not copy (custom field)
+        let mut msg = make_test_msg("Msg");
+        msg.fields.push(make_test_field(
+            1,
+            "custom",
+            false,
+            FieldType::Custom(CustomField::Type(syn::parse_str("Custom").unwrap())),
+        ));
+        assert!(!msg.is_copy(&ctx));
+
+        // Copy
+        let mut msg = make_test_msg("Msg");
+        msg.oneofs.push(make_test_oneof("content", false));
+        msg.oneofs[0]
+            .otype
+            .fields_mut()
+            .unwrap()
+            .push(make_test_oneof_field(1, "good", false, TypeSpec::Bool));
+        msg.fields.push(make_test_field(
+            2,
+            "e",
+            false,
+            FieldType::Single(TypeSpec::Enum(".Enum")),
+        ));
+        assert!(msg.is_copy(&ctx));
     }
 }

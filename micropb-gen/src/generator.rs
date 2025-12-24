@@ -1,45 +1,49 @@
 use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
-    collections::HashMap,
-    ffi::OsString,
+    collections::BTreeMap,
     fmt::Display,
     io,
-    path::PathBuf,
 };
 
 use convert_case::{Case, Casing};
-use location::{add_location_comments, get_comments, next_comment_node, CommentNode, Comments};
-use micropb::size::sizeof_varint32;
-use proc_macro2::{Literal, Span, TokenStream};
+use location::{CommentNode, Comments, add_location_comments, next_comment_node};
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
-use syn::{Attribute, Ident};
+use syn::Ident;
 
 use crate::{
-    config::{Config, IntSize},
-    descriptor::{
-        DescriptorProto, EnumDescriptorProto, EnumValueDescriptorProto, FileDescriptorProto,
-        FileDescriptorSet,
-    },
+    EncodeDecode, Generator, WarningCb,
+    config::Config,
+    descriptor::{DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet},
+    generator::{r#enum::Enum, graph::TypeGraph},
     pathtree::{Node, PathTree},
-    split_pkg_name, EncodeDecode,
+    split_pkg_name,
 };
 
 use self::message::Message;
-use super::WarningCb;
 
+pub(crate) mod r#enum;
 pub(crate) mod field;
+mod graph;
 pub(crate) mod location;
 pub(crate) mod message;
 pub(crate) mod oneof;
 pub(crate) mod type_spec;
 
-fn derive_msg_attr(debug: bool, default: bool, partial_eq: bool, clone: bool) -> TokenStream {
+fn derive_msg_attr(
+    debug: bool,
+    default: bool,
+    partial_eq: bool,
+    clone: bool,
+    copy: bool,
+) -> TokenStream {
     let debug = debug.then(|| quote! { Debug, });
     let default = default.then(|| quote! { Default, });
     let partial_eq = partial_eq.then(|| quote! { PartialEq, });
+    let copy = (clone && copy).then(|| quote! { Copy, });
     let clone = clone.then(|| quote! { Clone, });
-    quote! { #[derive(#debug #default #partial_eq #clone)] }
+    quote! { #[derive(#debug #default #partial_eq #clone #copy)] }
 }
 
 fn derive_enum_attr() -> TokenStream {
@@ -82,9 +86,13 @@ impl<'a> CurrentConfig<'a> {
     }
 }
 
-fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> io::Error {
+fn field_error_str(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> String {
     let dot = if pkg.is_empty() { "" } else { "." };
-    io::Error::other(format!("({dot}{pkg}.{msg_name}.{field_name}) {err_text}"))
+    format!("({dot}{pkg}.{msg_name}.{field_name}) {err_text}")
+}
+
+fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> io::Error {
+    io::Error::other(field_error_str(pkg, msg_name, field_name, err_text))
 }
 
 fn msg_error(pkg: &str, msg_name: &str, err_text: impl Display) -> io::Error {
@@ -104,75 +112,88 @@ pub(crate) enum Syntax {
     Proto3,
 }
 
-/// Protobuf code generator
-///
-/// Use this in `build.rs` to compile `.proto` files into a Rust module.
-///
-/// The main way to control the compilation process is to call [`configure`](Generator::configure),
-/// which allows the user to customize how code is generated from Protobuf types and fields of
-/// their choosing.
-///
-/// # Note
-/// It's recommended to call one of [`use_container_alloc`](Self::use_container_alloc),
-/// [`use_container_heapless`](Self::use_container_heapless), or
-/// [`use_container_alloc`](Self::use_container_alloc) to ensure that container types are
-/// configured for `string`, `bytes`, repeated, and `map` fields. The generator will throw an
-/// error if it reaches any such field that doesn't have a container configured.
-///
-/// # Example
-/// ```no_run
-/// use micropb_gen::{Generator, Config};
-///
-/// let mut gen = Generator::new();
-/// // Use container types from `heapless`
-/// gen.use_container_heapless()
-///     // Set max length of repeated fields in .test.Data to 4
-///     .configure(".test.Data", Config::new().max_len(4))
-///     // Wrap .test.Data.value inside a Box
-///     .configure(".test.Data.value", Config::new().boxed(true))
-///     // Compile test.proto into a Rust module
-///     .compile_protos(
-///         &["test.proto"],
-///         std::env::var("OUT_DIR").unwrap() + "/test_proto.rs",
-///     )
-///     .unwrap();
-/// ```
-pub struct Generator {
+#[derive(Default)]
+pub(crate) struct Params {
+    pub(crate) extern_paths: BTreeMap<String, TokenStream>,
+    pub(crate) encode_decode: EncodeDecode,
+    pub(crate) calculate_max_size: bool,
+    pub(crate) retain_enum_prefix: bool,
+    pub(crate) suffixed_package_names: bool,
+    pub(crate) single_oneof_msg_as_enum: bool,
+}
+
+pub(crate) struct Context<'proto> {
+    // FileDescriptorSet-level context
+    pub(crate) params: Params,
+    pub(crate) graph: TypeGraph<'proto>,
+    pub(crate) warning_cb: WarningCb,
+
+    // File-level context
     pub(crate) syntax: Syntax,
     pub(crate) pkg_path: Vec<String>,
     pub(crate) pkg: String,
     pub(crate) type_path: RefCell<Vec<String>>,
-
-    pub(crate) warning_cb: WarningCb,
-
-    pub(crate) encode_decode: EncodeDecode,
-    pub(crate) calculate_max_size: bool,
-    pub(crate) retain_enum_prefix: bool,
-    pub(crate) format: bool,
-    pub(crate) fdset_path: Option<PathBuf>,
-    pub(crate) protoc_args: Vec<OsString>,
-    pub(crate) suffixed_package_names: bool,
-    pub(crate) single_oneof_msg_as_enum: bool,
-    pub(crate) comments_to_docs: bool,
-
-    pub(crate) config_tree: PathTree<Box<Config>>,
-    pub(crate) comment_tree: PathTree<Comments, (i32, i32)>,
-    pub(crate) extern_paths: HashMap<String, TokenStream>,
 }
 
-impl Generator {
-    pub(crate) fn warn_unused_configs(&self) {
-        self.config_tree.find_all_unaccessed(|_node, path| {
+impl<'proto> Context<'proto> {
+    pub(crate) fn new(generator: Generator) -> (Self, PathTree<Box<Config>>) {
+        let ctx = Self {
+            params: Params {
+                extern_paths: generator.extern_paths,
+                encode_decode: generator.encode_decode,
+                calculate_max_size: generator.calculate_max_size,
+                retain_enum_prefix: generator.retain_enum_prefix,
+                suffixed_package_names: generator.suffixed_package_names,
+                single_oneof_msg_as_enum: generator.single_oneof_msg_as_enum,
+            },
+            warning_cb: generator.warning_cb,
+            graph: TypeGraph::default(),
+
+            syntax: Default::default(),
+            pkg_path: Default::default(),
+            pkg: Default::default(),
+            type_path: Default::default(),
+        };
+        (ctx, generator.config_tree)
+    }
+
+    fn warn_unused_configs(&self, config_tree: &PathTree<Box<Config>>) {
+        config_tree.find_all_unaccessed(|_node, path| {
             let path = path.join(".");
             (self.warning_cb)(format_args!("Unused configuration path: \"{path}\". Make sure the path points to an actual Protobuf type or module."));
         });
     }
 
-    pub(crate) fn generate_fdset(&mut self, fdset: &FileDescriptorSet) -> io::Result<TokenStream> {
-        let mut mod_tree = PathTree::new(TokenStream::new());
-
+    pub(crate) fn generate_fdset(
+        generator: Generator,
+        fdset: &'proto FileDescriptorSet,
+    ) -> io::Result<TokenStream> {
+        // Pre-generate the comment trees for every file
+        let mut comment_trees = vec![];
         for file in &fdset.file {
-            let code = self.generate_fdproto(file)?;
+            let mut comment_tree = PathTree::new(Comments::default());
+            if let Some(src) = file.source_code_info() {
+                for location in &src.location {
+                    add_location_comments(&mut comment_tree, location);
+                }
+            }
+            comment_trees.push(comment_tree);
+        }
+
+        let (mut ctx, config_tree) = Context::new(generator);
+
+        // First, convert and accumulate all message and enum types
+        for (file, comment_tree) in fdset.file.iter().zip(comment_trees.iter()) {
+            ctx.add_fdproto(&config_tree, comment_tree, file)?;
+        }
+
+        // Resolve the type graph
+        ctx.resolve_all();
+
+        // Generate Rust code
+        let mut mod_tree = PathTree::new(TokenStream::new());
+        for file in &fdset.file {
+            let code = ctx.generate_fdproto(file)?;
             if let Some(pkg_name) = file.package() {
                 mod_tree
                     .root
@@ -190,13 +211,12 @@ impl Generator {
             }
         }
 
-        Ok(self.generate_mod_tree(&mut mod_tree.root))
+        let module = ctx.generate_mod_tree(&mut mod_tree.root);
+        ctx.warn_unused_configs(&config_tree);
+        Ok(module)
     }
 
-    pub(crate) fn generate_fdproto(
-        &mut self,
-        fdproto: &FileDescriptorProto,
-    ) -> io::Result<TokenStream> {
+    fn setup_file_context(&mut self, fdproto: &FileDescriptorProto) -> io::Result<()> {
         self.syntax = match fdproto.syntax.as_str() {
             "proto3" => Syntax::Proto3,
             "proto2" | "" => Syntax::Proto2,
@@ -204,7 +224,7 @@ impl Generator {
             syntax => {
                 return Err(io::Error::other(format!(
                     "Unexpected Protobuf syntax specifier {syntax}"
-                )))
+                )));
             }
         };
         self.pkg_path = fdproto
@@ -212,8 +232,19 @@ impl Generator {
             .map(|s| split_pkg_name(s).map(ToOwned::to_owned).collect())
             .unwrap_or_default();
         self.pkg = fdproto.package().cloned().unwrap_or_default();
+        self.type_path = RefCell::new(vec![]);
+        Ok(())
+    }
 
-        let root_node = &self.config_tree.root;
+    fn add_fdproto(
+        &mut self,
+        config_tree: &PathTree<Box<Config>>,
+        comment_tree: &'proto PathTree<Comments, (i32, i32)>,
+        fdproto: &'proto FileDescriptorProto,
+    ) -> io::Result<()> {
+        self.setup_file_context(fdproto)?;
+
+        let root_node = &config_tree.root;
         let mut conf = root_node
             .access_value()
             .as_ref()
@@ -228,26 +259,36 @@ impl Generator {
             config: Cow::Owned(conf),
         };
 
-        if let Some(src) = fdproto.source_code_info() {
-            for location in &src.location {
-                add_location_comments(&mut self.comment_tree, location);
-            }
-        }
-
-        let mut out = TokenStream::new();
         for (i, m) in fdproto.message_type.iter().enumerate() {
-            out.extend(self.generate_msg(
+            self.add_message(
                 m,
                 cur_config.next_conf(&m.name),
-                self.comment_tree.root.next(&location::path::fdset_msg(i)),
-            )?);
+                comment_tree.root.next(&location::path::fdset_msg(i)),
+            )?;
         }
         for (i, e) in fdproto.enum_type.iter().enumerate() {
-            out.extend(self.generate_enum(
+            self.add_enum(
                 e,
                 cur_config.next_conf(&e.name),
-                self.comment_tree.root.next(&location::path::fdset_enum(i)),
-            )?);
+                comment_tree.root.next(&location::path::fdset_enum(i)),
+            )?;
+        }
+
+        Ok(())
+    }
+
+    fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> io::Result<TokenStream> {
+        self.setup_file_context(fdproto)?;
+
+        // Generate Rust code from message and enum types
+        let mut out = TokenStream::new();
+        for proto in fdproto.message_type.iter() {
+            let m = self.graph.get_message(&self.fq_proto_name(&proto.name));
+            out.extend(self.generate_msg(m, proto)?);
+        }
+        for proto in fdproto.enum_type.iter() {
+            let e = self.graph.get_enum(&self.fq_proto_name(&proto.name));
+            out.extend(self.generate_enum(e));
         }
 
         Ok(out)
@@ -256,7 +297,7 @@ impl Generator {
     fn generate_mod_tree(&self, mod_node: &mut Node<TokenStream>) -> TokenStream {
         let code = mod_node.value_mut().take().unwrap_or_default();
         let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
-            let submod_name = resolve_path_elem(submod_name, self.suffixed_package_names);
+            let submod_name = resolve_path_elem(submod_name, self.params.suffixed_package_names);
             let inner = self.generate_mod_tree(inner_node);
             quote! { pub mod #submod_name { #inner } }
         });
@@ -267,142 +308,39 @@ impl Generator {
         }
     }
 
-    fn generate_enum_decl(
-        &self,
-        name: &Ident,
-        values: &[EnumValueDescriptorProto],
-        enum_int_type: IntSize,
-        signed: bool,
-        attrs: &[Attribute],
-        enum_comment_node: Option<&CommentNode>,
-    ) -> TokenStream {
-        let variants = values.iter().enumerate().map(|(i, v)| {
-            let num = Literal::i32_unsuffixed(v.number);
-            let var_name = self.enum_variant_name(&v.name, name);
-            let var_comment_node =
-                next_comment_node(enum_comment_node, location::path::enum_value(i));
-            let var_comments = get_comments(var_comment_node)
-                .map(Comments::lines)
-                .into_iter()
-                .flatten();
-            quote! { #(#[doc = #var_comments])* pub const #var_name: Self = Self(#num); }
-        });
-
-        let default_num = Literal::i32_unsuffixed(values[0].number);
-        let derive_enum = derive_enum_attr();
-        let itype = enum_int_type.type_name(signed);
-        let max_size = if signed {
-            10
-        } else {
-            sizeof_varint32(enum_int_type.max_value().try_into().unwrap_or(u32::MAX))
-        };
-        let enum_comments = get_comments(enum_comment_node)
-            .map(Comments::lines)
-            .into_iter()
-            .flatten();
-
-        quote! {
-            #(#[doc = #enum_comments])*
-            #derive_enum
-            #[repr(transparent)]
-            #(#attrs)*
-            pub struct #name(pub #itype);
-
-            impl #name {
-                #[doc = " Maximum encoded size of the enum"]
-                pub const _MAX_SIZE: usize = #max_size;
-                #(#variants)*
-            }
-
-            impl core::default::Default for #name {
-                fn default() -> Self {
-                    Self(#default_num)
-                }
-            }
-
-            impl core::convert::From<#itype> for #name {
-                fn from(val: #itype) -> Self {
-                    Self(val)
-                }
-            }
-        }
+    fn generate_enum(&self, e: Option<&Enum>) -> TokenStream {
+        // None means enum has been skipped
+        let Some(e) = e else { return quote! {} };
+        e.generate_decl()
     }
 
-    fn generate_enum(
-        &self,
-        enum_type: &EnumDescriptorProto,
-        enum_conf: CurrentConfig,
-        comment_node: Option<&CommentNode>,
-    ) -> io::Result<TokenStream> {
-        if enum_conf.config.skip.unwrap_or(false) {
-            return Ok(quote! {});
-        }
+    fn generate_msg_mod(&self, msg: &Message, proto: &DescriptorProto) -> io::Result<TokenStream> {
+        let msg_mod_name = resolve_path_elem(msg.name, self.params.suffixed_package_names);
 
-        let name = sanitized_ident(&enum_type.name);
-        let enum_int_type = enum_conf.config.enum_int_size.unwrap_or(IntSize::S32);
-        let attrs = &enum_conf
-            .config
-            .type_attr_parsed()
-            .map_err(|e| msg_error(&self.pkg, &enum_type.name, &e))?;
-        let unsigned = enum_conf.config.enum_unsigned.unwrap_or(false);
-        let out = self.generate_enum_decl(
-            &name,
-            &enum_type.value,
-            enum_int_type,
-            !unsigned,
-            attrs,
-            comment_node,
-        );
-        Ok(out)
-    }
-
-    fn generate_msg_mod(
-        &self,
-        msg: &Message,
-        proto: &DescriptorProto,
-        msg_conf: &CurrentConfig,
-        comment_node: Option<&CommentNode>,
-    ) -> io::Result<(TokenStream, Option<Vec<syn::Attribute>>)> {
-        let msg_mod_name = resolve_path_elem(msg.name, self.suffixed_package_names);
         self.type_path.borrow_mut().push(msg.name.to_owned());
-
         let mut msg_mod_body = TokenStream::new();
-        for (i, m) in proto
+        for m in proto
             .nested_type
             .iter()
-            .enumerate()
-            .filter(|(_, m)| !m.options().map(|o| o.map_entry).unwrap_or(false))
+            .filter(|m| !m.options().map(|o| o.map_entry).unwrap_or(false))
         {
-            msg_mod_body.extend(self.generate_msg(
-                m,
-                msg_conf.next_conf(&m.name),
-                next_comment_node(comment_node, location::path::msg_msg(i)),
-            )?);
+            let sub_msg_fq_name = self.fq_proto_name(&m.name);
+            let sub_msg = self.graph.get_message(&sub_msg_fq_name);
+            msg_mod_body.extend(self.generate_msg(sub_msg, m)?);
         }
-        for (i, e) in proto.enum_type.iter().enumerate() {
-            msg_mod_body.extend(self.generate_enum(
-                e,
-                msg_conf.next_conf(&e.name),
-                next_comment_node(comment_node, location::path::msg_enum(i)),
-            )?);
+        for e in proto.enum_type.iter() {
+            let enum_fq_name = self.fq_proto_name(&e.name);
+            let e = self.graph.get_enum(&enum_fq_name);
+            msg_mod_body.extend(self.generate_enum(e));
         }
 
-        let hazzer_field_attr = if msg.as_oneof_enum {
-            None
-        } else {
-            let (hazzer_decl, hazzer_field_attr) = match msg
-                .generate_hazzer_decl(msg_conf.next_conf("_has"))
-                .map_err(|e| field_error(&self.pkg, msg.name, "_has", &e))?
-            {
-                Some((d, a)) => (Some(d), Some(a)),
-                None => (None, None),
-            };
-            msg_mod_body.extend(hazzer_decl);
+        if !msg.as_oneof_enum {
             for o in &msg.oneofs {
-                msg_mod_body.extend(o.generate_decl(self));
+                msg_mod_body.extend(o.generate_decl(self, msg.is_copy));
             }
-            hazzer_field_attr
-        };
+        }
+
+        msg_mod_body.extend(msg.generate_hazzer_decl());
 
         self.type_path.borrow_mut().pop();
 
@@ -412,39 +350,94 @@ impl Generator {
             let doc = format!(" Inner types for `{}`", msg.name);
             quote! { #[doc = #doc] pub mod #msg_mod_name { #msg_mod_body } }
         };
-        Ok((msg_mod, hazzer_field_attr))
+        Ok(msg_mod)
+    }
+
+    fn add_message(
+        &mut self,
+        proto: &'proto DescriptorProto,
+        msg_conf: CurrentConfig,
+        comment_node: Option<&'proto CommentNode>,
+    ) -> io::Result<()> {
+        let fq_name = self.fq_proto_name(&proto.name);
+        if self.params.extern_paths.contains_key(&fq_name) {
+            return Ok(());
+        }
+        let Some(msg) = Message::from_proto(proto, self, &msg_conf, comment_node)? else {
+            return Ok(());
+        };
+        let msg_name = msg.name;
+        self.graph.add_message(fq_name, msg);
+
+        self.type_path.borrow_mut().push(msg_name.to_owned());
+        for (i, m) in proto
+            .nested_type
+            .iter()
+            .enumerate()
+            .filter(|(_, m)| !m.options().map(|o| o.map_entry).unwrap_or(false))
+        {
+            self.add_message(
+                m,
+                msg_conf.next_conf(&m.name),
+                next_comment_node(comment_node, location::path::msg_msg(i)),
+            )?;
+        }
+        for (i, e) in proto.enum_type.iter().enumerate() {
+            self.add_enum(
+                e,
+                msg_conf.next_conf(&e.name),
+                next_comment_node(comment_node, location::path::msg_enum(i)),
+            )?;
+        }
+        self.type_path.borrow_mut().pop();
+
+        Ok(())
+    }
+
+    fn add_enum(
+        &mut self,
+        proto: &'proto EnumDescriptorProto,
+        enum_conf: CurrentConfig,
+        comment_node: Option<&'proto CommentNode>,
+    ) -> io::Result<()> {
+        let fq_name = self.fq_proto_name(&proto.name);
+        if self.params.extern_paths.contains_key(&fq_name) {
+            return Ok(());
+        }
+        let Some(e) = Enum::from_proto(proto, self, &enum_conf, comment_node)? else {
+            return Ok(());
+        };
+        self.graph.add_enum(fq_name, e);
+        Ok(())
     }
 
     fn generate_msg(
         &self,
+        msg: Option<&Message>,
         proto: &DescriptorProto,
-        msg_conf: CurrentConfig,
-        comment_node: Option<&CommentNode>,
     ) -> io::Result<TokenStream> {
-        let Some(msg) = Message::from_proto(proto, self, &msg_conf, comment_node)? else {
-            return Ok(quote! {});
-        };
+        // None means message has been skipped
+        let Some(msg) = msg else { return Ok(quote! {}) };
 
-        let (msg_mod, hazzer_field_attr) =
-            self.generate_msg_mod(&msg, proto, &msg_conf, comment_node)?;
+        let msg_mod = self.generate_msg_mod(msg, proto)?;
         let proto_default = msg.fields.iter().any(|f| f.default.is_some());
-        let unknown_conf = msg_conf.next_conf("_unknown");
 
         // Only manually implement Default if there's a Protobuf default specification
         let default = proto_default
-            .then(|| msg.generate_default_impl(self, hazzer_field_attr.is_some()))
+            .then(|| msg.generate_default_impl(self))
             .transpose()?;
         // Only manually implement PartialEq if there's a hazzer
-        let partial_eq = hazzer_field_attr
-            .as_ref()
-            .map(|_| msg.generate_partial_eq());
-        let decl = msg.generate_decl(self, hazzer_field_attr, proto_default, &unknown_conf)?;
-        let msg_impl = msg.generate_impl(self);
+        let partial_eq = msg.hazzer.as_ref().map(|_| msg.generate_partial_eq());
+        let decl = msg.generate_decl(self, proto_default)?;
+        let msg_impl = msg.generate_impl(self)?;
         let decode = self
+            .params
             .encode_decode
             .is_decode()
-            .then(|| msg.generate_decode_trait(self));
+            .then(|| msg.generate_decode_trait(self))
+            .transpose()?;
         let encode = self
+            .params
             .encode_decode
             .is_encode()
             .then(|| msg.generate_encode_trait(self));
@@ -465,7 +458,7 @@ impl Generator {
         assert_eq!(".", &pb_fq_type_name[..1]);
 
         // Check if we're substituting with an extern type
-        if let Some(rust_type) = self.extern_paths.get(pb_fq_type_name) {
+        if let Some(rust_type) = self.params.extern_paths.get(pb_fq_type_name) {
             return rust_type.clone();
         }
 
@@ -484,16 +477,30 @@ impl Generator {
             ident_path.next();
         }
 
-        let path = local_path
-            .map(|_| format_ident!("super"))
-            .chain(ident_path.map(|elem| resolve_path_elem(elem, self.suffixed_package_names)));
+        let path = local_path.map(|_| format_ident!("super")).chain(
+            ident_path.map(|elem| resolve_path_elem(elem, self.params.suffixed_package_names)),
+        );
         quote! { #(#path ::)* #ident_type }
+    }
+
+    fn fq_proto_name(&self, proto_name: &str) -> String {
+        let pkg_path = &self.pkg_path;
+        let type_path = self.type_path.borrow();
+
+        let mut fq_proto_name = String::new();
+        for elem in pkg_path.iter().chain(type_path.iter()) {
+            fq_proto_name.push('.');
+            fq_proto_name.push_str(elem);
+        }
+        fq_proto_name.push('.');
+        fq_proto_name.push_str(proto_name);
+        fq_proto_name
     }
 
     /// Convert variant name to Pascal-case, then strip the enum name from it
     fn enum_variant_name(&self, variant_name: &str, enum_name: &Ident) -> Ident {
         let variant_name_cased = variant_name.to_case(Case::Pascal);
-        let stripped = if !self.retain_enum_prefix {
+        let stripped = if !self.params.retain_enum_prefix {
             variant_name_cased
                 .strip_prefix(&enum_name.to_string())
                 .unwrap_or(&variant_name_cased)
@@ -561,64 +568,78 @@ pub(crate) fn sanitized_ident(name: &str) -> Ident {
 }
 
 #[cfg(test)]
+fn make_ctx() -> Context<'static> {
+    Context {
+        params: Params::default(),
+        graph: TypeGraph::default(),
+        syntax: Default::default(),
+        pkg_path: Default::default(),
+        pkg: Default::default(),
+        type_path: Default::default(),
+        warning_cb: |_| {},
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn enum_variant_name() {
-        let mut gen = Generator::new();
+        let mut ctx = make_ctx();
         let enum_name = Ident::new("Enum", Span::call_site());
         assert_eq!(
-            gen.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
+            ctx.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
             "Value"
         );
         assert_eq!(
-            gen.enum_variant_name("ALIEN", &enum_name).to_string(),
+            ctx.enum_variant_name("ALIEN", &enum_name).to_string(),
             "Alien"
         );
 
-        gen.retain_enum_prefix = true;
+        ctx.params.retain_enum_prefix = true;
         assert_eq!(
-            gen.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
+            ctx.enum_variant_name("ENUM_VALUE", &enum_name).to_string(),
             "EnumValue"
         );
     }
 
     #[test]
     fn resolve_type_name() {
-        let mut gen = Generator::new();
+        let mut ctx = make_ctx();
+        ctx.params.suffixed_package_names = true;
         // currently in root-level module
-        assert_eq!(gen.resolve_type_name(".Message").to_string(), "Message");
+        assert_eq!(ctx.resolve_type_name(".Message").to_string(), "Message");
         assert_eq!(
-            gen.resolve_type_name(".package.Message").to_string(),
+            ctx.resolve_type_name(".package.Message").to_string(),
             quote! { package_::Message }.to_string()
         );
         assert_eq!(
-            gen.resolve_type_name(".package.Message.Inner").to_string(),
+            ctx.resolve_type_name(".package.Message.Inner").to_string(),
             quote! { package_::Message_::Inner }.to_string()
         );
 
-        gen.pkg_path.push("package".to_owned());
-        gen.type_path.borrow_mut().push("Message".to_owned());
+        ctx.pkg_path.push("package".to_owned());
+        ctx.type_path.borrow_mut().push("Message".to_owned());
         // currently in package::mod_Message module
         assert_eq!(
-            gen.resolve_type_name(".Message").to_string(),
+            ctx.resolve_type_name(".Message").to_string(),
             quote! { super::super::Message }.to_string()
         );
         assert_eq!(
-            gen.resolve_type_name(".package.Message").to_string(),
+            ctx.resolve_type_name(".package.Message").to_string(),
             quote! { super::Message }.to_string()
         );
         assert_eq!(
-            gen.resolve_type_name(".Message.Item").to_string(),
+            ctx.resolve_type_name(".Message.Item").to_string(),
             quote! { super::super::Message_::Item }.to_string()
         );
         assert_eq!(
-            gen.resolve_type_name(".package.Message.Inner").to_string(),
+            ctx.resolve_type_name(".package.Message.Inner").to_string(),
             "Inner"
         );
         assert_eq!(
-            gen.resolve_type_name(".abc.d").to_string(),
+            ctx.resolve_type_name(".abc.d").to_string(),
             quote! { super::super::abc_::r#d }.to_string()
         );
     }
@@ -639,10 +660,11 @@ mod tests {
             mod_tree
         };
 
-        let mut gen = Generator::new();
+        let mut ctx = make_ctx();
 
+        ctx.params.suffixed_package_names = true;
         let mut mod_tree = mk_tree();
-        let out = gen.generate_mod_tree(&mut mod_tree.root);
+        let out = ctx.generate_mod_tree(&mut mod_tree.root);
         let expected = quote! {
             Root
 
@@ -655,9 +677,9 @@ mod tests {
         };
         assert_eq!(out.to_string(), expected.to_string());
 
-        gen.suffixed_package_names(false);
+        ctx.params.suffixed_package_names = false;
         let mut mod_tree = mk_tree();
-        let out = gen.generate_mod_tree(&mut mod_tree.root);
+        let out = ctx.generate_mod_tree(&mut mod_tree.root);
         let expected = quote! {
             Root
 

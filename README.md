@@ -19,7 +19,6 @@ Unlike other Rust Protobuf libraries, `micropb` is aimed for constrained environ
 #### Limitations
 - Does not support Protobuf Editions, RPC, or extensions.
 - No reflection capabilities.
-- No cycle detection for message fields, so users need to break cyclic references themselves by boxing the field or using a custom handler.
 - `string`, `bytes`, repeated, and `map` fields require some basic user configuration to get working.
 
 ## Overview
