@@ -110,7 +110,7 @@
 //! `micropb-gen` will generate the following Rust structs and APIs:
 //! ```rust,ignore
 //! pub mod example_ {
-//!     #[derive(Debug, Clone)]
+//!     #[derive(Debug, Clone, Copy)]
 //!     pub struct Example {
 //!         pub f_int32: i32,
 //!         pub f_int64: i64,
@@ -201,7 +201,7 @@
 //!
 //! pub mod Example_ {
 //!     /// Tracks whether the optional fields are present
-//!     #[derive(Debug, Default, Clone, PartialEq)]
+//!     #[derive(Debug, Default, Clone, PartialEq, Copy)]
 //!     pub struct _Hazzer([u8; 1]);
 //!
 //!     impl _Hazzer {
@@ -276,13 +276,13 @@
 //!
 //! `micropb-gen` generates the following definition:
 //! ```rust,no_run
-//! #[derive(Debug, Clone, PartialEq)]
+//! #[derive(Debug, Clone, PartialEq, Copy)]
 //! pub struct Example {
 //!     pub number: Option<Example_::Number>,
 //! }
 //!
 //! pub mod Example_ {
-//!     #[derive(Debug, Clone, PartialEq)]
+//!     #[derive(Debug, Clone, PartialEq, Copy)]
 //!     pub enum Number {
 //!         Int(i32),
 //!         Decimal(f32),
@@ -391,9 +391,8 @@
 //! }
 //! ```
 //!
-//! ### Note
-//! `micropb-gen` cannot detect if a message field contains a lifetime or not, so any field that's
-//! a message with a lifetime must be configured with [`field_lifetime`](Config::field_lifetime).
+//! Note that message types can only have a single lifetime, so don't mix multiple lifetime
+//! identifiers in your configuration.
 //!
 //! # Enums
 //!
@@ -629,7 +628,7 @@ impl Generator {
     }
 
     /// Apply code generator configurations to Protobuf types and fields. See
-    /// [`Config`](crate::Config) for possible configuration options.
+    /// [`Config`] for possible configuration options.
     ///
     /// The `proto_path` argument is a fully-qualified Protobuf path that points to a package,
     /// type, or field in the compiled `.proto` files. The configurations are applied to the
