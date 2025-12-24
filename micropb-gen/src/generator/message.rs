@@ -547,7 +547,7 @@ impl<'proto> Message<'proto> {
             .iter()
             .map(|f| {
                 f.generate_accessors(ctx)
-                    .map_err(|e| field_error(&ctx.pkg, self.name, &f.name, &e))
+                    .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
             })
             .try_into_tokens()?;
         let name = &self.rust_name;
@@ -577,7 +577,7 @@ impl<'proto> Message<'proto> {
                 .iter()
                 .map(|f| {
                     f.generate_decode_branch_in_enum_msg(&decoder, ctx)
-                        .map_err(|e| field_error(&ctx.pkg, self.name, &f.name, &e))
+                        .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
                 })
                 .try_into_tokens()?;
             quote! { #variant_branches }
@@ -587,7 +587,7 @@ impl<'proto> Message<'proto> {
                 .iter()
                 .map(|f| {
                     f.generate_decode_branch(ctx, &tag, &decoder)
-                        .map_err(|e| field_error(&ctx.pkg, self.name, &f.name, &e))
+                        .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
                 })
                 .try_into_tokens()?;
             let oneof_branches = self
@@ -595,7 +595,7 @@ impl<'proto> Message<'proto> {
                 .iter()
                 .map(|o| {
                     o.generate_decode_branches(ctx, &mod_name, &tag, &decoder)
-                        .map_err(|e| field_error(&ctx.pkg, self.name, &o.name, &e))
+                        .map_err(|e| field_error(&ctx.pkg, self.name, o.name, &e))
                 })
                 .try_into_tokens()?;
 

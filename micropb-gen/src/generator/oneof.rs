@@ -459,13 +459,13 @@ impl<'proto> Oneof<'proto> {
             OneofType::Enum { fields, .. } => {
                 let variant_sizes = fields.iter().map(|f| {
                     if let Some(max_size) = &f.max_size_override {
-                        return match max_size {
+                        match max_size {
                             Ok(size) => quote! { ::core::result::Result::Ok(#size) },
                             Err(err) => {
                                 let err = field_error_str(&ctx.pkg, msg_name, self.name, err);
                                 quote! { ::core::result::Result::<usize, _>::Err(#err) }
                             }
-                        };
+                        }
                     } else {
                         let wire_type = f.tspec.wire_type();
                         let tag = micropb::Tag::from_parts(f.num, wire_type);

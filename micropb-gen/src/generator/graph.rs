@@ -245,7 +245,7 @@ impl<'proto> Context<'proto> {
     ) where
         'proto: 'b,
     {
-        let mut edges: Vec<_> = start.into_iter().map(|m| DfsElem::Edge(m)).collect();
+        let mut edges: Vec<_> = start.iter().map(|m| DfsElem::Edge(m)).collect();
         let mut ancestors = BTreeSet::new();
         let mut visited = BTreeSet::new();
 
