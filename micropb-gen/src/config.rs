@@ -576,6 +576,12 @@ impl Config {
     }
 }
 
+/// It's possible to have an unbounded container type with a max_len config. In that case we filter
+/// max_len by this function so we don't calculate MAX_SIZE for an unbounded container.
+pub(crate) fn contains_len_param(typestr: &str) -> bool {
+    typestr.contains("$N")
+}
+
 pub(crate) fn byte_string_type_parsed(typestr: &str, n: Option<u32>) -> Result<syn::Type, String> {
     check_missing_len(typestr, n, "max_bytes")?;
     let typestr = substitute_param(typestr.into(), "$N", n);

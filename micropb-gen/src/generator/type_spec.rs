@@ -7,7 +7,7 @@ use quote::quote;
 use syn::{Ident, Lifetime};
 
 use crate::{
-    config::{IntSize, byte_string_type_parsed},
+    config::{IntSize, byte_string_type_parsed, contains_len_param},
     descriptor::{FieldDescriptorProto, FieldDescriptorProto_::Type},
     generator::{Context, field_error_str, sanitized_ident},
     utils::{find_lifetime_from_str, path_suffix, unescape_c_escape_string},
@@ -206,20 +206,26 @@ impl<'proto> TypeSpec<'proto> {
             Type::Double => TypeSpec::Double,
             Type::Float => TypeSpec::Float,
             Type::Bool => TypeSpec::Bool,
-            Type::String => TypeSpec::String {
-                typestr: conf
+            Type::String => {
+                let typestr = conf
                     .string_type
                     .clone()
-                    .ok_or_else(|| "string_type not configured".to_owned())?,
-                max_bytes: conf.max_bytes,
-            },
-            Type::Bytes => TypeSpec::Bytes {
-                typestr: conf
+                    .ok_or_else(|| "string_type not configured".to_owned())?;
+                TypeSpec::String {
+                    max_bytes: conf.max_bytes.filter(|_| contains_len_param(&typestr)),
+                    typestr,
+                }
+            }
+            Type::Bytes => {
+                let typestr = conf
                     .bytes_type
                     .clone()
-                    .ok_or_else(|| "bytes_type not configured".to_owned())?,
-                max_bytes: conf.max_bytes,
-            },
+                    .ok_or_else(|| "bytes_type not configured".to_owned())?;
+                TypeSpec::Bytes {
+                    max_bytes: conf.max_bytes.filter(|_| contains_len_param(&typestr)),
+                    typestr,
+                }
+            }
             Type::Message => TypeSpec::Message(&proto.type_name),
             Type::Enum => TypeSpec::Enum(&proto.type_name),
             Type::Uint32 => TypeSpec::Int(PbInt::Uint32, conf.int_size.unwrap_or(IntSize::S32)),

@@ -2,7 +2,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{Ident, Lifetime};
 
-use crate::config::{OptionalRepr, map_type_parsed, vec_type_parsed};
+use crate::config::{OptionalRepr, contains_len_param, map_type_parsed, vec_type_parsed};
 use crate::descriptor::{
     DescriptorProto, FieldDescriptorProto,
     FieldDescriptorProto_::{Label, Type},
@@ -141,12 +141,12 @@ impl<'proto> Field<'proto> {
             (None, Some(map_msg), _) => {
                 let key = TypeSpec::from_proto(&map_msg.field[0], &field_conf.next_conf("key"))?;
                 let val = TypeSpec::from_proto(&map_msg.field[1], &field_conf.next_conf("value"))?;
-                let max_len = field_conf.config.max_len;
                 let typestr = field_conf
                     .config
                     .map_type
                     .clone()
                     .ok_or_else(|| "map_type not configured".to_owned())?;
+                let max_len = field_conf.config.max_len.filter(|_| contains_len_param(&typestr));
                 FieldType::Map {
                     key,
                     val,
@@ -157,12 +157,12 @@ impl<'proto> Field<'proto> {
 
             (None, None, Label::Repeated) => {
                 let typ = TypeSpec::from_proto(proto, &field_conf.next_conf("elem"))?;
-                let max_len = field_conf.config.max_len;
                 let typestr = field_conf
                     .config
                     .vec_type
                     .clone()
                     .ok_or_else(|| "vec_type not configured".to_owned())?;
+                let max_len = field_conf.config.max_len.filter(|_| contains_len_param(&typestr));
                 FieldType::Repeated {
                     typestr,
                     typ,
@@ -1104,7 +1104,7 @@ mod tests {
     #[test]
     fn from_proto_repeated() {
         // Repeated fields with custom element int type
-        let config = Box::new(Config::new().max_len(21).vec_type("Vec"));
+        let config = Box::new(Config::new().max_len(21).vec_type("Vec<$N>"));
         let mut node = Node::default();
         *node.add_path(std::iter::once("elem")).value_mut() =
             Some(Box::new(Config::new().int_size(IntSize::S8)));
@@ -1126,7 +1126,7 @@ mod tests {
             FieldType::Repeated {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: false,
-                typestr: "Vec".to_owned(),
+                typestr: "Vec<$N>".to_owned(),
                 max_len: Some(21)
             }
         );
@@ -1140,7 +1140,7 @@ mod tests {
             FieldType::Repeated {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: true,
-                typestr: "Vec".to_owned(),
+                typestr: "Vec<$N>".to_owned(),
                 max_len: Some(21)
             }
         );
