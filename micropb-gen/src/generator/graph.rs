@@ -145,14 +145,14 @@ impl<'proto> Context<'proto> {
         let msgs_with_lifetime = self
             .graph
             .messages
-            .iter()
-            .filter(|(_, msg)| {
+            .iter_mut()
+            .filter_map(|(name, msg)| {
+                msg.find_lifetime();
                 if lifetime.is_none() {
                     lifetime = msg.lifetime.clone();
                 }
-                msg.lifetime.is_some()
+                msg.lifetime.as_ref().map(|_| RevElem::Msg(name.clone()))
             })
-            .map(|(name, _)| RevElem::Msg(name.clone()))
             .collect();
 
         self.reverse_propagate(msgs_with_lifetime, |msg, elem| match elem {

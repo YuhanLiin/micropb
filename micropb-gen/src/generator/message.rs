@@ -52,17 +52,17 @@ pub(crate) struct Message<'proto> {
     pub(crate) impl_partial_eq: bool,
     pub(crate) derive_clone: bool,
     // Will be populated by graph resolver
-    pub(crate) is_copy: bool,
     pub(crate) attrs: Vec<syn::Attribute>,
     pub(crate) unknown: Option<Unknown>,
-    pub(crate) lifetime: Option<syn::Lifetime>,
     pub(crate) as_oneof_enum: bool,
     pub(crate) hazzer: Option<Hazzer>,
     comments: Option<&'proto Comments>,
-
-    /// Used for cycle detection and lifetime propagation
     pub(crate) message_edges: Vec<(Position, &'proto str)>,
+
+    // These fields are populated after the constructor
     pub(crate) parent_edges: Vec<(Position, String)>,
+    pub(crate) is_copy: bool,
+    pub(crate) lifetime: Option<syn::Lifetime>,
 }
 
 impl<'proto> Message<'proto> {
@@ -221,19 +221,6 @@ impl<'proto> Message<'proto> {
             None
         };
 
-        // Find any lifetime in the message definition (we only need one)
-        let lifetime = fields
-            .iter()
-            .find_map(|f| f.find_lifetime())
-            .or_else(|| oneofs.iter_mut().find_map(|o| o.find_lifetime()))
-            .or_else(|| {
-                unknown
-                    .as_ref()
-                    .map(|u| &u.handler)
-                    .and_then(find_lifetime_from_type)
-            })
-            .cloned();
-
         Ok(Some(Self {
             name: msg_name,
             rust_name: sanitized_ident(msg_name),
@@ -243,17 +230,34 @@ impl<'proto> Message<'proto> {
             impl_default: msg_conf.impl_default(),
             impl_partial_eq: msg_conf.derive_partial_eq(),
             derive_clone: msg_conf.derive_clone(),
-            is_copy: false,
             attrs,
             unknown,
-            lifetime,
             as_oneof_enum: as_enum,
             hazzer,
             comments: location::get_comments(comment_node),
-
             message_edges,
+
             parent_edges: vec![],
+            lifetime: None,
+            is_copy: false,
         }))
+    }
+
+    pub(crate) fn find_lifetime(&mut self) -> Option<&syn::Lifetime> {
+        // Find any lifetime in the message definition (we only need one)
+        self.lifetime = self
+            .fields
+            .iter()
+            .find_map(|f| f.find_lifetime())
+            .or_else(|| self.oneofs.iter_mut().find_map(|o| o.find_lifetime()))
+            .or_else(|| {
+                self.unknown
+                    .as_ref()
+                    .map(|u| &u.handler)
+                    .and_then(find_lifetime_from_type)
+            })
+            .cloned();
+        self.lifetime.as_ref()
     }
 
     pub(crate) fn is_copy(&self, ctx: &Context<'proto>) -> bool {
