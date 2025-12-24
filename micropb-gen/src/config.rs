@@ -462,6 +462,8 @@ config_decl! {
     type_attributes: [deref] Option<String>,
 
     /// Disable generating `Debug` trait derives for message types.
+    ///
+    /// Upper-level messages that reference this message will also have the trait disabled.
     no_debug_impl: Option<bool>,
 
     /// Disable generating `Default` trait impl for message types.
@@ -471,9 +473,13 @@ config_decl! {
     no_default_impl: Option<bool>,
 
     /// Disable generating `PartialEq` trait impl for message types.
+    ///
+    /// Upper-level messages that reference this message will also have the trait disabled.
     no_partial_eq_impl: Option<bool>,
 
     /// Disable generating `Clone` trait derives for message types.
+    ///
+    /// Upper-level messages that reference this message will also have the trait disabled.
     no_clone_impl: Option<bool>,
 
     /// Add a custom handler on a message struct for handling unknown fields.
