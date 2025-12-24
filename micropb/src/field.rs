@@ -103,7 +103,7 @@ impl<T: Default + FieldDecode> FieldDecode for Option<T> {
 /// struct Bits(u8);
 ///
 /// impl FieldEncode for Bits {
-///     const MAX_SIZE: Option<usize> = Some(2 * 8);
+///     const MAX_SIZE: Result<usize, &str> = Ok(2 * 8);
 ///
 ///     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
 ///         // Encode each of the 8 bits using field numbers 1 to 8
@@ -125,7 +125,7 @@ pub trait FieldEncode {
     ///
     /// Used to calculate the max size of messages on the wire. Set this to `None` if the size of
     /// the field is unbounded or if you don't care about calculating the max message size.
-    const MAX_SIZE: Result<usize, &'static str>;
+    const MAX_SIZE: Result<usize, &str>;
 
     /// Encode all fields, including the tags.
     ///
@@ -155,7 +155,7 @@ impl<T: FieldEncode> FieldEncode for &T {
 /// Convenience implementation for fields wrapped in `Option`. If the value is `None`, then the
 /// field isn't encoded at all.
 impl<T: FieldEncode> FieldEncode for Option<T> {
-    const MAX_SIZE: Result<usize, &'static str> = T::MAX_SIZE;
+    const MAX_SIZE: Result<usize, &str> = T::MAX_SIZE;
 
     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         if let Some(f) = self {

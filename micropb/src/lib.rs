@@ -37,7 +37,7 @@
 //! #     }
 //! # }
 //! # impl MessageEncode for ProtoMessage {
-//! #     const MAX_SIZE: Option<usize> = None;
+//! #     const MAX_SIZE: Result<usize, &str> = Ok(0);
 //! #
 //! #     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
 //! #         Ok(())
