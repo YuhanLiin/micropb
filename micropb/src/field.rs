@@ -123,7 +123,7 @@ impl<T: Default + FieldDecode> FieldDecode for Option<T> {
 pub trait FieldEncode {
     /// Maximum encoded size of the field on the wire.
     ///
-    /// Used to calculate the max size of messages on the wire. Set this to `None` if the size of
+    /// Used to calculate the max size of messages on the wire. Set this to `Err` if the size of
     /// the field is unbounded or if you don't care about calculating the max message size.
     const MAX_SIZE: Result<usize, &str>;
 

@@ -1068,7 +1068,7 @@ impl Generator {
     ///
     /// By default, `micropb-gen` generates code to calculate the `MAX_SIZE` associated constant
     /// for each message struct, which determines the max buffer size needed to encode it. If this
-    /// is set to false, then it replaces the calculations with `None`, effectively disabling the
+    /// is set to false, then it replaces the calculations with `Err`, effectively disabling the
     /// use of `MAX_SIZE`. This has no runtime impact, but it can reduce the size of the output
     /// file.
     pub fn calculate_max_size(&mut self, flag: bool) -> &mut Self {

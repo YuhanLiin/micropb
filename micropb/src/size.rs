@@ -3,6 +3,10 @@
 
 use crate::Tag;
 
+/// Return the maximum encoded size of a message at compile time.
+///
+/// If the message type doesn't have a bounded size, this function panics, leading to a compile
+/// error in const context.
 pub const fn max_encoded_size<T: crate::MessageEncode>() -> usize {
     match T::MAX_SIZE {
         Ok(n) => n,
