@@ -125,7 +125,7 @@ pub trait FieldEncode {
     ///
     /// Used to calculate the max size of messages on the wire. Set this to `None` if the size of
     /// the field is unbounded or if you don't care about calculating the max message size.
-    const MAX_SIZE: Option<usize>;
+    const MAX_SIZE: Result<usize, &'static str>;
 
     /// Encode all fields, including the tags.
     ///
@@ -140,7 +140,7 @@ pub trait FieldEncode {
 
 #[cfg(feature = "encode")]
 impl<T: FieldEncode> FieldEncode for &T {
-    const MAX_SIZE: Option<usize> = T::MAX_SIZE;
+    const MAX_SIZE: Result<usize, &'static str> = T::MAX_SIZE;
 
     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         (*self).encode_fields(encoder)
@@ -155,7 +155,7 @@ impl<T: FieldEncode> FieldEncode for &T {
 /// Convenience implementation for fields wrapped in `Option`. If the value is `None`, then the
 /// field isn't encoded at all.
 impl<T: FieldEncode> FieldEncode for Option<T> {
-    const MAX_SIZE: Option<usize> = T::MAX_SIZE;
+    const MAX_SIZE: Result<usize, &'static str> = T::MAX_SIZE;
 
     fn encode_fields<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         if let Some(f) = self {

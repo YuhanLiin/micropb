@@ -6,7 +6,7 @@ use syn::{Ident, Lifetime};
 use crate::{
     descriptor::{FieldDescriptorProto, OneofDescriptorProto},
     generator::{
-        Context, CurrentConfig, EncodeFunc, derive_msg_attr, field::CustomField,
+        Context, CurrentConfig, EncodeFunc, derive_msg_attr, field::CustomField, field_error_str,
         location::get_comments, sanitized_ident, type_spec::TypeSpec,
     },
     utils::{TryIntoTokens, find_lifetime_from_type},
@@ -24,7 +24,7 @@ pub(crate) struct OneofField<'proto> {
     /// Sanitized Rust ident after renaming, used for field name
     pub(crate) rust_name: Ident,
     pub(crate) boxed: bool,
-    pub(crate) max_size_override: Option<Option<usize>>,
+    pub(crate) max_size_override: Option<Result<usize, String>>,
     pub(crate) attrs: Vec<syn::Attribute>,
     comments: Option<&'proto Comments>,
 }
@@ -61,7 +61,7 @@ impl<'proto> OneofField<'proto> {
             tspec,
             name,
             rust_name,
-            max_size_override: field_conf.config.encoded_max_size.map(Some),
+            max_size_override: field_conf.config.encoded_max_size.map(Ok),
             boxed: field_conf.config.boxed.unwrap_or(false),
             attrs,
             comments: location::get_comments(comment_node),
@@ -215,6 +215,14 @@ impl<'proto> OneofType<'proto> {
     }
 
     pub(crate) fn fields_mut<'b>(&'b mut self) -> Option<&'b mut Vec<OneofField<'proto>>> {
+        if let OneofType::Enum { fields, .. } = self {
+            Some(fields)
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn fields<'b>(&'b self) -> Option<&'b [OneofField<'proto>]> {
         if let OneofType::Enum { fields, .. } = self {
             Some(fields)
         } else {
@@ -439,7 +447,11 @@ impl<'proto> Oneof<'proto> {
         }
     }
 
-    pub(crate) fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
+    pub(crate) fn generate_max_size(
+        &self,
+        ctx: &Context<'proto>,
+        msg_name: &'proto str,
+    ) -> TokenStream {
         match &self.otype {
             OneofType::Custom {
                 field: CustomField::Type(custom),
@@ -450,20 +462,23 @@ impl<'proto> Oneof<'proto> {
             OneofType::Custom {
                 field: CustomField::Delegate(_),
                 ..
-            } => quote! { ::core::option::Option::Some(0) },
+            } => quote! { ::core::result::Result::Ok(0) },
 
             OneofType::Enum { fields, .. } => {
                 let variant_sizes = fields.iter().map(|f| {
-                    if let Some(max_size) = f.max_size_override {
+                    if let Some(max_size) = &f.max_size_override {
                         return match max_size {
-                            Some(size) => quote! { ::core::option::Option::Some(#size) },
-                            None => quote! { ::core::option::Option::<usize>::None },
+                            Ok(size) => quote! { ::core::result::Result::Ok(#size) },
+                            Err(err) => {
+                                let err = field_error_str(&ctx.pkg, msg_name, self.name, err);
+                                quote! { ::core::result::Result::<usize, _>::Err(#err) }
+                            }
                         };
                     } else {
                         let wire_type = f.tspec.wire_type();
                         let tag = micropb::Tag::from_parts(f.num, wire_type);
                         let tag_len = ::micropb::size::sizeof_tag(tag);
-                        let size = f.tspec.generate_max_size(ctx);
+                        let size = f.tspec.generate_max_size(ctx, msg_name, f.name);
                         quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
                     }
                 });
@@ -471,15 +486,14 @@ impl<'proto> Oneof<'proto> {
                 quote! {'oneof: {
                     let mut max_size = 0;
                     #(
-                        if let ::core::option::Option::Some(size) = #variant_sizes {
-                            if size > max_size {
+                        match #variant_sizes {
+                            ::core::result::Result::Ok(size) => if size > max_size {
                                 max_size = size;
                             }
-                        } else {
-                            break 'oneof (::core::option::Option::<usize>::None);
+                            ::core::result::Result::Err(err) => break 'oneof (::core::result::Result::<usize, _>::Err(err)),
                         }
                     )*
-                    ::core::option::Option::Some(max_size)
+                    ::core::result::Result::Ok(max_size)
                 }}
             }
         }

@@ -86,9 +86,13 @@ impl<'a> CurrentConfig<'a> {
     }
 }
 
-fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> io::Error {
+fn field_error_str(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> String {
     let dot = if pkg.is_empty() { "" } else { "." };
-    io::Error::other(format!("({dot}{pkg}.{msg_name}.{field_name}) {err_text}"))
+    format!("({dot}{pkg}.{msg_name}.{field_name}) {err_text}")
+}
+
+fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> io::Error {
+    io::Error::other(field_error_str(pkg, msg_name, field_name, err_text))
 }
 
 fn msg_error(pkg: &str, msg_name: &str, err_text: impl Display) -> io::Error {

@@ -7,7 +7,7 @@ use crate::descriptor::{
     DescriptorProto, FieldDescriptorProto,
     FieldDescriptorProto_::{Label, Type},
 };
-use crate::generator::Context;
+use crate::generator::{Context, field_error_str};
 use crate::utils::{find_lifetime_from_str, find_lifetime_from_type};
 
 use super::Syntax;
@@ -54,7 +54,7 @@ pub(crate) struct Field<'proto> {
     pub(crate) san_rust_name: Ident,
     pub(crate) default: Option<&'proto str>,
     pub(crate) boxed: bool,
-    pub(crate) max_size_override: Option<Option<usize>>,
+    pub(crate) max_size_override: Option<Result<usize, String>>,
     pub(crate) attrs: Vec<syn::Attribute>,
     no_accessors: bool,
     comments: Option<&'proto Comments>,
@@ -200,7 +200,7 @@ impl<'proto> Field<'proto> {
             rust_name,
             san_rust_name,
             default: proto.default_value().map(String::as_str),
-            max_size_override: encoded_max_size.map(Some),
+            max_size_override: encoded_max_size.map(Ok),
             boxed,
             attrs,
             no_accessors,
@@ -629,11 +629,18 @@ impl<'proto> Field<'proto> {
         }
     }
 
-    pub(crate) fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
-        if let Some(max_size) = self.max_size_override {
+    pub(crate) fn generate_max_size(
+        &self,
+        ctx: &Context<'proto>,
+        msg_name: &'proto str,
+    ) -> TokenStream {
+        if let Some(max_size) = &self.max_size_override {
             return match max_size {
-                Some(size) => quote! { ::core::option::Option::Some(#size) },
-                None => quote! { ::core::option::Option::<usize>::None },
+                Ok(size) => quote! { ::core::result::Result::Ok(#size) },
+                Err(err) => { 
+                    let err = field_error_str(&ctx.pkg, msg_name, self.name, err);
+                    quote! { ::core::result::Result::<usize, _>::Err(#err) }
+                },
             };
         }
 
@@ -647,23 +654,26 @@ impl<'proto> Field<'proto> {
             } => max_len
                 .map(|len| {
                     let len = len as usize;
-                    let key_size = key.generate_max_size(ctx);
-                    let val_size = val.generate_max_size(ctx);
+                    let key_size = key.generate_max_size(ctx, msg_name, self.name);
+                    let val_size = val.generate_max_size(ctx, msg_name, self.name);
                     quote! {
                         match (#key_size, #val_size) {
-                            (_, ::core::option::Option::None) => ::core::option::Option::<usize>::None,
-                            (::core::option::Option::None, _) => ::core::option::Option::<usize>::None,
-                            (::core::option::Option::Some(key_size), ::core::option::Option::Some(val_size)) => {
+                            (::core::result::Result::Err(err), _) => ::core::result::Result::<usize, &'static str>::Err(err),
+                            (_, ::core::result::Result::Err(err)) => ::core::result::Result::<usize, &'static str>::Err(err),
+                            (::core::result::Result::Ok(key_size), ::core::result::Result::Ok(val_size)) => {
                                 let max_size = ::micropb::size::sizeof_len_record(key_size + val_size + 2) + #tag_len;
-                                ::core::option::Option::Some(max_size * #len)
+                                ::core::result::Result::Ok(max_size * #len)
                             }
                         }
                     }
                 })
-                .unwrap_or(quote! {::core::option::Option::<usize>::None}),
+                .unwrap_or_else(|| { 
+                    let err = field_error_str(&ctx.pkg, msg_name, self.name, "unbounded map");
+                    quote! {::core::result::Result::<usize, &'static str>::Err(#err)} 
+                }),
 
             FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
-                let size = type_spec.generate_max_size(ctx);
+                let size = type_spec.generate_max_size(ctx, msg_name, self.name);
                 quote! { ::micropb::const_map!(#size, |size| size + #tag_len) }
             }
 
@@ -674,16 +684,19 @@ impl<'proto> Field<'proto> {
                 ..
             } => max_len.map(|len| {
                 let len = len as usize;
-                let size = typ.generate_max_size(ctx);
+                let size = typ.generate_max_size(ctx, msg_name, self.name);
                 if *packed {
                     quote! { ::micropb::const_map!(#size, |size| ::micropb::size::sizeof_len_record(#len * size) + #tag_len) }
                 } else {
                     quote! { ::micropb::const_map!(#size, |size| (size + #tag_len) * #len) }
                 }
-            }).unwrap_or(quote! { ::core::option::Option::<usize>::None }),
+            }).unwrap_or_else(|| { 
+                let err = field_error_str(&ctx.pkg, msg_name, self.name, "unbounded vec");
+                quote! { ::core::result::Result::<usize, &'static str>::Err(#err) } 
+            }),
 
             FieldType::Custom(CustomField::Type(custom)) => quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE },
-            FieldType::Custom(CustomField::Delegate(_)) => quote! { ::core::option::Option::Some(0) },
+            FieldType::Custom(CustomField::Delegate(_)) => quote! { ::core::result::Result::Ok(0) },
         }
     }
 

@@ -9,7 +9,7 @@ use syn::{Ident, Lifetime};
 use crate::{
     config::{IntSize, byte_string_type_parsed},
     descriptor::{FieldDescriptorProto, FieldDescriptorProto_::Type},
-    generator::{Context, sanitized_ident},
+    generator::{Context, field_error_str, sanitized_ident},
     utils::{find_lifetime_from_str, path_suffix, unescape_c_escape_string},
 };
 
@@ -141,31 +141,31 @@ impl<'proto> TypeSpec<'proto> {
         }
     }
 
-    fn max_size(&self) -> Option<usize> {
+    fn max_size(&self) -> Result<usize, &'static str> {
         match self {
-            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Some(4),
-            TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => Some(8),
-            TypeSpec::Bool => Some(1),
+            TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Ok(4),
+            TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => Ok(8),
+            TypeSpec::Bool => Ok(1),
 
             // negative VARINT values will always take up 10 bytes
-            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) => Some(10),
+            TypeSpec::Int(PbInt::Int32 | PbInt::Int64, _) => Ok(10),
 
             // positive VARINT size depends on the max size of the represented int type
-            TypeSpec::Int(PbInt::Uint32, intsize) => Some(sizeof_varint32(
+            TypeSpec::Int(PbInt::Uint32, intsize) => Ok(sizeof_varint32(
                 intsize.max_value().try_into().unwrap_or(u32::MAX),
             )),
-            TypeSpec::Int(PbInt::Uint64, intsize) => Some(sizeof_varint64(intsize.max_value())),
-            TypeSpec::Int(PbInt::Sint32, intsize) => Some(sizeof_sint32(
+            TypeSpec::Int(PbInt::Uint64, intsize) => Ok(sizeof_varint64(intsize.max_value())),
+            TypeSpec::Int(PbInt::Sint32, intsize) => Ok(sizeof_sint32(
                 intsize.min_value().try_into().unwrap_or(i32::MAX),
             )),
-            TypeSpec::Int(PbInt::Sint64, intsize) => Some(sizeof_sint64(intsize.min_value())),
+            TypeSpec::Int(PbInt::Sint64, intsize) => Ok(sizeof_sint64(intsize.min_value())),
 
-            TypeSpec::Bytes { max_bytes, .. } | TypeSpec::String { max_bytes, .. } => {
-                max_bytes.map(|max| sizeof_len_record(max as usize))
-            }
+            TypeSpec::Bytes { max_bytes, .. } | TypeSpec::String { max_bytes, .. } => max_bytes
+                .map(|max| sizeof_len_record(max as usize))
+                .ok_or("unbounded string or bytes"),
 
             // Will be handled later
-            TypeSpec::Message(..) | TypeSpec::Enum(..) => None,
+            TypeSpec::Message(..) | TypeSpec::Enum(..) => Ok(0),
         }
     }
 
@@ -275,7 +275,12 @@ impl<'proto> TypeSpec<'proto> {
         Ok(res)
     }
 
-    pub(crate) fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
+    pub(crate) fn generate_max_size(
+        &self,
+        ctx: &Context<'proto>,
+        msg_name: &'proto str,
+        fname: &'proto str,
+    ) -> TokenStream {
         match self {
             TypeSpec::Message(tname) => {
                 let rust_type = ctx.resolve_type_name(tname);
@@ -283,15 +288,18 @@ impl<'proto> TypeSpec<'proto> {
             }
             TypeSpec::Enum(tname) => {
                 let rust_type = ctx.resolve_type_name(tname);
-                return quote! { ::core::option::Option::Some(#rust_type::_MAX_SIZE) };
+                return quote! { ::core::result::Result::Ok(#rust_type::_MAX_SIZE) };
             }
             _ => (),
         }
 
         self.max_size()
             .map(Literal::usize_suffixed)
-            .map(|lit| quote! {::core::option::Option::Some(#lit)})
-            .unwrap_or(quote! {::core::option::Option::<usize>::None})
+            .map(|lit| quote! {::core::result::Result::Ok(#lit)})
+            .unwrap_or_else(|err| {
+                let err = field_error_str(&ctx.pkg, msg_name, fname, err);
+                quote! {::core::result::Result::<usize, &'static str>::Err(#err)}
+            })
     }
 
     pub(crate) fn generate_default(
@@ -506,76 +514,34 @@ mod tests {
 
     #[test]
     fn max_size() {
-        assert_eq!(TypeSpec::Float.max_size(), Some(4));
-        assert_eq!(TypeSpec::Double.max_size(), Some(8));
-        assert_eq!(TypeSpec::Bool.max_size(), Some(1));
-        assert_eq!(
-            TypeSpec::Int(PbInt::Int32, IntSize::S8).max_size(),
-            Some(10)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Int64, IntSize::S8).max_size(),
-            Some(10)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Fixed32, IntSize::S8).max_size(),
-            Some(4)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Fixed64, IntSize::S8).max_size(),
-            Some(8)
-        );
+        assert_eq!(TypeSpec::Float.max_size(), Ok(4));
+        assert_eq!(TypeSpec::Double.max_size(), Ok(8));
+        assert_eq!(TypeSpec::Bool.max_size(), Ok(1));
+        assert_eq!(TypeSpec::Int(PbInt::Int32, IntSize::S8).max_size(), Ok(10));
+        assert_eq!(TypeSpec::Int(PbInt::Int64, IntSize::S8).max_size(), Ok(10));
+        assert_eq!(TypeSpec::Int(PbInt::Fixed32, IntSize::S8).max_size(), Ok(4));
+        assert_eq!(TypeSpec::Int(PbInt::Fixed64, IntSize::S8).max_size(), Ok(8));
 
         // uint types
-        assert_eq!(
-            TypeSpec::Int(PbInt::Uint32, IntSize::S8).max_size(),
-            Some(2)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Uint32, IntSize::S32).max_size(),
-            Some(5)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Uint32, IntSize::S64).max_size(),
-            Some(5)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Uint64, IntSize::S16).max_size(),
-            Some(3)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Uint64, IntSize::S32).max_size(),
-            Some(5)
-        );
+        assert_eq!(TypeSpec::Int(PbInt::Uint32, IntSize::S8).max_size(), Ok(2));
+        assert_eq!(TypeSpec::Int(PbInt::Uint32, IntSize::S32).max_size(), Ok(5));
+        assert_eq!(TypeSpec::Int(PbInt::Uint32, IntSize::S64).max_size(), Ok(5));
+        assert_eq!(TypeSpec::Int(PbInt::Uint64, IntSize::S16).max_size(), Ok(3));
+        assert_eq!(TypeSpec::Int(PbInt::Uint64, IntSize::S32).max_size(), Ok(5));
         assert_eq!(
             TypeSpec::Int(PbInt::Uint64, IntSize::S64).max_size(),
-            Some(10)
+            Ok(10)
         );
 
         // sint types
-        assert_eq!(
-            TypeSpec::Int(PbInt::Sint32, IntSize::S16).max_size(),
-            Some(3)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Sint32, IntSize::S32).max_size(),
-            Some(5)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Sint32, IntSize::S64).max_size(),
-            Some(5)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Sint64, IntSize::S16).max_size(),
-            Some(3)
-        );
-        assert_eq!(
-            TypeSpec::Int(PbInt::Sint64, IntSize::S32).max_size(),
-            Some(5)
-        );
+        assert_eq!(TypeSpec::Int(PbInt::Sint32, IntSize::S16).max_size(), Ok(3));
+        assert_eq!(TypeSpec::Int(PbInt::Sint32, IntSize::S32).max_size(), Ok(5));
+        assert_eq!(TypeSpec::Int(PbInt::Sint32, IntSize::S64).max_size(), Ok(5));
+        assert_eq!(TypeSpec::Int(PbInt::Sint64, IntSize::S16).max_size(), Ok(3));
+        assert_eq!(TypeSpec::Int(PbInt::Sint64, IntSize::S32).max_size(), Ok(5));
         assert_eq!(
             TypeSpec::Int(PbInt::Sint64, IntSize::S64).max_size(),
-            Some(10)
+            Ok(10)
         );
 
         assert_eq!(
@@ -584,7 +550,7 @@ mod tests {
                 max_bytes: Some(12)
             }
             .max_size(),
-            Some(13)
+            Ok(13)
         );
         assert_eq!(
             TypeSpec::String {
@@ -592,7 +558,7 @@ mod tests {
                 max_bytes: None
             }
             .max_size(),
-            None
+            Err("unbounded string or bytes")
         );
 
         assert_eq!(
@@ -601,7 +567,7 @@ mod tests {
                 max_bytes: Some(12)
             }
             .max_size(),
-            Some(13)
+            Ok(13)
         );
         assert_eq!(
             TypeSpec::Bytes {
@@ -609,7 +575,7 @@ mod tests {
                 max_bytes: None
             }
             .max_size(),
-            None
+            Err("unbounded string or bytes")
         );
     }
 

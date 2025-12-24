@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::generator::{Context, r#enum::Enum, field::FieldType, message::Message, oneof::Oneof};
+use crate::generator::{
+    Context, r#enum::Enum, field::FieldType, field_error_str, message::Message, oneof::Oneof,
+};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Clone, Copy)]
@@ -38,7 +40,7 @@ impl Position {
     pub(crate) fn max_size_override_mut<'a>(
         &self,
         msg: &'a mut Message,
-    ) -> Option<&'a mut Option<Option<usize>>> {
+    ) -> Option<&'a mut Option<Result<usize, String>>> {
         match self {
             Position::Field(i) => {
                 let field = &mut msg.fields[*i];
@@ -59,6 +61,19 @@ impl Position {
                     .expect("unexpected custom oneof")[*fi]
                     .max_size_override,
             ),
+        }
+    }
+
+    pub(crate) fn name<'a>(&self, msg: &'a Message) -> &'a str {
+        match self {
+            Position::Field(i) => msg.fields[*i].name,
+            Position::Oneof(oi, fi) => {
+                msg.oneofs[*oi]
+                    .otype
+                    .fields()
+                    .expect("unexpected custom oneof")[*fi]
+                    .name
+            }
         }
     }
 }
@@ -299,6 +314,7 @@ impl<'proto> Context<'proto> {
     /// Detect cycles in the message graph via DFS and break those cycles by overriding max size
     fn max_size_cyclic_dependencies(&mut self) {
         let messages: Vec<_> = self.graph.messages.keys().cloned().collect();
+        let pkg_name = self.pkg.clone();
 
         self.forward_dfs(
             &messages,
@@ -306,7 +322,10 @@ impl<'proto> Context<'proto> {
             |pos, msg| matches!(pos.max_size_override_mut(msg), Some(None)),
             // Break the cycle by setting MAX_SIZE to None, resulting in the MAX_SIZE of all
             // messages in the cycle to become None
-            |pos, msg| *pos.max_size_override_mut(msg).unwrap() = Some(None),
+            |pos, msg| {
+                let err = field_error_str(&pkg_name, msg.name, pos.name(msg), "cyclical reference");
+                *pos.max_size_override_mut(msg).unwrap() = Some(Err(err));
+            },
             |_, _| {},
         );
     }
@@ -389,7 +408,7 @@ mod tests {
         fname: &'a str,
         type_name: &'a str,
         boxed: bool,
-        max_size_override: Option<Option<usize>>,
+        max_size_override: Option<Result<usize, String>>,
     ) {
         msg.message_edges
             .push((Position::Field(msg.fields.len()), type_name));
@@ -410,7 +429,7 @@ mod tests {
         fname: &'a str,
         type_name: &'a str,
         boxed: bool,
-        max_size_override: Option<Option<usize>>,
+        max_size_override: Option<Result<usize, String>>,
     ) {
         let oneof_fields = msg.oneofs[0].otype.fields_mut().unwrap();
         msg.message_edges
@@ -432,7 +451,14 @@ mod tests {
 
         let mut beta = make_test_msg("Beta");
         add_msg_field(&mut beta, 1, "gamma", ".pkg.Gamma", false, None);
-        add_msg_field(&mut beta, 2, "omega", ".pkg.Omega", true, Some(None));
+        add_msg_field(
+            &mut beta,
+            2,
+            "omega",
+            ".pkg.Omega",
+            true,
+            Some(Err("busy".to_owned())),
+        );
 
         let mut gamma = make_test_msg("Gamma");
         add_msg_field(&mut gamma, 1, "alpha", ".pkg.Alpha", false, None);
@@ -463,11 +489,13 @@ mod tests {
         assert!(!beta.fields[0].boxed);
         assert_eq!(beta.fields[0].max_size_override, None);
         assert!(beta.fields[1].boxed);
-        assert_eq!(beta.fields[1].max_size_override, Some(None));
+        assert!(matches!(&beta.fields[1].max_size_override, Some(Err(e)) if e.contains("busy")));
 
         let gamma = ctx.graph.get_message(".pkg.Gamma").unwrap();
         assert!(gamma.fields[0].boxed); // Gamma.alpha should have been boxed
-        assert_eq!(gamma.fields[0].max_size_override, Some(None));
+        assert!(
+            matches!(&gamma.fields[0].max_size_override, Some(Err(e)) if e.contains("cyclical reference"))
+        );
 
         let omega = ctx.graph.get_message(".pkg.Omega").unwrap();
         assert!(!omega.fields[0].boxed); // Omega.alpha should stay unboxed, since Beta.omega was already boxed
@@ -475,7 +503,9 @@ mod tests {
 
         let sigma = ctx.graph.get_message(".pkg.Sigma").unwrap();
         assert!(sigma.fields[0].boxed); // Sigma.sigma should have been boxed
-        assert_eq!(sigma.fields[0].max_size_override, Some(None));
+        assert!(
+            matches!(&sigma.fields[0].max_size_override, Some(Err(e)) if e.contains("cyclical reference"))
+        );
     }
 
     #[test]

@@ -70,7 +70,7 @@ pub trait MessageEncode {
     ///
     /// If `MAX_SIZE` is `None`, that means the message size is unbounded, due to having custom
     /// fields or collections fields without a fixed capacity, such as `Vec`.
-    const MAX_SIZE: Option<usize>;
+    const MAX_SIZE: Result<usize, &'static str>;
 
     /// Encode this message using the encoder.
     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error>;
@@ -87,7 +87,7 @@ pub trait MessageEncode {
 
 #[cfg(feature = "encode")]
 impl<T: MessageEncode> MessageEncode for &T {
-    const MAX_SIZE: Option<usize> = T::MAX_SIZE;
+    const MAX_SIZE: Result<usize, &'static str> = T::MAX_SIZE;
 
     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
         (*self).encode(encoder)

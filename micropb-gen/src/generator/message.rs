@@ -689,11 +689,17 @@ impl<'proto> Message<'proto> {
 
     fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
         if !ctx.params.calculate_max_size {
-            return quote! { const MAX_SIZE: ::core::option::Option<usize> = ::core::option::Option::None; };
+            return quote! { const MAX_SIZE: ::core::result::Result<usize, &'static str> = ::core::result::Result::Err("calculate_max_size disabled"); };
         }
 
-        let field_sizes = self.fields.iter().map(|f| f.generate_max_size(ctx));
-        let oneof_sizes = self.oneofs.iter().map(|o| o.generate_max_size(ctx));
+        let field_sizes = self
+            .fields
+            .iter()
+            .map(|f| f.generate_max_size(ctx, self.name));
+        let oneof_sizes = self
+            .oneofs
+            .iter()
+            .map(|o| o.generate_max_size(ctx, self.name));
         let unknown_size = if self.as_oneof_enum {
             // Ignore unknown field if generating an enum msg
             None
@@ -706,16 +712,17 @@ impl<'proto> Message<'proto> {
         let sizes = field_sizes.chain(oneof_sizes).chain(unknown_size);
 
         quote! {
-            const MAX_SIZE: ::core::option::Option<usize> = 'msg: {
+            const MAX_SIZE: ::core::result::Result<usize, &'static str> = 'msg: {
                 let mut max_size = 0;
                 #(
-                    if let ::core::option::Option::Some(size) = #sizes {
-                        max_size += size;
-                    } else {
-                        break 'msg (::core::option::Option::<usize>::None);
-                    };
+                    match #sizes {
+                        ::core::result::Result::Ok(size) => {
+                            max_size += size;
+                        }
+                        ::core::result::Result::Err(err) => break 'msg (::core::result::Result::<usize, _>::Err(err)),
+                    }
                 )*
-                ::core::option::Option::Some(max_size)
+                ::core::result::Result::Ok(max_size)
             };
         }
     }
