@@ -113,6 +113,7 @@ fn encode() {
     basic.int32_num = Some(150);
     assert_eq!(basic.compute_size(), 10);
     *basic.flt = 0.0;
+    #[allow(clippy::borrowed_box)]
     let _: &Box<_> = &basic.flt;
 
     let mut encoder = PbEncoder::new(vec![]);

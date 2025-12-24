@@ -512,7 +512,7 @@ pub(crate) fn make_test_oneof_field<'a>(
 }
 
 #[cfg(test)]
-pub(crate) fn make_test_oneof<'a>(name: &'a str, boxed: bool) -> Oneof<'a> {
+pub(crate) fn make_test_oneof(name: &str, boxed: bool) -> Oneof<'_> {
     Oneof {
         name,
         san_rust_name: Ident::new_raw(name, Span::call_site()),
