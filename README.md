@@ -37,7 +37,7 @@ Documentation is at [docs.rs](https://docs.rs/micropb-gen/latest/micropb_gen/).
 
 ## MSRV
 
-The oldest version of Rust that `micropb` supports is **1.83.0**.
+The oldest version of Rust that `micropb` supports is **1.85.0**.
 
 ## License
 

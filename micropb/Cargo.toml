@@ -1,13 +1,13 @@
 [package]
 name = "micropb"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 authors = ["Yuhan Lin <yuhanliin@protonmail.com>"]
 description = "Rust Protobuf library targetting embedded systems and no_std environments"
 keywords = ["protobuf", "no_std", "embedded", "serialization"]
 categories = ["embedded", "no-std::no-alloc", "encoding"]
 repository = "https://github.com/YuhanLiin/micropb"
-rust-version = "1.83.0"
+rust-version = "1.85.0"
 license = "MIT OR Apache-2.0"
 
 [features]
