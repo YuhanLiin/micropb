@@ -154,6 +154,9 @@
 //! [`MessageEncode`](micropb::MessageDecode) implementations provide APIs for decoding, encoding,
 //! and computing the size of `Example`.
 //!
+//! Implementations or derives for `Default`, `Clone`, `PartialEq`, and `Debug` are also provided.
+//! `Copy` derives are generated for messages consisting entirely of copyable fields.
+//!
 //! ## Optional Fields
 //!
 //! While the obvious choice for representing optional fields is [`Option`], this is not actually
@@ -258,6 +261,13 @@
 //! ### Required fields
 //!
 //! The generator treats required fields exactly the same way it treats optional fields.
+//!
+//! ## Message fields
+//!
+//! Message fields are generated as the corresponding Rust struct. If the message field has no
+//! modifier in `proto3`, it will be treated as an optional field. Cyclical references between
+//! parent message types and field types will be broken by automatically boxing the field to
+//! prevent infinite-sized structs.
 //!
 //! ## Oneof Fields
 //!

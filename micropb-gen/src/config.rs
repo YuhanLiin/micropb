@@ -490,6 +490,8 @@ config_decl! {
     /// also be encoded, so the handler type must implement `FieldEncode` and `FieldDecode`,
     /// like with [`custom_field`](Config::custom_field).
     ///
+    /// `Copy` derives will not be generated for message types with an unknown handler.
+    ///
     /// # Note
     /// This configuration is only applied to the path passed to
     /// [`configure`](crate::Generator::configure). It is not propagated to "children" paths.

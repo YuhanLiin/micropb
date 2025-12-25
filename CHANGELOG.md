@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.0
+
+### Removed
+
+- Remove `field_lifetime` config
+- Remove `recursive_field` config
+
+### Changed
+
+- `MAX_SIZE` changed from `Option<usize>` to `Result<usize, &str>` for reporting why the max size wasn't generated
+- Lifetime params are now generated for parent messages if their child messages have lifetimes
+- Applying `no_debug_impl`, `no_clone_impl`, and `no_partial_eq_impl` on a message will also apply to all its ancestors
+- Recursively nested messages are automatically detected and prevented by boxing the field
+- `MAX_SIZE` on recursive messages are set to `Err` to prevent cyclical references
+- Increase `micropb-gen` to Rust 2024
+- Bump MSRV to 1.85
+
+## Added
+
+- `Copy` derives are now generated for messages that consist purely of copy-able types
+
 ## 0.4.1
 
 ### Changed
