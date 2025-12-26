@@ -103,6 +103,8 @@ fn msg_error(pkg: &str, msg_name: &str, err_text: impl Display) -> io::Error {
 pub(crate) enum EncodeFunc {
     Sizeof(Ident),
     Encode(Ident),
+    PopulateCache(Ident),
+    EncodeCached(Ident, Ident),
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]

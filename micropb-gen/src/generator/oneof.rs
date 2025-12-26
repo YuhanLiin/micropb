@@ -1,6 +1,6 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Literal, Span, TokenStream};
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{Ident, Lifetime};
 
 use crate::{
@@ -76,6 +76,15 @@ impl<'proto> OneofField<'proto> {
         Ok(quote! { #(#[doc = #comments])* #(#attrs)* #name(#typ), })
     }
 
+    pub(crate) fn generate_cache_field(&self, ctx: &Context<'proto>) -> TokenStream {
+        if let Some(typ) = self.tspec.generate_cache_type(ctx) {
+            let name = &self.rust_name;
+            quote! { #name(#typ), }
+        } else {
+            quote! {}
+        }
+    }
+
     fn generate_decode_branch(
         &self,
         oneof_name: &Ident,
@@ -143,8 +152,10 @@ impl<'proto> OneofField<'proto> {
 
     pub(crate) fn generate_encode_branch(
         &self,
-        oneof_type: &TokenStream,
         ctx: &Context<'proto>,
+        oneof_type: &TokenStream,
+        oneof_name: &Ident,
+        cache_enum_type: &TokenStream,
         func_type: &EncodeFunc,
     ) -> TokenStream {
         let val_ref = Ident::new("val_ref", Span::call_site());
@@ -160,8 +171,38 @@ impl<'proto> OneofField<'proto> {
                 let sizeof_expr = self.tspec.generate_sizeof(ctx, &val_ref);
                 quote! { #size += #tag_len + #sizeof_expr; }
             }
+            EncodeFunc::PopulateCache(cache) => {
+                if self.tspec.is_cached(ctx) {
+                    quote! {
+                        let subcache = #val_ref.populate_cache();
+                        #cache._size += #tag_len + ::micropb::size::sizeof_len_record(subcache._size);
+                        #cache.#oneof_name = #cache_enum_type::#variant_name(subcache);
+                    }
+                } else {
+                    let sizeof_expr = self.tspec.generate_sizeof(ctx, &val_ref);
+                    quote! { #cache._size += #tag_len + #sizeof_expr; }
+                }
+            }
+
             EncodeFunc::Encode(encoder) => {
                 let encode_expr = self.tspec.generate_encode_expr(ctx, encoder, &val_ref);
+                quote! {
+                    #encoder.encode_varint32(#tag_val)?;
+                    #encode_expr?;
+                }
+            }
+            EncodeFunc::EncodeCached(encoder, cache) => {
+                let encode_expr = if self.tspec.is_cached(ctx) {
+                    quote! {
+                        if let #cache_enum_type::#variant_name(subcache) = &#cache.#oneof_name {
+                            #val_ref.encode_len_delimited_cached(#encoder, subcache)
+                        } else {
+                            core::unreachable!("unexpected cache variant")
+                        }
+                    }
+                } else {
+                    self.tspec.generate_encode_expr(ctx, encoder, &val_ref)
+                };
                 quote! {
                     #encoder.encode_varint32(#tag_val)?;
                     #encode_expr?;
@@ -362,6 +403,35 @@ impl<'proto> Oneof<'proto> {
         quote! { #(#[doc = #comments])* #(#attrs)* pub #name: #oneof_type, }
     }
 
+    pub(crate) fn generate_cache_decl(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
+        if let OneofType::Enum { type_name, fields } = &self.otype {
+            let fields = fields.iter().map(|f| f.generate_cache_field(ctx));
+            let cache_name = oneof_cache_name(type_name);
+            Ok(quote! {
+                #[derive(Default)]
+                pub enum #cache_name {
+                    #(#fields)*
+                    #[default]
+                    None
+                }
+            })
+        } else {
+            Ok(quote! {})
+        }
+    }
+
+    pub(crate) fn generate_cache_field(&self, msg_mod_name: &Ident) -> TokenStream {
+        let name = &self.san_rust_name;
+        let oneof_type = match &self.otype {
+            OneofType::Enum { type_name, .. } => {
+                let cache_name = oneof_cache_name(type_name);
+                quote! { #msg_mod_name::#cache_name }
+            }
+            OneofType::Custom { .. } => return quote! {},
+        };
+        quote! { pub #name: #oneof_type, }
+    }
+
     pub(crate) fn generate_decode_branches(
         &self,
         ctx: &Context<'proto>,
@@ -411,10 +481,18 @@ impl<'proto> Oneof<'proto> {
         match &self.otype {
             OneofType::Enum { type_name, fields } => {
                 let oneof_type = quote! { #msg_mod_name::#type_name };
+                let cache_name = oneof_cache_name(type_name);
+                let cache_enum_type = quote! { #msg_mod_name::#cache_name};
                 let extra_deref = self.boxed.then(|| quote! { * });
-                let branches = fields
-                    .iter()
-                    .map(|f| f.generate_encode_branch(&oneof_type, ctx, func_type));
+                let branches = fields.iter().map(|f| {
+                    f.generate_encode_branch(
+                        ctx,
+                        &oneof_type,
+                        &self.san_rust_name,
+                        &cache_enum_type,
+                        func_type,
+                    )
+                });
                 quote! {
                     if let Some(oneof) = & self.#name {
                         match &#extra_deref *oneof {
@@ -429,7 +507,12 @@ impl<'proto> Oneof<'proto> {
                 ..
             } => match &func_type {
                 EncodeFunc::Sizeof(size) => quote! { #size += self.#name.compute_fields_size(); },
-                EncodeFunc::Encode(encoder) => quote! { self.#name.encode_fields(#encoder)?; },
+                EncodeFunc::PopulateCache(cache) => {
+                    quote! { #cache._size += self.#name.compute_fields_size(); }
+                }
+                EncodeFunc::Encode(encoder) | EncodeFunc::EncodeCached(encoder, _) => {
+                    quote! { self.#name.encode_fields(#encoder)?; }
+                }
             },
 
             OneofType::Custom {
@@ -490,6 +573,10 @@ impl<'proto> Oneof<'proto> {
             }
         }
     }
+}
+
+pub(crate) fn oneof_cache_name(type_name: &Ident) -> Ident {
+    format_ident!("_{}Cache", type_name)
 }
 
 #[cfg(test)]

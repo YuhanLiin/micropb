@@ -11,6 +11,7 @@ use crate::{
         field::{CustomField, FieldType},
         graph::Position,
         location::{self, next_comment_node},
+        oneof::oneof_cache_name,
         resolve_path_elem,
         type_spec::TypeSpec,
     },
@@ -639,16 +640,49 @@ impl<'proto> Message<'proto> {
         Ok(tok)
     }
 
+    fn generate_cache_decl(&self, ctx: &Context<'proto>) -> io::Result<TokenStream> {
+        let msg_mod_name = resolve_path_elem(self.name, true);
+        let fields = self
+            .fields
+            .iter()
+            .map(|f| {
+                f.generate_cache_field(ctx)
+                    .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
+            })
+            .try_into_tokens()?;
+        let oneofs = self
+            .oneofs
+            .iter()
+            .map(|f| f.generate_cache_field(&msg_mod_name));
+
+        Ok(quote! {
+            #[derive(Default)]
+            pub struct _Cache {
+                pub _size: usize,
+                #fields
+                #(#oneofs)*
+            }
+        })
+    }
+
     fn generate_encode_func(&self, ctx: &Context<'proto>, func_type: &EncodeFunc) -> TokenStream {
         let mod_name = resolve_path_elem(self.name, true);
 
         if self.as_oneof_enum {
-            let OneofType::Enum { fields, .. } = &self.oneofs[0].otype else {
+            let OneofType::Enum { fields, type_name } = &self.oneofs[0].otype else {
                 unreachable!("shouldn't generate enum with custom oneof")
             };
-            let variant_branches = fields
-                .iter()
-                .map(|f| f.generate_encode_branch(&quote! {Self}, ctx, func_type));
+            let cache_name = oneof_cache_name(type_name);
+            let cache_enum_type = quote! { #mod_name::#cache_name };
+            let variant_branches = fields.iter().map(|f| {
+                f.generate_encode_branch(
+                    ctx,
+                    &quote! {Self},
+                    &self.oneofs[0].san_rust_name,
+                    &cache_enum_type,
+                    func_type,
+                )
+            });
 
             quote! {
                 match &self {
@@ -671,7 +705,10 @@ impl<'proto> Message<'proto> {
                     EncodeFunc::Sizeof(size) => {
                         quote! { #size += self._unknown.compute_fields_size(); }
                     }
-                    EncodeFunc::Encode(encoder) => {
+                    EncodeFunc::PopulateCache(cache) => {
+                        quote! { #cache._size += self._unknown.compute_fields_size(); }
+                    }
+                    EncodeFunc::Encode(encoder) | EncodeFunc::EncodeCached(encoder, _) => {
                         quote! { self._unknown.encode_fields(#encoder)?; }
                     }
                 }

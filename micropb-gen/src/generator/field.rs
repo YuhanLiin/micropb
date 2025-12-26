@@ -700,6 +700,42 @@ impl<'proto> Field<'proto> {
         }
     }
 
+    pub(crate) fn generate_cache_field(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
+        let typ = match &self.ftype {
+            FieldType::Single(type_spec) => type_spec.generate_cache_type(ctx),
+            FieldType::Optional(type_spec, _) => type_spec.generate_cache_type(ctx),
+
+            FieldType::Repeated { typ, max_len, packed: false, .. } => {
+                if let Some(cache_type) = typ.generate_cache_type(ctx) {
+                    let cache_vec_typestr = todo!();
+                    let cache_vec_type = vec_type_parsed(cache_vec_typestr, cache_type, *max_len)?;
+                    Some(quote! { #cache_vec_type })
+                } else {
+                    None
+                }
+            },
+            FieldType::Repeated { packed: true, .. } => {
+                Some(quote! { usize })
+            },
+
+            FieldType::Map { val, max_len, .. } => {
+                // Key type can't be a message, so we only ever need to cache the value type
+                if let Some(cache_type) = val.generate_cache_type(ctx) {
+                    let cache_vec_typestr = todo!();
+                    let cache_vec_type = vec_type_parsed(cache_vec_typestr, cache_type, *max_len)?;
+                    Some(quote! { #cache_vec_type })
+                } else {
+                    None
+                }
+            },
+
+            FieldType::Custom(_) => None,
+        };
+
+        let name = &self.san_rust_name;
+        Ok(typ.map(|typ| quote! { pub #name: #typ }).unwrap_or_default())
+    }
+
     pub(crate) fn generate_encode(
         &self,
         ctx: &Context<'proto>,
@@ -716,29 +752,56 @@ impl<'proto> Field<'proto> {
         let sizeof_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
                 let key_sizeof = key.generate_sizeof(ctx, &val_ref);
-                let val_sizeof = val.generate_sizeof(ctx, &val_ref);
 
-                let stmts = match &func_type {
+                let (val_sizeof, stmts) = match &func_type {
                     EncodeFunc::Sizeof(size) => {
-                        quote! { #size += ::micropb::size::sizeof_len_record(len) + #tag_len; }
+                        (
+                           val.generate_sizeof(ctx, &val_ref),
+                           quote! { #size += ::micropb::size::sizeof_len_record(len) + #tag_len; }
+                        )                    
                     }
-                    EncodeFunc::Encode(encoder) => {
+                    EncodeFunc::PopulateCache(cache) => {
+                        let val_sizeof = if val.is_cached(ctx) {
+                            quote! {
+                                let elem = #val_ref.populate_cache();
+                                #cache.#fname.pb_push(elem);
+                                elem._size
+                            }
+                        } else {
+                           val.generate_sizeof(ctx, &val_ref)
+                        };
+                        (
+                            val_sizeof,
+                            quote! { #cache._size += ::micropb::size::sizeof_len_record(len) + #tag_len; }
+                        )                    
+                    }
+
+                    EncodeFunc::Encode(encoder) | EncodeFunc::EncodeCached(encoder, _) => {
                         let key_encode = key.generate_encode_expr(ctx, encoder, &val_ref);
                         let key_wtype = key.wire_type();
-                        let val_encode = val.generate_encode_expr(ctx, encoder, &val_ref);
                         let val_wtype = val.wire_type();
-                        quote! {
+
+                        let (val_encode, val_sizeof) = if let EncodeFunc::EncodeCached(encoder, cache) = &func_type && val.is_cached(ctx) {
+                            (
+                                quote! { #val_ref.encode_len_delimited_cached(#encoder, &#cache.#fname[i]) },
+                                quote! { #cache.#fname[i]._size }
+                            )
+                        } else {
+                            (val.generate_encode_expr(ctx, encoder, &val_ref), val.generate_sizeof(ctx, &val_ref))
+                        };
+                        let stmts = quote! {
                             #encoder.encode_varint32(#tag_val)?;
                             #encoder.encode_map_elem(
                                 len, k, #key_wtype, v, #val_wtype,
                                 |#encoder, #val_ref| { #key_encode },
                                 |#encoder, #val_ref| { #val_encode }
                             )?;
-                        }
+                        };
+                        (val_sizeof, stmts)
                     }
                 };
                 quote! {
-                    for (k, v) in (&#extra_deref self.#fname).into_iter() {
+                    for (i, (k, v)) in (&#extra_deref self.#fname).into_iter().enumerate() {
                         let len = ::micropb::size::sizeof_map_elem(k, v, |#val_ref| { #key_sizeof }, |#val_ref| { #val_sizeof });
                         #stmts
                     }
@@ -760,8 +823,31 @@ impl<'proto> Field<'proto> {
                         let sizeof_expr = tspec.generate_sizeof(ctx, &val_ref);
                         quote! { #size += #tag_len + #sizeof_expr; }
                     }
+                    EncodeFunc::PopulateCache(cache) => {
+                        if tspec.is_cached(ctx) {
+                            quote! {
+                                #cache.#fname = #val_ref.populate_cache();
+                                #cache._size += #tag_len + ::micropb::size::sizeof_len_record(#cache.#fname._size);
+                            }
+                        } else {
+                            let sizeof_expr = tspec.generate_sizeof(ctx, &val_ref);
+                            quote! { #cache._size += #tag_len + #sizeof_expr; }
+                        }
+                    }
+
                     EncodeFunc::Encode(encoder) => {
                         let encode_expr = tspec.generate_encode_expr(ctx, encoder, &val_ref);
+                        quote! {
+                            #encoder.encode_varint32(#tag_val)?;
+                            #encode_expr?;
+                        }
+                    }
+                    EncodeFunc::EncodeCached(encoder, cache) => {
+                        let encode_expr = if tspec.is_cached(ctx) {
+                            quote! { #val_ref.encode_len_delimited_cached(#encoder, &#cache.#fname) }
+                        } else {
+                            tspec.generate_encode_expr(ctx, encoder, &val_ref)
+                        };
                         quote! {
                             #encoder.encode_varint32(#tag_val)?;
                             #encode_expr?;
@@ -786,6 +872,22 @@ impl<'proto> Field<'proto> {
                         let sizeof_expr = typ.generate_sizeof(ctx, &val_ref);
                         quote! { #size += #tag_len + #sizeof_expr; }
                     }
+                    (EncodeFunc::PopulateCache(cache), Some(fixed)) => {
+                        break 'expr quote! { #cache._size += self.#fname.len() * (#tag_len + #fixed); };
+                    }
+                    (EncodeFunc::PopulateCache(cache), None) => {
+                        if typ.is_cached(ctx) {
+                            quote! {
+                                let elem = #val_ref.populate_cache();
+                                #cache._size += #tag_len + ::micropb::size::sizeof_len_record(elem._size);
+                                #cache.#fname.pb_push(elem);
+                            }
+                        } else {
+                            let sizeof_expr = typ.generate_sizeof(ctx, &val_ref);
+                            quote! { #cache._size += #tag_len + #sizeof_expr; }
+                        }
+                    }
+
                     (EncodeFunc::Encode(encoder), _) => {
                         let encode_expr = typ.generate_encode_expr(ctx, encoder, &val_ref);
                         quote! {
@@ -793,9 +895,20 @@ impl<'proto> Field<'proto> {
                             #encode_expr?;
                         }
                     }
+                    (EncodeFunc::EncodeCached(encoder, cache), _) => {
+                        let encode_expr = if typ.is_cached(ctx) {
+                            quote! { #val_ref.encode_len_delimited_cached(#encoder, &#cache.#fname[i]) }
+                        } else {
+                            typ.generate_encode_expr(ctx, encoder, &val_ref)
+                        };
+                        quote! {
+                            #encoder.encode_varint32(#tag_val)?;
+                            #encode_expr?;
+                        }
+                    }
                 };
                 quote! {
-                    for #val_ref in self.#fname.iter() {
+                    for (i, #val_ref) in self.#fname.iter().enumerate() {
                         #stmts
                     }
                 }
@@ -806,6 +919,8 @@ impl<'proto> Field<'proto> {
             } => {
                 let len = if let Some(fixed) = typ.fixed_size() {
                     quote! { self.#fname.len() * #fixed }
+                } else if let EncodeFunc::EncodeCached(encoder, cache) = &func_type {
+                    quote! { #cache.#fname._size }
                 } else {
                     let sizeof_expr = typ.generate_sizeof(ctx, &val_ref);
                     quote! { ::micropb::size::sizeof_packed(& #extra_deref self.#fname, |#val_ref| #sizeof_expr) }
@@ -814,7 +929,14 @@ impl<'proto> Field<'proto> {
                     EncodeFunc::Sizeof(size) => {
                         quote! { #size += #tag_len + ::micropb::size::sizeof_len_record(len); }
                     }
-                    EncodeFunc::Encode(encoder) => {
+                    EncodeFunc::PopulateCache(cache) => {
+                        quote! { 
+                            #cache._size += #tag_len + ::micropb::size::sizeof_len_record(len);
+                            #cache.#fname = len;
+                        }
+                    }
+
+                    EncodeFunc::Encode(encoder) | EncodeFunc::EncodeCached(encoder, _) => {
                         let encode_expr = typ.generate_encode_expr(ctx, encoder, &val_ref);
                         quote! {
                             #encoder.encode_varint32(#tag_val)?;
@@ -832,7 +954,8 @@ impl<'proto> Field<'proto> {
 
             FieldType::Custom(CustomField::Type(_)) => match &func_type {
                 EncodeFunc::Sizeof(size) => quote! { #size += self.#fname.compute_fields_size(); },
-                EncodeFunc::Encode(encoder) => quote! { self.#fname.encode_fields(#encoder)?; },
+                EncodeFunc::PopulateCache(cache) => quote! { #cache._size += self.#fname.compute_fields_size(); },
+                EncodeFunc::Encode(encoder) | EncodeFunc::EncodeCached(encoder, _) => quote! { self.#fname.encode_fields(#encoder)?; },
             },
 
             FieldType::Custom(CustomField::Delegate(_)) => quote! {},

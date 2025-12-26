@@ -154,7 +154,7 @@ pub use field::FieldEncode;
 #[cfg(feature = "decode")]
 pub use message::MessageDecode;
 #[cfg(feature = "encode")]
-pub use message::MessageEncode;
+pub use message::{MessageEncode, MessageEncodeCached};
 
 #[macro_export]
 #[doc(hidden)]
