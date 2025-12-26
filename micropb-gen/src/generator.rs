@@ -122,6 +122,8 @@ pub(crate) struct Params {
     pub(crate) retain_enum_prefix: bool,
     pub(crate) suffixed_package_names: bool,
     pub(crate) single_oneof_msg_as_enum: bool,
+    pub(crate) encode_cache: bool,
+    pub(crate) cache_extern_types: bool,
 }
 
 pub(crate) struct Context<'proto> {
@@ -147,6 +149,8 @@ impl<'proto> Context<'proto> {
                 retain_enum_prefix: generator.retain_enum_prefix,
                 suffixed_package_names: generator.suffixed_package_names,
                 single_oneof_msg_as_enum: generator.single_oneof_msg_as_enum,
+                encode_cache: generator.encode_cache,
+                cache_extern_types: generator.cache_extern_types,
             },
             warning_cb: generator.warning_cb,
             graph: TypeGraph::default(),
@@ -338,11 +342,18 @@ impl<'proto> Context<'proto> {
 
         if !msg.as_oneof_enum {
             for o in &msg.oneofs {
-                msg_mod_body.extend(o.generate_decl(self, msg.is_copy));
+                msg_mod_body.extend(o.generate_decl(self, &msg)?);
             }
         }
 
         msg_mod_body.extend(msg.generate_hazzer_decl());
+
+        if self.params.encode_cache {
+            msg_mod_body.extend(msg.generate_cache_decl(self)?);
+            for o in &msg.oneofs {
+                msg_mod_body.extend(o.generate_cache_decl(self));
+            }
+        }
 
         self.type_path.borrow_mut().pop();
 

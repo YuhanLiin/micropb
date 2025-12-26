@@ -472,15 +472,17 @@ impl<'proto> TypeSpec<'proto> {
     }
 
     pub(crate) fn is_cached(&self, ctx: &Context<'proto>) -> bool {
-        if let TypeSpec::Message(_) = self {
-            true
+        if let TypeSpec::Message(tname) = self {
+            ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname)
         } else {
             false
         }
     }
 
     pub(crate) fn generate_cache_type(&self, ctx: &Context<'proto>) -> Option<TokenStream> {
-        if let TypeSpec::Message(tname) = self {
+        if let TypeSpec::Message(tname) = self
+            && (ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname))
+        {
             let rust_type = ctx.resolve_type_name(tname);
             Some(quote! { <#rust_type as ::micropb::MessageEncodeCached>::Cache })
         } else {

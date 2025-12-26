@@ -595,6 +595,8 @@ pub struct Generator {
     pub(crate) suffixed_package_names: bool,
     pub(crate) single_oneof_msg_as_enum: bool,
     pub(crate) comments_to_docs: bool,
+    pub(crate) encode_cache: bool,
+    pub(crate) cache_extern_types: bool,
 }
 
 #[allow(clippy::new_without_default)]
@@ -626,6 +628,8 @@ impl Generator {
             suffixed_package_names: true,
             single_oneof_msg_as_enum: false,
             comments_to_docs: true,
+            encode_cache: false,
+            cache_extern_types: true,
         }
     }
 
@@ -1140,6 +1144,16 @@ impl Generator {
     /// Enabled by default.
     pub fn comments_to_docs(&mut self, flag: bool) -> &mut Self {
         self.comments_to_docs = flag;
+        self
+    }
+
+    pub fn encode_cache(&mut self, encode_cache: bool) -> &mut Self {
+        self.encode_cache = encode_cache;
+        self
+    }
+
+    pub fn cache_extern_types(&mut self, cache_extern_types: bool) -> &mut Self {
+        self.cache_extern_types = cache_extern_types;
         self
     }
 }

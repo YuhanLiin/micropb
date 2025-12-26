@@ -6,8 +6,9 @@ use syn::{Ident, Lifetime};
 use crate::{
     descriptor::{FieldDescriptorProto, OneofDescriptorProto},
     generator::{
-        Context, CurrentConfig, EncodeFunc, derive_msg_attr, field::CustomField, field_error_str,
-        location::get_comments, sanitized_ident, type_spec::TypeSpec,
+        Context, CurrentConfig, EncodeFunc, derive_msg_attr, field::CustomField, field_error,
+        field_error_str, location::get_comments, message::Message, sanitized_ident,
+        type_spec::TypeSpec,
     },
     utils::{TryIntoTokens, find_lifetime_from_type},
 };
@@ -340,13 +341,16 @@ impl<'proto> Oneof<'proto> {
     pub(crate) fn generate_decl(
         &self,
         ctx: &Context<'proto>,
-        msg_is_copy: bool,
-    ) -> Result<TokenStream, String> {
+        msg: &Message<'proto>,
+    ) -> std::io::Result<TokenStream> {
         if let OneofType::Enum { type_name, fields } = &self.otype {
             assert!(!fields.is_empty(), "empty enums should have been filtered");
             let fields = fields
                 .iter()
-                .map(|f| f.generate_field(ctx))
+                .map(|f| {
+                    f.generate_field(ctx)
+                        .map_err(|e| field_error(&ctx.pkg, msg.name, f.name, &e))
+                })
                 .try_into_tokens()?;
             let derive_msg = derive_msg_attr(
                 self.derive_dbg,
@@ -354,7 +358,7 @@ impl<'proto> Oneof<'proto> {
                 self.derive_partial_eq,
                 self.derive_clone,
                 // Only derive Copy if the message type is Copy
-                msg_is_copy,
+                msg.is_copy,
             );
             let attrs = &self.type_attrs;
             let lifetime = &self.lifetime;
@@ -403,20 +407,20 @@ impl<'proto> Oneof<'proto> {
         quote! { #(#[doc = #comments])* #(#attrs)* pub #name: #oneof_type, }
     }
 
-    pub(crate) fn generate_cache_decl(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
+    pub(crate) fn generate_cache_decl(&self, ctx: &Context<'proto>) -> TokenStream {
         if let OneofType::Enum { type_name, fields } = &self.otype {
             let fields = fields.iter().map(|f| f.generate_cache_field(ctx));
             let cache_name = oneof_cache_name(type_name);
-            Ok(quote! {
+            quote! {
                 #[derive(Default)]
                 pub enum #cache_name {
                     #(#fields)*
                     #[default]
                     None
                 }
-            })
+            }
         } else {
-            Ok(quote! {})
+            quote! {}
         }
     }
 
@@ -627,6 +631,7 @@ mod tests {
 
     use crate::config::{Config, parse_attributes};
     use crate::generator::make_ctx;
+    use crate::generator::message::make_test_msg;
 
     use super::*;
 
@@ -774,6 +779,7 @@ mod tests {
     #[test]
     fn oneof_custom() {
         let ctx = make_ctx();
+        let msg = make_test_msg("Unused");
         let oneof = Oneof {
             name: "oneof",
             san_rust_name: Ident::new_raw("oneof", Span::call_site()),
@@ -791,7 +797,7 @@ mod tests {
             idx: 0,
             comments: None,
         };
-        assert!(oneof.generate_decl(&ctx, false).unwrap().is_empty());
+        assert!(oneof.generate_decl(&ctx, &msg).unwrap().is_empty());
         assert_eq!(
             oneof
                 .generate_field(&ctx, &Ident::new("Msg", Span::call_site()))
@@ -816,7 +822,7 @@ mod tests {
             idx: 0,
             comments: None,
         };
-        assert!(oneof.generate_decl(&ctx, false).unwrap().is_empty());
+        assert!(oneof.generate_decl(&ctx, &msg).unwrap().is_empty());
         assert!(
             oneof
                 .generate_field(&ctx, &Ident::new("Msg", Span::call_site()))

@@ -330,6 +330,16 @@ config_decl! {
     /// ```
     map_type: [deref] Option<String>,
 
+    /// Container type that's generated for `repeat` and `map` fields in the encode cache struct.
+    ///
+    /// When encode caching is enabled, the sizes of `repeat` and `map` elements are stored in
+    /// vectors of this type. By default this uses the same type as [`vec_type`](Config::vec_type).
+    ///
+    /// The substitution behaviour of this type is the same as [`vec_type`](Config::vec_type), with
+    /// `$T` being substituted for `usize`. The provided type must implement `PbVec<usize>` and
+    /// dereference into `[usize]`, as well as implement `Default`.
+    cache_vec_type: [deref] Option<String>,
+
     /// Determine how optional fields are represented.
     ///
     /// Presence of optional fields is tracked by either a bitfield in the message struct called a

@@ -27,6 +27,7 @@ pub(crate) enum FieldType<'proto> {
         key: TypeSpec<'proto>,
         val: TypeSpec<'proto>,
         typestr: String,
+        cache_vec_typestr: Option<String>,
         max_len: Option<u32>,
     },
     // Implicit presence
@@ -37,6 +38,7 @@ pub(crate) enum FieldType<'proto> {
         typ: TypeSpec<'proto>,
         packed: bool,
         typestr: String,
+        cache_vec_typestr: String,
         max_len: Option<u32>,
     },
     Custom(CustomField),
@@ -147,10 +149,16 @@ impl<'proto> Field<'proto> {
                     .clone()
                     .ok_or_else(|| "map_type not configured".to_owned())?;
                 let max_len = field_conf.config.max_len.filter(|_| contains_len_param(&typestr));
+                let cache_typestr = if ctx.params.encode_cache {
+                    field_conf.config.cache_vec_type.as_ref().or(field_conf.config.vec_type.as_ref()).cloned()
+                } else {
+                    None
+                };
                 FieldType::Map {
                     key,
                     val,
                     typestr,
+                    cache_vec_typestr: cache_typestr,
                     max_len,
                 }
             }
@@ -163,10 +171,16 @@ impl<'proto> Field<'proto> {
                     .clone()
                     .ok_or_else(|| "vec_type not configured".to_owned())?;
                 let max_len = field_conf.config.max_len.filter(|_| contains_len_param(&typestr));
+                let cache_typestr = if ctx.params.encode_cache {
+                    field_conf.config.cache_vec_type.as_ref().unwrap_or(&typestr).clone()
+                } else {
+                    String::new()
+                };
                 FieldType::Repeated {
                     typestr,
                     typ,
                     max_len,
+                    cache_vec_typestr: cache_typestr,
                     packed: proto
                         .options()
                         .and_then(|opt| opt.packed().copied())
@@ -215,6 +229,7 @@ impl<'proto> Field<'proto> {
                 key,
                 val,
                 max_len,
+                ..
             } => {
                 let key = key.generate_rust_type(ctx)?;
                 let val = val.generate_rust_type(ctx)?;
@@ -705,9 +720,8 @@ impl<'proto> Field<'proto> {
             FieldType::Single(type_spec) => type_spec.generate_cache_type(ctx),
             FieldType::Optional(type_spec, _) => type_spec.generate_cache_type(ctx),
 
-            FieldType::Repeated { typ, max_len, packed: false, .. } => {
+            FieldType::Repeated { typ, cache_vec_typestr, max_len, packed: false, .. } => {
                 if let Some(cache_type) = typ.generate_cache_type(ctx) {
-                    let cache_vec_typestr = todo!();
                     let cache_vec_type = vec_type_parsed(cache_vec_typestr, cache_type, *max_len)?;
                     Some(quote! { #cache_vec_type })
                 } else {
@@ -718,10 +732,10 @@ impl<'proto> Field<'proto> {
                 Some(quote! { usize })
             },
 
-            FieldType::Map { val, max_len, .. } => {
+            FieldType::Map { val, cache_vec_typestr, max_len, .. } => {
                 // Key type can't be a message, so we only ever need to cache the value type
                 if let Some(cache_type) = val.generate_cache_type(ctx) {
-                    let cache_vec_typestr = todo!();
+                    let cache_vec_typestr = cache_vec_typestr.as_ref().ok_or_else(|| "missing cache_vec_type".to_owned())?;
                     let cache_vec_type = vec_type_parsed(cache_vec_typestr, cache_type, *max_len)?;
                     Some(quote! { #cache_vec_type })
                 } else {
@@ -919,7 +933,7 @@ impl<'proto> Field<'proto> {
             } => {
                 let len = if let Some(fixed) = typ.fixed_size() {
                     quote! { self.#fname.len() * #fixed }
-                } else if let EncodeFunc::EncodeCached(encoder, cache) = &func_type {
+                } else if let EncodeFunc::EncodeCached(_, cache) = &func_type {
                     quote! { #cache.#fname._size }
                 } else {
                     let sizeof_expr = typ.generate_sizeof(ctx, &val_ref);
@@ -1250,6 +1264,7 @@ mod tests {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: false,
                 typestr: "Vec<$N>".to_owned(),
+                cache_vec_typestr: String::new(),
                 max_len: Some(21)
             }
         );
@@ -1264,6 +1279,7 @@ mod tests {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: true,
                 typestr: "Vec<$N>".to_owned(),
+                cache_vec_typestr: String::new(),
                 max_len: Some(21)
             }
         );
@@ -1321,6 +1337,7 @@ mod tests {
                     max_bytes: None
                 },
                 typestr: "std::Map".to_owned(),
+                cache_vec_typestr: None,
                 max_len: None
             }
         );

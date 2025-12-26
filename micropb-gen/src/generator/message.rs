@@ -640,7 +640,7 @@ impl<'proto> Message<'proto> {
         Ok(tok)
     }
 
-    fn generate_cache_decl(&self, ctx: &Context<'proto>) -> io::Result<TokenStream> {
+    pub(crate) fn generate_cache_decl(&self, ctx: &Context<'proto>) -> io::Result<TokenStream> {
         let msg_mod_name = resolve_path_elem(self.name, true);
         let fields = self
             .fields
@@ -724,7 +724,7 @@ impl<'proto> Message<'proto> {
         }
     }
 
-    fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
+    fn generate_max_size(&self, ctx: &Context<'proto>, var: &Ident) -> TokenStream {
         if !ctx.params.calculate_max_size {
             return quote! { const MAX_SIZE: ::core::result::Result<usize, &'static str> = ::core::result::Result::Err("calculate_max_size disabled"); };
         }
@@ -749,7 +749,7 @@ impl<'proto> Message<'proto> {
         let sizes = field_sizes.chain(oneof_sizes).chain(unknown_size);
 
         quote! {
-            const MAX_SIZE: ::core::result::Result<usize, &'static str> = 'msg: {
+            const #var: ::core::result::Result<usize, &'static str> = 'msg: {
                 let mut max_size = 0;
                 #(
                     match #sizes {
@@ -767,35 +767,74 @@ impl<'proto> Message<'proto> {
     pub(crate) fn generate_encode_trait(&self, ctx: &Context<'proto>) -> TokenStream {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
-        let sizeof = self.generate_encode_func(
-            ctx,
-            &EncodeFunc::Sizeof(Ident::new("size", Span::call_site())),
-        );
-        let encode = self.generate_encode_func(
-            ctx,
-            &EncodeFunc::Encode(Ident::new("encoder", Span::call_site())),
-        );
-        let max_size_decl = self.generate_max_size(ctx);
 
-        quote! {
-            impl<#lifetime> ::micropb::MessageEncode for #name<#lifetime> {
-                #max_size_decl
+        if ctx.params.encode_cache {
+            let cache = Ident::new("cache", Span::call_site());
+            let encoder = Ident::new("encoder", Span::call_site());
+            let msg_mod_name = resolve_path_elem(self.name, true);
 
-                fn encode<IMPL_MICROPB_WRITE: ::micropb::PbWrite>(
-                    &self,
-                    encoder: &mut ::micropb::PbEncoder<IMPL_MICROPB_WRITE>,
-                ) -> Result<(), IMPL_MICROPB_WRITE::Error>
-                {
-                    use ::micropb::{PbMap, FieldEncode};
-                    #encode
-                    Ok(())
+            let max_size_decl =
+                self.generate_max_size(ctx, &Ident::new("_MAX_SIZE", Span::call_site()));
+            let populate =
+                self.generate_encode_func(ctx, &EncodeFunc::PopulateCache(cache.clone()));
+            let encode = self.generate_encode_func(ctx, &EncodeFunc::EncodeCached(encoder, cache));
+
+            quote! {
+                impl<#lifetime> ::micropb::MessageEncodeCached for #name<#lifetime> {
+                    #max_size_decl
+
+                    type Cache = #msg_mod_name::_Cache;
+
+                    fn encode_cached<IMPL_MICROPB_WRITE: ::micropb::PbWrite>(
+                        &self,
+                        encoder: &mut ::micropb::PbEncoder<IMPL_MICROPB_WRITE>,
+                        cache: &Self::Cache,
+                    ) -> Result<(), IMPL_MICROPB_WRITE::Error>
+                    {
+                        use ::micropb::{PbMap, PbVec, FieldEncode};
+                        #encode
+                        Ok(())
+                    }
+
+                    fn compute_size_cached(&self, cache: &Self::Cache) -> usize {
+                        use ::micropb::{PbMap, PbVec, FieldEncode};
+                        #populate
+                        cache._size
+                    }
                 }
+            }
+        } else {
+            let max_size_decl =
+                self.generate_max_size(ctx, &Ident::new("MAX_SIZE", Span::call_site()));
+            let sizeof = self.generate_encode_func(
+                ctx,
+                &EncodeFunc::Sizeof(Ident::new("size", Span::call_site())),
+            );
+            let encode = self.generate_encode_func(
+                ctx,
+                &EncodeFunc::Encode(Ident::new("encoder", Span::call_site())),
+            );
 
-                fn compute_size(&self) -> usize {
-                    use ::micropb::{PbMap, FieldEncode};
-                    let mut size = 0;
-                    #sizeof
-                    size
+            quote! {
+                impl<#lifetime> ::micropb::MessageEncode for #name<#lifetime> {
+                    #max_size_decl
+
+                    fn encode<IMPL_MICROPB_WRITE: ::micropb::PbWrite>(
+                        &self,
+                        encoder: &mut ::micropb::PbEncoder<IMPL_MICROPB_WRITE>,
+                    ) -> Result<(), IMPL_MICROPB_WRITE::Error>
+                    {
+                        use ::micropb::{PbMap, FieldEncode};
+                        #encode
+                        Ok(())
+                    }
+
+                    fn compute_size(&self) -> usize {
+                        use ::micropb::{PbMap, FieldEncode};
+                        let mut size = 0;
+                        #sizeof
+                        size
+                    }
                 }
             }
         }
@@ -1052,6 +1091,7 @@ mod tests {
                     key: TypeSpec::Int(PbInt::Int64, IntSize::S16),
                     val: TypeSpec::Int(PbInt::Uint64, IntSize::S16),
                     typestr: "Map".to_owned(),
+                    cache_vec_typestr: None,
                     max_len: None,
                 },
             ),
