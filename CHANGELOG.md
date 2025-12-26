@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1
+
+### Fixed
+
+- Don't remove message module name suffixes when `suffixed_package_names` is turned off
+
 ## 0.5.0
 
 ### Removed
