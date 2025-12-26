@@ -19,6 +19,17 @@ fn no_config() {
         .unwrap();
 }
 
+fn no_suffix() {
+    let mut generator = Generator::new();
+    generator.suffixed_package_names(false);
+    generator
+        .compile_protos(
+            &["proto/basic.proto", "proto/nested.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/no_suffix.rs",
+        )
+        .unwrap();
+}
+
 fn boxed_and_option() {
     let mut generator = Generator::new();
     generator.use_container_alloc();
@@ -521,6 +532,7 @@ fn single_oneof() {
 fn main() {
     no_config();
     boxed_and_option();
+    no_suffix();
     int_type();
     skip();
     keyword_fields();

@@ -39,6 +39,8 @@ mod minimal_accessors;
 #[cfg(test)]
 mod no_config;
 #[cfg(test)]
+mod no_suffix;
+#[cfg(test)]
 mod recursive;
 #[cfg(test)]
 mod single_oneof;
