@@ -775,10 +775,12 @@ impl<'proto> Field<'proto> {
                         )                    
                     }
                     EncodeFunc::PopulateCache(cache) => {
+                        // The cache vec type should have the same capacity as the container type,
+                        // since they both use the same max_len, so we can panic on overflow
                         let val_sizeof = if val.is_cached(ctx) {
                             quote! {
                                 let elem = #val_ref.populate_cache();
-                                #cache.#fname.pb_push(elem);
+                                #cache.#fname.pb_push(elem).expect("vec overflow while caching");
                                 elem._size
                             }
                         } else {
@@ -894,7 +896,7 @@ impl<'proto> Field<'proto> {
                             quote! {
                                 let elem = #val_ref.populate_cache();
                                 #cache._size += #tag_len + ::micropb::size::sizeof_len_record(elem._size);
-                                #cache.#fname.pb_push(elem);
+                                #cache.#fname.pb_push(elem).expect("vec overflow while caching");
                             }
                         } else {
                             let sizeof_expr = typ.generate_sizeof(ctx, &val_ref);
