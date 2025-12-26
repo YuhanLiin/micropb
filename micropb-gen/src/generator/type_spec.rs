@@ -483,8 +483,9 @@ impl<'proto> TypeSpec<'proto> {
         if let TypeSpec::Message(tname) = self
             && (ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname))
         {
-            let rust_type = ctx.resolve_type_name(tname);
-            Some(quote! { <#rust_type as ::micropb::MessageEncodeCached>::Cache })
+            let cache_name = (*tname).to_owned() + "._Cache";
+            let cache_type = ctx.resolve_type_name(&cache_name);
+            Some(cache_type)
         } else {
             None
         }

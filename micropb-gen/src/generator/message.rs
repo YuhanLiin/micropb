@@ -786,13 +786,13 @@ impl<'proto> Message<'proto> {
                         cache: &Self::Cache,
                     ) -> Result<(), IMPL_MICROPB_WRITE::Error>
                     {
-                        use ::micropb::{PbMap, PbVec, FieldEncode};
+                        use ::micropb::{PbMap, PbVec, FieldEncode, MessageEncode};
                         #encode
                         Ok(())
                     }
 
                     fn populate_cache(&self) -> Self::Cache {
-                        use ::micropb::{PbMap, PbVec, FieldEncode};
+                        use ::micropb::{PbMap, PbVec, FieldEncode, MessageEncode};
                         let mut cache = Self::Cache::default();
                         #populate
                         cache

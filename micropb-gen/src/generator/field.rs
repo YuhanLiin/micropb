@@ -934,7 +934,7 @@ impl<'proto> Field<'proto> {
                 let len = if let Some(fixed) = typ.fixed_size() {
                     quote! { self.#fname.len() * #fixed }
                 } else if let EncodeFunc::EncodeCached(_, cache) = &func_type {
-                    quote! { #cache.#fname._size }
+                    quote! { #cache.#fname }
                 } else {
                     let sizeof_expr = typ.generate_sizeof(ctx, &val_ref);
                     quote! { ::micropb::size::sizeof_packed(& #extra_deref self.#fname, |#val_ref| #sizeof_expr) }

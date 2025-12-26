@@ -11,6 +11,12 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/custom_field.rs"));
 }
 
+mod proto_cached {
+    #![allow(clippy::all)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+    include!(concat!(env!("OUT_DIR"), "/custom_field.cached.rs"));
+}
+
 #[derive(Default, PartialEq)]
 struct MockField {
     tags: Vec<Tag>,
@@ -100,23 +106,6 @@ fn decode_custom_fields() {
 }
 
 #[test]
-fn encode_custom_fields() {
-    let mut nested = proto::nested_::Nested::default();
-    assert_eq!(nested.compute_size(), 0);
-    nested.custom_inner.tags.push(Tag::from_parts(1, 2));
-    nested.custom_inner.tags.push(Tag::from_parts(3, 2));
-    nested.custom_inner.tags.push(Tag::from_parts(4, 0));
-    assert_eq!(nested.compute_size(), 3);
-
-    nested._unknown.tags.push(Tag::from_parts(6, 2));
-    assert_eq!(nested.compute_size(), 4);
-
-    let mut encoder = PbEncoder::new(vec![]);
-    nested.encode(&mut encoder).unwrap();
-    assert_eq!(encoder.into_writer(), &[0xA, 0x1A, 0x20, 0x32]);
-}
-
-#[test]
 fn decode_unknown() {
     let mut nested = proto::nested_::Nested::default();
     let mut decoder = PbDecoder::new(
@@ -174,4 +163,32 @@ fn max_size() {
         proto::nested_::Nested::MAX_SIZE,
         Ok(MockField::MAX_SIZE.unwrap() * 2)
     )
+}
+
+macro_rules! encode_tests {
+    ($mod:ident) => {
+        #[test]
+        fn encode_custom_fields() {
+            let mut nested = $mod::nested_::Nested::default();
+            assert_eq!(nested.compute_size(), 0);
+            nested.custom_inner.tags.push(Tag::from_parts(1, 2));
+            nested.custom_inner.tags.push(Tag::from_parts(3, 2));
+            nested.custom_inner.tags.push(Tag::from_parts(4, 0));
+            assert_eq!(nested.compute_size(), 3);
+
+            nested._unknown.tags.push(Tag::from_parts(6, 2));
+            assert_eq!(nested.compute_size(), 4);
+
+            let mut encoder = PbEncoder::new(vec![]);
+            nested.encode(&mut encoder).unwrap();
+            assert_eq!(encoder.into_writer(), &[0xA, 0x1A, 0x20, 0x32]);
+        }
+    };
+}
+
+encode_tests!(proto);
+
+mod cached {
+    use super::*;
+    encode_tests!(proto_cached);
 }

@@ -7,6 +7,12 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/import_nested.rs"));
 }
 
+mod proto_cached {
+    #![allow(clippy::all)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+    include!(concat!(env!("OUT_DIR"), "/import_nested.cached.rs"));
+}
+
 #[derive(Debug, Default, PartialEq, Clone)]
 struct Empty;
 
@@ -43,17 +49,6 @@ fn imported_types() {
 }
 
 #[test]
-fn encode_imported() {
-    let mut nested = proto::nested_::Nested::default();
-    nested._has.set_basic();
-    assert_eq!(nested.compute_size(), 2);
-
-    let mut encoder = PbEncoder::new(vec![]);
-    nested.encode(&mut encoder).unwrap();
-    assert_eq!(encoder.into_writer(), &[0x0A, 0]);
-}
-
-#[test]
 fn decode_imported() {
     let mut nested = proto::nested_::Nested::default();
     let mut decoder = PbDecoder::new([0x0A, 0].as_slice());
@@ -67,4 +62,26 @@ fn max_size() {
     let inner_max_size = (2/* tags */) + 5 + 5;
     let nested_max_size = (2/* tags */) + 1/* empty msg */ + (1 + inner_max_size);
     assert_eq!(proto::nested_::Nested::MAX_SIZE, Ok(nested_max_size));
+}
+
+macro_rules! encode_tests {
+    ($mod:ident) => {
+        #[test]
+        fn encode_imported() {
+            let mut nested = $mod::nested_::Nested::default();
+            nested._has.set_basic();
+            assert_eq!(nested.compute_size(), 2);
+
+            let mut encoder = PbEncoder::new(vec![]);
+            nested.encode(&mut encoder).unwrap();
+            assert_eq!(encoder.into_writer(), &[0x0A, 0]);
+        }
+    };
+}
+
+encode_tests!(proto);
+
+mod cached {
+    use super::*;
+    encode_tests!(proto_cached);
 }

@@ -6,6 +6,12 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/single_oneof.rs"));
 }
 
+mod proto_cached {
+    #![allow(clippy::all)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+    include!(concat!(env!("OUT_DIR"), "/single_oneof.cached.rs"));
+}
+
 #[test]
 fn typecheck_normal_oneof() {
     let nested = proto::nested_::Nested::default();
@@ -45,29 +51,6 @@ fn decode_single_oneof() {
 }
 
 #[test]
-fn encode_single_oneof() {
-    let mut oneof = proto::SingleOneof::default();
-    assert_eq!(oneof.compute_size(), 0);
-
-    oneof = proto::SingleOneof::InnerMsg({
-        let mut msg = proto::SingleOneof_::InnerMsg::default();
-        msg.set_val(-1);
-        msg.set_val2(-3);
-        Box::new(msg)
-    });
-    assert_eq!(oneof.compute_size(), 6);
-    let mut encoder = PbEncoder::new(vec![]);
-    oneof.encode(&mut encoder).unwrap();
-    assert_eq!(encoder.into_writer(), &[0x1A, 4, 0x08, 1, 0x10, 5]);
-
-    oneof = proto::SingleOneof::InnerEnum(0.into());
-    assert_eq!(oneof.compute_size(), 2);
-    let mut encoder = PbEncoder::new(vec![]);
-    oneof.encode(&mut encoder).unwrap();
-    assert_eq!(encoder.into_writer(), &[0x20, 0x00]);
-}
-
-#[test]
 fn variants() {
     let oneof = proto::SingleOneof::default();
     match oneof {
@@ -76,4 +59,38 @@ fn variants() {
         proto::SingleOneof::None => {}
     }
     // scalar variant of the oneof is skipped
+}
+
+macro_rules! encode_tests {
+    ($mod:ident) => {
+        #[test]
+        fn encode_single_oneof() {
+            let mut oneof = $mod::SingleOneof::default();
+            assert_eq!(oneof.compute_size(), 0);
+
+            oneof = $mod::SingleOneof::InnerMsg({
+                let mut msg = $mod::SingleOneof_::InnerMsg::default();
+                msg.set_val(-1);
+                msg.set_val2(-3);
+                Box::new(msg)
+            });
+            assert_eq!(oneof.compute_size(), 6);
+            let mut encoder = PbEncoder::new(vec![]);
+            oneof.encode(&mut encoder).unwrap();
+            assert_eq!(encoder.into_writer(), &[0x1A, 4, 0x08, 1, 0x10, 5]);
+
+            oneof = $mod::SingleOneof::InnerEnum(0.into());
+            assert_eq!(oneof.compute_size(), 2);
+            let mut encoder = PbEncoder::new(vec![]);
+            oneof.encode(&mut encoder).unwrap();
+            assert_eq!(encoder.into_writer(), &[0x20, 0x00]);
+        }
+    };
+}
+
+encode_tests!(proto);
+
+mod cached {
+    use super::*;
+    encode_tests!(proto_cached);
 }
