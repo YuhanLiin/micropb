@@ -641,7 +641,6 @@ impl<'proto> Message<'proto> {
     }
 
     pub(crate) fn generate_cache_decl(&self, ctx: &Context<'proto>) -> io::Result<TokenStream> {
-        let msg_mod_name = resolve_path_elem(self.name, true);
         let fields = self
             .fields
             .iter()
@@ -650,10 +649,7 @@ impl<'proto> Message<'proto> {
                     .map_err(|e| field_error(&ctx.pkg, self.name, f.name, &e))
             })
             .try_into_tokens()?;
-        let oneofs = self
-            .oneofs
-            .iter()
-            .map(|f| f.generate_cache_field(&msg_mod_name));
+        let oneofs = self.oneofs.iter().map(|f| f.generate_cache_field());
 
         Ok(quote! {
             #[derive(Default)]
@@ -724,7 +720,7 @@ impl<'proto> Message<'proto> {
         }
     }
 
-    fn generate_max_size(&self, ctx: &Context<'proto>, var: &Ident) -> TokenStream {
+    fn generate_max_size(&self, ctx: &Context<'proto>) -> TokenStream {
         if !ctx.params.calculate_max_size {
             return quote! { const MAX_SIZE: ::core::result::Result<usize, &'static str> = ::core::result::Result::Err("calculate_max_size disabled"); };
         }
@@ -749,7 +745,7 @@ impl<'proto> Message<'proto> {
         let sizes = field_sizes.chain(oneof_sizes).chain(unknown_size);
 
         quote! {
-            const #var: ::core::result::Result<usize, &'static str> = 'msg: {
+            const MAX_SIZE: ::core::result::Result<usize, &'static str> = 'msg: {
                 let mut max_size = 0;
                 #(
                     match #sizes {
@@ -767,14 +763,13 @@ impl<'proto> Message<'proto> {
     pub(crate) fn generate_encode_trait(&self, ctx: &Context<'proto>) -> TokenStream {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
+        let max_size_decl = self.generate_max_size(ctx);
 
         if ctx.params.encode_cache {
             let cache = Ident::new("cache", Span::call_site());
             let encoder = Ident::new("encoder", Span::call_site());
             let msg_mod_name = resolve_path_elem(self.name, true);
 
-            let max_size_decl =
-                self.generate_max_size(ctx, &Ident::new("_MAX_SIZE", Span::call_site()));
             let populate =
                 self.generate_encode_func(ctx, &EncodeFunc::PopulateCache(cache.clone()));
             let encode = self.generate_encode_func(ctx, &EncodeFunc::EncodeCached(encoder, cache));
@@ -796,16 +791,19 @@ impl<'proto> Message<'proto> {
                         Ok(())
                     }
 
-                    fn compute_size_cached(&self, cache: &Self::Cache) -> usize {
+                    fn populate_cache(&self) -> Self::Cache {
                         use ::micropb::{PbMap, PbVec, FieldEncode};
+                        let mut cache = Self::Cache::default();
                         #populate
+                        cache
+                    }
+
+                    fn compute_size_cached(&self, cache: &Self::Cache) -> usize {
                         cache._size
                     }
                 }
             }
         } else {
-            let max_size_decl =
-                self.generate_max_size(ctx, &Ident::new("MAX_SIZE", Span::call_site()));
             let sizeof = self.generate_encode_func(
                 ctx,
                 &EncodeFunc::Sizeof(Ident::new("size", Span::call_site())),

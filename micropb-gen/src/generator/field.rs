@@ -747,7 +747,7 @@ impl<'proto> Field<'proto> {
         };
 
         let name = &self.san_rust_name;
-        Ok(typ.map(|typ| quote! { pub #name: #typ }).unwrap_or_default())
+        Ok(typ.map(|typ| quote! { pub #name: #typ, }).unwrap_or_default())
     }
 
     pub(crate) fn generate_encode(

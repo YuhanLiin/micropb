@@ -196,7 +196,7 @@ impl<'proto> OneofField<'proto> {
                 let encode_expr = if self.tspec.is_cached(ctx) {
                     quote! {
                         if let #cache_enum_type::#variant_name(subcache) = &#cache.#oneof_name {
-                            #val_ref.encode_len_delimited_cached(#encoder, subcache)
+                            #val_ref.encode_len_delimited_cached(#encoder, &subcache)
                         } else {
                             core::unreachable!("unexpected cache variant")
                         }
@@ -424,16 +424,15 @@ impl<'proto> Oneof<'proto> {
         }
     }
 
-    pub(crate) fn generate_cache_field(&self, msg_mod_name: &Ident) -> TokenStream {
+    pub(crate) fn generate_cache_field(&self) -> TokenStream {
         let name = &self.san_rust_name;
-        let oneof_type = match &self.otype {
+        match &self.otype {
             OneofType::Enum { type_name, .. } => {
                 let cache_name = oneof_cache_name(type_name);
-                quote! { #msg_mod_name::#cache_name }
+                quote! { pub #name: #cache_name, }
             }
-            OneofType::Custom { .. } => return quote! {},
-        };
-        quote! { pub #name: #oneof_type, }
+            OneofType::Custom { .. } => quote! {},
+        }
     }
 
     pub(crate) fn generate_decode_branches(
