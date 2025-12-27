@@ -480,15 +480,14 @@ impl<'proto> TypeSpec<'proto> {
     }
 
     pub(crate) fn generate_cache_type(&self, ctx: &Context<'proto>) -> Option<TokenStream> {
-        if let TypeSpec::Message(tname) = self
-            && (ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname))
-        {
-            let cache_name = (*tname).to_owned() + "._Cache";
-            let cache_type = ctx.resolve_type_name(&cache_name);
-            Some(cache_type)
-        } else {
-            None
+        if let TypeSpec::Message(tname) = self {
+            if ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname) {
+                let cache_name = (*tname).to_owned() + "._Cache";
+                let cache_type = ctx.resolve_type_name(&cache_name);
+                return Some(cache_type);
+            }
         }
+        None
     }
 
     pub(crate) fn generate_sizeof(&self, _ctx: &Context<'proto>, val_ref: &Ident) -> TokenStream {

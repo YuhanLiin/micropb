@@ -798,7 +798,8 @@ impl<'proto> Field<'proto> {
                         let key_wtype = key.wire_type();
                         let val_wtype = val.wire_type();
 
-                        let (val_encode, val_sizeof) = if let EncodeFunc::EncodeCached(encoder, cache) = &func_type && val.is_cached(ctx) {
+                        let (val_encode, val_sizeof) =
+                            if let (EncodeFunc::EncodeCached(encoder, cache), true) = (&func_type, val.is_cached(ctx)) {
                             (
                                 quote! { #val_ref.encode_len_delimited_cached(#encoder, &#cache.#fname[i]) },
                                 quote! { #cache.#fname[i]._size }
