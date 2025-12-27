@@ -780,8 +780,9 @@ impl<'proto> Field<'proto> {
                         let val_sizeof = if val.is_cached(ctx) {
                             quote! {
                                 let elem = #val_ref.populate_cache();
+                                let sz = elem._size;
                                 #cache.#fname.pb_push(elem).expect("vec overflow while caching");
-                                elem._size
+                                sz
                             }
                         } else {
                            val.generate_sizeof(ctx, &val_ref)
