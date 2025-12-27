@@ -16,6 +16,18 @@ mod tests {
         include!(concat!(env!("OUT_DIR"), "/micropb_oneof_enum.rs"));
     }
 
+    mod micropb_types_cached {
+        #![allow(clippy::all)]
+        #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+        include!(concat!(env!("OUT_DIR"), "/micropb_all_types.cached.rs"));
+    }
+
+    mod micropb_oneof_enum_cached {
+        #![allow(clippy::all)]
+        #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+        include!(concat!(env!("OUT_DIR"), "/micropb_oneof_enum.cached.rs"));
+    }
+
     mod prost_types {
         #![allow(clippy::all)]
         #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
@@ -100,6 +112,26 @@ mod tests {
 
         #[test]
         fn proto_roundtrip_oneof_enum(msg: micropb_oneof_enum::TestOneOf) {
+            test_proto_roundtrip(msg);
+        }
+
+        #[test]
+        fn roundtrip_cached(msg: micropb_types_cached::TestOneOf) {
+            test_roundtrip(msg);
+        }
+
+        #[test]
+        fn proto_roundtrip_cached(msg: micropb_types_cached::TestOneOf) {
+            test_proto_roundtrip(msg);
+        }
+
+        #[test]
+        fn roundtrip_oneof_enum_cached(msg: micropb_oneof_enum_cached::TestOneOf) {
+            test_roundtrip(msg);
+        }
+
+        #[test]
+        fn proto_roundtrip_oneof_enum_cached(msg: micropb_oneof_enum_cached::TestOneOf) {
             test_proto_roundtrip(msg);
         }
 
