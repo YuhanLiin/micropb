@@ -552,6 +552,8 @@ impl<'proto> Context<'proto> {
 
 #[inline]
 pub(crate) fn resolve_path_elem(elem: &str, suffixed: bool) -> Ident {
+    // If the word is upper-case, then it's a message name, which should always be suffixed
+    let suffixed = suffixed || elem.starts_with(|c: char| c.is_uppercase());
     if suffixed || matches!(elem, "super" | "crate" | "self" | "Self" | "extern") {
         // Add underscore suffix
         format_ident!("{elem}_")
@@ -654,6 +656,46 @@ mod tests {
         assert_eq!(
             ctx.resolve_type_name(".abc.d").to_string(),
             quote! { super::super::abc_::r#d }.to_string()
+        );
+    }
+
+    #[test]
+    fn resolve_type_name_no_suffix() {
+        let mut ctx = make_ctx();
+        ctx.params.suffixed_package_names = false;
+        // currently in root-level module
+        assert_eq!(ctx.resolve_type_name(".Message").to_string(), "Message");
+        assert_eq!(
+            ctx.resolve_type_name(".package.Message").to_string(),
+            quote! { r#package::Message }.to_string()
+        );
+        assert_eq!(
+            ctx.resolve_type_name(".package.Message.Inner").to_string(),
+            quote! { r#package::Message_::Inner }.to_string()
+        );
+
+        ctx.pkg_path.push("package".to_owned());
+        ctx.type_path.borrow_mut().push("Message".to_owned());
+        // currently in package::mod_Message module
+        assert_eq!(
+            ctx.resolve_type_name(".Message").to_string(),
+            quote! { super::super::Message }.to_string()
+        );
+        assert_eq!(
+            ctx.resolve_type_name(".package.Message").to_string(),
+            quote! { super::Message }.to_string()
+        );
+        assert_eq!(
+            ctx.resolve_type_name(".Message.Item").to_string(),
+            quote! { super::super::Message_::Item }.to_string()
+        );
+        assert_eq!(
+            ctx.resolve_type_name(".package.Message.Inner").to_string(),
+            "Inner"
+        );
+        assert_eq!(
+            ctx.resolve_type_name(".abc.d").to_string(),
+            quote! { super::super::r#abc::r#d }.to_string()
         );
     }
 

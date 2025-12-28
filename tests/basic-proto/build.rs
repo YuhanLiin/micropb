@@ -25,6 +25,17 @@ fn no_config(encode_cache: bool) {
         .unwrap();
 }
 
+fn no_suffix() {
+    let mut generator = Generator::new();
+    generator.suffixed_package_names(false);
+    generator
+        .compile_protos(
+            &["proto/basic.proto", "proto/nested.proto"],
+            std::env::var("OUT_DIR").unwrap() + "/no_suffix.rs",
+        )
+        .unwrap();
+}
+
 fn boxed_and_option(encode_cache: bool) {
     let mut generator = Generator::new();
     generator.use_container_alloc().encode_cache(encode_cache);
@@ -576,6 +587,7 @@ fn main() {
     no_config(false);
     boxed_and_option(true);
     boxed_and_option(false);
+    no_suffix();
     int_type();
     skip();
     keyword_fields();
