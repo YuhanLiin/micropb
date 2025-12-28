@@ -328,6 +328,9 @@ config_decl! {
     /// // `map` field configured to `FnvIndexMap<i32, f32, 4>` (fixed-capacity)
     /// generator.configure(".pkg.Message.map_field", Config::new().map_type("FnvIndexMap<$K, $V, $N>").max_len(4));
     /// ```
+    ///
+    /// Note: If [`encode_cache`](crate::Generator::encode_cache) is enabled, then fields with this
+    /// config should also have either [`vec_type`] or [`cache_vec_type`].
     map_type: [deref] Option<String>,
 
     /// Container type that's generated for `repeat` and `map` fields in the encode cache struct.

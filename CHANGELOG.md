@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- New `encode_cache` option to enable caching of message field lengths during encoding
+
 ## 0.5.1
 
 ### Fixed

@@ -1158,7 +1158,9 @@ impl Generator {
     ///
     /// If this flag is enabled, the generated encode functions will cache the lengths of nested
     /// length-delimited fields on the stack, preventing repeated calculations. This does not
-    /// change the generated API. Note that custom fields are not cached.
+    /// change the generated API.
+    ///
+    /// Disabled by default.
     pub fn encode_cache(&mut self, encode_cache: bool) -> &mut Self {
         self.encode_cache = encode_cache;
         self
