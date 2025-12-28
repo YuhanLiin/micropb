@@ -20,5 +20,5 @@ message Many {
 }
 
 message Lookup {
-  map<sint32, Many> table = 1;
+  map<bool, Many> table = 1;
 }

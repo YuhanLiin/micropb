@@ -802,7 +802,7 @@ impl<'proto> Field<'proto> {
                                 let elem = #val_ref.populate_cache();
                                 let sz = elem._size;
                                 #cache.#fname.pb_push(elem).expect("vec overflow while caching");
-                                sz
+                                ::micropb::size::sizeof_len_record(sz)
                             }
                         } else {
                            val.generate_sizeof(ctx, &val_ref)
@@ -822,7 +822,7 @@ impl<'proto> Field<'proto> {
                             if let (EncodeFunc::EncodeCached(encoder, cache), true) = (&func_type, val.is_cached(ctx)) {
                             (
                                 quote! { #val_ref.encode_len_delimited_cached(#encoder, &#cache.#fname[i]) },
-                                quote! { #cache.#fname[i]._size }
+                                quote! { ::micropb::size::sizeof_len_record(#cache.#fname[i]._size) }
                             )
                         } else {
                             (val.generate_encode_expr(ctx, encoder, &val_ref), val.generate_sizeof(ctx, &val_ref))
