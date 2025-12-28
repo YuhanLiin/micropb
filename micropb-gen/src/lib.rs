@@ -1166,11 +1166,12 @@ impl Generator {
         self
     }
 
-    /// Determines whether types handled by [`extern_type_path`] are cached when encoding.
+    /// Determines whether types handled by [`extern_type_path`](Self::extern_type_path) are
+    /// cached when encoding.
     ///
-    /// This option only has effect if [`encode_cache`] is set. If set, then the external message
-    /// types must have been generated with [`encode_cache`], because the generator expects those
-    /// types to implement the caching traits.
+    /// This option only has effect if [`encode_cache`](Self::encode_cache) is set. If set, then
+    /// the external message types must have been generated with `encode_cache`, because the
+    /// generator expects those types to implement the caching traits.
     ///
     /// Enabled by default.
     pub fn cache_extern_types(&mut self, cache_extern_types: bool) -> &mut Self {

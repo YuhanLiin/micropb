@@ -330,7 +330,8 @@ config_decl! {
     /// ```
     ///
     /// Note: If [`encode_cache`](crate::Generator::encode_cache) is enabled, then fields with this
-    /// config should also have either [`vec_type`] or [`cache_vec_type`].
+    /// config should also have either [`vec_type`](Config::vec_type) or
+    /// [`cache_vec_type`](Config::cache_vec_type).
     map_type: [deref] Option<String>,
 
     /// Container type that's generated for `repeat` and `map` fields in the encode cache struct.
