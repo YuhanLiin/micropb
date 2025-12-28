@@ -110,6 +110,11 @@ message TestTypesMap2 {
     map<string, SubM> message_field = 17;
 }
 
+message TestMaps {
+    TestTypesMap1 map1 = 1;
+    TestTypesMap2 map2 = 2;
+}
+
 message TestOneOf {
   oneof inner {
     TestTypesSingular1 singular1 = 1;

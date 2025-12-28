@@ -101,12 +101,23 @@ mod tests {
         }
 
         #[test]
+        fn map_roundtrip(msg: micropb_types::TestMaps) {
+            test_roundtrip(msg);
+        }
+
+        #[test]
         fn proto_roundtrip(msg: micropb_types::TestOneOf) {
             test_proto_roundtrip(msg);
         }
 
+        // Roundtrip oneof enum messages
         #[test]
         fn roundtrip_oneof_enum(msg: micropb_oneof_enum::TestOneOf) {
+            test_roundtrip(msg);
+        }
+
+        #[test]
+        fn map_roundtrip_oneof_enum(msg: micropb_oneof_enum::TestMaps) {
             test_roundtrip(msg);
         }
 
@@ -115,8 +126,14 @@ mod tests {
             test_proto_roundtrip(msg);
         }
 
+        // Roundtrip messages with cached encoding
         #[test]
         fn roundtrip_cached(msg: micropb_types_cached::TestOneOf) {
+            test_roundtrip(msg);
+        }
+
+        #[test]
+        fn map_roundtrip_cached(msg: micropb_types_cached::TestMaps) {
             test_roundtrip(msg);
         }
 
@@ -125,8 +142,14 @@ mod tests {
             test_proto_roundtrip(msg);
         }
 
+        // Roundtrip oneof enum messages with cached encoding
         #[test]
         fn roundtrip_oneof_enum_cached(msg: micropb_oneof_enum_cached::TestOneOf) {
+            test_roundtrip(msg);
+        }
+
+        #[test]
+        fn map_roundtrip_oneof_enum_cached(msg: micropb_oneof_enum_cached::TestMaps) {
             test_roundtrip(msg);
         }
 
