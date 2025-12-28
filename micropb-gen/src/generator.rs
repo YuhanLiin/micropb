@@ -342,7 +342,7 @@ impl<'proto> Context<'proto> {
 
         if !msg.as_oneof_enum {
             for o in &msg.oneofs {
-                msg_mod_body.extend(o.generate_decl(self, &msg)?);
+                msg_mod_body.extend(o.generate_decl(self, msg)?);
             }
         }
 
