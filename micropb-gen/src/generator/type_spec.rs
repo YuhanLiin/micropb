@@ -471,14 +471,9 @@ impl<'proto> TypeSpec<'proto> {
         Ok(tok)
     }
 
-    pub(crate) fn is_cached(&self, ctx: &Context<'proto>) -> bool {
-        if let TypeSpec::Message(tname) = self {
-            ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname)
-        } else {
-            false
-        }
-    }
-
+    /// Only return Some for internal message types (external message types are dependent on
+    /// generator options). Even though strings and bytes are also length-delimited, we don't need
+    /// to cache them because calculating their lengths is trivial.
     pub(crate) fn generate_cache_type(&self, ctx: &Context<'proto>) -> Option<TokenStream> {
         if let TypeSpec::Message(tname) = self {
             if ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname) {
@@ -488,6 +483,15 @@ impl<'proto> TypeSpec<'proto> {
             }
         }
         None
+    }
+
+    /// This method must be in sync with [`generate_cache_type`]
+    pub(crate) fn is_cached(&self, ctx: &Context<'proto>) -> bool {
+        if let TypeSpec::Message(tname) = self {
+            ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname)
+        } else {
+            false
+        }
     }
 
     pub(crate) fn generate_sizeof(&self, _ctx: &Context<'proto>, val_ref: &Ident) -> TokenStream {

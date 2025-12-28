@@ -715,6 +715,26 @@ impl<'proto> Field<'proto> {
         }
     }
 
+    /// Cache structure fields are generated as follows:
+    /// ```ignore
+    /// struct _Cache {
+    ///     // Single or optional message fields just use the message's cache type
+    ///     single_or_optional_msg_field: Message_::_Cache,
+    ///
+    ///     // Repeated message fields use a vec of cache structures
+    ///     // The vec type is specified by the `cache_vec_type` config
+    ///     repeated_msg_field: MyVec<Message_::_Cache>,
+    ///
+    ///     // Packed repeated field is encoded as a single len-delimited record,
+    ///     // so we just cache the length
+    ///     packed_repeated_field: usize,
+    ///
+    ///     // Map keys can't be messages, so we only need to cache map values
+    ///     // We can use a vec because the iteration order of map types should be consistent
+    ///     // across multiple iterations as long as the elements don't change
+    ///     map_field: MyVec<Value_::_Cache>,
+    /// }
+    /// ```
     pub(crate) fn generate_cache_field(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
         let typ = match &self.ftype {
             FieldType::Single(type_spec) => type_spec.generate_cache_type(ctx),

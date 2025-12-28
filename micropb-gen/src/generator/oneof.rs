@@ -407,6 +407,14 @@ impl<'proto> Oneof<'proto> {
         quote! { #(#[doc = #comments])* #(#attrs)* pub #name: #oneof_type, }
     }
 
+    /// The cache structure of each oneof is an enum of all the message fields, similar to the
+    /// oneof enum type itself. For example:
+    /// ```ignore
+    /// enum _MyOneofCache {
+    ///     Variant1(Message1_::_Cache),
+    ///     Variant2(Message2_::_Cache),
+    /// }
+    /// ```
     pub(crate) fn generate_cache_decl(&self, ctx: &Context<'proto>) -> TokenStream {
         if let OneofType::Enum { type_name, fields } = &self.otype {
             let fields = fields.iter().map(|f| f.generate_cache_field(ctx));

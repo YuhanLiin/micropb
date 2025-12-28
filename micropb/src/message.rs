@@ -89,6 +89,7 @@ pub trait MessageEncode {
     fn compute_size(&self) -> usize;
 }
 
+#[doc(hidden)]
 #[cfg(feature = "encode")]
 pub trait MessageEncodeCached {
     const MAX_SIZE: Result<usize, &'static str>;
