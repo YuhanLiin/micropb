@@ -704,6 +704,7 @@ mod tests {
     use std::borrow::Cow;
 
     use arrayvec::{ArrayString, ArrayVec};
+    use heapless_0_9 as heapless;
 
     use crate::FixedLenString;
 

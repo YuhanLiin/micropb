@@ -25,7 +25,8 @@ regex = { version = "1" }
 [dev-dependencies]
 syn = { version = "2", default-features = false, features = ["extra-traits"] }
 # Used for doc examples
-micropb = { version = "0.5.1", path = "../micropb", features = ["std", "container-heapless"] }
+micropb = { version = "0.5.1", path = "../micropb", features = ["std", "container-heapless-0-9"] }
+heapless = "0.9"
 
 [features]
 default = ["format", "config-file"]

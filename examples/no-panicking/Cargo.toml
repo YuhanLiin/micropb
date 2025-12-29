@@ -4,7 +4,8 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-micropb = { path = "../../micropb", features = ["container-heapless"] }
+micropb = { path = "../../micropb", features = ["container-heapless-0-9"] }
+heapless = "0.9"
 no-panic = { version = "0.1" }
 
 [build-dependencies]

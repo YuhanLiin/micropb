@@ -23,7 +23,7 @@
 //!
 //! ```rust
 //! use micropb::{PbRead, PbDecoder, PbWrite, PbEncoder, MessageEncode, MessageDecode};
-//! use micropb::heapless::Vec;
+//! # use heapless_0_9 as heapless;
 //!
 //! # #[derive(Default)]
 //! # struct ProtoMessage;
@@ -60,7 +60,7 @@
 //! message.decode_from_bytes(data.as_slice()).unwrap();
 //!
 //! // Use heapless::Vec as the output stream and build an encoder around it
-//! let mut output = Vec::<u8, 16>::new();
+//! let mut output = heapless::Vec::<u8, 16>::new();
 //! let mut encoder = PbEncoder::new(&mut output);
 //! // Encode a `ProtoMessage` to the encoder
 //! message.encode(&mut encoder).unwrap();
@@ -106,14 +106,18 @@
 //!   [`Generator::use_container_std`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_std)
 //!   from `micropb-gen`.
 //!
-//! - **container-heapless**: Implements container traits on `Vec`, `String`, and `IndexMap` from
-//!   [`heapless`](https://docs.rs/heapless/latest/heapless), allowing them to be used as container
+//! - **container-heapless-0-9**: Implements container traits on `Vec`, `String`, and `IndexMap` from
+//!   [`heapless`](https://docs.rs/heapless/latest/heapless) v0.9, allowing them to be used as container
 //!   fields. Corresponds with
 //!   [`Generator::use_container_heapless`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_heapless)
 //!   from `micropb-gen`.
 //!
-//! - **container-arrayvec**: Implements container traits on `ArrayVec` and `ArrayString` from
-//!   [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec), allowing them to be used as container
+//! - **container-heapless-0-8**: Implements container traits on types from `heapless` v0.8. Corresponds with
+//!   [`Generator::use_container_heapless`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_heapless)
+//!   from `micropb-gen`.
+//!
+//! - **container-arrayvec-0-7**: Implements container traits on `ArrayVec` and `ArrayString` from
+//!   [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec) v0.7, allowing them to be used as container
 //!   fields. Corresponds with
 //!   [`Generator::use_container_arrayvec`](https://docs.rs/micropb-gen/latest/micropb_gen/struct.Generator.html#method.use_container_arrayvec)
 //!   from `micropb-gen`.
@@ -132,12 +136,7 @@ mod misc;
 #[cfg(feature = "encode")]
 pub mod size;
 
-#[cfg(feature = "container-arrayvec")]
-pub use ::arrayvec;
-#[cfg(feature = "container-heapless")]
-pub use ::heapless;
 pub use container::impl_fixed_len::FixedLenString;
-
 pub use container::{PbBytes, PbMap, PbString, PbVec};
 #[cfg(all(feature = "decode", feature = "std"))]
 pub use decode::StdReader;

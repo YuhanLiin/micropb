@@ -12,10 +12,11 @@
 //! # Getting Started
 //!
 //! Add `micropb` crates to your `Cargo.toml`:
-//! ```protobuf
+//! ```toml
 //! [dependencies]
 //! # Allow types from `heapless` to be used for container fields
-//! micropb = { version = "0.3.0", features = ["container-heapless"] }
+//! micropb = { version = "0.3.0", features = ["container-heapless-0-9"] }
+//! heapless = "0.9"
 //!
 //! [build-dependencies]
 //! micropb-gen = "0.3.0"
@@ -66,7 +67,7 @@
 //! // const CAPACITY: usize = 32;
 //!
 //! // Use heapless::Vec as the output stream and build an encoder around it
-//! let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, CAPACITY>::new());
+//! let mut encoder = PbEncoder::new(heapless::Vec::<u8, CAPACITY>::new());
 //!
 //! // Compute the size of the `Example` on the wire
 //! let _size = example.compute_size();
@@ -346,12 +347,11 @@
 //!
 //! The following Rust struct will be generated:
 //! ```rust,no_run
-//! # use micropb::heapless as heapless;
 //! pub struct Containers {
 //!     f_string: heapless::String<8>,
 //!     f_bytes: heapless::Vec<u8, 8>,
 //!     f_repeated: heapless::Vec<i32, 4>,
-//!     f_map: heapless::FnvIndexMap<i32, i64, 4>,
+//!     f_map: heapless::index_map::FnvIndexMap<i32, i64, 4>,
 //! }
 //! ```
 //!
@@ -786,24 +786,29 @@ impl Generator {
     /// Configure the generator to generate `heapless` containers for Protobuf `string`, `bytes`,
     /// repeated, and `map` fields.
     ///
-    /// If using this option, `micropb` should have the `container-heapless` feature enabled.
+    /// If using this option, `micropb` should have one of the `container-heapless-*` features
+    /// enabled, and the crate should depend on the corresponding version of `heapless`.
     ///
-    /// Specifically, `heapless::String<N>` is generated for `string` fields, `heapless::Vec<u8, N>`
-    /// for `bytes` fields, `heapless::Vec<T, N>` for repeated fields, and
-    /// `heapless::FnvIndexMap<K, V, N>` for `map` fields. This uses [`configure`](Self::configure)
-    /// under the hood, so configurations set by this call can all be overriden.
+    /// Specifically, `heapless::String<N>` is generated for `string` fields, `heapless::Vec<u8,
+    /// N>` for `bytes` fields, `heapless::Vec<T, N>` for repeated fields, and
+    /// `heapless::index_map::FnvIndexMap<K, V, N>` for `map` fields. This uses
+    /// [`configure`](Self::configure) under the hood, so configurations set by this call can all
+    /// be overriden.
     ///
     /// # Note
+    /// This method assumes you're using heapless 0.9. The path to `FnvIndexMap` is different in
+    /// other versions of heapless, so you may need to override manually with [`Config::map_type`].
+    ///
     /// Since `heapless` containers are fixed size, [`max_len`](Config::max_len) or
     /// [`max_bytes`](Config::max_bytes) must be set for all fields that generate these containers.
     pub fn use_container_heapless(&mut self) -> &mut Self {
         self.configure(
             ".",
             Config::new()
-                .vec_type("::micropb::heapless::Vec<$T, $N>")
-                .string_type("::micropb::heapless::String<$N>")
-                .bytes_type("::micropb::heapless::Vec<u8, $N>")
-                .map_type("::micropb::heapless::FnvIndexMap<$K, $V, $N>"),
+                .vec_type("::heapless::Vec<$T, $N>")
+                .string_type("::heapless::String<$N>")
+                .bytes_type("::heapless::Vec<u8, $N>")
+                .map_type("::heapless::index_map::FnvIndexMap<$K, $V, $N>"),
         );
         self
     }
@@ -811,7 +816,8 @@ impl Generator {
     /// Configure the generator to generate `arrayvec` containers for Protobuf `string`, `bytes`,
     /// and repeated fields.
     ///
-    /// If using this option, `micropb` should have the `container-arrayvec` feature enabled.
+    /// If using this option, `micropb` should have one of the `container-arrayvec-*` feature
+    /// enabled, and the crate should depend on the corresponding version of `arrayvec`.
     ///
     /// Specifically, `arrayvec::ArrayString<N>` is generated for `string` fields,
     /// `arrayvec::ArrayVec<u8, N>` for `bytes` fields, and `arrayvec::ArrayVec<T, N>` for repeated
@@ -829,9 +835,9 @@ impl Generator {
         self.configure(
             ".",
             Config::new()
-                .vec_type("::micropb::arrayvec::ArrayVec<$T, $N>")
-                .bytes_type("::micropb::arrayvec::ArrayVec<u8, $N>")
-                .string_type("::micropb::arrayvec::ArrayString<$N>"),
+                .vec_type("::arrayvec::ArrayVec<$T, $N>")
+                .bytes_type("::arrayvec::ArrayVec<u8, $N>")
+                .string_type("::arrayvec::ArrayString<$N>"),
         );
         self
     }

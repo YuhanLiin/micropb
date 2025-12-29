@@ -27,7 +27,7 @@ fn encode() {
         f_sfixed64: -5555,
     };
 
-    let mut output = micropb::heapless::Vec::<_, 100>::new();
+    let mut output = heapless::Vec::<_, 100>::new();
     let mut encoder = micropb::PbEncoder::new(&mut output);
     ex.encode(&mut encoder).unwrap();
 

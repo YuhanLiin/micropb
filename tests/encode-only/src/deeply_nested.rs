@@ -1,6 +1,6 @@
 use core::cell::Cell;
 
-use micropb::{heapless, FieldEncode, MessageEncode, PbEncoder};
+use micropb::{FieldEncode, MessageEncode, PbEncoder};
 
 mod proto {
     #![allow(clippy::all)]

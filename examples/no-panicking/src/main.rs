@@ -34,7 +34,7 @@ fn raw_point(raw: &[u8]) -> proto::gps_::LocationData_::Point {
 
 #[no_panic]
 fn round_trip() -> Result<(proto::gps_::LocationData, proto::gps_::LocationData), &'static str> {
-    let mut points = micropb::heapless::Vec::new();
+    let mut points = heapless::Vec::new();
     points
         .push(gps_point(proto::gps_::Gps {
             time: 165547,
@@ -57,7 +57,7 @@ fn round_trip() -> Result<(proto::gps_::LocationData, proto::gps_::LocationData)
         .unwrap();
     points.push(raw_point(b"abcdefg")).unwrap();
 
-    let mut time_to_type = micropb::heapless::FnvIndexMap::new();
+    let mut time_to_type = heapless::index_map::FnvIndexMap::new();
     // Can't unwrap these inserts, since the compiler will generate panics here
     let _ = time_to_type.insert(165547, proto::gps_::LocationData_::Type::Gps);
     let _ = time_to_type.insert(165577, proto::gps_::LocationData_::Type::Accel);
@@ -65,12 +65,12 @@ fn round_trip() -> Result<(proto::gps_::LocationData, proto::gps_::LocationData)
 
     let input_location = proto::gps_::LocationData {
         checksum: 0xDEADBEEF,
-        comment: micropb::heapless::String::try_from("nice").unwrap(),
+        comment: heapless::String::try_from("nice").unwrap(),
         points,
         time_to_type,
     };
 
-    let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, 100>::new());
+    let mut encoder = PbEncoder::new(heapless::Vec::<u8, 100>::new());
     input_location
         .encode(&mut encoder)
         .map_err(|_| "Encode error")?;

@@ -41,7 +41,7 @@ impl PbWrite for &mut [u8] {
     }
 }
 
-#[cfg(feature = "container-arrayvec")]
+#[cfg(feature = "container-arrayvec-0-7")]
 impl<const N: usize> PbWrite for arrayvec::ArrayVec<u8, N> {
     type Error = arrayvec::CapacityError;
 
@@ -51,13 +51,23 @@ impl<const N: usize> PbWrite for arrayvec::ArrayVec<u8, N> {
     }
 }
 
-#[cfg(feature = "container-heapless")]
-impl<const N: usize> PbWrite for heapless::Vec<u8, N> {
+#[cfg(feature = "container-heapless-0-8")]
+impl<const N: usize> PbWrite for heapless_0_8::Vec<u8, N> {
     type Error = ();
 
     #[inline]
     fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
         self.extend_from_slice(data)
+    }
+}
+
+#[cfg(feature = "container-heapless-0-9")]
+impl<const N: usize> PbWrite for heapless_0_9::Vec<u8, N> {
+    type Error = ();
+
+    #[inline]
+    fn pb_write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+        self.extend_from_slice(data).map_err(|_| ())
     }
 }
 
@@ -103,7 +113,7 @@ impl VarInt for u64 {}
 /// Encoding a Protobuf message:
 /// ``` no_run
 /// use micropb::{PbEncoder, PbWrite, MessageEncode};
-/// use micropb::heapless::Vec;
+/// # use heapless_0_9 as heapless;
 ///
 /// # #[derive(Default)]
 /// # struct ProtoMessage(u32);
@@ -118,7 +128,7 @@ impl VarInt for u64 {}
 ///
 /// // If `container-heapless` feature is enabled, then `PbWrite` will be implemented on `heapless::Vec`,
 /// // allowing the encoder to write into it. Same applies to `container-arrayvec` and `alloc`.
-/// let mut encoder = PbEncoder::new(Vec::<u8, 10>::new());
+/// let mut encoder = PbEncoder::new(heapless::Vec::<u8, 10>::new());
 /// message.encode(&mut encoder)?;
 /// # Ok::<(), ()>(())
 /// ```

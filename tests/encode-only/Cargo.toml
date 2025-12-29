@@ -4,7 +4,8 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-micropb = { path = "../../micropb/", default-features = false, features = ["encode", "container-heapless"]}
+micropb = { path = "../../micropb/", default-features = false, features = ["encode", "container-heapless-0-9"]}
+heapless = "0.9"
 
 [build-dependencies]
 micropb-gen = { path = "../../micropb-gen/" }

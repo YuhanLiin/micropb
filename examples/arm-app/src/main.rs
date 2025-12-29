@@ -5,10 +5,8 @@ use core::{hint::black_box, mem::size_of, str::FromStr};
 
 #[cfg(feature = "formatting")]
 use cortex_m_semihosting::{debug, hprintln};
-use micropb::{
-    heapless::{String, Vec},
-    MessageDecode, MessageEncode, PbDecoder, PbEncoder,
-};
+use heapless::{String, Vec};
+use micropb::{MessageDecode, MessageEncode, PbDecoder, PbEncoder};
 use panic_halt as _; // you can put a breakpoint on `rust_begin_unwind` to catch panics
 
 use cortex_m_rt::entry;

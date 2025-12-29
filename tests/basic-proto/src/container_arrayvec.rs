@@ -15,8 +15,8 @@ fn string_bytes() {
     assert_eq!(data.b.as_slice(), &[0x0, 0xFF]);
     assert_eq!(data.s.capacity(), 3);
     assert_eq!(data.b.capacity(), 5);
-    let _: micropb::arrayvec::ArrayString<3> = data.s;
-    let _: micropb::arrayvec::ArrayVec<u8, 5> = data.b;
+    let _: arrayvec::ArrayString<3> = data.s;
+    let _: arrayvec::ArrayVec<u8, 5> = data.b;
 }
 
 #[test]
@@ -25,17 +25,17 @@ fn repeated() {
     assert!(list.list.is_empty());
     assert_eq!(
         size_of_val(&list),
-        size_of::<micropb::arrayvec::ArrayVec<proto::Data, 2>>()
+        size_of::<arrayvec::ArrayVec<proto::Data, 2>>()
     );
     assert_eq!(list.list.capacity(), 2);
-    let _: micropb::arrayvec::ArrayVec<proto::Data, 2> = list.list;
+    let _: arrayvec::ArrayVec<proto::Data, 2> = list.list;
 
     let numlist = proto::NumList::default();
     assert!(numlist.list.is_empty());
     assert_eq!(numlist.list.capacity(), 2);
     assert_eq!(
         size_of_val(&numlist),
-        size_of::<micropb::arrayvec::ArrayVec<u8, 2>>()
+        size_of::<arrayvec::ArrayVec<u8, 2>>()
     );
-    let _: micropb::arrayvec::ArrayVec<u8, 2> = numlist.list;
+    let _: arrayvec::ArrayVec<u8, 2> = numlist.list;
 }
