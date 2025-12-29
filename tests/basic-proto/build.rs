@@ -536,20 +536,18 @@ fn with_config_file() {
     let mut generator = Generator::new();
     generator.use_container_heapless();
     generator
-        .parse_config_file(Path::new("proto/collections.toml"), ".")
+        .parse_config_file(Path::new("proto/my.collections.toml"), ".")
         .unwrap();
     generator
-        .parse_config_file(Path::new("proto/map.toml"), ".")
-        .unwrap();
-    generator
-        .parse_config_file(Path::new("proto/basic.toml"), ".basic")
+        .parse_config_file(Path::new("proto/my.map.toml"), ".")
         .unwrap();
 
     generator
-        .compile_protos(
+        .compile_protos_with_config_files(
             &[
                 "proto/collections.proto",
                 "proto/map.proto",
+                // Only basic.toml will be picked up my this function
                 "proto/basic.proto",
             ],
             std::env::var("OUT_DIR").unwrap() + "/with_config_file.rs",

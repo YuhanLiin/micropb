@@ -14,7 +14,7 @@ fn compile(generator: Generator) -> String {
     let err = generator
         .compile_protos(&["tests/test.proto"], file.path())
         .unwrap_err();
-    err.into_inner().unwrap().to_string()
+    err.to_string()
 }
 
 #[test]

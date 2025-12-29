@@ -4,7 +4,13 @@
 
 ### Added
 
-- New `encode_cache` option to enable caching of message field lengths during encoding
+- Add `encode_cache` option to enable caching of message field lengths during encoding
+- Add `compile_protos_with_config_files` to compile proto files with corresponding config files
+- Add new unified error type `micropb_gen::Error`
+
+### Changed
+
+- Top-level APIs now return `micropb_gen::Error` instead of `io::ErrorNew`
 
 ## 0.5.1
 
