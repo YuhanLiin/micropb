@@ -6,6 +6,14 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/container_cow.rs"));
 }
 
+// Include this module just to see that the generated code compiles
+#[allow(dead_code)]
+mod proto_cached {
+    #![allow(clippy::all)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+    include!(concat!(env!("OUT_DIR"), "/container_cow.cached.rs"));
+}
+
 #[test]
 fn string_bytes() {
     let data = proto::Data::default();

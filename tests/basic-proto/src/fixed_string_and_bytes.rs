@@ -6,6 +6,15 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/fixed_string_and_bytes.rs"));
 }
 
+mod proto_cached {
+    #![allow(clippy::all)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+    include!(concat!(
+        env!("OUT_DIR"),
+        "/fixed_string_and_bytes.cached.rs"
+    ));
+}
+
 #[test]
 fn string_bytes() {
     let data = proto::Data::default();
@@ -39,19 +48,30 @@ fn decode_string_bytes() {
     assert_eq!(&data.b, &[1, 2]);
 }
 
-#[test]
-fn encode_string_bytes() {
-    let mut data = proto::Data::default();
-    data.set_s(FixedLenString::try_from("abc").unwrap());
-    data.set_b([1, 2]);
+macro_rules! encode_tests {
+    ($mod:ident) => {
+        #[test]
+        fn encode_string_bytes() {
+            let mut data = $mod::Data::default();
+            data.set_s(FixedLenString::try_from("abc").unwrap());
+            data.set_b([1, 2]);
 
-    let mut encoder = PbEncoder::new(vec![]);
-    data.encode(&mut encoder).unwrap();
-    assert_eq!(
-        encoder.into_writer(),
-        &[
-            0x0A, 3, b'a', b'b', b'c', // field 1
-            0x12, 2, 0x01, 0x02, // field 2
-        ]
-    );
+            let mut encoder = PbEncoder::new(vec![]);
+            data.encode(&mut encoder).unwrap();
+            assert_eq!(
+                encoder.into_writer(),
+                &[
+                    0x0A, 3, b'a', b'b', b'c', // field 1
+                    0x12, 2, 0x01, 0x02, // field 2
+                ]
+            );
+        }
+    };
+}
+
+encode_tests!(proto);
+
+mod cached {
+    use super::*;
+    encode_tests!(proto_cached);
 }

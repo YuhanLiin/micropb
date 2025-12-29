@@ -595,6 +595,8 @@ pub struct Generator {
     pub(crate) suffixed_package_names: bool,
     pub(crate) single_oneof_msg_as_enum: bool,
     pub(crate) comments_to_docs: bool,
+    pub(crate) encode_cache: bool,
+    pub(crate) cache_extern_types: bool,
 }
 
 #[allow(clippy::new_without_default)]
@@ -626,6 +628,8 @@ impl Generator {
             suffixed_package_names: true,
             single_oneof_msg_as_enum: false,
             comments_to_docs: true,
+            encode_cache: false,
+            cache_extern_types: true,
         }
     }
 
@@ -1140,6 +1144,38 @@ impl Generator {
     /// Enabled by default.
     pub fn comments_to_docs(&mut self, flag: bool) -> &mut Self {
         self.comments_to_docs = flag;
+        self
+    }
+
+    /// Enable caching in the generated encoding logic, improving encoding performance in exchange
+    /// for more stack memory.
+    ///
+    /// When encoding Protobuf, length-delimited fields (such as message fields) must be prefixed
+    /// by their lengths. For a nested field, its length must be computed twice, once for the
+    /// length calculation of the outer message, and once more to encode the field itself. The
+    /// number of repeated length calculation increases for each layer of nesting, which can slow
+    /// the encoding performance of deeply nested messages.
+    ///
+    /// If this flag is enabled, the generated encode functions will cache the lengths of nested
+    /// length-delimited fields on the stack, preventing repeated calculations. This does not
+    /// change the generated API.
+    ///
+    /// Disabled by default.
+    pub fn encode_cache(&mut self, encode_cache: bool) -> &mut Self {
+        self.encode_cache = encode_cache;
+        self
+    }
+
+    /// Determines whether types handled by [`extern_type_path`](Self::extern_type_path) are
+    /// cached when encoding.
+    ///
+    /// This option only has effect if [`encode_cache`](Self::encode_cache) is set. If set, then
+    /// the external message types must have been generated with `encode_cache`, because the
+    /// generator expects those types to implement the caching traits.
+    ///
+    /// Enabled by default.
+    pub fn cache_extern_types(&mut self, cache_extern_types: bool) -> &mut Self {
+        self.cache_extern_types = cache_extern_types;
         self
     }
 }

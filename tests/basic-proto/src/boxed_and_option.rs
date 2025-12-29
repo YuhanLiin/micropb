@@ -8,6 +8,12 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/boxed_and_option.rs"));
 }
 
+mod proto_cached {
+    #![allow(clippy::all)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+    include!(concat!(env!("OUT_DIR"), "/boxed_and_option.cached.rs"));
+}
+
 #[test]
 fn boxed_and_option() {
     let mut basic = proto::basic_::BasicTypes::default();
@@ -104,31 +110,6 @@ fn decode() {
 }
 
 #[test]
-fn encode() {
-    let mut basic = proto::basic_::BasicTypes::default();
-    // The flt field is always-on, so the size will start at 5 bytes
-    assert_eq!(basic.compute_size(), 5);
-    basic.boolean = Some(Box::new(true));
-    assert_eq!(basic.compute_size(), 7);
-    basic.int32_num = Some(150);
-    assert_eq!(basic.compute_size(), 10);
-    *basic.flt = 0.0;
-    #[allow(clippy::borrowed_box)]
-    let _: &Box<_> = &basic.flt;
-
-    let mut encoder = PbEncoder::new(vec![]);
-    basic.encode(&mut encoder).unwrap();
-    assert_eq!(
-        encoder.into_writer(),
-        &[
-            0x08, 0x96, 0x01, // field 1
-            0x58, 0x01, // field 11
-            0x65, 0x00, 0x00, 0x00, 0x00, // field 12
-        ]
-    );
-}
-
-#[test]
 fn decode_boxed_oneof() {
     let mut nested = proto::nested_::Nested::default();
 
@@ -151,4 +132,40 @@ fn decode_boxed_oneof() {
         nested.inner.as_ref().unwrap(),
         proto::nested_::Nested_::Inner::InnerMsg(msg) if msg.val == Some(Box::new(-1)) && msg.val2() == Some(&1)
     ));
+}
+
+macro_rules! encode_tests {
+    ($mod:ident) => {
+        #[test]
+        fn encode() {
+            let mut basic = $mod::basic_::BasicTypes::default();
+            // The flt field is always-on, so the size will start at 5 bytes
+            assert_eq!(basic.compute_size(), 5);
+            basic.boolean = Some(Box::new(true));
+            assert_eq!(basic.compute_size(), 7);
+            basic.int32_num = Some(150);
+            assert_eq!(basic.compute_size(), 10);
+            *basic.flt = 0.0;
+            #[allow(clippy::borrowed_box)]
+            let _: &Box<_> = &basic.flt;
+
+            let mut encoder = PbEncoder::new(vec![]);
+            basic.encode(&mut encoder).unwrap();
+            assert_eq!(
+                encoder.into_writer(),
+                &[
+                    0x08, 0x96, 0x01, // field 1
+                    0x58, 0x01, // field 11
+                    0x65, 0x00, 0x00, 0x00, 0x00, // field 12
+                ]
+            );
+        }
+    };
+}
+
+encode_tests!(proto);
+
+mod cached {
+    use super::*;
+    encode_tests!(proto_cached);
 }

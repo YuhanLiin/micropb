@@ -89,19 +89,49 @@ pub trait MessageEncode {
     fn compute_size(&self) -> usize;
 }
 
+#[doc(hidden)]
 #[cfg(feature = "encode")]
-impl<T: MessageEncode> MessageEncode for &T {
+pub trait MessageEncodeCached {
+    const MAX_SIZE: Result<usize, &'static str>;
+
+    type Cache: Default;
+
+    fn populate_cache(&self) -> Self::Cache;
+
+    fn encode_cached<W: PbWrite>(
+        &self,
+        encoder: &mut PbEncoder<W>,
+        cache: &Self::Cache,
+    ) -> Result<(), W::Error>;
+
+    fn compute_size_cached(&self, cache: &Self::Cache) -> usize;
+
+    fn encode_len_delimited_cached<W: PbWrite>(
+        &self,
+        encoder: &mut PbEncoder<W>,
+        cache: &Self::Cache,
+    ) -> Result<(), W::Error> {
+        encoder.encode_varint32(self.compute_size_cached(cache) as u32)?;
+        self.encode_cached(encoder, cache)
+    }
+}
+
+#[cfg(feature = "encode")]
+impl<T: MessageEncodeCached> MessageEncode for T {
     const MAX_SIZE: Result<usize, &'static str> = T::MAX_SIZE;
 
     fn encode<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
-        (*self).encode(encoder)
+        let cache = self.populate_cache();
+        self.encode_cached(encoder, &cache)
     }
 
     fn compute_size(&self) -> usize {
-        (*self).compute_size()
+        let cache = self.populate_cache();
+        self.compute_size_cached(&cache)
     }
 
     fn encode_len_delimited<W: PbWrite>(&self, encoder: &mut PbEncoder<W>) -> Result<(), W::Error> {
-        (*self).encode_len_delimited(encoder)
+        let cache = self.populate_cache();
+        self.encode_len_delimited_cached(encoder, &cache)
     }
 }

@@ -6,6 +6,12 @@ mod proto {
     include!(concat!(env!("OUT_DIR"), "/implicit_presence.rs"));
 }
 
+mod proto_cached {
+    #![allow(clippy::all)]
+    #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
+    include!(concat!(env!("OUT_DIR"), "/implicit_presence.cached.rs"));
+}
+
 static ZEROED_REPR: &[u8] = &[
     0x08, 0x00, // field 1
     0x10, 0x00, // field 2
@@ -150,28 +156,39 @@ fn decode_explicit_presence() {
     assert!(opt.bt().as_ref().unwrap().is_empty());
 }
 
-#[test]
-fn encode_explicit_presence() {
-    let mut opt = proto::Optional::default();
-    opt.set_int32_num(0);
-    opt.set_int64_num(0);
-    opt.set_uint32_num(0);
-    opt.set_uint64_num(0);
-    opt.set_sint32_num(0);
-    opt.set_sint64_num(0);
-    opt.set_fixed32_num(0);
-    opt.set_fixed64_num(0);
-    opt.set_sfixed32_num(0);
-    opt.set_sfixed64_num(0);
-    opt.set_boolean(false);
-    opt.set_flt(0.0);
-    opt.set_dbl(0.0);
-    opt.set_enumeration(0.into());
-    opt.set_st(String::from(""));
-    opt.set_bt(vec![]);
-    assert_eq!(opt.compute_size(), 63);
+macro_rules! encode_tests {
+    ($mod:ident) => {
+        #[test]
+        fn encode_explicit_presence() {
+            let mut opt = proto::Optional::default();
+            opt.set_int32_num(0);
+            opt.set_int64_num(0);
+            opt.set_uint32_num(0);
+            opt.set_uint64_num(0);
+            opt.set_sint32_num(0);
+            opt.set_sint64_num(0);
+            opt.set_fixed32_num(0);
+            opt.set_fixed64_num(0);
+            opt.set_sfixed32_num(0);
+            opt.set_sfixed64_num(0);
+            opt.set_boolean(false);
+            opt.set_flt(0.0);
+            opt.set_dbl(0.0);
+            opt.set_enumeration(0.into());
+            opt.set_st(String::from(""));
+            opt.set_bt(vec![]);
+            assert_eq!(opt.compute_size(), 63);
 
-    let mut encoder = PbEncoder::new(vec![]);
-    opt.encode(&mut encoder).unwrap();
-    assert_eq!(encoder.into_writer(), ZEROED_REPR);
+            let mut encoder = PbEncoder::new(vec![]);
+            opt.encode(&mut encoder).unwrap();
+            assert_eq!(encoder.into_writer(), ZEROED_REPR);
+        }
+    };
+}
+
+encode_tests!(proto);
+
+mod cached {
+    use super::*;
+    encode_tests!(proto_cached);
 }

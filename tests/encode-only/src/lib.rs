@@ -1,5 +1,3 @@
-#![no_std]
-
 #[cfg(test)]
 use micropb::MessageEncode;
 
@@ -8,6 +6,9 @@ mod example {
     #![allow(nonstandard_style, unused, irrefutable_let_patterns)]
     include!(concat!(env!("OUT_DIR"), "/encode_only.rs"));
 }
+
+#[cfg(test)]
+mod deeply_nested;
 
 #[cfg(test)]
 #[test]

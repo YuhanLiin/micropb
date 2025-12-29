@@ -5,8 +5,14 @@ use micropb_gen::{
     Config, EncodeDecode, Generator,
 };
 
-fn no_config() {
-    let generator = Generator::new();
+fn no_config(encode_cache: bool) {
+    let mut generator = Generator::new();
+    generator.encode_cache(encode_cache);
+    let filename = if encode_cache {
+        "/no_config.cached.rs"
+    } else {
+        "/no_config.rs"
+    };
     generator
         .compile_protos(
             &[
@@ -14,7 +20,7 @@ fn no_config() {
                 "proto/basic3.proto",
                 "proto/nested.proto",
             ],
-            std::env::var("OUT_DIR").unwrap() + "/no_config.rs",
+            std::env::var("OUT_DIR").unwrap() + filename,
         )
         .unwrap();
 }
@@ -30,9 +36,9 @@ fn no_suffix() {
         .unwrap();
 }
 
-fn boxed_and_option() {
+fn boxed_and_option(encode_cache: bool) {
     let mut generator = Generator::new();
-    generator.use_container_alloc();
+    generator.use_container_alloc().encode_cache(encode_cache);
 
     generator.configure(".basic.BasicTypes.boolean", Config::new().boxed(true));
     generator.configure(
@@ -70,6 +76,11 @@ fn boxed_and_option() {
     generator.configure(".FixedList", Config::new().boxed(true));
     generator.configure(".Map", Config::new().boxed(true));
 
+    let filename = if encode_cache {
+        "/boxed_and_option.cached.rs"
+    } else {
+        "/boxed_and_option.rs"
+    };
     generator
         .compile_protos(
             &[
@@ -78,7 +89,7 @@ fn boxed_and_option() {
                 "proto/collections.proto",
                 "proto/map.proto",
             ],
-            std::env::var("OUT_DIR").unwrap() + "/boxed_and_option.rs",
+            std::env::var("OUT_DIR").unwrap() + filename,
         )
         .unwrap();
 }
@@ -211,40 +222,52 @@ fn container_arrayvec() {
         .unwrap();
 }
 
-fn container_alloc() {
+fn container_alloc(encode_cache: bool) {
     let mut generator = Generator::new();
-    generator.use_container_alloc();
+    generator.use_container_alloc().encode_cache(encode_cache);
     generator.configure(".NumList.list.elem", Config::new().int_size(IntSize::S8));
 
+    let filename = if encode_cache {
+        "/container_alloc.cached.rs"
+    } else {
+        "/container_alloc.rs"
+    };
     generator
         .compile_protos(
             &["proto/collections.proto", "proto/map.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/container_alloc.rs",
+            std::env::var("OUT_DIR").unwrap() + filename,
         )
         .unwrap();
 }
 
-fn container_cow() {
+fn container_cow(encode_cache: bool) {
     let mut generator = Generator::new();
+    generator.encode_cache(encode_cache);
     generator.configure(
         ".",
         Config::new()
             .string_type("::alloc::borrow::Cow<'a, str>")
             .vec_type("::alloc::borrow::Cow<'a, [$T]>")
-            .bytes_type("::alloc::borrow::Cow<'a, [u8]>"),
+            .bytes_type("::alloc::borrow::Cow<'a, [u8]>")
+            .cache_vec_type("::alloc::vec::Vec<$T>"),
     );
 
+    let filename = if encode_cache {
+        "/container_cow.cached.rs"
+    } else {
+        "/container_cow.rs"
+    };
     generator
         .compile_protos(
             &["proto/collections.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/container_cow.rs",
+            std::env::var("OUT_DIR").unwrap() + filename,
         )
         .unwrap();
 }
 
-fn fixed_string_and_bytes() {
+fn fixed_string_and_bytes(encode_cache: bool) {
     let mut generator = Generator::new();
-    generator.use_container_alloc();
+    generator.use_container_alloc().encode_cache(encode_cache);
     generator.configure(
         ".Data.s",
         Config::new()
@@ -253,16 +276,22 @@ fn fixed_string_and_bytes() {
     );
     generator.configure(".Data.b", Config::new().bytes_type("[u8; $N]").max_bytes(2));
 
+    let filename = if encode_cache {
+        "/fixed_string_and_bytes.cached.rs"
+    } else {
+        "/fixed_string_and_bytes.rs"
+    };
     generator
         .compile_protos(
             &["proto/collections.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/fixed_string_and_bytes.rs",
+            std::env::var("OUT_DIR").unwrap() + filename,
         )
         .unwrap();
 }
 
-fn custom_field() {
+fn custom_field(encode_cache: bool) {
     let mut generator = Generator::new();
+    generator.encode_cache(encode_cache);
     generator.configure(".", Config::new().no_debug_impl(true).no_clone_impl(true));
     generator.configure(
         ".nested.Nested.inner",
@@ -293,6 +322,11 @@ fn custom_field() {
     generator.configure(".FixedList", Config::new().skip(true));
     generator.configure(".EnumList", Config::new().skip(true));
 
+    let filename = if encode_cache {
+        "/custom_field.cached.rs"
+    } else {
+        "/custom_field.rs"
+    };
     generator
         .compile_protos(
             &[
@@ -300,23 +334,28 @@ fn custom_field() {
                 "proto/nested.proto",
                 "proto/collections.proto",
             ],
-            std::env::var("OUT_DIR").unwrap() + "/custom_field.rs",
+            std::env::var("OUT_DIR").unwrap() + filename,
         )
         .unwrap();
 }
 
-fn implicit_presence() {
+fn implicit_presence(encode_cache: bool) {
     let mut generator = Generator::new();
-    generator.use_container_alloc();
+    generator.use_container_alloc().encode_cache(encode_cache);
+    let filename = if encode_cache {
+        "/implicit_presence.cached.rs"
+    } else {
+        "/implicit_presence.rs"
+    };
     generator
         .compile_protos(
             &["proto/implicit_presence.proto"],
-            std::env::var("OUT_DIR").unwrap() + "/implicit_presence.rs",
+            std::env::var("OUT_DIR").unwrap() + filename,
         )
         .unwrap();
 }
 
-fn extern_import() {
+fn extern_import(encode_cache: bool) {
     let gen1 = Generator::new();
     gen1.compile_protos(
         &["proto/basic.proto"],
@@ -328,10 +367,17 @@ fn extern_import() {
     // Replace `BasicTypes` with an empty message
     gen2.extern_type_path(".basic.BasicTypes", "crate::extern_import::Empty")
         // Replace `Enum` with the generated enum type
-        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic_::Enum");
+        .extern_type_path(".basic.Enum", "crate::extern_import::proto::basic_::Enum")
+        .encode_cache(encode_cache)
+        .cache_extern_types(false);
+    let filename = if encode_cache {
+        "/import_nested.cached.rs"
+    } else {
+        "/import_nested.rs"
+    };
     gen2.compile_protos(
         &["proto/nested.proto"],
-        std::env::var("OUT_DIR").unwrap() + "/import_nested.rs",
+        std::env::var("OUT_DIR").unwrap() + filename,
     )
     .unwrap();
 }
@@ -511,12 +557,19 @@ fn with_config_file() {
         .unwrap();
 }
 
-fn single_oneof() {
+fn single_oneof(encode_cache: bool) {
     let mut generator = Generator::new();
-    generator.single_oneof_msg_as_enum(true);
+    generator
+        .single_oneof_msg_as_enum(true)
+        .encode_cache(encode_cache);
     generator.configure(".SingleOneof.inner_msg", Config::new().boxed(true));
     generator.configure(".SingleOneof.scalar", Config::new().skip(true));
 
+    let filename = if encode_cache {
+        "/single_oneof.cached.rs"
+    } else {
+        "/single_oneof.rs"
+    };
     generator
         .compile_protos(
             &[
@@ -524,25 +577,32 @@ fn single_oneof() {
                 "proto/nested.proto",
                 "proto/single_oneof.proto",
             ],
-            std::env::var("OUT_DIR").unwrap() + "/single_oneof.rs",
+            std::env::var("OUT_DIR").unwrap() + filename,
         )
         .unwrap();
 }
 
 fn main() {
-    no_config();
-    boxed_and_option();
+    no_config(true);
+    no_config(false);
+    boxed_and_option(true);
+    boxed_and_option(false);
     no_suffix();
     int_type();
     skip();
     keyword_fields();
     container_heapless();
     container_arrayvec();
-    container_alloc();
-    container_cow();
-    custom_field();
-    implicit_presence();
-    extern_import();
+    container_alloc(true);
+    container_alloc(false);
+    container_cow(true);
+    container_cow(false);
+    custom_field(true);
+    custom_field(false);
+    implicit_presence(true);
+    implicit_presence(false);
+    extern_import(true);
+    extern_import(false);
     lifetime_fields();
     static_lifetime_fields();
     recursive();
@@ -550,9 +610,11 @@ fn main() {
     default_str_escape();
     extension();
     files_with_same_package();
-    fixed_string_and_bytes();
+    fixed_string_and_bytes(true);
+    fixed_string_and_bytes(false);
     large_field_nums();
     minimal_accessors();
     with_config_file();
-    single_oneof();
+    single_oneof(true);
+    single_oneof(false);
 }

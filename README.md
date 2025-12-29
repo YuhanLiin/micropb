@@ -15,6 +15,7 @@ Unlike other Rust Protobuf libraries, `micropb` is aimed for constrained environ
 - Code generator is highly configurable.
 - Fields can have custom handlers with user-defined encoding and decoding behaviour.
 - Supports different data sources for encoding and decoding, abstracted behind the `PbRead` and `PbWrite` traits.
+- Supports caching of message field lengths during encoding, improving performance on deeply nested message structures.
 
 #### Limitations
 - Does not support Protobuf Editions, RPC, or extensions.

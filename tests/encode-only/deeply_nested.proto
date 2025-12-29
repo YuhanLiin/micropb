@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+message Leaf {
+  uint32 field = 1;
+}
+
+message Wrapper {
+  Leaf leaf = 1;
+}
+
+message Either {
+  oneof of {
+    bool flag = 1;
+    Wrapper wrapper = 2;
+  }
+}
+
+message Many {
+  repeated Either many = 1;
+}
+
+message Lookup {
+  map<bool, Many> table = 1;
+}
