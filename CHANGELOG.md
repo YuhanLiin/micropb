@@ -7,10 +7,18 @@
 - Add `encode_cache` option to enable caching of message field lengths during encoding
 - Add `compile_protos_with_config_files` to compile proto files with corresponding config files
 - Add new unified error type `micropb_gen::Error`
+- Add `micropb` support for heapless 0.9
 
 ### Changed
 
-- Top-level APIs now return `micropb_gen::Error` instead of `io::ErrorNew`
+- Top-level APIs now return `micropb_gen::Error` instead of `io::Error`
+- Split `container-heapless` into `container-heapless-0-8` and `container-heapless-0-9`
+- Change `container-arrayvec` to `container-arrayvec-0-7`
+- `use_container_heapless` now sets `map_type` to `heapless::index_map::FnvIndexMap`, which is the correct path in v0.9
+
+### Removed
+
+- Remove `micropb` re-exports of `heapless` and `arrayvec`
 
 ## 0.5.1
 
