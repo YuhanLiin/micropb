@@ -7,7 +7,7 @@ description = "Generate Rust module from Protobuf files"
 keywords = ["protobuf", "no_std", "embedded", "serialization"]
 categories = ["embedded", "no-std::no-alloc", "encoding"]
 repository = "https://github.com/YuhanLiin/micropb"
-rust-version = "1.85.0"
+rust-version = "1.88.0"
 license = "MIT OR Apache-2.0"
 
 [dependencies]

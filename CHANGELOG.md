@@ -15,6 +15,7 @@
 - Split `container-heapless` into `container-heapless-0-8` and `container-heapless-0-9`
 - Change `container-arrayvec` to `container-arrayvec-0-7`
 - `use_container_heapless` now sets `map_type` to `heapless::index_map::FnvIndexMap`, which is the correct path in v0.9
+- Bump MSRV to 1.88
 
 ### Removed
 
