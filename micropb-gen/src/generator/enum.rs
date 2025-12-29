@@ -1,5 +1,3 @@
-use std::io;
-
 use micropb::size::sizeof_varint32;
 use proc_macro2::{Literal, TokenStream};
 use quote::quote;
@@ -9,7 +7,8 @@ use super::location::{CommentNode, Comments, get_comments, next_comment_node};
 use crate::{
     config::IntSize,
     descriptor::EnumDescriptorProto,
-    generator::{Context, CurrentConfig, derive_enum_attr, location, msg_error, sanitized_ident},
+    error::msg_error,
+    generator::{Context, CurrentConfig, derive_enum_attr, location, sanitized_ident},
 };
 
 pub(crate) struct Variant<'proto> {
@@ -34,7 +33,7 @@ impl<'proto> Enum<'proto> {
         ctx: &Context<'proto>,
         enum_conf: &CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
-    ) -> io::Result<Option<Self>> {
+    ) -> crate::Result<Option<Self>> {
         if enum_conf.config.skip.unwrap_or(false) {
             return Ok(None);
         }

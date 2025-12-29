@@ -490,6 +490,7 @@
 //! [`Generator::parse_config_file`] for more info.
 
 pub mod config;
+pub(crate) mod error;
 mod generator;
 mod pathtree;
 mod utils;
@@ -508,12 +509,13 @@ use std::{
     env,
     ffi::{OsStr, OsString},
     fmt, fs,
-    io::{self, Write},
+    io::Write,
     path::{Path, PathBuf},
     process::Command,
 };
 
 pub use config::Config;
+pub use error::{Error, Result};
 use micropb::{MessageDecode, PbDecoder};
 use pathtree::PathTree;
 use proc_macro2::TokenStream;
@@ -717,7 +719,11 @@ impl Generator {
     }
 
     #[cfg(feature = "config-file")]
-    fn parse_config_bytes(&mut self, bytes: &[u8], prefix: &str) -> Result<(), toml::de::Error> {
+    fn parse_config_bytes(
+        &mut self,
+        bytes: &[u8],
+        prefix: &str,
+    ) -> std::result::Result<(), toml::de::Error> {
         let configs: std::collections::HashMap<String, Config> = toml::from_slice(bytes)?;
         for (path, config) in configs.into_iter() {
             let prefix_path = split_dot_prefixed_pkg_name(prefix);
@@ -750,7 +756,7 @@ impl Generator {
     /// # use std::path::Path;
     /// # let mut generator = micropb_gen::Generator::new();
     /// generator.parse_config_file(Path::new("my.pkg.toml"), ".my.pkg")?;
-    /// # Ok::<_, std::io::Error>(())
+    /// # Ok::<_, micropb_gen::Error>(())
     /// ```
     ///
     /// `my.pkg.toml`
@@ -767,10 +773,13 @@ impl Generator {
     /// <div class="warning">Dot-separated Protobuf paths in config files MUST be wrapped in quotes
     /// for TOML parsing to work correctly.</div>
     #[cfg(feature = "config-file")]
-    pub fn parse_config_file(&mut self, file_path: &Path, package: &str) -> Result<(), io::Error> {
+    pub fn parse_config_file(&mut self, file_path: &Path, package: &str) -> Result<()> {
         let file_bytes = fs::read(file_path)?;
         self.parse_config_bytes(&file_bytes, package)
-            .map_err(io::Error::other)?;
+            .map_err(|err| Error::ConfigFile {
+                file_name: file_path.to_path_buf(),
+                err,
+            })?;
         Ok(())
     }
 
@@ -887,7 +896,7 @@ impl Generator {
         mut self,
         protos: &[impl AsRef<Path>],
         out_filename: impl AsRef<Path>,
-    ) -> io::Result<()> {
+    ) -> Result<()> {
         for proto_path in protos {
             let proto_path = proto_path.as_ref();
             if let Some(stem) = proto_path.file_stem().and_then(OsStr::to_str) {
@@ -898,16 +907,11 @@ impl Generator {
                 };
                 let toml_path = proto_path.with_extension("toml");
 
-                let Err(err) = self.parse_config_file(&toml_path, &pkg) else {
-                    continue;
-                };
-                match err.kind() {
+                match self.parse_config_file(&toml_path, &pkg) {
                     // If config file doesn't exist then just assume there's no configs
-                    io::ErrorKind::NotFound => {}
-                    _ => {
-                        // TODO file name
-                        return Err(err);
-                    }
+                    Err(Error::Io(err)) if err.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(err) => return Err(err),
+                    Ok(()) => {}
                 }
             } else {
                 (self.warning_cb)(format_args!(
@@ -935,7 +939,7 @@ impl Generator {
         self,
         protos: &[impl AsRef<Path>],
         out_filename: impl AsRef<Path>,
-    ) -> io::Result<()> {
+    ) -> Result<()> {
         let tmp;
         let fdset_file = if let Some(fdset_path) = &self.fdset_path {
             fdset_path.to_owned()
@@ -957,16 +961,15 @@ impl Generator {
         }
 
         let output = cmd.output().map_err(|e| match e.kind() {
-            io::ErrorKind::NotFound => {
-                io::Error::new(e.kind(), "`protoc` was not found. Check your PATH.")
+            std::io::ErrorKind::NotFound => {
+                std::io::Error::new(e.kind(), "`protoc` was not found. Check your PATH.")
             }
             _ => e,
         })?;
         if !output.status.success() {
-            return Err(io::Error::other(format!(
-                "protoc failed: {}",
-                String::from_utf8_lossy(&output.stderr)
-            )));
+            return Err(Error::Protoc(
+                String::from_utf8_lossy(&output.stderr).into(),
+            ));
         }
 
         self.compile_fdset_file(fdset_file, out_filename)
@@ -980,7 +983,7 @@ impl Generator {
         self,
         fdset_file: impl AsRef<Path>,
         out_filename: impl AsRef<Path>,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         #[allow(unused)]
         let format = self.format;
 

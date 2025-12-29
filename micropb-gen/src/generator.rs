@@ -3,7 +3,6 @@ use std::{
     cell::RefCell,
     collections::BTreeMap,
     fmt::Display,
-    io,
 };
 
 use convert_case::{Case, Casing};
@@ -16,6 +15,7 @@ use crate::{
     EncodeDecode, Generator, WarningCb,
     config::Config,
     descriptor::{DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet},
+    error::pkg_error,
     generator::{r#enum::Enum, graph::TypeGraph},
     pathtree::{Node, PathTree},
     split_pkg_name,
@@ -91,15 +91,6 @@ fn field_error_str(pkg: &str, msg_name: &str, field_name: &str, err_text: impl D
     format!("({dot}{pkg}.{msg_name}.{field_name}) {err_text}")
 }
 
-fn field_error(pkg: &str, msg_name: &str, field_name: &str, err_text: impl Display) -> io::Error {
-    io::Error::other(field_error_str(pkg, msg_name, field_name, err_text))
-}
-
-fn msg_error(pkg: &str, msg_name: &str, err_text: impl Display) -> io::Error {
-    let dot = if pkg.is_empty() { "" } else { "." };
-    io::Error::other(format!("({dot}{pkg}.{msg_name}) {err_text}"))
-}
-
 pub(crate) enum EncodeFunc {
     Sizeof(Ident),
     Encode(Ident),
@@ -173,7 +164,7 @@ impl<'proto> Context<'proto> {
     pub(crate) fn generate_fdset(
         generator: Generator,
         fdset: &'proto FileDescriptorSet,
-    ) -> io::Result<TokenStream> {
+    ) -> crate::Result<TokenStream> {
         // Pre-generate the comment trees for every file
         let mut comment_trees = vec![];
         for file in &fdset.file {
@@ -222,23 +213,24 @@ impl<'proto> Context<'proto> {
         Ok(module)
     }
 
-    fn setup_file_context(&mut self, fdproto: &FileDescriptorProto) -> io::Result<()> {
-        self.syntax = match fdproto.syntax.as_str() {
-            "proto3" => Syntax::Proto3,
-            "proto2" | "" => Syntax::Proto2,
-            "editions" => return Err(io::Error::other("Protobuf Editions not supported")),
-            syntax => {
-                return Err(io::Error::other(format!(
-                    "Unexpected Protobuf syntax specifier {syntax}"
-                )));
-            }
-        };
+    fn setup_file_context(&mut self, fdproto: &FileDescriptorProto) -> crate::Result<()> {
         self.pkg_path = fdproto
             .package()
             .map(|s| split_pkg_name(s).map(ToOwned::to_owned).collect())
             .unwrap_or_default();
         self.pkg = fdproto.package().cloned().unwrap_or_default();
         self.type_path = RefCell::new(vec![]);
+        self.syntax = match fdproto.syntax.as_str() {
+            "proto3" => Syntax::Proto3,
+            "proto2" | "" => Syntax::Proto2,
+            "editions" => return Err(pkg_error(&self.pkg, "Protobuf Editions not supported")),
+            syntax => {
+                return Err(pkg_error(
+                    &self.pkg,
+                    format!("Unexpected Protobuf syntax specifier {syntax}"),
+                ));
+            }
+        };
         Ok(())
     }
 
@@ -247,7 +239,7 @@ impl<'proto> Context<'proto> {
         config_tree: &PathTree<Box<Config>>,
         comment_tree: &'proto PathTree<Comments, (i32, i32)>,
         fdproto: &'proto FileDescriptorProto,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         self.setup_file_context(fdproto)?;
 
         let root_node = &config_tree.root;
@@ -283,7 +275,7 @@ impl<'proto> Context<'proto> {
         Ok(())
     }
 
-    fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> io::Result<TokenStream> {
+    fn generate_fdproto(&mut self, fdproto: &FileDescriptorProto) -> crate::Result<TokenStream> {
         self.setup_file_context(fdproto)?;
 
         // Generate Rust code from message and enum types
@@ -320,7 +312,11 @@ impl<'proto> Context<'proto> {
         e.generate_decl()
     }
 
-    fn generate_msg_mod(&self, msg: &Message, proto: &DescriptorProto) -> io::Result<TokenStream> {
+    fn generate_msg_mod(
+        &self,
+        msg: &Message,
+        proto: &DescriptorProto,
+    ) -> crate::Result<TokenStream> {
         let msg_mod_name = resolve_path_elem(msg.name, self.params.suffixed_package_names);
 
         self.type_path.borrow_mut().push(msg.name.to_owned());
@@ -371,7 +367,7 @@ impl<'proto> Context<'proto> {
         proto: &'proto DescriptorProto,
         msg_conf: CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         let fq_name = self.fq_proto_name(&proto.name);
         if self.params.extern_paths.contains_key(&fq_name) {
             return Ok(());
@@ -412,7 +408,7 @@ impl<'proto> Context<'proto> {
         proto: &'proto EnumDescriptorProto,
         enum_conf: CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         let fq_name = self.fq_proto_name(&proto.name);
         if self.params.extern_paths.contains_key(&fq_name) {
             return Ok(());
@@ -428,7 +424,7 @@ impl<'proto> Context<'proto> {
         &self,
         msg: Option<&Message>,
         proto: &DescriptorProto,
-    ) -> io::Result<TokenStream> {
+    ) -> crate::Result<TokenStream> {
         // None means message has been skipped
         let Some(msg) = msg else { return Ok(quote! {}) };
 

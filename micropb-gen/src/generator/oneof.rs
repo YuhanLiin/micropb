@@ -5,10 +5,10 @@ use syn::{Ident, Lifetime};
 
 use crate::{
     descriptor::{FieldDescriptorProto, OneofDescriptorProto},
+    error::field_error,
     generator::{
-        Context, CurrentConfig, EncodeFunc, derive_msg_attr, field::CustomField, field_error,
-        field_error_str, location::get_comments, message::Message, sanitized_ident,
-        type_spec::TypeSpec,
+        Context, CurrentConfig, EncodeFunc, derive_msg_attr, field::CustomField, field_error_str,
+        location::get_comments, message::Message, sanitized_ident, type_spec::TypeSpec,
     },
     utils::{TryIntoTokens, find_lifetime_from_type},
 };
@@ -342,7 +342,7 @@ impl<'proto> Oneof<'proto> {
         &self,
         ctx: &Context<'proto>,
         msg: &Message<'proto>,
-    ) -> std::io::Result<TokenStream> {
+    ) -> crate::Result<TokenStream> {
         if let OneofType::Enum { type_name, fields } = &self.otype {
             assert!(!fields.is_empty(), "empty enums should have been filtered");
             let fields = fields

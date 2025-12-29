@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io};
+use std::collections::HashMap;
 
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote};
@@ -6,6 +6,7 @@ use syn::Ident;
 
 use crate::{
     descriptor::DescriptorProto,
+    error::{field_error, msg_error},
     generator::{
         Context, EncodeFunc,
         field::{CustomField, FieldType},
@@ -21,9 +22,7 @@ use crate::{
 use super::{
     CurrentConfig, derive_msg_attr,
     field::Field,
-    field_error,
     location::{CommentNode, Comments},
-    msg_error,
     oneof::{Oneof, OneofField, OneofType},
     sanitized_ident,
 };
@@ -72,7 +71,7 @@ impl<'proto> Message<'proto> {
         ctx: &Context<'proto>,
         msg_conf: &CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
-    ) -> io::Result<Option<Self>> {
+    ) -> crate::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
             return Ok(None);
         }
@@ -352,7 +351,7 @@ impl<'proto> Message<'proto> {
         &self,
         ctx: &Context<'proto>,
         proto_default: bool,
-    ) -> io::Result<TokenStream> {
+    ) -> crate::Result<TokenStream> {
         let msg_mod_name = resolve_path_elem(self.name, true);
         let rust_name = &self.rust_name;
         let lifetime = &self.lifetime;
@@ -431,7 +430,10 @@ impl<'proto> Message<'proto> {
         }
     }
 
-    pub(crate) fn generate_default_impl(&self, ctx: &Context<'proto>) -> io::Result<TokenStream> {
+    pub(crate) fn generate_default_impl(
+        &self,
+        ctx: &Context<'proto>,
+    ) -> crate::Result<TokenStream> {
         if !self.impl_default {
             return Ok(quote! {});
         }
@@ -538,7 +540,7 @@ impl<'proto> Message<'proto> {
         }
     }
 
-    pub(crate) fn generate_impl(&self, ctx: &Context<'proto>) -> Result<TokenStream, io::Error> {
+    pub(crate) fn generate_impl(&self, ctx: &Context<'proto>) -> crate::Result<TokenStream> {
         if self.as_oneof_enum {
             return Ok(quote! {});
         }
@@ -563,7 +565,7 @@ impl<'proto> Message<'proto> {
     pub(crate) fn generate_decode_trait(
         &self,
         ctx: &Context<'proto>,
-    ) -> Result<TokenStream, io::Error> {
+    ) -> crate::Result<TokenStream> {
         let name = &self.rust_name;
         let lifetime = &self.lifetime;
         let tag = Ident::new("tag", Span::call_site());
@@ -640,7 +642,7 @@ impl<'proto> Message<'proto> {
         Ok(tok)
     }
 
-    pub(crate) fn generate_cache_decl(&self, ctx: &Context<'proto>) -> io::Result<TokenStream> {
+    pub(crate) fn generate_cache_decl(&self, ctx: &Context<'proto>) -> crate::Result<TokenStream> {
         let fields = self
             .fields
             .iter()
