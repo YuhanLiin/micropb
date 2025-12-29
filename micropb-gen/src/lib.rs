@@ -871,6 +871,55 @@ impl Generator {
         self
     }
 
+    /// Compile `.proto` files and configuration files into a single Rust file.
+    ///
+    /// Configuration files are derived from the proto files by replacing the file extension with
+    /// `.toml`. For example, if `server.proto` is passed in, the generator will look for the
+    /// `server.toml` config file and apply it to the `.server` package.
+    ///
+    /// <div class="warning">
+    /// The package name of each proto file must match the file name, because that's what the
+    /// generator assumes when applying the config files. For example, `client.rpc.proto` must
+    /// contain the specifier `package client.rpc;`.
+    /// </div>
+    #[cfg(feature = "config-file")]
+    pub fn compile_protos_with_config_files(
+        mut self,
+        protos: &[impl AsRef<Path>],
+        out_filename: impl AsRef<Path>,
+    ) -> io::Result<()> {
+        for proto_path in protos {
+            let proto_path = proto_path.as_ref();
+            if let Some(stem) = proto_path.file_stem().and_then(OsStr::to_str) {
+                let pkg = if stem.starts_with('.') {
+                    stem.to_owned()
+                } else {
+                    format!(".{stem}")
+                };
+                let toml_path = proto_path.with_extension("toml");
+
+                let Err(err) = self.parse_config_file(&toml_path, &pkg) else {
+                    continue;
+                };
+                match err.kind() {
+                    // If config file doesn't exist then just assume there's no configs
+                    io::ErrorKind::NotFound => {}
+                    _ => {
+                        // TODO file name
+                        return Err(err);
+                    }
+                }
+            } else {
+                (self.warning_cb)(format_args!(
+                    "Couldn't derive config file path from {}",
+                    proto_path.display()
+                ));
+            }
+        }
+
+        self.compile_protos(protos, out_filename)
+    }
+
     /// Compile `.proto` files into a single Rust file.
     ///
     /// # Example
@@ -880,6 +929,8 @@ impl Generator {
     /// generator.compile_protos(&["server.proto", "client.proto"],
     ///                     std::env::var("OUT_DIR").unwrap() + "/output.rs").unwrap();
     /// ```
+    ///
+    /// To apply TOML config files along with the proto files, see [`compile_protos_with_config_files`](Self::compile_protos_with_config_files).
     pub fn compile_protos(
         self,
         protos: &[impl AsRef<Path>],
