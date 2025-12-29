@@ -10,7 +10,7 @@
 
 ### Changed
 
-- Top-level APIs now return `micropb_gen::Error` instead of `io::Error`
+- Top-level APIs now return `micropb_gen::Error` instead of `io::ErrorNew`
 
 ## 0.5.1
 
