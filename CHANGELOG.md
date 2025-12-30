@@ -11,15 +11,15 @@
 
 ### Changed
 
-- Top-level APIs now return `micropb_gen::Error` instead of `io::Error`
-- Split `container-heapless` into `container-heapless-0-8` and `container-heapless-0-9`
-- Change `container-arrayvec` to `container-arrayvec-0-7`
+- **BREAKING:** Top-level APIs now return `micropb_gen::Error` instead of `io::Error`
+- **BREAKING:** Split `container-heapless` into `container-heapless-0-8` and `container-heapless-0-9`
+- **BREAKING:** Change `container-arrayvec` to `container-arrayvec-0-7`
 - `use_container_heapless` now sets `map_type` to `heapless::index_map::FnvIndexMap`, which is the correct path in v0.9
 - Bump MSRV to 1.88
 
 ### Removed
 
-- Remove `micropb` re-exports of `heapless` and `arrayvec`
+- **BREAKING:** Remove `micropb` re-exports of `heapless` and `arrayvec`
 
 ## 0.5.1
 
@@ -31,12 +31,12 @@
 
 ### Removed
 
-- Remove `field_lifetime` config
-- Remove `recursive_field` config
+- **BREAKING:** Remove `field_lifetime` config
+- **BREAKING:** Remove `recursive_field` config
 
 ### Changed
 
-- `MAX_SIZE` changed from `Option<usize>` to `Result<usize, &str>` for reporting why the max size wasn't generated
+- **BREAKING:** `MAX_SIZE` changed from `Option<usize>` to `Result<usize, &str>` for reporting why the max size wasn't generated
 - Lifetime params are now generated for parent messages if their child messages have lifetimes
 - Applying `no_debug_impl`, `no_clone_impl`, and `no_partial_eq_impl` on a message will also apply to all its ancestors
 - Recursively nested messages are automatically detected and prevented by boxing the field

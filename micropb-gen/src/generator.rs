@@ -293,17 +293,13 @@ impl<'proto> Context<'proto> {
     }
 
     fn generate_mod_tree(&self, mod_node: &mut Node<TokenStream>) -> TokenStream {
-        let code = mod_node.value_mut().take().unwrap_or_default();
-        let submods = mod_node.children_mut().map(|(submod_name, inner_node)| {
+        let mut code = mod_node.value_mut().take().unwrap_or_default();
+        for (submod_name, inner_node) in mod_node.children_mut() {
             let submod_name = resolve_path_elem(submod_name, self.params.suffixed_package_names);
             let inner = self.generate_mod_tree(inner_node);
-            quote! { pub mod #submod_name { #inner } }
-        });
-
-        quote! {
-            #code
-            #(#submods)*
+            code.extend(quote! { pub mod #submod_name { #inner } });
         }
+        code
     }
 
     fn generate_enum(&self, e: Option<&Enum>) -> TokenStream {
