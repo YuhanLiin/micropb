@@ -475,13 +475,12 @@ impl<'proto> TypeSpec<'proto> {
     /// generator options). Even though strings and bytes are also length-delimited, we don't need
     /// to cache them because calculating their lengths is trivial.
     pub(crate) fn generate_cache_type(&self, ctx: &Context<'proto>) -> Option<TokenStream> {
-        if let TypeSpec::Message(tname) = self {
-            if ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname) {
+        if let TypeSpec::Message(tname) = self
+            && (ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname)) {
                 let cache_name = (*tname).to_owned() + "._Cache";
                 let cache_type = ctx.resolve_type_name(&cache_name);
                 return Some(cache_type);
             }
-        }
         None
     }
 

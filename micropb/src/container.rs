@@ -212,7 +212,7 @@ pub(crate) mod impl_fixed_len {
     }
 }
 
-#[cfg(feature = "container-arrayvec")]
+#[cfg(feature = "container-arrayvec-0-7")]
 mod impl_arrayvec {
     use core::ops::DerefMut;
 
@@ -276,78 +276,87 @@ mod impl_arrayvec {
     }
 }
 
-#[cfg(feature = "container-heapless")]
-mod impl_heapless {
-    use super::*;
+#[allow(unused)]
+macro_rules! impl_heapless {
+    ($mod_name:ident, $pkg_name:ident) => {
+        mod $mod_name {
+            use super::*;
 
-    use core::hash::{BuildHasher, Hash};
+            use core::hash::{BuildHasher, Hash};
 
-    use heapless::{IndexMap, String, Vec};
+            use $pkg_name::{IndexMap, String, Vec};
 
-    impl<const N: usize> PbBytes for Vec<u8, N> {}
-    impl<const N: usize> PbString for Vec<u8, N> {
-        #[inline]
-        fn pb_clear(&mut self) {
-            self.clear()
+            impl<const N: usize> PbBytes for Vec<u8, N> {}
+            impl<const N: usize> PbString for Vec<u8, N> {
+                #[inline]
+                fn pb_clear(&mut self) {
+                    self.clear()
+                }
+
+                #[inline]
+                unsafe fn pb_set_len(&mut self, len: usize) {
+                    self.set_len(len)
+                }
+
+                #[inline]
+                fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+                    let len = self.len();
+                    // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
+                    // of N values
+                    let slice = unsafe {
+                        core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<u8>, N)
+                    };
+                    slice.get_mut(len..).unwrap_or(&mut [])
+                }
+            }
+
+            impl<const N: usize> PbString for String<N> {
+                #[inline]
+                fn pb_clear(&mut self) {
+                    self.clear()
+                }
+
+                #[inline]
+                unsafe fn pb_set_len(&mut self, len: usize) {
+                    self.as_mut_vec().set_len(len)
+                }
+
+                #[inline]
+                fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
+                    let len = self.len();
+                    // SAFETY: Underlying storage is array of N bytes, so the slice is valid
+                    let slice = unsafe {
+                        core::slice::from_raw_parts_mut(
+                            self.as_mut_vec().as_mut_ptr() as *mut MaybeUninit<u8>,
+                            N,
+                        )
+                    };
+                    slice.get_mut(len..).unwrap_or(&mut [])
+                }
+            }
+
+            impl<T, const N: usize> PbVec<T> for Vec<T, N> {
+                #[inline]
+                fn pb_push(&mut self, elem: T) -> Result<(), ()> {
+                    self.push(elem).map_err(drop)
+                }
+            }
+
+            impl<K: Eq + Hash, V, S: BuildHasher, const N: usize> PbMap<K, V> for IndexMap<K, V, S, N> {
+                #[inline]
+                fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
+                    self.insert(key, val).map_err(drop)?;
+                    Ok(())
+                }
+            }
         }
-
-        #[inline]
-        unsafe fn pb_set_len(&mut self, len: usize) {
-            self.set_len(len)
-        }
-
-        #[inline]
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
-            let len = self.len();
-            // SAFETY: Underlying storage is static array of size N, so it's safe to create a slice
-            // of N values
-            let slice = unsafe {
-                core::slice::from_raw_parts_mut(self.as_mut_ptr() as *mut MaybeUninit<u8>, N)
-            };
-            slice.get_mut(len..).unwrap_or(&mut [])
-        }
-    }
-
-    impl<const N: usize> PbString for String<N> {
-        #[inline]
-        fn pb_clear(&mut self) {
-            self.clear()
-        }
-
-        #[inline]
-        unsafe fn pb_set_len(&mut self, len: usize) {
-            self.as_mut_vec().set_len(len)
-        }
-
-        #[inline]
-        fn pb_spare_cap(&mut self) -> &mut [MaybeUninit<u8>] {
-            let len = self.len();
-            // SAFETY: Underlying storage is array of N bytes, so the slice is valid
-            let slice = unsafe {
-                core::slice::from_raw_parts_mut(
-                    self.as_mut_vec().as_mut_ptr() as *mut MaybeUninit<u8>,
-                    N,
-                )
-            };
-            slice.get_mut(len..).unwrap_or(&mut [])
-        }
-    }
-
-    impl<T, const N: usize> PbVec<T> for Vec<T, N> {
-        #[inline]
-        fn pb_push(&mut self, elem: T) -> Result<(), ()> {
-            self.push(elem).map_err(drop)
-        }
-    }
-
-    impl<K: Eq + Hash, V, S: BuildHasher, const N: usize> PbMap<K, V> for IndexMap<K, V, S, N> {
-        #[inline]
-        fn pb_insert(&mut self, key: K, val: V) -> Result<(), ()> {
-            self.insert(key, val).map_err(drop)?;
-            Ok(())
-        }
-    }
+    };
 }
+
+#[cfg(feature = "container-heapless-0-8")]
+impl_heapless!(impl_heapless_0_8, heapless_0_8);
+#[cfg(feature = "container-heapless-0-9")]
+impl_heapless!(impl_heapless_0_9, heapless_0_9);
 
 #[cfg(feature = "alloc")]
 mod impl_alloc {

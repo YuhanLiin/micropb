@@ -11,9 +11,9 @@ mod proto {
 fn serde_test() {
     let mut msg = proto::Data::default();
     msg.set_int(12);
-    msg.set_s(micropb::heapless::String::try_from("abc").unwrap());
+    msg.set_s(heapless::String::try_from("abc").unwrap());
     msg.list
-        .push(micropb::heapless::String::try_from("bc").unwrap())
+        .push(heapless::String::try_from("bc").unwrap())
         .unwrap();
 
     let buf = serde_json_core::ser::to_vec::<_, 200>(&msg).unwrap();

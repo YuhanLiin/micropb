@@ -64,7 +64,7 @@ pub(crate) fn add_location_comments(
     };
 
     let path = &location.path;
-    if path.len() % 2 != 0 {
+    if !path.len().is_multiple_of(2) {
         return;
     }
     let segments: Vec<_> = path.chunks(2).map(|chunk| (chunk[0], chunk[1])).collect();

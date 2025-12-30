@@ -704,6 +704,7 @@ mod tests {
     use std::borrow::Cow;
 
     use arrayvec::{ArrayString, ArrayVec};
+    use heapless_0_9 as heapless;
 
     use crate::FixedLenString;
 
@@ -726,7 +727,7 @@ mod tests {
         type Error = Infallible;
 
         fn pb_read_chunk(&mut self) -> Result<&[u8], Self::Error> {
-            let n = if self.len() % 2 == 0 { 2 } else { 1 };
+            let n = if self.len().is_multiple_of(2) { 2 } else { 1 };
             Ok(&self.0[..n.min(self.len())])
         }
 

@@ -22,7 +22,7 @@ fn main() {
     // const CAPACITY: usize = 32;
 
     // Use heapless::Vec as the output stream and build an encoder around it
-    let mut encoder = PbEncoder::new(micropb::heapless::Vec::<u8, CAPACITY>::new());
+    let mut encoder = PbEncoder::new(heapless::Vec::<u8, CAPACITY>::new());
 
     // Compute the size of the `Example` on the wire
     let _size = example.compute_size();

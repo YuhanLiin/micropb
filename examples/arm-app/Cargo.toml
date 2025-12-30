@@ -11,7 +11,8 @@ cortex-m-rt = "0.6.10"
 cortex-m-semihosting = { version = "0.3.3", optional = true }
 panic-halt = "0.2.0"
 
-micropb = { path = "../../micropb", features = ["container-heapless"] }
+micropb = { path = "../../micropb", features = ["container-heapless-0-9"] }
+heapless = "0.9"
 
 [build-dependencies]
 micropb-gen = { path = "../../micropb-gen" }

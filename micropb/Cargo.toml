@@ -7,7 +7,7 @@ description = "Rust Protobuf library targetting embedded systems and no_std envi
 keywords = ["protobuf", "no_std", "embedded", "serialization"]
 categories = ["embedded", "no-std::no-alloc", "encoding"]
 repository = "https://github.com/YuhanLiin/micropb"
-rust-version = "1.85.0"
+rust-version = "1.88.0"
 license = "MIT OR Apache-2.0"
 
 [features]
@@ -17,16 +17,18 @@ decode = []
 enable-64bit = []
 alloc = []
 std = ["alloc"]
-container-arrayvec = ["dep:arrayvec"]
-container-heapless = ["dep:heapless"]
+container-arrayvec-0-7 = ["dep:arrayvec"]
+container-heapless-0-8 = ["dep:heapless-0-8"]
+container-heapless-0-9 = ["dep:heapless-0-9"]
 
 [dependencies]
 arrayvec = { version = "0.7", optional = true, default-features = false }
-heapless = { version = "0.8", optional = true }
+heapless-0-8 = { package = "heapless", version = "0.8", optional = true }
+heapless-0-9 = { package = "heapless", version = "0.9", optional = true }
 num-traits = { version = "0.2", default-features = false }
 
 [dev-dependencies]
-micropb = { path = ".", features = ["std" ,"container-arrayvec", "container-heapless"] }
+micropb = { path = ".", features = ["std" ,"container-arrayvec-0-7", "container-heapless-0-9"] }
 paste = "1"
 proptest = "1.6"
 

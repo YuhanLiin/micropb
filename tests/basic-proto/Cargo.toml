@@ -6,7 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-micropb = { path = "../../micropb/", features = ["container-heapless", "container-arrayvec", "alloc"]}
+micropb = { path = "../../micropb/", features = ["container-heapless-0-9", "container-arrayvec-0-7", "alloc"]}
+heapless = "0.9"
+arrayvec = "0.7"
 
 [build-dependencies]
 micropb-gen = { path = "../../micropb-gen/" }
