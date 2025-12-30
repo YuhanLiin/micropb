@@ -162,12 +162,18 @@ impl<'proto> Context<'proto> {
     }
 
     pub(crate) fn generate_fdset(
-        generator: Generator,
+        #[allow(unused_mut)] mut generator: Generator,
         fdset: &'proto FileDescriptorSet,
+        #[allow(unused)] find_config_files: bool,
     ) -> crate::Result<TokenStream> {
-        // Pre-generate the comment trees for every file
+        // Pre-generate the comment trees and configs for every file
         let mut comment_trees = vec![];
         for file in &fdset.file {
+            #[cfg(feature = "config-file")]
+            if find_config_files && let Some(name) = file.name() {
+                generator.parse_config_from_proto(std::path::Path::new(name), file.package())?;
+            }
+
             let mut comment_tree = PathTree::new(Comments::default());
             if let Some(src) = file.source_code_info() {
                 for location in &src.location {

@@ -886,48 +886,37 @@ impl Generator {
         self
     }
 
+    #[cfg(feature = "config-file")]
+    pub(crate) fn parse_config_from_proto(
+        &mut self,
+        proto_path: &Path,
+        pkg: Option<&String>,
+    ) -> Result<()> {
+        let toml_path = proto_path.with_extension("toml");
+        let pkg_path = match pkg {
+            Some(pkg) => format!(".{pkg}"),
+            None => ".".to_owned(),
+        };
+        match self.parse_config_file(&toml_path, &pkg_path) {
+            // If config file doesn't exist then just assume there's no configs
+            Err(Error::Io(err)) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(err) => Err(err),
+            Ok(()) => Ok(()),
+        }
+    }
+
     /// Compile `.proto` files and configuration files into a single Rust file.
     ///
     /// Configuration files are derived from the proto files by replacing the file extension with
     /// `.toml`. For example, if `server.proto` is passed in, the generator will look for the
-    /// `server.toml` config file and apply it to the `.server` package.
-    ///
-    /// <div class="warning">
-    /// The package name of each proto file must match the file name, because that's what the
-    /// generator assumes when applying the config files. For example, `client.rpc.proto` must
-    /// contain the specifier `package client.rpc;`.
-    /// </div>
+    /// `server.toml` config file and apply it to the package specified in `server.proto`.
     #[cfg(feature = "config-file")]
     pub fn compile_protos_with_config_files(
-        mut self,
+        self,
         protos: &[impl AsRef<Path>],
         out_filename: impl AsRef<Path>,
     ) -> Result<()> {
-        for proto_path in protos {
-            let proto_path = proto_path.as_ref();
-            if let Some(stem) = proto_path.file_stem().and_then(OsStr::to_str) {
-                let pkg = if stem.starts_with('.') {
-                    stem.to_owned()
-                } else {
-                    format!(".{stem}")
-                };
-                let toml_path = proto_path.with_extension("toml");
-
-                match self.parse_config_file(&toml_path, &pkg) {
-                    // If config file doesn't exist then just assume there's no configs
-                    Err(Error::Io(err)) if err.kind() == std::io::ErrorKind::NotFound => {}
-                    Err(err) => return Err(err),
-                    Ok(()) => {}
-                }
-            } else {
-                (self.warning_cb)(format_args!(
-                    "Couldn't derive config file path from {}",
-                    proto_path.display()
-                ));
-            }
-        }
-
-        self.compile_protos(protos, out_filename)
+        self.compile_protos_inner(protos, out_filename.as_ref(), true)
     }
 
     /// Compile `.proto` files into a single Rust file.
@@ -945,6 +934,15 @@ impl Generator {
         self,
         protos: &[impl AsRef<Path>],
         out_filename: impl AsRef<Path>,
+    ) -> Result<()> {
+        self.compile_protos_inner(protos, out_filename.as_ref(), false)
+    }
+
+    fn compile_protos_inner(
+        self,
+        protos: &[impl AsRef<Path>],
+        out_filename: &Path,
+        find_config_files: bool,
     ) -> Result<()> {
         let tmp;
         let fdset_file = if let Some(fdset_path) = &self.fdset_path {
@@ -978,7 +976,7 @@ impl Generator {
             ));
         }
 
-        self.compile_fdset_file(fdset_file, out_filename)
+        self.compile_fdset_file_inner(fdset_file.as_path(), out_filename, find_config_files)
     }
 
     /// Compile a Protobuf file descriptor set into a Rust file.
@@ -990,6 +988,15 @@ impl Generator {
         fdset_file: impl AsRef<Path>,
         out_filename: impl AsRef<Path>,
     ) -> crate::Result<()> {
+        self.compile_fdset_file_inner(fdset_file.as_ref(), out_filename.as_ref(), false)
+    }
+
+    fn compile_fdset_file_inner(
+        self,
+        fdset_file: &Path,
+        out_filename: &Path,
+        find_config_files: bool,
+    ) -> crate::Result<()> {
         #[allow(unused)]
         let format = self.format;
 
@@ -999,7 +1006,7 @@ impl Generator {
         fdset
             .decode(&mut decoder, bytes.len())
             .expect("file descriptor set decode failed");
-        let code = Context::generate_fdset(self, &fdset)?;
+        let code = Context::generate_fdset(self, &fdset, find_config_files)?;
 
         #[cfg(feature = "format")]
         let output = if format {
