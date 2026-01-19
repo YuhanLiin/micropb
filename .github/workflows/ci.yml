@@ -17,6 +17,8 @@ jobs:
           toolchain: ${{matrix.toolchain}}
           components: clippy
       - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: cargo clippy --workspace --tests --no-default-features --exclude arm-app -- -Dwarnings
       - run: cargo clippy --workspace --tests --all-features --exclude arm-app -- -Dwarnings
       - run: cargo test --workspace --exclude arm-app
@@ -35,6 +37,8 @@ jobs:
         with:
           toolchain: ${{matrix.toolchain}}
       - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: cargo build --workspace --exclude no-panicking --exclude arm-app
       - run: cargo build -p no-panicking --profile release-lto
       # Check if descriptor.rs has been bootstrapped properly
@@ -55,6 +59,8 @@ jobs:
           toolchain: ${{matrix.toolchain}}
           target: thumbv7em-none-eabihf
       - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: cd examples/arm-app && cargo build --profile release-lto --target thumbv7em-none-eabihf
 
   miri:
@@ -66,6 +72,8 @@ jobs:
         with:
           components: miri
       - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: MIRIFLAGS=-"Zmiri-tree-borrows" cargo +nightly miri test -p micropb -p basic-proto
 
   documentation:
