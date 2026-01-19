@@ -161,14 +161,17 @@ impl<'proto> Context<'proto> {
         });
     }
 
-    /// Propagate the falseness of a boolean flag up the graph
+    /// Propagate the falseness of a boolean flag up the graph. This is used for trait impls.
     fn propagate_bool_false(
         &mut self,
+        trait_name: &str,
         get_msg: impl Fn(&Message) -> bool,
         get_oneof: impl Fn(&Oneof) -> bool,
         set_msg: impl Fn(&mut Message, bool),
         set_oneof: impl Fn(&mut Oneof, bool),
     ) {
+        let warning_cb = self.warning_cb;
+
         let starting_msgs = self
             .graph
             .messages
@@ -190,13 +193,24 @@ impl<'proto> Context<'proto> {
         let starting_elems = starting_msgs.chain(starting_oneofs).collect();
 
         self.reverse_propagate(starting_elems, |msg, elem| match elem {
-            RevElem::Msg(_) => set_msg(msg, false),
-            RevElem::Oneof(_, idx) => set_oneof(&mut msg.oneofs[*idx], false),
+            RevElem::Msg(fq_name) => {
+                warning_cb(format_args!("Disable {trait_name} for {fq_name}"));
+                set_msg(msg, false)
+            }
+            RevElem::Oneof(fq_name, idx) => {
+                let of = &mut msg.oneofs[*idx];
+                warning_cb(format_args!(
+                    "Disable {trait_name} for {fq_name}.{}",
+                    of.name
+                ));
+                set_oneof(of, false)
+            }
         });
     }
 
     fn propagate_no_dbg(&mut self) {
         self.propagate_bool_false(
+            "Debug",
             |msg| msg.derive_dbg,
             |oneof| oneof.derive_dbg,
             |msg, b| msg.derive_dbg = b,
@@ -206,6 +220,7 @@ impl<'proto> Context<'proto> {
 
     fn propagate_no_clone(&mut self) {
         self.propagate_bool_false(
+            "Clone",
             |msg| msg.derive_clone,
             |oneof| oneof.derive_clone,
             |msg, b| msg.derive_clone = b,
@@ -215,6 +230,7 @@ impl<'proto> Context<'proto> {
 
     fn propagate_no_partial_eq(&mut self) {
         self.propagate_bool_false(
+            "PartialEq",
             |msg| msg.impl_partial_eq,
             |oneof| oneof.derive_partial_eq,
             |msg, b| msg.impl_partial_eq = b,

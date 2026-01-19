@@ -796,8 +796,8 @@ impl Generator {
     /// be overriden.
     ///
     /// # Note
-    /// This method assumes you're using heapless 0.9. The path to `FnvIndexMap` is different in
-    /// other versions of heapless, so you may need to override manually with [`Config::map_type`].
+    /// This method assumes you're using `heapless` 0.9. The path to `FnvIndexMap` is different in
+    /// other versions of `heapless`, so you may need to override manually with [`Config::map_type`].
     ///
     /// Since `heapless` containers are fixed size, [`max_len`](Config::max_len) or
     /// [`max_bytes`](Config::max_bytes) must be set for all fields that generate these containers.
@@ -809,6 +809,20 @@ impl Generator {
                 .string_type("::heapless::String<$N>")
                 .bytes_type("::heapless::Vec<u8, $N>")
                 .map_type("::heapless::index_map::FnvIndexMap<$K, $V, $N>"),
+        );
+        self
+    }
+
+    /// Same as [`use_container_heapless`](Self::use_container_heapless), but for `heapless` 0.8
+    /// and earlier.
+    pub fn use_container_heapless_v0_8(&mut self) -> &mut Self {
+        self.configure(
+            ".",
+            Config::new()
+                .vec_type("::heapless::Vec<$T, $N>")
+                .string_type("::heapless::String<$N>")
+                .bytes_type("::heapless::Vec<u8, $N>")
+                .map_type("::heapless::FnvIndexMap<$K, $V, $N>"),
         );
         self
     }
