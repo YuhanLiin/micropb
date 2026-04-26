@@ -324,16 +324,19 @@ impl<'proto> TypeSpec<'proto> {
             })
     }
 
-    pub(crate) fn generate_default(&self, default: &str, ctx: &Context<'proto>) -> TokenStream {
+    /// Returns default expression and the length of the default string/bytes
+    pub(crate) fn generate_default_ref(
+        &self,
+        default: &str,
+        ctx: &Context<'proto>,
+    ) -> (TokenStream, usize) {
         match self {
-            TypeSpec::String { .. } => {
-                quote! { ::core::convert::TryFrom::try_from(#default).unwrap_or_default() }
-            }
+            TypeSpec::String { .. } => (quote! { #default }, default.len()),
 
             TypeSpec::Bytes { .. } => {
                 let bytes = unescape_c_escape_string(default);
                 let default_bytes = Literal::byte_string(&bytes);
-                quote! { ::core::convert::TryFrom::try_from(#default_bytes.as_slice()).unwrap_or_default() }
+                (quote! { #default_bytes.as_slice() }, bytes.len())
             }
 
             TypeSpec::Message(..) => {
@@ -344,14 +347,45 @@ impl<'proto> TypeSpec<'proto> {
                 let enum_path = ctx.resolve_type_name(tpath);
                 let enum_name = sanitized_ident(&path_suffix(tpath).to_case(Case::Pascal));
                 let variant = ctx.enum_variant_name(default, &enum_name);
-                quote! { #enum_path::#variant }
+                (quote! { #enum_path::#variant }, 0)
             }
 
             _ => {
                 let default: TokenStream =
                     syn::parse_str(default).expect("default value tokenization error");
-                quote! { #default as _ }
+                (quote! { #default as _ }, 0)
             }
+        }
+    }
+
+    pub(crate) fn generate_default_owned(
+        &self,
+        default: &str,
+        ctx: &Context<'proto>,
+    ) -> Result<TokenStream, String> {
+        let (default_ref, default_len) = self.generate_default_ref(default, ctx);
+        match self {
+            TypeSpec::String { max_bytes, .. } => match *max_bytes {
+                Some(max_bytes) if default_len > max_bytes as usize => Err(format!(
+                    "String field is limited to {max_bytes} bytes, but its default value is {} bytes",
+                    default.len()
+                )),
+                _ => Ok(
+                    quote! { ::core::convert::TryFrom::try_from(#default_ref).unwrap_or_default() },
+                ),
+            },
+
+            TypeSpec::Bytes { max_bytes, .. } => match *max_bytes {
+                Some(max_bytes) if default_len > max_bytes as usize => Err(format!(
+                    "Bytes field is limited to {max_bytes} bytes, but its default value is {} bytes",
+                    default.len()
+                )),
+                _ => Ok(
+                    quote! { ::core::convert::TryFrom::try_from(#default_ref).unwrap_or_default() },
+                ),
+            },
+
+            _ => Ok(default_ref),
         }
     }
 
@@ -393,7 +427,7 @@ impl<'proto> TypeSpec<'proto> {
             | TypeSpec::Bool
             | TypeSpec::Enum(_) => {
                 let default_tokens = if let Some(default) = default {
-                    self.generate_default(default, ctx)
+                    self.generate_default_ref(default, ctx).0
                 } else {
                     quote! { ::core::default::Default::default() }
                 };
@@ -753,35 +787,35 @@ mod tests {
         let ctx = make_ctx();
         assert_eq!(
             TypeSpec::Bool
-                .generate_default("true", &ctx)
+                .generate_default_owned("true", &ctx)
                 .unwrap()
                 .to_string(),
             quote! { true as _ }.to_string()
         );
         assert_eq!(
             TypeSpec::Bool
-                .generate_default("false", &ctx)
+                .generate_default_owned("false", &ctx)
                 .unwrap()
                 .to_string(),
             quote! { false as _ }.to_string()
         );
         assert_eq!(
             TypeSpec::Float
-                .generate_default("0.1", &ctx)
+                .generate_default_owned("0.1", &ctx)
                 .unwrap()
                 .to_string(),
             quote! { 0.1 as _ }.to_string()
         );
         assert_eq!(
             TypeSpec::Double
-                .generate_default("-4.1", &ctx)
+                .generate_default_owned("-4.1", &ctx)
                 .unwrap()
                 .to_string(),
             quote! { -4.1 as _ }.to_string()
         );
         assert_eq!(
             TypeSpec::Int(PbInt::Int32, IntSize::S8)
-                .generate_default("-99", &ctx)
+                .generate_default_owned("-99", &ctx)
                 .unwrap()
                 .to_string(),
             quote! { -99 as _ }.to_string()
@@ -791,7 +825,7 @@ mod tests {
                 typestr: "Vec".to_owned(),
                 max_bytes: None
             }
-            .generate_default("abc\n\tddd", &ctx)
+            .generate_default_owned("abc\n\tddd", &ctx)
             .unwrap()
             .to_string(),
             quote! { ::core::convert::TryFrom::try_from("abc\n\tddd").unwrap_or_default() }
@@ -802,7 +836,7 @@ mod tests {
                 typestr: "Vec".to_owned(),
                 max_bytes: None
             }
-            .generate_default("abc\\n\\t\\a\\xA0ddd", &ctx)
+            .generate_default_owned("abc\\n\\t\\a\\xA0ddd", &ctx)
             .unwrap()
             .to_string(),
             quote! { ::core::convert::TryFrom::try_from(b"abc\n\t\x07\xA0ddd".as_slice()).unwrap_or_default() }

@@ -319,7 +319,7 @@ impl<'proto> Field<'proto> {
             FieldType::Single(ref t)
             | FieldType::Optional(ref t, OptionalRepr::Hazzer | OptionalRepr::None) => {
                 if let Some(default) = self.default {
-                    let value = t.generate_default(default, ctx);
+                    let value = t.generate_default_owned(default, ctx)?;
                     return Ok(ctx.wrapped_value(value, self.boxed, false));
                 }
             }
