@@ -8733,10 +8733,92 @@ pub mod google_ {
             ) -> ::core::option::Option<&FeatureSet_::FieldPresence> {
                 self._has.r#field_presence().then_some(&self.r#field_presence)
             }
+            /// Set the value and presence of `field_presence`
+            #[inline]
+            pub fn set_field_presence(
+                &mut self,
+                value: FeatureSet_::FieldPresence,
+            ) -> &mut Self {
+                self._has.set_field_presence();
+                self.r#field_presence = value.into();
+                self
+            }
+            /// Return a mutable reference to `field_presence` as an `Option`
+            #[inline]
+            pub fn mut_field_presence(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::FieldPresence> {
+                self._has.r#field_presence().then_some(&mut self.r#field_presence)
+            }
+            /// Clear the presence of `field_presence`
+            #[inline]
+            pub fn clear_field_presence(&mut self) -> &mut Self {
+                self._has.clear_field_presence();
+                self
+            }
+            /// Take the value of `field_presence` and clear its presence
+            #[inline]
+            pub fn take_field_presence(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::FieldPresence> {
+                let val = self
+                    ._has
+                    .r#field_presence()
+                    .then(|| ::core::mem::take(&mut self.r#field_presence));
+                self._has.clear_field_presence();
+                val
+            }
+            /// Builder method that sets the value of `field_presence`. Useful for initializing the message.
+            #[inline]
+            pub fn init_field_presence(
+                mut self,
+                value: FeatureSet_::FieldPresence,
+            ) -> Self {
+                self.set_field_presence(value);
+                self
+            }
             /// Return a reference to `enum_type` as an `Option`
             #[inline]
             pub fn r#enum_type(&self) -> ::core::option::Option<&FeatureSet_::EnumType> {
                 self._has.r#enum_type().then_some(&self.r#enum_type)
+            }
+            /// Set the value and presence of `enum_type`
+            #[inline]
+            pub fn set_enum_type(&mut self, value: FeatureSet_::EnumType) -> &mut Self {
+                self._has.set_enum_type();
+                self.r#enum_type = value.into();
+                self
+            }
+            /// Return a mutable reference to `enum_type` as an `Option`
+            #[inline]
+            pub fn mut_enum_type(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::EnumType> {
+                self._has.r#enum_type().then_some(&mut self.r#enum_type)
+            }
+            /// Clear the presence of `enum_type`
+            #[inline]
+            pub fn clear_enum_type(&mut self) -> &mut Self {
+                self._has.clear_enum_type();
+                self
+            }
+            /// Take the value of `enum_type` and clear its presence
+            #[inline]
+            pub fn take_enum_type(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::EnumType> {
+                let val = self
+                    ._has
+                    .r#enum_type()
+                    .then(|| ::core::mem::take(&mut self.r#enum_type));
+                self._has.clear_enum_type();
+                val
+            }
+            /// Builder method that sets the value of `enum_type`. Useful for initializing the message.
+            #[inline]
+            pub fn init_enum_type(mut self, value: FeatureSet_::EnumType) -> Self {
+                self.set_enum_type(value);
+                self
             }
             /// Return a reference to `repeated_field_encoding` as an `Option`
             #[inline]
@@ -8747,12 +8829,102 @@ pub mod google_ {
                     .r#repeated_field_encoding()
                     .then_some(&self.r#repeated_field_encoding)
             }
+            /// Set the value and presence of `repeated_field_encoding`
+            #[inline]
+            pub fn set_repeated_field_encoding(
+                &mut self,
+                value: FeatureSet_::RepeatedFieldEncoding,
+            ) -> &mut Self {
+                self._has.set_repeated_field_encoding();
+                self.r#repeated_field_encoding = value.into();
+                self
+            }
+            /// Return a mutable reference to `repeated_field_encoding` as an `Option`
+            #[inline]
+            pub fn mut_repeated_field_encoding(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::RepeatedFieldEncoding> {
+                self._has
+                    .r#repeated_field_encoding()
+                    .then_some(&mut self.r#repeated_field_encoding)
+            }
+            /// Clear the presence of `repeated_field_encoding`
+            #[inline]
+            pub fn clear_repeated_field_encoding(&mut self) -> &mut Self {
+                self._has.clear_repeated_field_encoding();
+                self
+            }
+            /// Take the value of `repeated_field_encoding` and clear its presence
+            #[inline]
+            pub fn take_repeated_field_encoding(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::RepeatedFieldEncoding> {
+                let val = self
+                    ._has
+                    .r#repeated_field_encoding()
+                    .then(|| ::core::mem::take(&mut self.r#repeated_field_encoding));
+                self._has.clear_repeated_field_encoding();
+                val
+            }
+            /// Builder method that sets the value of `repeated_field_encoding`. Useful for initializing the message.
+            #[inline]
+            pub fn init_repeated_field_encoding(
+                mut self,
+                value: FeatureSet_::RepeatedFieldEncoding,
+            ) -> Self {
+                self.set_repeated_field_encoding(value);
+                self
+            }
             /// Return a reference to `utf8_validation` as an `Option`
             #[inline]
             pub fn r#utf8_validation(
                 &self,
             ) -> ::core::option::Option<&FeatureSet_::Utf8Validation> {
                 self._has.r#utf8_validation().then_some(&self.r#utf8_validation)
+            }
+            /// Set the value and presence of `utf8_validation`
+            #[inline]
+            pub fn set_utf8_validation(
+                &mut self,
+                value: FeatureSet_::Utf8Validation,
+            ) -> &mut Self {
+                self._has.set_utf8_validation();
+                self.r#utf8_validation = value.into();
+                self
+            }
+            /// Return a mutable reference to `utf8_validation` as an `Option`
+            #[inline]
+            pub fn mut_utf8_validation(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::Utf8Validation> {
+                self._has.r#utf8_validation().then_some(&mut self.r#utf8_validation)
+            }
+            /// Clear the presence of `utf8_validation`
+            #[inline]
+            pub fn clear_utf8_validation(&mut self) -> &mut Self {
+                self._has.clear_utf8_validation();
+                self
+            }
+            /// Take the value of `utf8_validation` and clear its presence
+            #[inline]
+            pub fn take_utf8_validation(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::Utf8Validation> {
+                let val = self
+                    ._has
+                    .r#utf8_validation()
+                    .then(|| ::core::mem::take(&mut self.r#utf8_validation));
+                self._has.clear_utf8_validation();
+                val
+            }
+            /// Builder method that sets the value of `utf8_validation`. Useful for initializing the message.
+            #[inline]
+            pub fn init_utf8_validation(
+                mut self,
+                value: FeatureSet_::Utf8Validation,
+            ) -> Self {
+                self.set_utf8_validation(value);
+                self
             }
             /// Return a reference to `message_encoding` as an `Option`
             #[inline]
@@ -8761,12 +8933,97 @@ pub mod google_ {
             ) -> ::core::option::Option<&FeatureSet_::MessageEncoding> {
                 self._has.r#message_encoding().then_some(&self.r#message_encoding)
             }
+            /// Set the value and presence of `message_encoding`
+            #[inline]
+            pub fn set_message_encoding(
+                &mut self,
+                value: FeatureSet_::MessageEncoding,
+            ) -> &mut Self {
+                self._has.set_message_encoding();
+                self.r#message_encoding = value.into();
+                self
+            }
+            /// Return a mutable reference to `message_encoding` as an `Option`
+            #[inline]
+            pub fn mut_message_encoding(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::MessageEncoding> {
+                self._has.r#message_encoding().then_some(&mut self.r#message_encoding)
+            }
+            /// Clear the presence of `message_encoding`
+            #[inline]
+            pub fn clear_message_encoding(&mut self) -> &mut Self {
+                self._has.clear_message_encoding();
+                self
+            }
+            /// Take the value of `message_encoding` and clear its presence
+            #[inline]
+            pub fn take_message_encoding(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::MessageEncoding> {
+                let val = self
+                    ._has
+                    .r#message_encoding()
+                    .then(|| ::core::mem::take(&mut self.r#message_encoding));
+                self._has.clear_message_encoding();
+                val
+            }
+            /// Builder method that sets the value of `message_encoding`. Useful for initializing the message.
+            #[inline]
+            pub fn init_message_encoding(
+                mut self,
+                value: FeatureSet_::MessageEncoding,
+            ) -> Self {
+                self.set_message_encoding(value);
+                self
+            }
             /// Return a reference to `json_format` as an `Option`
             #[inline]
             pub fn r#json_format(
                 &self,
             ) -> ::core::option::Option<&FeatureSet_::JsonFormat> {
                 self._has.r#json_format().then_some(&self.r#json_format)
+            }
+            /// Set the value and presence of `json_format`
+            #[inline]
+            pub fn set_json_format(
+                &mut self,
+                value: FeatureSet_::JsonFormat,
+            ) -> &mut Self {
+                self._has.set_json_format();
+                self.r#json_format = value.into();
+                self
+            }
+            /// Return a mutable reference to `json_format` as an `Option`
+            #[inline]
+            pub fn mut_json_format(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::JsonFormat> {
+                self._has.r#json_format().then_some(&mut self.r#json_format)
+            }
+            /// Clear the presence of `json_format`
+            #[inline]
+            pub fn clear_json_format(&mut self) -> &mut Self {
+                self._has.clear_json_format();
+                self
+            }
+            /// Take the value of `json_format` and clear its presence
+            #[inline]
+            pub fn take_json_format(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::JsonFormat> {
+                let val = self
+                    ._has
+                    .r#json_format()
+                    .then(|| ::core::mem::take(&mut self.r#json_format));
+                self._has.clear_json_format();
+                val
+            }
+            /// Builder method that sets the value of `json_format`. Useful for initializing the message.
+            #[inline]
+            pub fn init_json_format(mut self, value: FeatureSet_::JsonFormat) -> Self {
+                self.set_json_format(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for FeatureSet {

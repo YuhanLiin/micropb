@@ -21,6 +21,7 @@ fn main() {
                 ".google.protobuf.OneofDescriptorProto",
                 ".google.protobuf.MessageOptions",
                 ".google.protobuf.EnumValueDescriptorProto",
+                ".google.protobuf.FeatureSet",
             ],
             Config::new().no_accessors(false),
         );
