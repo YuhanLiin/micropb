@@ -5,7 +5,7 @@ use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
-    descriptor::DescriptorProto,
+    descriptor::{DescriptorProto, FeatureSet},
     error::{field_error, msg_error},
     generator::{
         Context, EncodeFunc,
@@ -71,10 +71,17 @@ impl<'proto> Message<'proto> {
         ctx: &Context<'proto>,
         msg_conf: &CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
+        feature_set: &FeatureSet,
     ) -> crate::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
             return Ok(None);
         }
+
+        let mut feature_set = feature_set.to_owned();
+        ctx.merge_feature_sets(
+            &mut feature_set,
+            proto.options().and_then(|opt| opt.features()),
+        );
 
         let msg_name = &proto.name;
         let mut oneofs = vec![];
@@ -113,8 +120,15 @@ impl<'proto> Message<'proto> {
                 .unwrap_or(&f.type_name);
 
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, field_comments, ctx, Some(map_msg))
-                    .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
+                Field::from_proto(
+                    f,
+                    &field_conf,
+                    field_comments,
+                    ctx,
+                    Some(map_msg),
+                    &feature_set,
+                )
+                .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
             } else {
                 if let Some(idx) = f.oneof_index().copied() {
                     if f.proto3_optional {
@@ -154,7 +168,7 @@ impl<'proto> Message<'proto> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, field_comments, ctx, None)
+                Field::from_proto(f, &field_conf, field_comments, ctx, None, &feature_set)
                     .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {

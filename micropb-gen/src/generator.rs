@@ -14,7 +14,11 @@ use syn::Ident;
 use crate::{
     EncodeDecode, Generator, WarningCb,
     config::Config,
-    descriptor::{DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet},
+    descriptor::{
+        DescriptorProto, Edition, EnumDescriptorProto, FeatureSet,
+        FeatureSet_::{FieldPresence, RepeatedFieldEncoding},
+        FileDescriptorProto, FileDescriptorSet,
+    },
     error::pkg_error,
     generator::{r#enum::Enum, graph::TypeGraph},
     pathtree::{Node, PathTree},
@@ -103,6 +107,8 @@ pub(crate) enum Syntax {
     #[default]
     Proto2,
     Proto3,
+    E2023,
+    E2024,
 }
 
 #[derive(Default)]
@@ -159,6 +165,46 @@ impl<'proto> Context<'proto> {
             let path = path.join(".");
             (self.warning_cb)(format_args!("Unused configuration path: \"{path}\". Make sure the path points to an actual Protobuf type or module."));
         });
+    }
+
+    fn merge_feature_sets(&self, mergee: &mut FeatureSet, new: Option<&FeatureSet>) {
+        if let Some(new) = new {
+            if let Some(fp) = new.field_presence() {
+                mergee.set_field_presence(*fp);
+            }
+            if let Some(et) = new.enum_type() {
+                // TODO warn
+            }
+            if let Some(rfe) = new.repeated_field_encoding() {
+                mergee.set_repeated_field_encoding(*rfe);
+            }
+            if let Some(utf8) = new.utf8_validation() {
+                // TODO warn
+            }
+            if let Some(me) = new.message_encoding() {
+                // TODO warn
+            }
+            // enforce_naming_style and default_symbol_visibility should be checked by protoc
+            // itself, so no need to check them here
+            // json_format is irrelevant since we don't support json
+        }
+    }
+
+    fn default_feature_set(&self) -> FeatureSet {
+        match self.syntax {
+            Syntax::Proto2 => FeatureSet::default()
+                .init_field_presence(FieldPresence::Explicit)
+                .init_repeated_field_encoding(RepeatedFieldEncoding::Expanded),
+            Syntax::Proto3 => FeatureSet::default()
+                .init_field_presence(FieldPresence::Implicit)
+                .init_repeated_field_encoding(RepeatedFieldEncoding::Packed),
+            Syntax::E2023 => FeatureSet::default()
+                .init_field_presence(FieldPresence::Explicit)
+                .init_repeated_field_encoding(RepeatedFieldEncoding::Packed),
+            Syntax::E2024 => FeatureSet::default()
+                .init_field_presence(FieldPresence::Explicit)
+                .init_repeated_field_encoding(RepeatedFieldEncoding::Packed),
+        }
     }
 
     pub(crate) fn generate_fdset(
@@ -229,7 +275,18 @@ impl<'proto> Context<'proto> {
         self.syntax = match fdproto.syntax.as_str() {
             "proto3" => Syntax::Proto3,
             "proto2" | "" => Syntax::Proto2,
-            "editions" => return Err(pkg_error(&self.pkg, "Protobuf Editions not supported")),
+            "editions" => match fdproto.edition {
+                Edition::Proto2 => Syntax::Proto2,
+                Edition::Proto3 => Syntax::Proto3,
+                Edition::_2023 => Syntax::E2023,
+                Edition::_2024 => Syntax::E2024,
+                edition => {
+                    return Err(pkg_error(
+                        &self.pkg,
+                        format!("Unsupported protobuf edition {edition:?}"),
+                    ));
+                }
+            },
             syntax => {
                 return Err(pkg_error(
                     &self.pkg,
@@ -247,6 +304,12 @@ impl<'proto> Context<'proto> {
         fdproto: &'proto FileDescriptorProto,
     ) -> crate::Result<()> {
         self.setup_file_context(fdproto)?;
+
+        let mut feature_set = self.default_feature_set();
+        self.merge_feature_sets(
+            &mut feature_set,
+            fdproto.options().and_then(|opt| opt.features()),
+        );
 
         let root_node = &config_tree.root;
         let mut conf = root_node
@@ -268,6 +331,7 @@ impl<'proto> Context<'proto> {
                 m,
                 cur_config.next_conf(&m.name),
                 comment_tree.root.next(&location::path::fdset_msg(i)),
+                &feature_set,
             )?;
         }
         for (i, e) in fdproto.enum_type.iter().enumerate() {
@@ -369,12 +433,14 @@ impl<'proto> Context<'proto> {
         proto: &'proto DescriptorProto,
         msg_conf: CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
+        feature_set: &FeatureSet,
     ) -> crate::Result<()> {
         let fq_name = self.fq_proto_name(&proto.name);
         if self.params.extern_paths.contains_key(&fq_name) {
             return Ok(());
         }
-        let Some(msg) = Message::from_proto(proto, self, &msg_conf, comment_node)? else {
+        let Some(msg) = Message::from_proto(proto, self, &msg_conf, comment_node, feature_set)?
+        else {
             return Ok(());
         };
         let msg_name = msg.name;
@@ -391,6 +457,7 @@ impl<'proto> Context<'proto> {
                 m,
                 msg_conf.next_conf(&m.name),
                 next_comment_node(comment_node, location::path::msg_msg(i)),
+                feature_set,
             )?;
         }
         for (i, e) in proto.enum_type.iter().enumerate() {
