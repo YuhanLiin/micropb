@@ -16,7 +16,9 @@ use crate::{
     config::Config,
     descriptor::{
         DescriptorProto, Edition, EnumDescriptorProto, FeatureSet,
-        FeatureSet_::{FieldPresence, RepeatedFieldEncoding},
+        FeatureSet_::{
+            EnumType, FieldPresence, MessageEncoding, RepeatedFieldEncoding, Utf8Validation,
+        },
         FileDescriptorProto, FileDescriptorSet,
     },
     error::pkg_error,
@@ -167,27 +169,42 @@ impl<'proto> Context<'proto> {
         });
     }
 
-    fn merge_feature_sets(&self, mergee: &mut FeatureSet, new: Option<&FeatureSet>) {
+    fn merge_feature_sets(
+        &self,
+        mergee: &mut FeatureSet,
+        new: Option<&FeatureSet>,
+    ) -> Result<(), String> {
         if let Some(new) = new {
             if let Some(fp) = new.field_presence() {
                 mergee.set_field_presence(*fp);
             }
-            if let Some(et) = new.enum_type() {
-                // TODO warn
+            if let Some(et) = new.enum_type()
+                && *et != EnumType::Open
+            {
+                (self.warning_cb)(format_args!(
+                    "Editions feature {et:?} is not supported, since micropb only supports open enums"
+                ));
             }
             if let Some(rfe) = new.repeated_field_encoding() {
                 mergee.set_repeated_field_encoding(*rfe);
             }
-            if let Some(utf8) = new.utf8_validation() {
-                // TODO warn
+            if let Some(utf8) = new.utf8_validation()
+                && *utf8 != Utf8Validation::Verify
+            {
+                (self.warning_cb)(format_args!(
+                    "Editions feature {utf8:?} is not supported, since Rust strings must be in UTF8"
+                ));
             }
-            if let Some(me) = new.message_encoding() {
-                // TODO warn
+            if let Some(me) = new.message_encoding()
+                && *me == MessageEncoding::Delimited
+            {
+                return Err(format!("Editions feature {me:?} is not supported",));
             }
             // enforce_naming_style and default_symbol_visibility should be checked by protoc
             // itself, so no need to check them here
             // json_format is irrelevant since we don't support json
         }
+        Ok(())
     }
 
     fn default_feature_set(&self) -> FeatureSet {
@@ -309,7 +326,8 @@ impl<'proto> Context<'proto> {
         self.merge_feature_sets(
             &mut feature_set,
             fdproto.options().and_then(|opt| opt.features()),
-        );
+        )
+        .map_err(|e| pkg_error(&self.pkg, e))?;
 
         let root_node = &config_tree.root;
         let mut conf = root_node

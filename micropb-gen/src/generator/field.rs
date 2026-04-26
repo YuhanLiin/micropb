@@ -136,7 +136,7 @@ impl<'proto> Field<'proto> {
         ctx.merge_feature_sets(
             &mut feature_set,
             proto.options().and_then(|opt| opt.features()),
-        );
+        )?;
 
         let num = proto.number as u32;
         let name = &proto.name;

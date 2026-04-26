@@ -77,13 +77,14 @@ impl<'proto> Message<'proto> {
             return Ok(None);
         }
 
+        let msg_name = &proto.name;
         let mut feature_set = feature_set.to_owned();
         ctx.merge_feature_sets(
             &mut feature_set,
             proto.options().and_then(|opt| opt.features()),
-        );
+        )
+        .map_err(|e| msg_error(&ctx.pkg, msg_name, &e))?;
 
-        let msg_name = &proto.name;
         let mut oneofs = vec![];
         for (idx, oneof) in proto.oneof_decl.iter().enumerate() {
             let oneof = Oneof::from_proto(
