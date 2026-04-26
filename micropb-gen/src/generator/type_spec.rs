@@ -110,6 +110,11 @@ impl PbInt {
     }
 }
 
+pub(crate) enum Presence<'a> {
+    Explicit,
+    Implicit(Option<&'a str>),
+}
+
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum TypeSpec<'proto> {
     Message(&'proto str),
@@ -175,6 +180,17 @@ impl<'proto> TypeSpec<'proto> {
             TypeSpec::Double | TypeSpec::Int(PbInt::Fixed64 | PbInt::Sfixed64, _) => Some(8),
             TypeSpec::Bool => Some(1),
             _ => None,
+        }
+    }
+
+    pub(crate) fn packable(&self) -> bool {
+        match self {
+            TypeSpec::Message(_) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => false,
+            TypeSpec::Enum(_)
+            | TypeSpec::Float
+            | TypeSpec::Double
+            | TypeSpec::Bool
+            | TypeSpec::Int(..) => true,
         }
     }
 
@@ -308,36 +324,16 @@ impl<'proto> TypeSpec<'proto> {
             })
     }
 
-    pub(crate) fn generate_default(
-        &self,
-        default: &str,
-        ctx: &Context<'proto>,
-    ) -> Result<TokenStream, String> {
-        let out = match self {
-            TypeSpec::String { max_bytes, .. } => match *max_bytes {
-                Some(max_bytes) if default.len() > max_bytes as usize => {
-                    return Err(format!(
-                        "String field is limited to {max_bytes} bytes, but its default value is {} bytes",
-                        default.len()
-                    ));
-                }
-                _ => quote! { ::core::convert::TryFrom::try_from(#default).unwrap_or_default() },
-            },
+    pub(crate) fn generate_default(&self, default: &str, ctx: &Context<'proto>) -> TokenStream {
+        match self {
+            TypeSpec::String { .. } => {
+                quote! { ::core::convert::TryFrom::try_from(#default).unwrap_or_default() }
+            }
 
-            TypeSpec::Bytes { max_bytes, .. } => {
+            TypeSpec::Bytes { .. } => {
                 let bytes = unescape_c_escape_string(default);
                 let default_bytes = Literal::byte_string(&bytes);
-                match *max_bytes {
-                    Some(max_bytes) if bytes.len() > max_bytes as usize => {
-                        return Err(format!(
-                            "Bytes field is limited to {max_bytes} bytes, but its default value is {} bytes",
-                            bytes.len()
-                        ));
-                    }
-                    _ => {
-                        quote! { ::core::convert::TryFrom::try_from(#default_bytes.as_slice()).unwrap_or_default() }
-                    }
-                }
+                quote! { ::core::convert::TryFrom::try_from(#default_bytes.as_slice()).unwrap_or_default() }
             }
 
             TypeSpec::Message(..) => {
@@ -356,8 +352,7 @@ impl<'proto> TypeSpec<'proto> {
                     syn::parse_str(default).expect("default value tokenization error");
                 quote! { #default as _ }
             }
-        };
-        Ok(out)
+        }
     }
 
     pub(crate) fn wire_type(&self) -> u8 {
@@ -385,15 +380,36 @@ impl<'proto> TypeSpec<'proto> {
         }
     }
 
-    pub(crate) fn generate_implicit_presence_check(&self, val_ref: &Ident) -> TokenStream {
+    pub(crate) fn generate_implicit_presence_check(
+        &self,
+        ctx: &Context<'proto>,
+        val_ref: &Ident,
+        default: Option<&str>,
+    ) -> TokenStream {
         match self {
+            TypeSpec::Float
+            | TypeSpec::Double
+            | TypeSpec::Int(_, _)
+            | TypeSpec::Bool
+            | TypeSpec::Enum(_) => {
+                let default_tokens = if let Some(default) = default {
+                    self.generate_default(default, ctx)
+                } else {
+                    quote! { ::core::default::Default::default() }
+                };
+                quote! { if *#val_ref != #default_tokens }
+            }
             TypeSpec::Message(..) => quote! {},
-            TypeSpec::Enum(_) => quote! { if #val_ref.0 != 0 },
-            TypeSpec::Float | TypeSpec::Double => quote! { if *#val_ref != 0.0 },
-            TypeSpec::Bool => quote! { if *#val_ref },
-            TypeSpec::Int(_, _) => quote! { if *#val_ref != 0 },
-            TypeSpec::String { .. } => quote! { if !#val_ref.is_empty() },
-            TypeSpec::Bytes { .. } => quote! { if !#val_ref.is_empty() },
+            TypeSpec::String { .. } => {
+                let default_tokens = Literal::string(default.unwrap_or_default());
+                quote! { if #val_ref != #default_tokens }
+            }
+            TypeSpec::Bytes { .. } => {
+                let default_tokens = Literal::byte_string(
+                    &default.map(unescape_c_escape_string).unwrap_or_default(),
+                );
+                quote! { if #val_ref != #default_tokens }
+            }
         }
     }
 
@@ -423,16 +439,20 @@ impl<'proto> TypeSpec<'proto> {
     pub(crate) fn generate_decode_mut(
         &self,
         ctx: &Context<'proto>,
-        implicit_presence: bool,
+        presence: Presence,
         decoder: &Ident,
         mut_ref: &Ident,
     ) -> Result<TokenStream, String> {
-        let presence = if implicit_presence {
+        // When decoding strings/bytes, it's only possible to do implicit-presence default checking
+        // if the default is empty, since the check has to happen before the payload is decoded. If
+        // using a custom default (possible in Editions), then just treat it like explicit
+        // presence so that no field is ignored.
+        let presence_str = if let Presence::Implicit(None) = presence {
             "Implicit"
         } else {
             "Explicit"
         };
-        let presence_ident = Ident::new(presence, Span::call_site());
+        let presence_ident = Ident::new(presence_str, Span::call_site());
 
         let tok = match self {
             TypeSpec::Message(..) => quote! { #mut_ref.decode_len_delimited(#decoder)?; },
@@ -444,9 +464,10 @@ impl<'proto> TypeSpec<'proto> {
                 let val_expr = self
                     .generate_decode_val(ctx, decoder)
                     .expect("ints should be packable");
-                let setter = if implicit_presence {
+                let setter = if let Presence::Implicit(default) = presence {
                     let val_ref = Ident::new("val_ref", Span::call_site());
-                    let presence_check = self.generate_implicit_presence_check(&val_ref);
+                    let presence_check =
+                        self.generate_implicit_presence_check(ctx, &val_ref, default);
                     quote! {
                         let #val_ref = &val;
                         #presence_check {

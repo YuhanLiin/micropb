@@ -9,6 +9,7 @@ use crate::descriptor::{
     DescriptorProto, FieldDescriptorProto,
     FieldDescriptorProto_::{Label, Type},
 };
+use crate::generator::type_spec::Presence;
 use crate::generator::{Context, field_error_str};
 use crate::utils::{find_lifetime_from_str, find_lifetime_from_type};
 
@@ -209,13 +210,14 @@ impl<'proto> Field<'proto> {
                     .unwrap_or(false);
                 let feature_packed =
                     feature_set.repeated_field_encoding() == Some(&RepeatedFieldEncoding::Packed);
+                let packable = typ.packable();
 
                 FieldType::Repeated {
                     typestr,
                     typ,
                     max_len,
                     cache_vec_typestr: cache_typestr,
-                    packed: packed || feature_packed,
+                    packed: (packed || feature_packed) && packable,
                 }
             }
 
@@ -317,7 +319,7 @@ impl<'proto> Field<'proto> {
             FieldType::Single(ref t)
             | FieldType::Optional(ref t, OptionalRepr::Hazzer | OptionalRepr::None) => {
                 if let Some(default) = self.default {
-                    let value = t.generate_default(default, ctx)?;
+                    let value = t.generate_default(default, ctx);
                     return Ok(ctx.wrapped_value(value, self.boxed, false));
                 }
             }
@@ -569,8 +571,10 @@ impl<'proto> Field<'proto> {
 
         let decode_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
-                let key_decode_expr = key.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
-                let val_decode_expr = val.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+                let key_decode_expr =
+                    key.generate_decode_mut(ctx, Presence::Explicit, decoder, &mut_ref)?;
+                let val_decode_expr =
+                    val.generate_decode_mut(ctx, Presence::Explicit, decoder, &mut_ref)?;
                 let key_type = key.generate_rust_type(ctx)?;
                 let val_type = val.generate_rust_type(ctx)?;
                 quote! {
@@ -587,7 +591,12 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Single(tspec) => {
-                let decode_stmts = tspec.generate_decode_mut(ctx, true, decoder, &mut_ref)?;
+                let decode_stmts = tspec.generate_decode_mut(
+                    ctx,
+                    Presence::Implicit(self.default),
+                    decoder,
+                    &mut_ref,
+                )?;
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_stmts };
@@ -595,7 +604,8 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::None) => {
-                let decode_stmts = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+                let decode_stmts =
+                    tspec.generate_decode_mut(ctx, Presence::Explicit, decoder, &mut_ref)?;
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
                     { #decode_stmts };
@@ -603,7 +613,8 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::Hazzer) => {
-                let decode_expr = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+                let decode_expr =
+                    tspec.generate_decode_mut(ctx, Presence::Explicit, decoder, &mut_ref)?;
                 let setter = format_ident!("set_{}", self.rust_name);
                 quote! {
                     let #mut_ref = &mut #extra_deref self.#fname;
@@ -613,7 +624,8 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Optional(tspec, OptionalRepr::Option) => {
-                let decode_stmts = tspec.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+                let decode_stmts =
+                    tspec.generate_decode_mut(ctx, Presence::Explicit, decoder, &mut_ref)?;
                 quote! {
                     let #mut_ref = &mut #extra_deref *self.#fname.get_or_insert_with(::core::default::Default::default);
                     { #decode_stmts };
@@ -634,7 +646,8 @@ impl<'proto> Field<'proto> {
                         }
                     }
                 } else {
-                    let decode_expr = typ.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+                    let decode_expr =
+                        typ.generate_decode_mut(ctx, Presence::Explicit, decoder, &mut_ref)?;
                     let rust_type = typ.generate_rust_type(ctx)?;
                     quote! {
                         let mut val: #rust_type = ::core::default::Default::default();
@@ -904,7 +917,8 @@ impl<'proto> Field<'proto> {
                 let check = if let FieldType::Optional(..) = self.ftype {
                     quote! { if let ::core::option::Option::Some(#val_ref) = self.#fname() }
                 } else {
-                    let implicit_presence_check = tspec.generate_implicit_presence_check(&val_ref);
+                    let implicit_presence_check =
+                        tspec.generate_implicit_presence_check(ctx, &val_ref, self.default);
                     quote! {
                         let #val_ref = &#extra_deref self.#fname;
                         #implicit_presence_check

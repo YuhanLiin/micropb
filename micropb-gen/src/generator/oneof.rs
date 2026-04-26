@@ -7,8 +7,13 @@ use crate::{
     descriptor::{FieldDescriptorProto, OneofDescriptorProto},
     error::field_error,
     generator::{
-        Context, CurrentConfig, EncodeFunc, derive_msg_attr, field::CustomField, field_error_str,
-        location::get_comments, message::Message, sanitized_ident, type_spec::TypeSpec,
+        Context, CurrentConfig, EncodeFunc, derive_msg_attr,
+        field::CustomField,
+        field_error_str,
+        location::get_comments,
+        message::Message,
+        sanitized_ident,
+        type_spec::{Presence, TypeSpec},
     },
     utils::{TryIntoTokens, find_lifetime_from_type},
 };
@@ -100,9 +105,9 @@ impl<'proto> OneofField<'proto> {
         let extra_deref_of = oneof_boxed.then(|| quote! { * });
         let extra_deref_var = self.boxed.then(|| quote! { * });
 
-        let decode_stmts = self
-            .tspec
-            .generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+        let decode_stmts =
+            self.tspec
+                .generate_decode_mut(ctx, Presence::Explicit, decoder, &mut_ref)?;
         let value = ctx.wrapped_value(
             quote! { #oneof_type::#variant_name(::core::default::Default::default()) },
             oneof_boxed,
@@ -134,9 +139,9 @@ impl<'proto> OneofField<'proto> {
         let variant_name = &self.rust_name;
         let extra_deref_var = self.boxed.then(|| quote! { * });
 
-        let decode_stmts = self
-            .tspec
-            .generate_decode_mut(ctx, false, decoder, &mut_ref)?;
+        let decode_stmts =
+            self.tspec
+                .generate_decode_mut(ctx, Presence::Explicit, decoder, &mut_ref)?;
         let tok = quote! {
             #fnum => {
                 let #mut_ref = loop {
