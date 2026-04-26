@@ -638,10 +638,11 @@ fn substitute_param<'a>(
     t: Option<impl ToString>,
 ) -> Cow<'a, str> {
     if let Some(t) = t
-        && typestr.find(pat).is_some() {
-            let t = t.to_string();
-            return typestr.replace(pat, &t).into();
-        }
+        && typestr.find(pat).is_some()
+    {
+        let t = t.to_string();
+        return typestr.replace(pat, &t).into();
+    }
     typestr
 }
 
