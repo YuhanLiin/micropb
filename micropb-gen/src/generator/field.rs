@@ -1130,6 +1130,14 @@ mod tests {
         f
     }
 
+    fn from_field_proto<'proto>(
+        proto: &'proto FieldDescriptorProto,
+        conf: &CurrentConfig<'proto>,
+        ctx: &Context<'proto>,
+    ) -> Option<Field<'proto>> {
+        Field::from_proto(proto, conf, None, ctx, None, &FeatureSet::default()).unwrap()
+    }
+
     #[test]
     fn from_proto_skipped() {
         let config = Box::new(Config::new().skip(true));
@@ -1141,11 +1149,7 @@ mod tests {
 
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto2;
-        assert!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .is_none()
-        );
+        assert!(from_field_proto(&field, &field_conf, &ctx).is_none());
     }
 
     #[test]
@@ -1160,9 +1164,7 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap(),
+            from_field_proto(&field, &field_conf, &ctx).unwrap(),
             Field {
                 num: 2,
                 ftype: FieldType::Single(TypeSpec::Bool),
@@ -1193,9 +1195,7 @@ mod tests {
         field.set_default_value("true".to_owned());
 
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap(),
+            from_field_proto(&field, &field_conf, &ctx).unwrap(),
             Field {
                 num: 2,
                 ftype: FieldType::Single(TypeSpec::Bool),
@@ -1224,28 +1224,19 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Single(TypeSpec::Bool)
         );
         ctx.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
         );
 
         // Required fields are treated like optionals
         let field = field_proto(0, "field", Some(Label::Required), false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
         );
 
@@ -1253,10 +1244,7 @@ mod tests {
         ctx.syntax = Syntax::Proto3;
         let field = field_proto(0, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
         );
 
@@ -1268,10 +1256,7 @@ mod tests {
         };
         ctx.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
         );
 
@@ -1282,10 +1267,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
         );
     }
@@ -1308,10 +1290,7 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Custom(CustomField::Type(syn::parse_str("Custom<false>").unwrap()))
         );
 
@@ -1326,10 +1305,7 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Custom(CustomField::Delegate(syn::parse_str("field").unwrap()))
         );
     }
@@ -1352,10 +1328,7 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Repeated {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: false,
@@ -1367,10 +1340,7 @@ mod tests {
         field.set_options(Default::default());
         field.options.set_packed(true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Repeated {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: true,
@@ -1422,10 +1392,17 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, Some(&map_elem))
-                .unwrap()
-                .unwrap()
-                .ftype,
+            Field::from_proto(
+                &field,
+                &field_conf,
+                None,
+                &ctx,
+                Some(&map_elem),
+                &FeatureSet::default()
+            )
+            .unwrap()
+            .unwrap()
+            .ftype,
             FieldType::Map {
                 key: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 val: TypeSpec::String {
