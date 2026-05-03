@@ -1273,6 +1273,38 @@ mod tests {
     }
 
     #[test]
+    fn editions_presence() {
+        let config = Box::new(Config::new());
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let mut ctx = make_ctx();
+        ctx.syntax = Syntax::E2024;
+
+        let mut field = field_proto(0, "field", None, false).init_options(Default::default());
+        field.options.set_features(Default::default());
+
+        field
+            .options
+            .features
+            .set_field_presence(FieldPresence::Implicit);
+        assert_eq!(
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
+            FieldType::Single(TypeSpec::Bool)
+        );
+
+        field
+            .options
+            .features
+            .set_field_presence(FieldPresence::Explicit);
+        assert_eq!(
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
+        );
+    }
+
+    #[test]
     fn from_proto_custom() {
         // Even if the field is boxed or optional, as long as we specify a custom field, those
         // other options are all ignored
@@ -1345,6 +1377,37 @@ mod tests {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: true,
                 typestr: "Vec<$N>".to_owned(),
+                cache_vec_typestr: String::new(),
+                max_len: Some(21)
+            }
+        );
+    }
+
+    #[test]
+    fn editions_packed() {
+        let config = Box::new(Config::new().max_len(21).vec_type("Vec<$T, $N>"));
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+
+        let mut field = field_proto(0, "field", Some(Label::Repeated), false);
+        field.set_type(Type::Int32);
+        field.set_options(Default::default());
+        field.options.set_features(Default::default());
+        field
+            .options
+            .features
+            .set_repeated_field_encoding(RepeatedFieldEncoding::Packed);
+
+        let mut ctx = make_ctx();
+        ctx.syntax = Syntax::E2024;
+        assert_eq!(
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
+            FieldType::Repeated {
+                typ: TypeSpec::Int(PbInt::Int32, IntSize::S32),
+                packed: true,
+                typestr: "Vec<$T, $N>".to_owned(),
                 cache_vec_typestr: String::new(),
                 max_len: Some(21)
             }
