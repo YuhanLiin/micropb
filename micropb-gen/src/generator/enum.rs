@@ -6,7 +6,7 @@ use syn::{Attribute, Ident};
 use super::location::{CommentNode, Comments, get_comments, next_comment_node};
 use crate::{
     config::IntSize,
-    descriptor::EnumDescriptorProto,
+    descriptor::{EnumDescriptorProto, FeatureSet},
     error::msg_error,
     generator::{Context, CurrentConfig, derive_enum_attr, location, sanitized_ident},
 };
@@ -39,6 +39,12 @@ impl<'proto> Enum<'proto> {
         }
 
         let name = &proto.name;
+        // This exists purely to print warnings about enum_type to CLOSED
+        let _ = ctx.merge_feature_sets(
+            &mut FeatureSet::default(),
+            proto.options().and_then(|opt| opt.features()),
+        );
+
         let rust_name = sanitized_ident(name);
         let int_type = enum_conf.config.enum_int_size.unwrap_or(IntSize::S32);
         let unsigned = enum_conf.config.enum_unsigned.unwrap_or(false);
