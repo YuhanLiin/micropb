@@ -53,7 +53,7 @@ fn derive_msg_attr(
 }
 
 fn derive_enum_attr() -> TokenStream {
-    quote! { #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)] }
+    quote! { #[derive(Clone, Copy, PartialEq, Eq, Hash)] }
 }
 
 pub(crate) struct CurrentConfig<'a> {

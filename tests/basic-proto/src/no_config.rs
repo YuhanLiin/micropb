@@ -26,6 +26,14 @@ fn enum_test() {
 }
 
 #[test]
+fn enum_debug_print() {
+    assert_eq!(format!("{:?}", proto::basic_::Enum::Zero), "Zero");
+    assert_eq!(format!("{:?}", proto::basic_::Enum::One), "One");
+    assert_eq!(format!("{:?}", proto::basic_::Enum::Two), "Two");
+    assert_eq!(format!("{:?}", proto::basic_::Enum(3)), "_Unknown(3)");
+}
+
+#[test]
 fn basic_msg() {
     let mut basic = proto::basic_::BasicTypes::default();
     assert!(!basic._has.dbl());
