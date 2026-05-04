@@ -13,12 +13,14 @@ Unlike other Rust Protobuf libraries, `micropb` is aimed for constrained environ
 - Reduced memory usage for generated code, especially for optional fields.
 - Allows both statically-allocated containers ([`heapless`](https://docs.rs/heapless/latest/heapless), [`arrayvec`](https://docs.rs/arrayvec/latest/arrayvec)) or dynamically-allocated containers from [`alloc`](https://doc.rust-lang.org/alloc).
 - Code generator is highly configurable.
+- Type-safe open enums, rather than `i32`.
 - Fields can have custom handlers with user-defined encoding and decoding behaviour.
 - Supports different data sources for encoding and decoding, abstracted behind the `PbRead` and `PbWrite` traits.
 - Supports caching of message field lengths during encoding, improving performance on deeply nested message structures.
 
 #### Limitations
 - Does not support RPC or extensions.
+- Does not support closed enums.
 - No reflection capabilities.
 - `string`, `bytes`, repeated, and `map` fields require some basic user configuration to get working.
 
