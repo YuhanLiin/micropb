@@ -209,13 +209,14 @@ impl<'proto> Field<'proto> {
                     .unwrap_or(false);
                 let feature_packed =
                     feature_set.repeated_field_encoding() == Some(&RepeatedFieldEncoding::Packed);
+                let packable = typ.packable();
 
                 FieldType::Repeated {
                     typestr,
                     typ,
                     max_len,
                     cache_vec_typestr: cache_typestr,
-                    packed: packed || feature_packed,
+                    packed: (packed || feature_packed) && packable,
                 }
             }
 

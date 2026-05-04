@@ -141,6 +141,17 @@ impl<'proto> TypeSpec<'proto> {
         }
     }
 
+    pub(crate) fn packable(&self) -> bool {
+        match self {
+            TypeSpec::Message(_) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => false,
+            TypeSpec::Enum(_)
+            | TypeSpec::Float
+            | TypeSpec::Double
+            | TypeSpec::Bool
+            | TypeSpec::Int(..) => true,
+        }
+    }
+
     fn max_size(&self) -> Result<usize, &'static str> {
         match self {
             TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Ok(4),
