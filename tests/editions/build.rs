@@ -1,7 +1,4 @@
-use micropb_gen::{
-    Config, EncodeDecode, Generator,
-    config::{CustomField, IntSize, OptionalRepr},
-};
+use micropb_gen::{Config, Generator, config::OptionalRepr};
 
 fn scoping() {
     let mut generator = Generator::new();
