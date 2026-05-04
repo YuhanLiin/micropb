@@ -158,10 +158,10 @@ impl<'proto> Message<'proto> {
                                     oneof_fields.push(field);
                                 }
                             }
-                            Some(OneofType::Custom { nums, .. }) => {
-                                if !field_conf.config.skip.unwrap_or(false) {
-                                    nums.push(f.number);
-                                }
+                            Some(OneofType::Custom { nums, .. })
+                                if !field_conf.config.skip.unwrap_or(false) =>
+                            {
+                                nums.push(f.number);
                             }
                             _ => (),
                         }
