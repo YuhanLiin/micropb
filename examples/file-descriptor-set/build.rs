@@ -24,6 +24,11 @@ fn main() {
                 ".google.protobuf.FeatureSet",
             ],
             Config::new().no_accessors(false),
+        )
+        // Need to be able to clone FeatureSet for Editions support
+        .configure(
+            ".google.protobuf.FeatureSet",
+            Config::new().no_clone_impl(false),
         );
     gen.compile_protos(&["google/protobuf/descriptor.proto"], "descriptor.rs")
         .unwrap();
