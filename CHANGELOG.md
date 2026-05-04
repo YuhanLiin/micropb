@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Protobuf Editions support
+
+### Changed
+
+- Enums now have `Debug` explicit manual impls that print the enum variant name, rather than the old derived impl that prints the variant number
+
 ## 0.6.0
 
 ### Added
