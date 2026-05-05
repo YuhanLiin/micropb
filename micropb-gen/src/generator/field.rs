@@ -3,6 +3,8 @@ use quote::{format_ident, quote};
 use syn::{Ident, Lifetime};
 
 use crate::config::{OptionalRepr, contains_len_param, map_type_parsed, vec_type_parsed};
+use crate::descriptor::FeatureSet;
+use crate::descriptor::FeatureSet_::{FieldPresence, RepeatedFieldEncoding};
 use crate::descriptor::{
     DescriptorProto, FieldDescriptorProto,
     FieldDescriptorProto_::{Label, Type},
@@ -123,10 +125,17 @@ impl<'proto> Field<'proto> {
         comment_node: Option<&'proto CommentNode>,
         ctx: &Context<'proto>,
         map_msg: Option<&'proto DescriptorProto>,
+        feature_set: &FeatureSet,
     ) -> Result<Option<Self>, String> {
         if field_conf.config.skip.unwrap_or(false) {
             return Ok(None);
         }
+
+        let mut feature_set = feature_set.to_owned();
+        ctx.merge_feature_sets(
+            &mut feature_set,
+            proto.options().and_then(|opt| opt.features()),
+        )?;
 
         let num = proto.number as u32;
         let name = &proto.name;
@@ -148,9 +157,17 @@ impl<'proto> Field<'proto> {
                     .map_type
                     .clone()
                     .ok_or_else(|| "map_type not configured".to_owned())?;
-                let max_len = field_conf.config.max_len.filter(|_| contains_len_param(&typestr));
+                let max_len = field_conf
+                    .config
+                    .max_len
+                    .filter(|_| contains_len_param(&typestr));
                 let cache_typestr = if ctx.params.encode_cache {
-                    field_conf.config.cache_vec_type.as_ref().or(field_conf.config.vec_type.as_ref()).cloned()
+                    field_conf
+                        .config
+                        .cache_vec_type
+                        .as_ref()
+                        .or(field_conf.config.vec_type.as_ref())
+                        .cloned()
                 } else {
                     None
                 };
@@ -170,28 +187,46 @@ impl<'proto> Field<'proto> {
                     .vec_type
                     .clone()
                     .ok_or_else(|| "vec_type not configured".to_owned())?;
-                let max_len = field_conf.config.max_len.filter(|_| contains_len_param(&typestr));
+                let max_len = field_conf
+                    .config
+                    .max_len
+                    .filter(|_| contains_len_param(&typestr));
                 let cache_typestr = if ctx.params.encode_cache {
-                    field_conf.config.cache_vec_type.as_ref().unwrap_or(&typestr).clone()
+                    field_conf
+                        .config
+                        .cache_vec_type
+                        .as_ref()
+                        .unwrap_or(&typestr)
+                        .clone()
                 } else {
                     String::new()
                 };
+
+                // These two shouldn't ever coexist, so only one of them should ever be true
+                let packed = proto
+                    .options()
+                    .and_then(|opt| opt.packed().copied())
+                    .unwrap_or(false);
+                let feature_packed =
+                    feature_set.repeated_field_encoding() == Some(&RepeatedFieldEncoding::Packed);
+                let packable = typ.packable();
+
                 FieldType::Repeated {
                     typestr,
                     typ,
                     max_len,
                     cache_vec_typestr: cache_typestr,
-                    packed: proto
-                        .options()
-                        .and_then(|opt| opt.packed().copied())
-                        .unwrap_or(false),
+                    packed: (packed || feature_packed) && packable,
                 }
             }
 
-            (None, None, Label::Required | Label::Optional)
-                if ctx.syntax == Syntax::Proto2
+            (None, None, label)
+                if (ctx.syntax == Syntax::Proto2
+                    && matches!(label, Label::Required | Label::Optional))
                     || proto.proto3_optional
-                    || proto.r#type == Type::Message =>
+                    || proto.r#type == Type::Message
+                    || feature_set.field_presence() == Some(&FieldPresence::Explicit)
+                    || feature_set.field_presence() == Some(&FieldPresence::LegacyRequired) =>
             {
                 let repr = field_conf.config.optional_repr.unwrap_or(if boxed {
                     OptionalRepr::Option
@@ -652,10 +687,10 @@ impl<'proto> Field<'proto> {
         if let Some(max_size) = &self.max_size_override {
             return match max_size {
                 Ok(size) => quote! { ::core::result::Result::Ok(#size) },
-                Err(err) => { 
+                Err(err) => {
                     let err = field_error_str(&ctx.pkg, msg_name, self.name, err);
                     quote! { ::core::result::Result::<usize, _>::Err(#err) }
-                },
+                }
             };
         }
 
@@ -682,9 +717,9 @@ impl<'proto> Field<'proto> {
                         }
                     }
                 })
-                .unwrap_or_else(|| { 
+                .unwrap_or_else(|| {
                     let err = field_error_str(&ctx.pkg, msg_name, self.name, "unbounded map");
-                    quote! {::core::result::Result::<usize, &'static str>::Err(#err)} 
+                    quote! {::core::result::Result::<usize, &'static str>::Err(#err)}
                 }),
 
             FieldType::Single(type_spec) | FieldType::Optional(type_spec, _) => {
@@ -705,9 +740,9 @@ impl<'proto> Field<'proto> {
                 } else {
                     quote! { ::micropb::const_map!(#size, |size| (size + #tag_len) * #len) }
                 }
-            }).unwrap_or_else(|| { 
+            }).unwrap_or_else(|| {
                 let err = field_error_str(&ctx.pkg, msg_name, self.name, "unbounded vec");
-                quote! { ::core::result::Result::<usize, &'static str>::Err(#err) } 
+                quote! { ::core::result::Result::<usize, &'static str>::Err(#err) }
             }),
 
             FieldType::Custom(CustomField::Type(custom)) => quote! { <#custom as ::micropb::field::FieldEncode>::MAX_SIZE },
@@ -735,39 +770,55 @@ impl<'proto> Field<'proto> {
     ///     map_field: MyVec<Value_::_Cache>,
     /// }
     /// ```
-    pub(crate) fn generate_cache_field(&self, ctx: &Context<'proto>) -> Result<TokenStream, String> {
+    pub(crate) fn generate_cache_field(
+        &self,
+        ctx: &Context<'proto>,
+    ) -> Result<TokenStream, String> {
         let typ = match &self.ftype {
             FieldType::Single(type_spec) => type_spec.generate_cache_type(ctx),
             FieldType::Optional(type_spec, _) => type_spec.generate_cache_type(ctx),
 
-            FieldType::Repeated { typ, cache_vec_typestr, max_len, packed: false, .. } => {
+            FieldType::Repeated {
+                typ,
+                cache_vec_typestr,
+                max_len,
+                packed: false,
+                ..
+            } => {
                 if let Some(cache_type) = typ.generate_cache_type(ctx) {
                     let cache_vec_type = vec_type_parsed(cache_vec_typestr, cache_type, *max_len)?;
                     Some(quote! { #cache_vec_type })
                 } else {
                     None
                 }
-            },
-            FieldType::Repeated { packed: true, .. } => {
-                Some(quote! { usize })
-            },
+            }
+            FieldType::Repeated { packed: true, .. } => Some(quote! { usize }),
 
-            FieldType::Map { val, cache_vec_typestr, max_len, .. } => {
+            FieldType::Map {
+                val,
+                cache_vec_typestr,
+                max_len,
+                ..
+            } => {
                 // Key type can't be a message, so we only ever need to cache the value type
                 if let Some(cache_type) = val.generate_cache_type(ctx) {
-                    let cache_vec_typestr = cache_vec_typestr.as_ref().ok_or_else(|| "missing cache_vec_type".to_owned())?;
+                    let cache_vec_typestr = cache_vec_typestr
+                        .as_ref()
+                        .ok_or_else(|| "missing cache_vec_type".to_owned())?;
                     let cache_vec_type = vec_type_parsed(cache_vec_typestr, cache_type, *max_len)?;
                     Some(quote! { #cache_vec_type })
                 } else {
                     None
                 }
-            },
+            }
 
             FieldType::Custom(_) => None,
         };
 
         let name = &self.san_rust_name;
-        Ok(typ.map(|typ| quote! { pub #name: #typ, }).unwrap_or_default())
+        Ok(typ
+            .map(|typ| quote! { pub #name: #typ, })
+            .unwrap_or_default())
     }
 
     pub(crate) fn generate_encode(
@@ -788,12 +839,10 @@ impl<'proto> Field<'proto> {
                 let key_sizeof = key.generate_sizeof(ctx, &val_ref);
 
                 let (val_sizeof, stmts) = match &func_type {
-                    EncodeFunc::Sizeof(size) => {
-                        (
-                           val.generate_sizeof(ctx, &val_ref),
-                           quote! { #size += ::micropb::size::sizeof_len_record(len) + #tag_len; }
-                        )                    
-                    }
+                    EncodeFunc::Sizeof(size) => (
+                        val.generate_sizeof(ctx, &val_ref),
+                        quote! { #size += ::micropb::size::sizeof_len_record(len) + #tag_len; },
+                    ),
                     EncodeFunc::PopulateCache(cache) => {
                         // The cache vec type should have the same capacity as the container type,
                         // since they both use the same max_len, so we can panic on overflow
@@ -805,12 +854,12 @@ impl<'proto> Field<'proto> {
                                 ::micropb::size::sizeof_len_record(sz)
                             }
                         } else {
-                           val.generate_sizeof(ctx, &val_ref)
+                            val.generate_sizeof(ctx, &val_ref)
                         };
                         (
                             val_sizeof,
-                            quote! { #cache._size += ::micropb::size::sizeof_len_record(len) + #tag_len; }
-                        )                    
+                            quote! { #cache._size += ::micropb::size::sizeof_len_record(len) + #tag_len; },
+                        )
                     }
 
                     EncodeFunc::Encode(encoder) | EncodeFunc::EncodeCached(encoder, _) => {
@@ -818,14 +867,20 @@ impl<'proto> Field<'proto> {
                         let key_wtype = key.wire_type();
                         let val_wtype = val.wire_type();
 
-                        let (val_encode, val_sizeof) =
-                            if let (EncodeFunc::EncodeCached(encoder, cache), true) = (&func_type, val.is_cached(ctx)) {
+                        let (val_encode, val_sizeof) = if let (
+                            EncodeFunc::EncodeCached(encoder, cache),
+                            true,
+                        ) = (&func_type, val.is_cached(ctx))
+                        {
                             (
                                 quote! { #val_ref.encode_len_delimited_cached(#encoder, &#cache.#fname[i]) },
-                                quote! { ::micropb::size::sizeof_len_record(#cache.#fname[i]._size) }
+                                quote! { ::micropb::size::sizeof_len_record(#cache.#fname[i]._size) },
                             )
                         } else {
-                            (val.generate_encode_expr(ctx, encoder, &val_ref), val.generate_sizeof(ctx, &val_ref))
+                            (
+                                val.generate_encode_expr(ctx, encoder, &val_ref),
+                                val.generate_sizeof(ctx, &val_ref),
+                            )
                         };
                         let stmts = quote! {
                             #encoder.encode_varint32(#tag_val)?;
@@ -968,7 +1023,7 @@ impl<'proto> Field<'proto> {
                         quote! { #size += #tag_len + ::micropb::size::sizeof_len_record(len); }
                     }
                     EncodeFunc::PopulateCache(cache) => {
-                        quote! { 
+                        quote! {
                             #cache._size += #tag_len + ::micropb::size::sizeof_len_record(len);
                             #cache.#fname = len;
                         }
@@ -992,8 +1047,12 @@ impl<'proto> Field<'proto> {
 
             FieldType::Custom(CustomField::Type(_)) => match &func_type {
                 EncodeFunc::Sizeof(size) => quote! { #size += self.#fname.compute_fields_size(); },
-                EncodeFunc::PopulateCache(cache) => quote! { #cache._size += self.#fname.compute_fields_size(); },
-                EncodeFunc::Encode(encoder) | EncodeFunc::EncodeCached(encoder, _) => quote! { self.#fname.encode_fields(#encoder)?; },
+                EncodeFunc::PopulateCache(cache) => {
+                    quote! { #cache._size += self.#fname.compute_fields_size(); }
+                }
+                EncodeFunc::Encode(encoder) | EncodeFunc::EncodeCached(encoder, _) => {
+                    quote! { self.#fname.encode_fields(#encoder)?; }
+                }
             },
 
             FieldType::Custom(CustomField::Delegate(_)) => quote! {},
@@ -1058,6 +1117,14 @@ mod tests {
         f
     }
 
+    fn from_field_proto<'proto>(
+        proto: &'proto FieldDescriptorProto,
+        conf: &CurrentConfig<'proto>,
+        ctx: &Context<'proto>,
+    ) -> Option<Field<'proto>> {
+        Field::from_proto(proto, conf, None, ctx, None, &FeatureSet::default()).unwrap()
+    }
+
     #[test]
     fn from_proto_skipped() {
         let config = Box::new(Config::new().skip(true));
@@ -1069,11 +1136,7 @@ mod tests {
 
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto2;
-        assert!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .is_none()
-        );
+        assert!(from_field_proto(&field, &field_conf, &ctx).is_none());
     }
 
     #[test]
@@ -1088,9 +1151,7 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap(),
+            from_field_proto(&field, &field_conf, &ctx).unwrap(),
             Field {
                 num: 2,
                 ftype: FieldType::Single(TypeSpec::Bool),
@@ -1121,9 +1182,7 @@ mod tests {
         field.set_default_value("true".to_owned());
 
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap(),
+            from_field_proto(&field, &field_conf, &ctx).unwrap(),
             Field {
                 num: 2,
                 ftype: FieldType::Single(TypeSpec::Bool),
@@ -1152,28 +1211,19 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Single(TypeSpec::Bool)
         );
         ctx.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
         );
 
         // Required fields are treated like optionals
         let field = field_proto(0, "field", Some(Label::Required), false);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
         );
 
@@ -1181,10 +1231,7 @@ mod tests {
         ctx.syntax = Syntax::Proto3;
         let field = field_proto(0, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
         );
 
@@ -1196,10 +1243,7 @@ mod tests {
         };
         ctx.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
         );
 
@@ -1210,11 +1254,40 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Optional(TypeSpec::Bool, OptionalRepr::Option)
+        );
+    }
+
+    #[test]
+    fn editions_presence() {
+        let config = Box::new(Config::new());
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+        let mut ctx = make_ctx();
+        ctx.syntax = Syntax::E2024;
+
+        let mut field = field_proto(0, "field", None, false).init_options(Default::default());
+        field.options.set_features(Default::default());
+
+        field
+            .options
+            .features
+            .set_field_presence(FieldPresence::Implicit);
+        assert_eq!(
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
+            FieldType::Single(TypeSpec::Bool)
+        );
+
+        field
+            .options
+            .features
+            .set_field_presence(FieldPresence::Explicit);
+        assert_eq!(
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
+            FieldType::Optional(TypeSpec::Bool, OptionalRepr::Hazzer)
         );
     }
 
@@ -1236,10 +1309,7 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Custom(CustomField::Type(syn::parse_str("Custom<false>").unwrap()))
         );
 
@@ -1254,10 +1324,7 @@ mod tests {
         };
         let field = field_proto(1, "field", Some(Label::Optional), true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Custom(CustomField::Delegate(syn::parse_str("field").unwrap()))
         );
     }
@@ -1280,10 +1347,7 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto3;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Repeated {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: false,
@@ -1295,14 +1359,42 @@ mod tests {
         field.set_options(Default::default());
         field.options.set_packed(true);
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, None)
-                .unwrap()
-                .unwrap()
-                .ftype,
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
             FieldType::Repeated {
                 typ: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 packed: true,
                 typestr: "Vec<$N>".to_owned(),
+                cache_vec_typestr: String::new(),
+                max_len: Some(21)
+            }
+        );
+    }
+
+    #[test]
+    fn editions_packed() {
+        let config = Box::new(Config::new().max_len(21).vec_type("Vec<$T, $N>"));
+        let field_conf = CurrentConfig {
+            node: None,
+            config: Cow::Borrowed(&config),
+        };
+
+        let mut field = field_proto(0, "field", Some(Label::Repeated), false);
+        field.set_type(Type::Int32);
+        field.set_options(Default::default());
+        field.options.set_features(Default::default());
+        field
+            .options
+            .features
+            .set_repeated_field_encoding(RepeatedFieldEncoding::Packed);
+
+        let mut ctx = make_ctx();
+        ctx.syntax = Syntax::E2024;
+        assert_eq!(
+            from_field_proto(&field, &field_conf, &ctx).unwrap().ftype,
+            FieldType::Repeated {
+                typ: TypeSpec::Int(PbInt::Int32, IntSize::S32),
+                packed: true,
+                typestr: "Vec<$T, $N>".to_owned(),
                 cache_vec_typestr: String::new(),
                 max_len: Some(21)
             }
@@ -1350,10 +1442,17 @@ mod tests {
         let mut ctx = make_ctx();
         ctx.syntax = Syntax::Proto2;
         assert_eq!(
-            Field::from_proto(&field, &field_conf, None, &ctx, Some(&map_elem))
-                .unwrap()
-                .unwrap()
-                .ftype,
+            Field::from_proto(
+                &field,
+                &field_conf,
+                None,
+                &ctx,
+                Some(&map_elem),
+                &FeatureSet::default()
+            )
+            .unwrap()
+            .unwrap()
+            .ftype,
             FieldType::Map {
                 key: TypeSpec::Int(PbInt::Int32, IntSize::S8),
                 val: TypeSpec::String {

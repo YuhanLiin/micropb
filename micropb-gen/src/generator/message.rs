@@ -5,7 +5,7 @@ use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
-    descriptor::DescriptorProto,
+    descriptor::{DescriptorProto, FeatureSet},
     error::{field_error, msg_error},
     generator::{
         Context, EncodeFunc,
@@ -71,12 +71,20 @@ impl<'proto> Message<'proto> {
         ctx: &Context<'proto>,
         msg_conf: &CurrentConfig,
         comment_node: Option<&'proto CommentNode>,
+        feature_set: &FeatureSet,
     ) -> crate::Result<Option<Self>> {
         if msg_conf.config.skip.unwrap_or(false) {
             return Ok(None);
         }
 
         let msg_name = &proto.name;
+        let mut feature_set = feature_set.to_owned();
+        ctx.merge_feature_sets(
+            &mut feature_set,
+            proto.options().and_then(|opt| opt.features()),
+        )
+        .map_err(|e| msg_error(&ctx.pkg, msg_name, &e))?;
+
         let mut oneofs = vec![];
         for (idx, oneof) in proto.oneof_decl.iter().enumerate() {
             let oneof = Oneof::from_proto(
@@ -113,8 +121,15 @@ impl<'proto> Message<'proto> {
                 .unwrap_or(&f.type_name);
 
             let field = if let Some(map_msg) = map_types.remove(raw_msg_name) {
-                Field::from_proto(f, &field_conf, field_comments, ctx, Some(map_msg))
-                    .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
+                Field::from_proto(
+                    f,
+                    &field_conf,
+                    field_comments,
+                    ctx,
+                    Some(map_msg),
+                    &feature_set,
+                )
+                .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
             } else {
                 if let Some(idx) = f.oneof_index().copied() {
                     if f.proto3_optional {
@@ -143,10 +158,10 @@ impl<'proto> Message<'proto> {
                                     oneof_fields.push(field);
                                 }
                             }
-                            Some(OneofType::Custom { nums, .. }) => {
-                                if !field_conf.config.skip.unwrap_or(false) {
-                                    nums.push(f.number);
-                                }
+                            Some(OneofType::Custom { nums, .. })
+                                if !field_conf.config.skip.unwrap_or(false) =>
+                            {
+                                nums.push(f.number);
                             }
                             _ => (),
                         }
@@ -154,7 +169,7 @@ impl<'proto> Message<'proto> {
                     }
                 }
                 // Normal field
-                Field::from_proto(f, &field_conf, field_comments, ctx, None)
+                Field::from_proto(f, &field_conf, field_comments, ctx, None, &feature_set)
                     .map_err(|e| field_error(&ctx.pkg, msg_name, &f.name, &e))?
             };
             if let Some(field) = field {
@@ -956,6 +971,14 @@ mod tests {
         msg
     }
 
+    fn from_msg_proto<'proto>(
+        proto: &'proto DescriptorProto,
+        ctx: &Context<'proto>,
+        conf: &CurrentConfig<'proto>,
+    ) -> Option<Message<'proto>> {
+        Message::from_proto(proto, ctx, conf, None, &FeatureSet::default()).unwrap()
+    }
+
     #[test]
     fn from_proto_skipped() {
         let proto = test_msg_proto();
@@ -965,11 +988,7 @@ mod tests {
             config: Cow::Borrowed(&config),
         };
         let ctx = make_ctx();
-        assert!(
-            Message::from_proto(&proto, &ctx, &msg_conf, None)
-                .unwrap()
-                .is_none()
-        );
+        assert!(from_msg_proto(&proto, &ctx, &msg_conf).is_none());
     }
 
     #[test]
@@ -991,12 +1010,7 @@ mod tests {
             node: Some(&node),
             config: Cow::Borrowed(&config),
         };
-        assert_eq!(
-            Message::from_proto(&proto, &ctx, &msg_conf, None)
-                .unwrap()
-                .unwrap(),
-            empty_msg
-        );
+        assert_eq!(from_msg_proto(&proto, &ctx, &msg_conf).unwrap(), empty_msg);
 
         // Don't skip oneof, but skip oneof fields (oneof should still be skipped)
         *node.add_path(std::iter::once("oneof")).value_mut() =
@@ -1009,12 +1023,7 @@ mod tests {
             node: Some(&node),
             config: Cow::Borrowed(&config),
         };
-        assert_eq!(
-            Message::from_proto(&proto, &ctx, &msg_conf, None)
-                .unwrap()
-                .unwrap(),
-            empty_msg
-        );
+        assert_eq!(from_msg_proto(&proto, &ctx, &msg_conf).unwrap(), empty_msg);
     }
 
     #[test]
@@ -1104,12 +1113,7 @@ mod tests {
             field_attrs: vec![],
         });
 
-        assert_eq!(
-            Message::from_proto(&proto, &ctx, &msg_conf, None)
-                .unwrap()
-                .unwrap(),
-            expected
-        )
+        assert_eq!(from_msg_proto(&proto, &ctx, &msg_conf).unwrap(), expected)
     }
 
     #[test]
@@ -1150,12 +1154,7 @@ mod tests {
             field_attrs: vec![],
         });
 
-        assert_eq!(
-            Message::from_proto(&proto, &ctx, &msg_conf, None)
-                .unwrap()
-                .unwrap(),
-            expected
-        )
+        assert_eq!(from_msg_proto(&proto, &ctx, &msg_conf).unwrap(), expected)
     }
 
     #[test]
@@ -1209,12 +1208,7 @@ mod tests {
         // Only the first field should be an edge, since the second field is external
         expected.message_edges = vec![(Position::Field(0), ".Internal")];
 
-        assert_eq!(
-            Message::from_proto(&proto, &ctx, &msg_conf, None)
-                .unwrap()
-                .unwrap(),
-            expected
-        )
+        assert_eq!(from_msg_proto(&proto, &ctx, &msg_conf).unwrap(), expected)
     }
 
     #[test]

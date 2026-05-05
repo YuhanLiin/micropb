@@ -1,0 +1,28 @@
+edition = "2023";
+
+option features.field_presence = EXPLICIT;
+
+message Example {
+  bool valid = 1 [features.field_presence = IMPLICIT];
+  
+  int32 user_id = 2;
+  
+  enum Status {
+    option features.enum_type = CLOSED; // will generate a warning
+    UNKNOWN = 0;
+    ACTIVE = 1;
+    INACTIVE = 2;
+  }
+
+  message Inner {
+    Status status = 1;
+  }
+}
+
+message Packed {
+  repeated bool list = 1;
+}
+
+message Expanded {
+  repeated bool list = 1 [features.repeated_field_encoding = EXPANDED];
+}

@@ -141,6 +141,17 @@ impl<'proto> TypeSpec<'proto> {
         }
     }
 
+    pub(crate) fn packable(&self) -> bool {
+        match self {
+            TypeSpec::Message(_) | TypeSpec::String { .. } | TypeSpec::Bytes { .. } => false,
+            TypeSpec::Enum(_)
+            | TypeSpec::Float
+            | TypeSpec::Double
+            | TypeSpec::Bool
+            | TypeSpec::Int(..) => true,
+        }
+    }
+
     fn max_size(&self) -> Result<usize, &'static str> {
         match self {
             TypeSpec::Float | TypeSpec::Int(PbInt::Fixed32 | PbInt::Sfixed32, _) => Ok(4),
@@ -476,11 +487,12 @@ impl<'proto> TypeSpec<'proto> {
     /// to cache them because calculating their lengths is trivial.
     pub(crate) fn generate_cache_type(&self, ctx: &Context<'proto>) -> Option<TokenStream> {
         if let TypeSpec::Message(tname) = self
-            && (ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname)) {
-                let cache_name = (*tname).to_owned() + "._Cache";
-                let cache_type = ctx.resolve_type_name(&cache_name);
-                return Some(cache_type);
-            }
+            && (ctx.params.cache_extern_types || !ctx.params.extern_paths.contains_key(*tname))
+        {
+            let cache_name = (*tname).to_owned() + "._Cache";
+            let cache_type = ctx.resolve_type_name(&cache_name);
+            return Some(cache_type);
+        }
         None
     }
 

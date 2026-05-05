@@ -165,9 +165,10 @@ mod tests {
         assert_eq!(node.value, Some(5));
 
         let mut total = 0;
-        assert!(root
-            .visit_path(["a", "c", "c"].into_iter(), |i| total += i)
-            .is_none());
+        assert!(
+            root.visit_path(["a", "c", "c"].into_iter(), |i| total += i)
+                .is_none()
+        );
         assert_eq!(total, 0);
     }
 

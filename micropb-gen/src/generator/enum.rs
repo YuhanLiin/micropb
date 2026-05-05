@@ -6,7 +6,7 @@ use syn::{Attribute, Ident};
 use super::location::{CommentNode, Comments, get_comments, next_comment_node};
 use crate::{
     config::IntSize,
-    descriptor::EnumDescriptorProto,
+    descriptor::{EnumDescriptorProto, FeatureSet},
     error::msg_error,
     generator::{Context, CurrentConfig, derive_enum_attr, location, sanitized_ident},
 };
@@ -39,6 +39,12 @@ impl<'proto> Enum<'proto> {
         }
 
         let name = &proto.name;
+        // This exists purely to print warnings about enum_type to CLOSED
+        let _ = ctx.merge_feature_sets(
+            &mut FeatureSet::default(),
+            proto.options().and_then(|opt| opt.features()),
+        );
+
         let rust_name = sanitized_ident(name);
         let int_type = enum_conf.config.enum_int_size.unwrap_or(IntSize::S32);
         let unsigned = enum_conf.config.enum_unsigned.unwrap_or(false);
@@ -98,6 +104,12 @@ impl<'proto> Enum<'proto> {
         let comments = self.comments.map(Comments::lines).into_iter().flatten();
         let attrs = &self.attrs;
 
+        let debug_variants = self.variants.iter().map(|v| {
+            let var_name = &v.rust_name;
+            let var_str = var_name.to_string();
+            quote! { #name::#var_name => formatter.write_str(#var_str), }
+        });
+
         quote! {
             #(#[doc = #comments])*
             #derive_enum
@@ -120,6 +132,15 @@ impl<'proto> Enum<'proto> {
             impl core::convert::From<#itype> for #name {
                 fn from(val: #itype) -> Self {
                     Self(val)
+                }
+            }
+
+            impl core::fmt::Debug for #name {
+                fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    match *self {
+                        #(#debug_variants)*
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
                 }
             }
         }

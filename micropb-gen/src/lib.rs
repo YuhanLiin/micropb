@@ -488,6 +488,19 @@
 //!
 //! Configurations can be stored in TOML files rather than in `build.rs`. See
 //! [`Generator::parse_config_file`] for more info.
+//!
+//! # Editions Support
+//!
+//! Status of `micropb` support for the standard Protobuf Editions features:
+//!
+//! - `field_presence` is supported. `EXPLICIT` is treated as an optional field, and `IMPLICIT` is
+//!   treated as a proto3 singular field. `LEGACY_REQUIRED` is treated the same as `EXPLICIT`.
+//! - `repeated_field_encoding` is supported and treated the same as the "packed" option.
+//! - `enum_type` is ignored, since `micropb` always treats enums as open.
+//! - `message_encoding` is not allowed, since `micropb` doesn't support group-delimited encoding.
+//! - `utf8_validation` is ignored, since Rust strings are always utf8-encoded.
+//!
+//!  Other standard Editions features are not relevant to code generation.
 
 pub mod config;
 pub(crate) mod error;

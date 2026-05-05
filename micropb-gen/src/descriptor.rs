@@ -1602,7 +1602,7 @@ pub mod google_ {
                 }
             }
             /// The verification state of the extension range.
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct VerificationState(pub i32);
             impl VerificationState {
@@ -1620,6 +1620,22 @@ pub mod google_ {
             impl core::convert::From<i32> for VerificationState {
                 fn from(val: i32) -> Self {
                     Self(val)
+                }
+            }
+            impl core::fmt::Debug for VerificationState {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        VerificationState::Declaration => {
+                            formatter.write_str("Declaration")
+                        }
+                        VerificationState::Unverified => {
+                            formatter.write_str("Unverified")
+                        }
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
@@ -2342,7 +2358,7 @@ pub mod google_ {
         }
         /// Inner types for `FieldDescriptorProto`
         pub mod FieldDescriptorProto_ {
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct Type(pub i32);
             impl Type {
@@ -2392,7 +2408,35 @@ pub mod google_ {
                     Self(val)
                 }
             }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            impl core::fmt::Debug for Type {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        Type::Double => formatter.write_str("Double"),
+                        Type::Float => formatter.write_str("Float"),
+                        Type::Int64 => formatter.write_str("Int64"),
+                        Type::Uint64 => formatter.write_str("Uint64"),
+                        Type::Int32 => formatter.write_str("Int32"),
+                        Type::Fixed64 => formatter.write_str("Fixed64"),
+                        Type::Fixed32 => formatter.write_str("Fixed32"),
+                        Type::Bool => formatter.write_str("Bool"),
+                        Type::String => formatter.write_str("String"),
+                        Type::Group => formatter.write_str("Group"),
+                        Type::Message => formatter.write_str("Message"),
+                        Type::Bytes => formatter.write_str("Bytes"),
+                        Type::Uint32 => formatter.write_str("Uint32"),
+                        Type::Enum => formatter.write_str("Enum"),
+                        Type::Sfixed32 => formatter.write_str("Sfixed32"),
+                        Type::Sfixed64 => formatter.write_str("Sfixed64"),
+                        Type::Sint32 => formatter.write_str("Sint32"),
+                        Type::Sint64 => formatter.write_str("Sint64"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct Label(pub i32);
             impl Label {
@@ -2414,6 +2458,19 @@ pub mod google_ {
             impl core::convert::From<i32> for Label {
                 fn from(val: i32) -> Self {
                     Self(val)
+                }
+            }
+            impl core::fmt::Debug for Label {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        Label::Optional => formatter.write_str("Optional"),
+                        Label::Repeated => formatter.write_str("Repeated"),
+                        Label::Required => formatter.write_str("Required"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
@@ -4392,7 +4449,7 @@ pub mod google_ {
         /// Inner types for `FileOptions`
         pub mod FileOptions_ {
             /// Generated classes can be optimized for speed or code size.
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct OptimizeMode(pub i32);
             impl OptimizeMode {
@@ -4415,6 +4472,19 @@ pub mod google_ {
             impl core::convert::From<i32> for OptimizeMode {
                 fn from(val: i32) -> Self {
                     Self(val)
+                }
+            }
+            impl core::fmt::Debug for OptimizeMode {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        OptimizeMode::Speed => formatter.write_str("Speed"),
+                        OptimizeMode::CodeSize => formatter.write_str("CodeSize"),
+                        OptimizeMode::LiteRuntime => formatter.write_str("LiteRuntime"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
@@ -6914,7 +6984,7 @@ pub mod google_ {
                     }
                 }
             }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct CType(pub i32);
             impl CType {
@@ -6941,7 +7011,20 @@ pub mod google_ {
                     Self(val)
                 }
             }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            impl core::fmt::Debug for CType {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        CType::String => formatter.write_str("String"),
+                        CType::Cord => formatter.write_str("Cord"),
+                        CType::StringPiece => formatter.write_str("StringPiece"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct JSType(pub i32);
             impl JSType {
@@ -6964,10 +7047,23 @@ pub mod google_ {
                     Self(val)
                 }
             }
+            impl core::fmt::Debug for JSType {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        JSType::JsNormal => formatter.write_str("JsNormal"),
+                        JSType::JsString => formatter.write_str("JsString"),
+                        JSType::JsNumber => formatter.write_str("JsNumber"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
             /// If set to RETENTION_SOURCE, the option will be omitted from the binary.
             /// Note: as of January 2023, support for this is in progress and does not yet
             /// have an effect (b/264593489).
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct OptionRetention(pub i32);
             impl OptionRetention {
@@ -6987,11 +7083,30 @@ pub mod google_ {
                     Self(val)
                 }
             }
+            impl core::fmt::Debug for OptionRetention {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        OptionRetention::RetentionUnknown => {
+                            formatter.write_str("RetentionUnknown")
+                        }
+                        OptionRetention::RetentionRuntime => {
+                            formatter.write_str("RetentionRuntime")
+                        }
+                        OptionRetention::RetentionSource => {
+                            formatter.write_str("RetentionSource")
+                        }
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
             /// This indicates the types of entities that the field may apply to when used
             /// as an option. If it is unset, then the field may be freely used as an
             /// option on any kind of entity. Note: as of January 2023, support for this is
             /// in progress and does not yet have an effect (b/264593489).
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct OptionTargetType(pub i32);
             impl OptionTargetType {
@@ -7016,6 +7131,46 @@ pub mod google_ {
             impl core::convert::From<i32> for OptionTargetType {
                 fn from(val: i32) -> Self {
                     Self(val)
+                }
+            }
+            impl core::fmt::Debug for OptionTargetType {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        OptionTargetType::TargetTypeUnknown => {
+                            formatter.write_str("TargetTypeUnknown")
+                        }
+                        OptionTargetType::TargetTypeFile => {
+                            formatter.write_str("TargetTypeFile")
+                        }
+                        OptionTargetType::TargetTypeExtensionRange => {
+                            formatter.write_str("TargetTypeExtensionRange")
+                        }
+                        OptionTargetType::TargetTypeMessage => {
+                            formatter.write_str("TargetTypeMessage")
+                        }
+                        OptionTargetType::TargetTypeField => {
+                            formatter.write_str("TargetTypeField")
+                        }
+                        OptionTargetType::TargetTypeOneof => {
+                            formatter.write_str("TargetTypeOneof")
+                        }
+                        OptionTargetType::TargetTypeEnum => {
+                            formatter.write_str("TargetTypeEnum")
+                        }
+                        OptionTargetType::TargetTypeEnumEntry => {
+                            formatter.write_str("TargetTypeEnumEntry")
+                        }
+                        OptionTargetType::TargetTypeService => {
+                            formatter.write_str("TargetTypeService")
+                        }
+                        OptionTargetType::TargetTypeMethod => {
+                            formatter.write_str("TargetTypeMethod")
+                        }
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
@@ -8158,7 +8313,7 @@ pub mod google_ {
             /// Is this method side-effect-free (or safe in HTTP parlance), or idempotent,
             /// or neither? HTTP based RPC implementation may choose GET verb for safe
             /// methods, and PUT verb for idempotent methods instead of the default POST.
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct IdempotencyLevel(pub i32);
             impl IdempotencyLevel {
@@ -8178,6 +8333,23 @@ pub mod google_ {
             impl core::convert::From<i32> for IdempotencyLevel {
                 fn from(val: i32) -> Self {
                     Self(val)
+                }
+            }
+            impl core::fmt::Debug for IdempotencyLevel {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        IdempotencyLevel::IdempotencyUnknown => {
+                            formatter.write_str("IdempotencyUnknown")
+                        }
+                        IdempotencyLevel::NoSideEffects => {
+                            formatter.write_str("NoSideEffects")
+                        }
+                        IdempotencyLevel::Idempotent => formatter.write_str("Idempotent"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
@@ -8708,7 +8880,7 @@ pub mod google_ {
         /// readability, but leave us very open to this scenario.  A future feature will
         /// be designed and implemented to handle this, hopefully before we ever hit a
         /// conflict here.
-        #[derive(Debug, Default)]
+        #[derive(Debug, Default, Clone, Copy)]
         pub struct FeatureSet {
             /// *Note:* The presence of this field is tracked separately in the `_has` field. It's recommended to access this field via the accessor rather than directly.
             pub r#field_presence: FeatureSet_::FieldPresence,
@@ -8733,10 +8905,92 @@ pub mod google_ {
             ) -> ::core::option::Option<&FeatureSet_::FieldPresence> {
                 self._has.r#field_presence().then_some(&self.r#field_presence)
             }
+            /// Set the value and presence of `field_presence`
+            #[inline]
+            pub fn set_field_presence(
+                &mut self,
+                value: FeatureSet_::FieldPresence,
+            ) -> &mut Self {
+                self._has.set_field_presence();
+                self.r#field_presence = value.into();
+                self
+            }
+            /// Return a mutable reference to `field_presence` as an `Option`
+            #[inline]
+            pub fn mut_field_presence(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::FieldPresence> {
+                self._has.r#field_presence().then_some(&mut self.r#field_presence)
+            }
+            /// Clear the presence of `field_presence`
+            #[inline]
+            pub fn clear_field_presence(&mut self) -> &mut Self {
+                self._has.clear_field_presence();
+                self
+            }
+            /// Take the value of `field_presence` and clear its presence
+            #[inline]
+            pub fn take_field_presence(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::FieldPresence> {
+                let val = self
+                    ._has
+                    .r#field_presence()
+                    .then(|| ::core::mem::take(&mut self.r#field_presence));
+                self._has.clear_field_presence();
+                val
+            }
+            /// Builder method that sets the value of `field_presence`. Useful for initializing the message.
+            #[inline]
+            pub fn init_field_presence(
+                mut self,
+                value: FeatureSet_::FieldPresence,
+            ) -> Self {
+                self.set_field_presence(value);
+                self
+            }
             /// Return a reference to `enum_type` as an `Option`
             #[inline]
             pub fn r#enum_type(&self) -> ::core::option::Option<&FeatureSet_::EnumType> {
                 self._has.r#enum_type().then_some(&self.r#enum_type)
+            }
+            /// Set the value and presence of `enum_type`
+            #[inline]
+            pub fn set_enum_type(&mut self, value: FeatureSet_::EnumType) -> &mut Self {
+                self._has.set_enum_type();
+                self.r#enum_type = value.into();
+                self
+            }
+            /// Return a mutable reference to `enum_type` as an `Option`
+            #[inline]
+            pub fn mut_enum_type(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::EnumType> {
+                self._has.r#enum_type().then_some(&mut self.r#enum_type)
+            }
+            /// Clear the presence of `enum_type`
+            #[inline]
+            pub fn clear_enum_type(&mut self) -> &mut Self {
+                self._has.clear_enum_type();
+                self
+            }
+            /// Take the value of `enum_type` and clear its presence
+            #[inline]
+            pub fn take_enum_type(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::EnumType> {
+                let val = self
+                    ._has
+                    .r#enum_type()
+                    .then(|| ::core::mem::take(&mut self.r#enum_type));
+                self._has.clear_enum_type();
+                val
+            }
+            /// Builder method that sets the value of `enum_type`. Useful for initializing the message.
+            #[inline]
+            pub fn init_enum_type(mut self, value: FeatureSet_::EnumType) -> Self {
+                self.set_enum_type(value);
+                self
             }
             /// Return a reference to `repeated_field_encoding` as an `Option`
             #[inline]
@@ -8747,12 +9001,102 @@ pub mod google_ {
                     .r#repeated_field_encoding()
                     .then_some(&self.r#repeated_field_encoding)
             }
+            /// Set the value and presence of `repeated_field_encoding`
+            #[inline]
+            pub fn set_repeated_field_encoding(
+                &mut self,
+                value: FeatureSet_::RepeatedFieldEncoding,
+            ) -> &mut Self {
+                self._has.set_repeated_field_encoding();
+                self.r#repeated_field_encoding = value.into();
+                self
+            }
+            /// Return a mutable reference to `repeated_field_encoding` as an `Option`
+            #[inline]
+            pub fn mut_repeated_field_encoding(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::RepeatedFieldEncoding> {
+                self._has
+                    .r#repeated_field_encoding()
+                    .then_some(&mut self.r#repeated_field_encoding)
+            }
+            /// Clear the presence of `repeated_field_encoding`
+            #[inline]
+            pub fn clear_repeated_field_encoding(&mut self) -> &mut Self {
+                self._has.clear_repeated_field_encoding();
+                self
+            }
+            /// Take the value of `repeated_field_encoding` and clear its presence
+            #[inline]
+            pub fn take_repeated_field_encoding(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::RepeatedFieldEncoding> {
+                let val = self
+                    ._has
+                    .r#repeated_field_encoding()
+                    .then(|| ::core::mem::take(&mut self.r#repeated_field_encoding));
+                self._has.clear_repeated_field_encoding();
+                val
+            }
+            /// Builder method that sets the value of `repeated_field_encoding`. Useful for initializing the message.
+            #[inline]
+            pub fn init_repeated_field_encoding(
+                mut self,
+                value: FeatureSet_::RepeatedFieldEncoding,
+            ) -> Self {
+                self.set_repeated_field_encoding(value);
+                self
+            }
             /// Return a reference to `utf8_validation` as an `Option`
             #[inline]
             pub fn r#utf8_validation(
                 &self,
             ) -> ::core::option::Option<&FeatureSet_::Utf8Validation> {
                 self._has.r#utf8_validation().then_some(&self.r#utf8_validation)
+            }
+            /// Set the value and presence of `utf8_validation`
+            #[inline]
+            pub fn set_utf8_validation(
+                &mut self,
+                value: FeatureSet_::Utf8Validation,
+            ) -> &mut Self {
+                self._has.set_utf8_validation();
+                self.r#utf8_validation = value.into();
+                self
+            }
+            /// Return a mutable reference to `utf8_validation` as an `Option`
+            #[inline]
+            pub fn mut_utf8_validation(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::Utf8Validation> {
+                self._has.r#utf8_validation().then_some(&mut self.r#utf8_validation)
+            }
+            /// Clear the presence of `utf8_validation`
+            #[inline]
+            pub fn clear_utf8_validation(&mut self) -> &mut Self {
+                self._has.clear_utf8_validation();
+                self
+            }
+            /// Take the value of `utf8_validation` and clear its presence
+            #[inline]
+            pub fn take_utf8_validation(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::Utf8Validation> {
+                let val = self
+                    ._has
+                    .r#utf8_validation()
+                    .then(|| ::core::mem::take(&mut self.r#utf8_validation));
+                self._has.clear_utf8_validation();
+                val
+            }
+            /// Builder method that sets the value of `utf8_validation`. Useful for initializing the message.
+            #[inline]
+            pub fn init_utf8_validation(
+                mut self,
+                value: FeatureSet_::Utf8Validation,
+            ) -> Self {
+                self.set_utf8_validation(value);
+                self
             }
             /// Return a reference to `message_encoding` as an `Option`
             #[inline]
@@ -8761,12 +9105,97 @@ pub mod google_ {
             ) -> ::core::option::Option<&FeatureSet_::MessageEncoding> {
                 self._has.r#message_encoding().then_some(&self.r#message_encoding)
             }
+            /// Set the value and presence of `message_encoding`
+            #[inline]
+            pub fn set_message_encoding(
+                &mut self,
+                value: FeatureSet_::MessageEncoding,
+            ) -> &mut Self {
+                self._has.set_message_encoding();
+                self.r#message_encoding = value.into();
+                self
+            }
+            /// Return a mutable reference to `message_encoding` as an `Option`
+            #[inline]
+            pub fn mut_message_encoding(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::MessageEncoding> {
+                self._has.r#message_encoding().then_some(&mut self.r#message_encoding)
+            }
+            /// Clear the presence of `message_encoding`
+            #[inline]
+            pub fn clear_message_encoding(&mut self) -> &mut Self {
+                self._has.clear_message_encoding();
+                self
+            }
+            /// Take the value of `message_encoding` and clear its presence
+            #[inline]
+            pub fn take_message_encoding(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::MessageEncoding> {
+                let val = self
+                    ._has
+                    .r#message_encoding()
+                    .then(|| ::core::mem::take(&mut self.r#message_encoding));
+                self._has.clear_message_encoding();
+                val
+            }
+            /// Builder method that sets the value of `message_encoding`. Useful for initializing the message.
+            #[inline]
+            pub fn init_message_encoding(
+                mut self,
+                value: FeatureSet_::MessageEncoding,
+            ) -> Self {
+                self.set_message_encoding(value);
+                self
+            }
             /// Return a reference to `json_format` as an `Option`
             #[inline]
             pub fn r#json_format(
                 &self,
             ) -> ::core::option::Option<&FeatureSet_::JsonFormat> {
                 self._has.r#json_format().then_some(&self.r#json_format)
+            }
+            /// Set the value and presence of `json_format`
+            #[inline]
+            pub fn set_json_format(
+                &mut self,
+                value: FeatureSet_::JsonFormat,
+            ) -> &mut Self {
+                self._has.set_json_format();
+                self.r#json_format = value.into();
+                self
+            }
+            /// Return a mutable reference to `json_format` as an `Option`
+            #[inline]
+            pub fn mut_json_format(
+                &mut self,
+            ) -> ::core::option::Option<&mut FeatureSet_::JsonFormat> {
+                self._has.r#json_format().then_some(&mut self.r#json_format)
+            }
+            /// Clear the presence of `json_format`
+            #[inline]
+            pub fn clear_json_format(&mut self) -> &mut Self {
+                self._has.clear_json_format();
+                self
+            }
+            /// Take the value of `json_format` and clear its presence
+            #[inline]
+            pub fn take_json_format(
+                &mut self,
+            ) -> ::core::option::Option<FeatureSet_::JsonFormat> {
+                let val = self
+                    ._has
+                    .r#json_format()
+                    .then(|| ::core::mem::take(&mut self.r#json_format));
+                self._has.clear_json_format();
+                val
+            }
+            /// Builder method that sets the value of `json_format`. Useful for initializing the message.
+            #[inline]
+            pub fn init_json_format(mut self, value: FeatureSet_::JsonFormat) -> Self {
+                self.set_json_format(value);
+                self
             }
         }
         impl ::micropb::MessageDecode for FeatureSet {
@@ -8851,7 +9280,7 @@ pub mod google_ {
         }
         /// Inner types for `FeatureSet`
         pub mod FeatureSet_ {
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct FieldPresence(pub i32);
             impl FieldPresence {
@@ -8872,7 +9301,23 @@ pub mod google_ {
                     Self(val)
                 }
             }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            impl core::fmt::Debug for FieldPresence {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        FieldPresence::Unknown => formatter.write_str("Unknown"),
+                        FieldPresence::Explicit => formatter.write_str("Explicit"),
+                        FieldPresence::Implicit => formatter.write_str("Implicit"),
+                        FieldPresence::LegacyRequired => {
+                            formatter.write_str("LegacyRequired")
+                        }
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct EnumType(pub i32);
             impl EnumType {
@@ -8892,7 +9337,20 @@ pub mod google_ {
                     Self(val)
                 }
             }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            impl core::fmt::Debug for EnumType {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        EnumType::Unknown => formatter.write_str("Unknown"),
+                        EnumType::Open => formatter.write_str("Open"),
+                        EnumType::Closed => formatter.write_str("Closed"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct RepeatedFieldEncoding(pub i32);
             impl RepeatedFieldEncoding {
@@ -8912,7 +9370,22 @@ pub mod google_ {
                     Self(val)
                 }
             }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            impl core::fmt::Debug for RepeatedFieldEncoding {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        RepeatedFieldEncoding::Unknown => formatter.write_str("Unknown"),
+                        RepeatedFieldEncoding::Packed => formatter.write_str("Packed"),
+                        RepeatedFieldEncoding::Expanded => {
+                            formatter.write_str("Expanded")
+                        }
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct Utf8Validation(pub i32);
             impl Utf8Validation {
@@ -8932,7 +9405,20 @@ pub mod google_ {
                     Self(val)
                 }
             }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            impl core::fmt::Debug for Utf8Validation {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        Utf8Validation::Unknown => formatter.write_str("Unknown"),
+                        Utf8Validation::Verify => formatter.write_str("Verify"),
+                        Utf8Validation::None => formatter.write_str("None"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct MessageEncoding(pub i32);
             impl MessageEncoding {
@@ -8952,7 +9438,22 @@ pub mod google_ {
                     Self(val)
                 }
             }
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            impl core::fmt::Debug for MessageEncoding {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        MessageEncoding::Unknown => formatter.write_str("Unknown"),
+                        MessageEncoding::LengthPrefixed => {
+                            formatter.write_str("LengthPrefixed")
+                        }
+                        MessageEncoding::Delimited => formatter.write_str("Delimited"),
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Eq, Hash)]
             #[repr(transparent)]
             pub struct JsonFormat(pub i32);
             impl JsonFormat {
@@ -8970,6 +9471,21 @@ pub mod google_ {
             impl core::convert::From<i32> for JsonFormat {
                 fn from(val: i32) -> Self {
                     Self(val)
+                }
+            }
+            impl core::fmt::Debug for JsonFormat {
+                fn fmt(
+                    &self,
+                    formatter: &mut core::fmt::Formatter<'_>,
+                ) -> core::fmt::Result {
+                    match *self {
+                        JsonFormat::Unknown => formatter.write_str("Unknown"),
+                        JsonFormat::Allow => formatter.write_str("Allow"),
+                        JsonFormat::LegacyBestEffort => {
+                            formatter.write_str("LegacyBestEffort")
+                        }
+                        Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                    }
                 }
             }
             /// Compact bitfield for tracking presence of optional and message fields
@@ -9958,7 +10474,7 @@ pub mod google_ {
             pub mod Annotation_ {
                 /// Represents the identified object's effect on the element in the original
                 /// .proto file.
-                #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+                #[derive(Clone, Copy, PartialEq, Eq, Hash)]
                 #[repr(transparent)]
                 pub struct Semantic(pub i32);
                 impl Semantic {
@@ -9979,6 +10495,21 @@ pub mod google_ {
                 impl core::convert::From<i32> for Semantic {
                     fn from(val: i32) -> Self {
                         Self(val)
+                    }
+                }
+                impl core::fmt::Debug for Semantic {
+                    fn fmt(
+                        &self,
+                        formatter: &mut core::fmt::Formatter<'_>,
+                    ) -> core::fmt::Result {
+                        match *self {
+                            Semantic::None => formatter.write_str("None"),
+                            Semantic::Set => formatter.write_str("Set"),
+                            Semantic::Alias => formatter.write_str("Alias"),
+                            Self(n) => {
+                                formatter.debug_tuple("_Unknown").field(&n).finish()
+                            }
+                        }
                     }
                 }
                 /// Compact bitfield for tracking presence of optional and message fields
@@ -10094,7 +10625,7 @@ pub mod google_ {
             }
         }
         /// The full set of known editions.
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash)]
         #[repr(transparent)]
         pub struct Edition(pub i32);
         impl Edition {
@@ -10136,6 +10667,28 @@ pub mod google_ {
         impl core::convert::From<i32> for Edition {
             fn from(val: i32) -> Self {
                 Self(val)
+            }
+        }
+        impl core::fmt::Debug for Edition {
+            fn fmt(
+                &self,
+                formatter: &mut core::fmt::Formatter<'_>,
+            ) -> core::fmt::Result {
+                match *self {
+                    Edition::Unknown => formatter.write_str("Unknown"),
+                    Edition::Legacy => formatter.write_str("Legacy"),
+                    Edition::Proto2 => formatter.write_str("Proto2"),
+                    Edition::Proto3 => formatter.write_str("Proto3"),
+                    Edition::_2023 => formatter.write_str("_2023"),
+                    Edition::_2024 => formatter.write_str("_2024"),
+                    Edition::_1TestOnly => formatter.write_str("_1TestOnly"),
+                    Edition::_2TestOnly => formatter.write_str("_2TestOnly"),
+                    Edition::_99997TestOnly => formatter.write_str("_99997TestOnly"),
+                    Edition::_99998TestOnly => formatter.write_str("_99998TestOnly"),
+                    Edition::_99999TestOnly => formatter.write_str("_99999TestOnly"),
+                    Edition::Max => formatter.write_str("Max"),
+                    Self(n) => formatter.debug_tuple("_Unknown").field(&n).finish(),
+                }
             }
         }
     }
