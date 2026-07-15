@@ -506,6 +506,7 @@ pub mod config;
 pub(crate) mod error;
 mod generator;
 mod pathtree;
+pub mod service;
 mod utils;
 
 // This module was generated from example/file-descriptor-proto
@@ -532,6 +533,7 @@ pub use error::{Error, Result};
 use micropb::{MessageDecode, PbDecoder};
 use pathtree::PathTree;
 use proc_macro2::TokenStream;
+pub use service::{MethodView, ServiceGenerator, ServiceView, TypeResolver};
 
 use crate::generator::Context;
 
@@ -612,6 +614,7 @@ pub struct Generator {
     pub(crate) comments_to_docs: bool,
     pub(crate) encode_cache: bool,
     pub(crate) cache_extern_types: bool,
+    pub(crate) service_generators: Vec<Box<dyn ServiceGenerator>>,
 }
 
 #[allow(clippy::new_without_default)]
@@ -645,6 +648,7 @@ impl Generator {
             comments_to_docs: true,
             encode_cache: false,
             cache_extern_types: true,
+            service_generators: Vec::new(),
         }
     }
 
@@ -1092,6 +1096,18 @@ impl Generator {
     /// Add an argument to the `protoc` invocation when compiling Protobuf files.
     pub fn add_protoc_arg<S: AsRef<OsStr>>(&mut self, arg: S) -> &mut Self {
         self.protoc_args.push(arg.as_ref().to_owned());
+        self
+    }
+
+    /// Add a generator for Protobuf services.
+    ///
+    /// Generators run in registration order and visit services in descriptor-set
+    /// order. Their output is placed alongside the generated message types.
+    pub fn add_service_generator(
+        &mut self,
+        service_generator: impl ServiceGenerator + 'static,
+    ) -> &mut Self {
+        self.service_generators.push(Box::new(service_generator));
         self
     }
 
