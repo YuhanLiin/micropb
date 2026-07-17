@@ -67,12 +67,9 @@ where
     {
         let mut node = self;
         for segment in path {
-            if let Some(next) = node.next(segment) {
-                next.access_value().as_ref().map(&mut callback);
-                node = next;
-            } else {
-                return None;
-            }
+            let next = node.next(segment)?;
+            next.access_value().as_ref().map(&mut callback);
+            node = next;
         }
         Some(node)
     }
