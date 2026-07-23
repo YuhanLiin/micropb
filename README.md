@@ -19,7 +19,8 @@ Unlike other Rust Protobuf libraries, `micropb` is aimed for constrained environ
 - Supports caching of message field lengths during encoding, improving performance on deeply nested message structures.
 
 #### Limitations
-- Does not support RPC or extensions.
+- Does not provide a built-in RPC implementation, but supports custom code generation from Protobuf services.
+- Does not support Protobuf extensions.
 - Does not support closed enums.
 - No reflection capabilities.
 - `string`, `bytes`, repeated, and `map` fields require some basic user configuration to get working.

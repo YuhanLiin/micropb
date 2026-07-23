@@ -19,11 +19,12 @@ use crate::{
         FeatureSet_::{
             EnumType, FieldPresence, MessageEncoding, RepeatedFieldEncoding, Utf8Validation,
         },
-        FileDescriptorProto, FileDescriptorSet,
+        FileDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
     },
     error::pkg_error,
     generator::{r#enum::Enum, graph::TypeGraph},
     pathtree::{Node, PathTree},
+    service::{MethodView, ServiceGenerator, ServiceView, TypeResolver},
     split_pkg_name,
 };
 
@@ -130,6 +131,7 @@ pub(crate) struct Context<'proto> {
     pub(crate) params: Params,
     pub(crate) graph: TypeGraph<'proto>,
     pub(crate) warning_cb: WarningCb,
+    pub(crate) service_generators: Vec<Box<dyn ServiceGenerator>>,
 
     // File-level context
     pub(crate) syntax: Syntax,
@@ -153,6 +155,7 @@ impl<'proto> Context<'proto> {
             },
             warning_cb: generator.warning_cb,
             graph: TypeGraph::default(),
+            service_generators: generator.service_generators,
 
             syntax: Default::default(),
             pkg_path: Default::default(),
@@ -376,8 +379,30 @@ impl<'proto> Context<'proto> {
             let e = self.graph.get_enum(&self.fq_proto_name(&proto.name));
             out.extend(self.generate_enum(e));
         }
+        out.extend(self.generate_services(fdproto));
 
         Ok(out)
+    }
+
+    fn generate_services(&mut self, fdproto: &FileDescriptorProto) -> TokenStream {
+        if self.service_generators.is_empty() || fdproto.service.is_empty() {
+            return TokenStream::new();
+        }
+
+        let resolver = RustTypeResolver {
+            params: &self.params,
+            pkg_path: &self.pkg_path,
+            type_path: &self.type_path,
+        };
+        let mut out = TokenStream::new();
+        for (index, service) in fdproto.service.iter().enumerate() {
+            let index = u16::try_from(index).expect("more than u16::MAX services in one file");
+            let view = build_service_view(fdproto, service, index);
+            for generator in &mut self.service_generators {
+                out.extend(generator.generate(&view, &resolver));
+            }
+        }
+        out
     }
 
     fn generate_mod_tree(&self, mod_node: &mut Node<TokenStream>) -> TokenStream {
@@ -550,33 +575,12 @@ impl<'proto> Context<'proto> {
     }
 
     fn resolve_type_name(&self, pb_fq_type_name: &str) -> TokenStream {
-        // Type names provided by protoc will always be fully-qualified
-        assert_eq!(".", &pb_fq_type_name[..1]);
-
-        // Check if we're substituting with an extern type
-        if let Some(rust_type) = self.params.extern_paths.get(pb_fq_type_name) {
-            return rust_type.clone();
+        RustTypeResolver {
+            params: &self.params,
+            pkg_path: &self.pkg_path,
+            type_path: &self.type_path,
         }
-
-        let mut ident_path = pb_fq_type_name[1..].split('.');
-        let ident_type = sanitized_ident(ident_path.next_back().unwrap());
-        let mut ident_path = ident_path.peekable();
-
-        let type_path = self.type_path.borrow();
-        let mut local_path = self.pkg_path.iter().chain(type_path.iter()).peekable();
-
-        // Skip path elements in common.
-        while local_path.peek().is_some()
-            && local_path.peek().map(|s| s.as_str()) == ident_path.peek().copied()
-        {
-            local_path.next();
-            ident_path.next();
-        }
-
-        let path = local_path.map(|_| format_ident!("super")).chain(
-            ident_path.map(|elem| resolve_path_elem(elem, self.params.suffixed_package_names)),
-        );
-        quote! { #(#path ::)* #ident_type }
+        .rust_path(pb_fq_type_name)
     }
 
     fn fq_proto_name(&self, proto_name: &str) -> String {
@@ -633,6 +637,79 @@ impl<'proto> Context<'proto> {
     }
 }
 
+struct RustTypeResolver<'a> {
+    params: &'a Params,
+    pkg_path: &'a [String],
+    type_path: &'a RefCell<Vec<String>>,
+}
+
+impl TypeResolver for RustTypeResolver<'_> {
+    fn rust_path(&self, pb_fq_type_name: &str) -> TokenStream {
+        // Type names provided by protoc will always be fully-qualified
+        assert_eq!(".", &pb_fq_type_name[..1]);
+
+        // Check if we're substituting with an extern type
+        if let Some(rust_type) = self.params.extern_paths.get(pb_fq_type_name) {
+            return rust_type.clone();
+        }
+
+        let mut ident_path = pb_fq_type_name[1..].split('.');
+        let ident_type = sanitized_ident(ident_path.next_back().unwrap());
+        let mut ident_path = ident_path.peekable();
+
+        let type_path = self.type_path.borrow();
+        let mut local_path = self.pkg_path.iter().chain(type_path.iter()).peekable();
+
+        // Skip path elements in common.
+        while local_path.peek().is_some()
+            && local_path.peek().map(|s| s.as_str()) == ident_path.peek().copied()
+        {
+            local_path.next();
+            ident_path.next();
+        }
+
+        let path = local_path.map(|_| format_ident!("super")).chain(
+            ident_path.map(|elem| resolve_path_elem(elem, self.params.suffixed_package_names)),
+        );
+        quote! { #(#path ::)* #ident_type }
+    }
+}
+
+fn build_service_view<'proto>(
+    fdproto: &'proto FileDescriptorProto,
+    service: &'proto ServiceDescriptorProto,
+    index: u16,
+) -> ServiceView<'proto> {
+    let package = fdproto.package.as_str();
+    let name = service.name.as_str();
+    let methods = service
+        .method
+        .iter()
+        .map(|method| {
+            let method_name = method.name.as_str();
+            let full_path = if package.is_empty() {
+                format!("/{name}/{method_name}")
+            } else {
+                format!("/{package}.{name}/{method_name}")
+            };
+            MethodView {
+                name: method_name,
+                full_path,
+                input_type: method.input_type.as_str(),
+                output_type: method.output_type.as_str(),
+                client_streaming: method.client_streaming,
+                server_streaming: method.server_streaming,
+            }
+        })
+        .collect();
+    ServiceView {
+        name,
+        package,
+        index,
+        methods,
+    }
+}
+
 #[inline]
 pub(crate) fn resolve_path_elem(elem: &str, suffixed: bool) -> Ident {
     // If the word is upper-case, then it's a message name, which should always be suffixed
@@ -670,6 +747,7 @@ fn make_ctx() -> Context<'static> {
     Context {
         params: Params::default(),
         graph: TypeGraph::default(),
+        service_generators: Vec::new(),
         syntax: Default::default(),
         pkg_path: Default::default(),
         pkg: Default::default(),
@@ -681,6 +759,32 @@ fn make_ctx() -> Context<'static> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::descriptor::MethodDescriptorProto;
+
+    struct TestServiceGenerator;
+
+    impl ServiceGenerator for TestServiceGenerator {
+        fn generate(&mut self, service: &ServiceView, resolver: &dyn TypeResolver) -> TokenStream {
+            assert_eq!(service.name, "Sensor");
+            assert_eq!(service.package, "api.v1");
+            assert_eq!(service.index, 0);
+
+            let [method] = service.methods.as_slice() else {
+                panic!("expected one service method");
+            };
+            assert_eq!(method.name, "Watch");
+            assert_eq!(method.full_path, "/api.v1.Sensor/Watch");
+            assert!(method.client_streaming);
+            assert!(!method.server_streaming);
+
+            let request = resolver.rust_path(method.input_type);
+            let response = resolver.rust_path(method.output_type);
+            quote! {
+                type Request = #request;
+                type Response = #response;
+            }
+        }
+    }
 
     #[test]
     fn enum_variant_name() {
@@ -779,6 +883,40 @@ mod tests {
         assert_eq!(
             ctx.resolve_type_name(".abc.d").to_string(),
             quote! { super::super::r#abc::r#d }.to_string()
+        );
+    }
+
+    #[test]
+    fn generate_service() {
+        let mut file = FileDescriptorProto {
+            package: "api.v1".into(),
+            service: vec![ServiceDescriptorProto {
+                name: "Sensor".into(),
+                method: vec![MethodDescriptorProto {
+                    name: "Watch".into(),
+                    input_type: ".api.v1.Request".into(),
+                    output_type: ".shared.Response".into(),
+                    client_streaming: true,
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        file._has.set_package();
+        let mut ctx = make_ctx();
+        ctx.params.suffixed_package_names = true;
+        ctx.service_generators.push(Box::new(TestServiceGenerator));
+
+        let output = ctx.generate_fdproto(&file).unwrap();
+
+        assert_eq!(
+            output.to_string(),
+            quote! {
+                type Request = Request;
+                type Response = super::super::shared_::Response;
+            }
+            .to_string()
         );
     }
 

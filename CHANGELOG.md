@@ -5,6 +5,7 @@
 ### Added
 
 - Protobuf Editions support
+- Add `ServiceGenerator` extension points for generating custom code from Protobuf services
 
 ### Changed
 
