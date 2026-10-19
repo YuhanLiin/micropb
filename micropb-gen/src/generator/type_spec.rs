@@ -446,7 +446,7 @@ impl<'proto> TypeSpec<'proto> {
         let presence_ident = Ident::new(presence, Span::call_site());
 
         let tok = match self {
-            TypeSpec::Message(..) => quote! { #mut_ref.decode_len_delimited(#decoder)?; },
+            TypeSpec::Message(..) => quote! { #decoder.decode_submessage_delimited(#mut_ref)?; },
             TypeSpec::Enum(_)
             | TypeSpec::Float
             | TypeSpec::Double

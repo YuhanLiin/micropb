@@ -14,6 +14,7 @@ license = "MIT OR Apache-2.0"
 default = ["encode", "decode", "enable-64bit"]
 encode = []
 decode = []
+no-nesting-limit = []
 enable-64bit = []
 alloc = []
 std = ["alloc"]

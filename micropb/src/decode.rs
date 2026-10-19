@@ -38,6 +38,8 @@ pub enum DecodeError<E> {
     Capacity,
     /// Actual length of length-delimited record differs from value of length prefix
     WrongLen,
+    /// Submessages are nested deeper than [`PbDecoder::nesting_limit`]
+    NestingLimit,
     /// Error returned from reader
     Reader(E),
 }
@@ -212,7 +214,18 @@ pub struct PbDecoder<R: PbRead> {
     /// length-delimited repeated or map field's actual length does not match its length prefix.
     /// Note that other errors can still happen down the line if the length is wrong.
     pub ignore_wrong_len: bool,
+    /// Maximum depth of nested submessages. Decoding a submessage nested deeper than this returns
+    /// [`DecodeError::NestingLimit`] instead of recursing further, so untrusted input can't
+    /// overflow the stack. Defaults to [`DEFAULT_NESTING_LIMIT`].
+    ///
+    /// Has no effect if the `no-nesting-limit` feature is enabled.
+    pub nesting_limit: usize,
+    #[cfg(not(feature = "no-nesting-limit"))]
+    depth: usize,
 }
+
+/// Default value of [`PbDecoder::nesting_limit`], same as prost's recursion limit.
+pub const DEFAULT_NESTING_LIMIT: usize = 100;
 
 impl<R: PbRead> PbDecoder<R> {
     #[inline]
@@ -223,6 +236,9 @@ impl<R: PbRead> PbDecoder<R> {
             idx: 0,
             ignore_repeated_cap_err: false,
             ignore_wrong_len: false,
+            nesting_limit: DEFAULT_NESTING_LIMIT,
+            #[cfg(not(feature = "no-nesting-limit"))]
+            depth: 0,
         }
     }
 
@@ -521,6 +537,34 @@ impl<R: PbRead> PbDecoder<R> {
         // SAFETY: read_into_buf guarantees that `len` bytes have been written into the buffer
         unsafe { bytes.pb_set_len(len) };
         Ok(())
+    }
+
+    /// Decode a length-delimited submessage into `msg`, enforcing [`nesting_limit`](Self::nesting_limit).
+    ///
+    /// Generated code calls this for every message-typed field. If the submessage is already
+    /// nested `nesting_limit` levels deep, return [`DecodeError::NestingLimit`] without decoding
+    /// it. The nesting depth is reset to 0 when an error is returned.
+    #[inline]
+    pub fn decode_submessage_delimited<M: MessageDecode + ?Sized>(
+        &mut self,
+        msg: &mut M,
+    ) -> Result<(), DecodeError<R::Error>> {
+        #[cfg(not(feature = "no-nesting-limit"))]
+        {
+            if self.depth >= self.nesting_limit {
+                self.depth = 0;
+                return Err(DecodeError::NestingLimit);
+            }
+            self.depth += 1;
+            let res = msg.decode_len_delimited(self);
+            match res {
+                Ok(()) => self.depth -= 1,
+                Err(_) => self.depth = 0,
+            }
+            res
+        }
+        #[cfg(feature = "no-nesting-limit")]
+        msg.decode_len_delimited(self)
     }
 
     pub(crate) fn decode_len_record<
@@ -1488,5 +1532,116 @@ mod tests {
                 check_bytes(Cow::<[u8]>::from(b""), data);
             }
         }
+    }
+
+    /// `message Nested { Nested inner = 1; }`, hand-written like generated code.
+    #[cfg(not(feature = "no-nesting-limit"))]
+    #[derive(Default)]
+    struct Nested {
+        inner: Option<std::boxed::Box<Nested>>,
+    }
+
+    #[cfg(not(feature = "no-nesting-limit"))]
+    impl MessageDecode for Nested {
+        fn decode<R: PbRead>(
+            &mut self,
+            decoder: &mut PbDecoder<R>,
+            len: usize,
+        ) -> Result<(), DecodeError<R::Error>> {
+            let before = decoder.bytes_read();
+            while decoder.bytes_read() - before < len {
+                let tag = decoder.decode_tag()?;
+                match tag.field_num() {
+                    1 => {
+                        let inner = self.inner.get_or_insert_with(Default::default);
+                        decoder.decode_submessage_delimited(&mut **inner)?;
+                    }
+                    _ => decoder.skip_wire_value(tag.wire_type())?,
+                }
+            }
+            Ok(())
+        }
+    }
+
+    /// `levels` nested `Nested` messages on the wire, without the outer length prefix.
+    #[cfg(not(feature = "no-nesting-limit"))]
+    fn nested_bytes(levels: usize) -> std::vec::Vec<u8> {
+        let mut bytes = std::vec::Vec::new();
+        for _ in 0..levels {
+            let mut len = bytes.len();
+            let mut prefix = std::vec![0x0a];
+            loop {
+                let b = (len & 0x7f) as u8;
+                len >>= 7;
+                if len == 0 {
+                    prefix.push(b);
+                    break;
+                }
+                prefix.push(b | 0x80);
+            }
+            prefix.extend_from_slice(&bytes);
+            bytes = prefix;
+        }
+        bytes
+    }
+
+    #[test]
+    fn nesting_limit_default() {
+        let decoder = PbDecoder::new([].as_slice());
+        assert_eq!(decoder.nesting_limit, DEFAULT_NESTING_LIMIT);
+    }
+
+    #[cfg(not(feature = "no-nesting-limit"))]
+    #[test]
+    fn nesting_limit() {
+        let ok = nested_bytes(DEFAULT_NESTING_LIMIT);
+        Nested::default().decode_from_bytes(&ok).unwrap();
+
+        let too_deep = nested_bytes(DEFAULT_NESTING_LIMIT + 1);
+        assert_eq!(
+            Nested::default().decode_from_bytes(&too_deep),
+            Err(DecodeError::NestingLimit)
+        );
+
+        let mut decoder = PbDecoder::new(ok.as_slice());
+        decoder.nesting_limit = 3;
+        assert_eq!(
+            Nested::default().decode(&mut decoder, ok.len()),
+            Err(DecodeError::NestingLimit)
+        );
+    }
+
+    #[cfg(not(feature = "no-nesting-limit"))]
+    #[test]
+    fn nesting_limit_stops_stack_overflow() {
+        // Deep enough to overflow the stack without a limit.
+        let bytes = nested_bytes(100_000);
+        assert_eq!(
+            Nested::default().decode_from_bytes(&bytes),
+            Err(DecodeError::NestingLimit)
+        );
+    }
+
+    #[cfg(not(feature = "no-nesting-limit"))]
+    #[test]
+    fn nesting_depth_resets() {
+        // A failed decode resets the depth to 0.
+        let too_deep = nested_bytes(DEFAULT_NESTING_LIMIT + 1);
+        let mut decoder = PbDecoder::new(too_deep.as_slice());
+        assert_eq!(
+            Nested::default().decode(&mut decoder, too_deep.len()),
+            Err(DecodeError::NestingLimit)
+        );
+        assert_eq!(decoder.depth, 0);
+
+        // A successful decode leaves the depth where it started, so one decoder can decode
+        // several maximally nested messages in a row.
+        let ok = nested_bytes(DEFAULT_NESTING_LIMIT);
+        let input = [ok.as_slice(), ok.as_slice()].concat();
+        let mut decoder = PbDecoder::new(input.as_slice());
+        Nested::default().decode(&mut decoder, ok.len()).unwrap();
+        assert_eq!(decoder.depth, 0);
+        Nested::default().decode(&mut decoder, ok.len()).unwrap();
+        assert_eq!(decoder.depth, 0);
     }
 }

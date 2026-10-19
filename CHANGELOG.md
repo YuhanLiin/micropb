@@ -6,9 +6,11 @@
 
 - Protobuf Editions support
 - Add `ServiceGenerator` extension points for generating custom code from Protobuf services
+- Add `PbDecoder::nesting_limit` (default 100) and `DecodeError::NestingLimit`, so decoding deeply nested submessages from untrusted input returns an error instead of overflowing the stack. The `no-nesting-limit` feature disables the check
 
 ### Changed
 
+- Generated code decodes message fields with the new `PbDecoder::decode_submessage_delimited`, which enforces the nesting limit
 - Enums now have `Debug` explicit manual impls that print the enum variant name, rather than the old derived impl that prints the variant number
 
 ## 0.6.0
