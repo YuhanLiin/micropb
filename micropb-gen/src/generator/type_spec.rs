@@ -409,7 +409,7 @@ impl<'proto> TypeSpec<'proto> {
     }
 
     /// Generate decode value expressions (Result<T, DecodeError>) for "packable" types
-    pub(crate) fn generate_decode_val(
+    pub(crate) fn generate_decode_val_for_packable(
         &self,
         ctx: &Context<'proto>,
         decoder: &Ident,
@@ -453,7 +453,7 @@ impl<'proto> TypeSpec<'proto> {
             | TypeSpec::Bool
             | TypeSpec::Int(..) => {
                 let val_expr = self
-                    .generate_decode_val(ctx, decoder)
+                    .generate_decode_val_for_packable(ctx, decoder)
                     .expect("ints should be packable");
                 let setter = if implicit_presence {
                     let val_ref = Ident::new("val_ref", Span::call_site());

@@ -38,6 +38,8 @@ pub enum DecodeError<E> {
     Capacity,
     /// Actual length of length-delimited record differs from value of length prefix
     WrongLen,
+    /// Wrong Protobuf wire type for a specific field
+    WrongWireType,
     /// Error returned from reader
     Reader(E),
 }

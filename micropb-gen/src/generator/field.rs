@@ -557,6 +557,25 @@ impl<'proto> Field<'proto> {
         }
     }
 
+    /// Wire type for the decoding wire type check
+    fn allowed_wire_type(&self) -> Option<u8> {
+        match &self.ftype {
+            FieldType::Single(typ)
+            | FieldType::Optional(typ, _)
+            | FieldType::Repeated {
+                typ, packed: false, ..
+            } => Some(typ.wire_type()),
+
+            FieldType::Map { .. } => Some(micropb::WIRE_TYPE_LEN),
+
+            // For packed repeated fields, there can be two possible wire-types, so the wire type
+            // check is generated directly in the decoding branch
+            FieldType::Repeated { packed: true, .. } => None,
+
+            FieldType::Custom(_) => None,
+        }
+    }
+
     pub(crate) fn generate_decode_branch(
         &self,
         ctx: &Context<'proto>,
@@ -567,6 +586,14 @@ impl<'proto> Field<'proto> {
         let fname = &self.san_rust_name;
         let mut_ref = Ident::new("mut_ref", Span::call_site());
         let extra_deref = self.boxed.then(|| quote! { * });
+
+        let wire_type_check = self.allowed_wire_type().map(|wt| {
+            quote! {
+                if #tag.wire_type() != #wt {
+                    return Err(::micropb::DecodeError::WrongWireType);
+                }
+            }
+        });
 
         let decode_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
@@ -622,16 +649,19 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Repeated { typ, .. } => {
+                let wt = typ.wire_type();
                 // Type can be packed and is Copy, so we check the wire type to see if we can
                 // do packed decoding
-                if let Some(val) = typ.generate_decode_val(ctx, decoder) {
+                if let Some(val) = typ.generate_decode_val_for_packable(ctx, decoder) {
                     quote! {
                         if #tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                             #decoder.decode_packed(&mut #extra_deref self.#fname, |#decoder| #val.map(|v| v as _))?;
-                        } else {
+                        } else if #tag.wire_type() == #wt {
                             if let (Err(_), false) = (self.#fname.pb_push(#val? as _), #decoder.ignore_repeated_cap_err) {
                                 return Err(::micropb::DecodeError::Capacity);
                             }
+                        } else {
+                            return Err(::micropb::DecodeError::WrongWireType);
                         }
                     }
                 } else {
@@ -658,10 +688,11 @@ impl<'proto> Field<'proto> {
         };
 
         Ok(quote! {
-            #fnum => { #decode_code }
+            #fnum => { #wire_type_check #decode_code }
         })
     }
 
+    /// Wire type for encoding purposes
     fn wire_type(&self) -> u8 {
         match &self.ftype {
             FieldType::Single(typ)
