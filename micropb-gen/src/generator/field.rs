@@ -587,13 +587,17 @@ impl<'proto> Field<'proto> {
         let mut_ref = Ident::new("mut_ref", Span::call_site());
         let extra_deref = self.boxed.then(|| quote! { * });
 
-        let wire_type_check = self.allowed_wire_type().map(|wt| {
-            quote! {
-                if #tag.wire_type() != #wt {
-                    return Err(::micropb::DecodeError::WrongWireType);
+        let wire_type_check = if ctx.params.wire_type_check {
+            self.allowed_wire_type().map(|wt| {
+                quote! {
+                    if #tag.wire_type() != #wt {
+                        return Err(::micropb::DecodeError::WrongWireType);
+                    }
                 }
-            }
-        });
+            })
+        } else {
+            None
+        };
 
         let decode_code = match &self.ftype {
             FieldType::Map { key, val, .. } => {
@@ -649,19 +653,30 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Repeated { typ, .. } => {
-                let wt = typ.wire_type();
                 // Type can be packed and is Copy, so we check the wire type to see if we can
                 // do packed decoding
                 if let Some(val) = typ.generate_decode_val_for_packable(ctx, decoder) {
+                    // There can be two possible wire types here, so we generate the wire type
+                    // check separately instead of doing it at the top
+                    let wire_type_check = if ctx.params.wire_type_check {
+                        let wt = typ.wire_type();
+                        Some(quote! {
+                            if #tag.wire_type() != #wt && #tag.wire_type() != ::micropb::WIRE_TYPE_LEN {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
+                        })
+                    } else {
+                        None
+                    };
+
                     quote! {
+                        #wire_type_check
                         if #tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                             #decoder.decode_packed(&mut #extra_deref self.#fname, |#decoder| #val.map(|v| v as _))?;
-                        } else if #tag.wire_type() == #wt {
+                        } else {
                             if let (Err(_), false) = (self.#fname.pb_push(#val? as _), #decoder.ignore_repeated_cap_err) {
                                 return Err(::micropb::DecodeError::Capacity);
                             }
-                        } else {
-                            return Err(::micropb::DecodeError::WrongWireType);
                         }
                     }
                 } else {
