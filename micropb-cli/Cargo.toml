@@ -1,0 +1,20 @@
+[package]
+name = "micropb-cli"
+version = "0.6.0"
+edition = "2024"
+authors = ["Yuhan Lin <yuhanliin@protonmail.com>"]
+description = "CLI tool for micropb-gen Protobuf compiler"
+keywords = ["protobuf", "no_std", "embedded", "serialization"]
+categories = ["embedded", "no-std::no-alloc", "encoding"]
+repository = "https://github.com/YuhanLiin/micropb"
+rust-version = "1.88.0"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "micropb-cli"
+path = "src/main.rs"
+
+[dependencies]
+micropb-gen = { version = "0.6.0", path = "../micropb-gen" }
+clap = { version = "4.5", features = ["derive"] }
+
