@@ -38,7 +38,7 @@ pub enum DecodeError<E> {
     Capacity,
     /// Actual length of length-delimited record differs from value of length prefix
     WrongLen,
-    /// Submessages are nested deeper than [`PbDecoder::nesting_limit`]
+    /// Submessages are nested deeper than `PbDecoder::nesting_limit`
     NestingLimit,
     /// Error returned from reader
     Reader(E),
@@ -218,7 +218,8 @@ pub struct PbDecoder<R: PbRead> {
     /// [`DecodeError::NestingLimit`] instead of recursing further, so untrusted input can't
     /// overflow the stack. Defaults to [`DEFAULT_NESTING_LIMIT`].
     ///
-    /// Has no effect if the `no-nesting-limit` feature is enabled.
+    /// Not present if the `no-nesting-limit` feature is enabled.
+    #[cfg(not(feature = "no-nesting-limit"))]
     pub nesting_limit: usize,
     #[cfg(not(feature = "no-nesting-limit"))]
     depth: usize,
@@ -236,6 +237,7 @@ impl<R: PbRead> PbDecoder<R> {
             idx: 0,
             ignore_repeated_cap_err: false,
             ignore_wrong_len: false,
+            #[cfg(not(feature = "no-nesting-limit"))]
             nesting_limit: DEFAULT_NESTING_LIMIT,
             #[cfg(not(feature = "no-nesting-limit"))]
             depth: 0,
@@ -539,7 +541,7 @@ impl<R: PbRead> PbDecoder<R> {
         Ok(())
     }
 
-    /// Decode a length-delimited submessage into `msg`, enforcing [`nesting_limit`](Self::nesting_limit).
+    /// Decode a length-delimited submessage into `msg`, enforcing `nesting_limit`.
     ///
     /// Generated code calls this for every message-typed field. If the submessage is already
     /// nested `nesting_limit` levels deep, return [`DecodeError::NestingLimit`] without decoding
@@ -1585,6 +1587,7 @@ mod tests {
         bytes
     }
 
+    #[cfg(not(feature = "no-nesting-limit"))]
     #[test]
     fn nesting_limit_default() {
         let decoder = PbDecoder::new([].as_slice());

@@ -6,7 +6,7 @@
 
 - Protobuf Editions support
 - Add `ServiceGenerator` extension points for generating custom code from Protobuf services
-- Add `PbDecoder::nesting_limit` (default 100) and `DecodeError::NestingLimit`, so decoding deeply nested submessages from untrusted input returns an error instead of overflowing the stack. The `no-nesting-limit` feature disables the check
+- Add `PbDecoder::nesting_limit` (default 100) and `DecodeError::NestingLimit`, so decoding deeply nested submessages from untrusted input returns an error instead of overflowing the stack. The `no-nesting-limit` feature removes the field and the check
 
 ### Changed
 

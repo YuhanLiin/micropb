@@ -95,7 +95,7 @@
 //!   [`Config::int_size`](https://docs.rs/micropb-gen/latest/micropb_gen/config/struct.Config.html#method.int_size)
 //!   set to 32 bits or less. Has no effect on `double` fields. Enabled by default.
 //!
-//! - **no-nesting-limit**: Disable the [`PbDecoder::nesting_limit`] check on nested submessages.
+//! - **no-nesting-limit**: Remove the `PbDecoder::nesting_limit` field and its check on nested submessages.
 //!   Only use this when the input is trusted, since deeply nested input can then overflow the
 //!   stack.
 //!
