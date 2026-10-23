@@ -560,17 +560,13 @@ impl<'proto> Field<'proto> {
     /// Wire type for the decoding wire type check
     fn allowed_wire_type(&self) -> Option<u8> {
         match &self.ftype {
-            FieldType::Single(typ)
-            | FieldType::Optional(typ, _)
-            | FieldType::Repeated {
-                typ, packed: false, ..
-            } => Some(typ.wire_type()),
+            FieldType::Single(typ) | FieldType::Optional(typ, _) => Some(typ.wire_type()),
 
             FieldType::Map { .. } => Some(micropb::WIRE_TYPE_LEN),
 
-            // For packed repeated fields, there can be two possible wire-types, so the wire type
+            // For repeated fields, there can be two possible wire-types, so the wire type
             // check is generated directly in the decoding branch
-            FieldType::Repeated { packed: true, .. } => None,
+            FieldType::Repeated { .. } => None,
 
             FieldType::Custom(_) => None,
         }
@@ -653,13 +649,13 @@ impl<'proto> Field<'proto> {
             }
 
             FieldType::Repeated { typ, .. } => {
+                let wt = typ.wire_type();
                 // Type can be packed and is Copy, so we check the wire type to see if we can
                 // do packed decoding
                 if let Some(val) = typ.generate_decode_val_for_packable(ctx, decoder) {
                     // There can be two possible wire types here, so we generate the wire type
                     // check separately instead of doing it at the top
                     let wire_type_check = if ctx.params.wire_type_check {
-                        let wt = typ.wire_type();
                         Some(quote! {
                             if #tag.wire_type() != #wt && #tag.wire_type() != ::micropb::WIRE_TYPE_LEN {
                                 return Err(::micropb::DecodeError::WrongWireType);
@@ -680,9 +676,19 @@ impl<'proto> Field<'proto> {
                         }
                     }
                 } else {
+                    let wire_type_check = if ctx.params.wire_type_check {
+                        Some(quote! {
+                            if #tag.wire_type() != #wt {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
+                        })
+                    } else {
+                        None
+                    };
                     let decode_expr = typ.generate_decode_mut(ctx, false, decoder, &mut_ref)?;
                     let rust_type = typ.generate_rust_type(ctx)?;
                     quote! {
+                        #wire_type_check
                         let mut val: #rust_type = ::core::default::Default::default();
                         let #mut_ref = &mut val;
                         { #decode_expr };
