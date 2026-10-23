@@ -218,10 +218,10 @@ pub struct PbDecoder<R: PbRead> {
     /// [`DecodeError::NestingLimit`] instead of recursing further, so untrusted input can't
     /// overflow the stack. Defaults to [`DEFAULT_NESTING_LIMIT`].
     ///
-    /// Not present if the `no-nesting-limit` feature is enabled.
-    #[cfg(not(feature = "no-nesting-limit"))]
+    /// Only present if the `nesting-limit` feature is enabled.
+    #[cfg(feature = "nesting-limit")]
     pub nesting_limit: usize,
-    #[cfg(not(feature = "no-nesting-limit"))]
+    #[cfg(feature = "nesting-limit")]
     depth: usize,
 }
 
@@ -237,9 +237,9 @@ impl<R: PbRead> PbDecoder<R> {
             idx: 0,
             ignore_repeated_cap_err: false,
             ignore_wrong_len: false,
-            #[cfg(not(feature = "no-nesting-limit"))]
+            #[cfg(feature = "nesting-limit")]
             nesting_limit: DEFAULT_NESTING_LIMIT,
-            #[cfg(not(feature = "no-nesting-limit"))]
+            #[cfg(feature = "nesting-limit")]
             depth: 0,
         }
     }
@@ -551,7 +551,7 @@ impl<R: PbRead> PbDecoder<R> {
         &mut self,
         msg: &mut M,
     ) -> Result<(), DecodeError<R::Error>> {
-        #[cfg(not(feature = "no-nesting-limit"))]
+        #[cfg(feature = "nesting-limit")]
         {
             if self.depth >= self.nesting_limit {
                 self.depth = 0;
@@ -565,7 +565,7 @@ impl<R: PbRead> PbDecoder<R> {
             }
             res
         }
-        #[cfg(feature = "no-nesting-limit")]
+        #[cfg(not(feature = "nesting-limit"))]
         msg.decode_len_delimited(self)
     }
 
@@ -1537,13 +1537,13 @@ mod tests {
     }
 
     /// `message Nested { Nested inner = 1; }`, hand-written like generated code.
-    #[cfg(not(feature = "no-nesting-limit"))]
+    #[cfg(feature = "nesting-limit")]
     #[derive(Default)]
     struct Nested {
         inner: Option<std::boxed::Box<Nested>>,
     }
 
-    #[cfg(not(feature = "no-nesting-limit"))]
+    #[cfg(feature = "nesting-limit")]
     impl MessageDecode for Nested {
         fn decode<R: PbRead>(
             &mut self,
@@ -1566,7 +1566,7 @@ mod tests {
     }
 
     /// `levels` nested `Nested` messages on the wire, without the outer length prefix.
-    #[cfg(not(feature = "no-nesting-limit"))]
+    #[cfg(feature = "nesting-limit")]
     fn nested_bytes(levels: usize) -> std::vec::Vec<u8> {
         let mut bytes = std::vec::Vec::new();
         for _ in 0..levels {
@@ -1587,14 +1587,14 @@ mod tests {
         bytes
     }
 
-    #[cfg(not(feature = "no-nesting-limit"))]
+    #[cfg(feature = "nesting-limit")]
     #[test]
     fn nesting_limit_default() {
         let decoder = PbDecoder::new([].as_slice());
         assert_eq!(decoder.nesting_limit, DEFAULT_NESTING_LIMIT);
     }
 
-    #[cfg(not(feature = "no-nesting-limit"))]
+    #[cfg(feature = "nesting-limit")]
     #[test]
     fn nesting_limit() {
         let ok = nested_bytes(DEFAULT_NESTING_LIMIT);
@@ -1614,7 +1614,7 @@ mod tests {
         );
     }
 
-    #[cfg(not(feature = "no-nesting-limit"))]
+    #[cfg(feature = "nesting-limit")]
     #[test]
     fn nesting_limit_stops_stack_overflow() {
         // Deep enough to overflow the stack without a limit.
@@ -1625,7 +1625,7 @@ mod tests {
         );
     }
 
-    #[cfg(not(feature = "no-nesting-limit"))]
+    #[cfg(feature = "nesting-limit")]
     #[test]
     fn nesting_depth_resets() {
         // A failed decode resets the depth to 0.
