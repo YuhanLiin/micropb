@@ -246,6 +246,144 @@ fn decode_map_cap_inner() {
 }
 
 #[test]
+fn decode_wrong_wire_type_repeated_non_packed() {
+    let mut list = proto::List::default();
+
+    // Field 1 (repeated Data message) expects WIRE_TYPE_LEN (2), but gets WIRE_TYPE_VARINT (0)
+    let mut decoder = PbDecoder::new([0x08, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    // Field 1 expects WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I32 (5)
+    let mut decoder = PbDecoder::new([0x0D, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    // Field 1 expects WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I64 (1)
+    let mut decoder =
+        PbDecoder::new([0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    let mut str_list = proto::StrList::default();
+
+    // Field 1 (repeated string) expects WIRE_TYPE_LEN (2), but gets WIRE_TYPE_VARINT (0)
+    let mut decoder = PbDecoder::new([0x08, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        str_list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    // Field 1 expects WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I32 (5)
+    let mut decoder = PbDecoder::new([0x0D, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        str_list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    let mut num_list = proto::NumList::default();
+
+    // Field 1 (repeated uint32) expects WIRE_TYPE_VARINT (0) or WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I32 (5)
+    let mut decoder = PbDecoder::new([0x0D, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        num_list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    // Field 1 expects WIRE_TYPE_VARINT (0) or WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I64 (1)
+    let mut decoder =
+        PbDecoder::new([0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        num_list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+}
+
+#[test]
+fn decode_wrong_wire_type_repeated_packed() {
+    let mut fixed_list = proto::FixedList::default();
+
+    // Field 1 (packed fixed32) expects WIRE_TYPE_I32 (5) or WIRE_TYPE_LEN (2), but gets WIRE_TYPE_VARINT (0)
+    let mut decoder = PbDecoder::new([0x08, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        fixed_list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    // Field 1 expects WIRE_TYPE_I32 (5) or WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I64 (1)
+    let mut decoder =
+        PbDecoder::new([0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        fixed_list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    let mut enum_list = proto::EnumList::default();
+
+    // Field 1 (packed Enum) expects WIRE_TYPE_VARINT (0) or WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I32 (5)
+    let mut decoder = PbDecoder::new([0x0D, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        enum_list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    // Field 1 expects WIRE_TYPE_VARINT (0) or WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I64 (1)
+    let mut decoder =
+        PbDecoder::new([0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        enum_list.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+}
+
+#[test]
+fn decode_wrong_wire_type_map() {
+    let mut map = proto::Map::default();
+
+    // Field 1 (mapping) expects WIRE_TYPE_LEN (2), but gets WIRE_TYPE_VARINT (0)
+    let mut decoder = PbDecoder::new([0x08, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        map.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    // Field 1 expects WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I32 (5)
+    let mut decoder = PbDecoder::new([0x0D, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        map.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+
+    // Field 1 expects WIRE_TYPE_LEN (2), but gets WIRE_TYPE_I64 (1)
+    let mut decoder =
+        PbDecoder::new([0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00].as_slice());
+    let len = decoder.as_reader().len();
+    assert_eq!(
+        map.decode(&mut decoder, len),
+        Err(DecodeError::WrongWireType)
+    );
+}
+
+#[test]
 fn max_size() {
     let data_max_size = (2/* tags */) + 4 + 6;
     assert_eq!(proto::Data::MAX_SIZE, Ok(data_max_size));

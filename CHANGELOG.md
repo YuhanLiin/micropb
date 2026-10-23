@@ -6,6 +6,8 @@
 
 - Protobuf Editions support
 - Add `ServiceGenerator` extension points for generating custom code from Protobuf services
+- Add `DecodeError::WrongWireType` variant and wire type checks during field decoding
+- Add `wire_type_check` generator option to configure wire type checking in generated decoders
 - Add `PbDecoder::nesting_limit` (default 100) and `DecodeError::NestingLimit`, so decoding deeply nested submessages from untrusted input returns an error instead of overflowing the stack. The check and the field are behind the new default `nesting-limit` feature
 
 ### Changed

@@ -614,6 +614,7 @@ pub struct Generator {
     pub(crate) comments_to_docs: bool,
     pub(crate) encode_cache: bool,
     pub(crate) cache_extern_types: bool,
+    pub(crate) wire_type_check: bool,
     pub(crate) service_generators: Vec<Box<dyn ServiceGenerator>>,
 }
 
@@ -648,6 +649,7 @@ impl Generator {
             comments_to_docs: true,
             encode_cache: false,
             cache_extern_types: true,
+            wire_type_check: true,
             service_generators: Vec::new(),
         }
     }
@@ -1286,6 +1288,22 @@ impl Generator {
     /// Enabled by default.
     pub fn cache_extern_types(&mut self, cache_extern_types: bool) -> &mut Self {
         self.cache_extern_types = cache_extern_types;
+        self
+    }
+
+    /// Determines whether to generate code to check wire types when decoding fields.
+    ///
+    /// When enabled, the generated decoder checks that the wire type in the field tag matches the
+    /// expected wire type for the field. If there is a mismatch, decoding returns
+    /// [`micropb::DecodeError::WrongWireType`]. For repeated fields that support packed encoding,
+    /// both the element's wire type and length-delimited wire type are accepted.
+    ///
+    /// When disabled, wire type validation is omitted in generated decoding branches, which can
+    /// reduce generated code size in resource-constrained environments.
+    ///
+    /// Enabled by default.
+    pub fn wire_type_check(&mut self, wire_type_check: bool) -> &mut Self {
+        self.wire_type_check = wire_type_check;
         self
     }
 }
