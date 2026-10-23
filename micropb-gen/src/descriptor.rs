@@ -23,7 +23,7 @@ pub mod google_ {
                             let mut val: FileDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#file.pb_push(val),
@@ -200,7 +200,7 @@ pub mod google_ {
                             let mut val: DescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#message_type.pb_push(val),
@@ -213,7 +213,7 @@ pub mod google_ {
                             let mut val: EnumDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#enum_type.pb_push(val),
@@ -226,7 +226,7 @@ pub mod google_ {
                             let mut val: ServiceDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#service.pb_push(val),
@@ -239,7 +239,7 @@ pub mod google_ {
                             let mut val: FieldDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#extension.pb_push(val),
@@ -251,14 +251,14 @@ pub mod google_ {
                         8u32 => {
                             let mut_ref = &mut self.r#options;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_options();
                         }
                         9u32 => {
                             let mut_ref = &mut self.r#source_code_info;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_source_code_info();
                         }
@@ -579,7 +579,7 @@ pub mod google_ {
                             let mut val: FieldDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#field.pb_push(val),
@@ -592,7 +592,7 @@ pub mod google_ {
                             let mut val: FieldDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#extension.pb_push(val),
@@ -605,7 +605,7 @@ pub mod google_ {
                             let mut val: DescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#nested_type.pb_push(val),
@@ -618,7 +618,7 @@ pub mod google_ {
                             let mut val: EnumDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#enum_type.pb_push(val),
@@ -631,7 +631,7 @@ pub mod google_ {
                             let mut val: DescriptorProto_::ExtensionRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#extension_range.pb_push(val),
@@ -644,7 +644,7 @@ pub mod google_ {
                             let mut val: OneofDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#oneof_decl.pb_push(val),
@@ -656,7 +656,7 @@ pub mod google_ {
                         7u32 => {
                             let mut_ref = &mut self.r#options;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_options();
                         }
@@ -664,7 +664,7 @@ pub mod google_ {
                             let mut val: DescriptorProto_::ReservedRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#reserved_range.pb_push(val),
@@ -874,7 +874,7 @@ pub mod google_ {
                             3u32 => {
                                 let mut_ref = &mut self.r#options;
                                 {
-                                    mut_ref.decode_len_delimited(decoder)?;
+                                    decoder.decode_submessage_delimited(mut_ref)?;
                                 };
                                 self._has.set_options();
                             }
@@ -1292,7 +1292,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -1305,7 +1305,7 @@ pub mod google_ {
                             let mut val: ExtensionRangeOptions_::Declaration = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#declaration.pb_push(val),
@@ -1317,7 +1317,7 @@ pub mod google_ {
                         50u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
@@ -2336,7 +2336,7 @@ pub mod google_ {
                         8u32 => {
                             let mut_ref = &mut self.r#options;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_options();
                         }
@@ -2876,7 +2876,7 @@ pub mod google_ {
                         2u32 => {
                             let mut_ref = &mut self.r#options;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_options();
                         }
@@ -3007,7 +3007,7 @@ pub mod google_ {
                             let mut val: EnumValueDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#value.pb_push(val),
@@ -3019,7 +3019,7 @@ pub mod google_ {
                         3u32 => {
                             let mut_ref = &mut self.r#options;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_options();
                         }
@@ -3027,7 +3027,7 @@ pub mod google_ {
                             let mut val: EnumDescriptorProto_::EnumReservedRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#reserved_range.pb_push(val),
@@ -3419,7 +3419,7 @@ pub mod google_ {
                         3u32 => {
                             let mut_ref = &mut self.r#options;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_options();
                         }
@@ -3566,7 +3566,7 @@ pub mod google_ {
                             let mut val: MethodDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#method.pb_push(val),
@@ -3578,7 +3578,7 @@ pub mod google_ {
                         3u32 => {
                             let mut_ref = &mut self.r#options;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_options();
                         }
@@ -3766,7 +3766,7 @@ pub mod google_ {
                         4u32 => {
                             let mut_ref = &mut self.r#options;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_options();
                         }
@@ -4421,7 +4421,7 @@ pub mod google_ {
                         50u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
@@ -4429,7 +4429,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -5429,7 +5429,7 @@ pub mod google_ {
                         12u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
@@ -5437,7 +5437,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -6330,7 +6330,7 @@ pub mod google_ {
                             let mut val: FieldOptions_::EditionDefault = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#edition_defaults.pb_push(val),
@@ -6342,14 +6342,14 @@ pub mod google_ {
                         21u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
                         22u32 => {
                             let mut_ref = &mut self.r#feature_support;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_feature_support();
                         }
@@ -6357,7 +6357,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -7492,7 +7492,7 @@ pub mod google_ {
                         1u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
@@ -7500,7 +7500,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -7665,7 +7665,7 @@ pub mod google_ {
                         7u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
@@ -7673,7 +7673,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -7896,7 +7896,7 @@ pub mod google_ {
                         2u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
@@ -7911,7 +7911,7 @@ pub mod google_ {
                         4u32 => {
                             let mut_ref = &mut self.r#feature_support;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_feature_support();
                         }
@@ -7919,7 +7919,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -8104,7 +8104,7 @@ pub mod google_ {
                         34u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
@@ -8120,7 +8120,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -8283,7 +8283,7 @@ pub mod google_ {
                         35u32 => {
                             let mut_ref = &mut self.r#features;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             self._has.set_features();
                         }
@@ -8291,7 +8291,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#uninterpreted_option.pb_push(val),
@@ -8519,7 +8519,7 @@ pub mod google_ {
                             let mut val: UninterpretedOption_::NamePart = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#name.pb_push(val),
@@ -9699,7 +9699,7 @@ pub mod google_ {
                             let mut val: FeatureSetDefaults_::FeatureSetEditionDefault = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#defaults.pb_push(val),
@@ -9801,14 +9801,14 @@ pub mod google_ {
                             4u32 => {
                                 let mut_ref = &mut self.r#overridable_features;
                                 {
-                                    mut_ref.decode_len_delimited(decoder)?;
+                                    decoder.decode_submessage_delimited(mut_ref)?;
                                 };
                                 self._has.set_overridable_features();
                             }
                             5u32 => {
                                 let mut_ref = &mut self.r#fixed_features;
                                 {
-                                    mut_ref.decode_len_delimited(decoder)?;
+                                    decoder.decode_submessage_delimited(mut_ref)?;
                                 };
                                 self._has.set_fixed_features();
                             }
@@ -10035,7 +10035,7 @@ pub mod google_ {
                             let mut val: SourceCodeInfo_::Location = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#location.pb_push(val),
@@ -10330,7 +10330,7 @@ pub mod google_ {
                             let mut val: GeneratedCodeInfo_::Annotation = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
-                                mut_ref.decode_len_delimited(decoder)?;
+                                decoder.decode_submessage_delimited(mut_ref)?;
                             };
                             if let (Err(_), false) = (
                                 self.r#annotation.pb_push(val),

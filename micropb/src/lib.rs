@@ -95,6 +95,10 @@
 //!   [`Config::int_size`](https://docs.rs/micropb-gen/latest/micropb_gen/config/struct.Config.html#method.int_size)
 //!   set to 32 bits or less. Has no effect on `double` fields. Enabled by default.
 //!
+//! - **nesting-limit**: Add the `PbDecoder::nesting_limit` field and check the nesting depth of
+//!   decoded submessages against it, so deeply nested untrusted input returns an error instead of
+//!   overflowing the stack. Enabled by default. Only disable it when the input is trusted.
+//!
 //! - **alloc**: Implements container traits on `Vec`, `String`, and `BTreeMap` from
 //!   [`alloc`](https://doc.rust-lang.org/alloc), allowing them to be used as container fields.
 //!   Corresponds with
@@ -141,7 +145,7 @@ pub use container::{PbBytes, PbMap, PbString, PbVec};
 #[cfg(all(feature = "decode", feature = "std"))]
 pub use decode::StdReader;
 #[cfg(feature = "decode")]
-pub use decode::{DecodeError, PbDecoder, PbRead};
+pub use decode::{DecodeError, PbDecoder, PbRead, DEFAULT_NESTING_LIMIT};
 #[cfg(all(feature = "encode", feature = "std"))]
 pub use encode::StdWriter;
 #[cfg(feature = "encode")]
