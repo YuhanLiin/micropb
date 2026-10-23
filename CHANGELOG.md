@@ -6,6 +6,8 @@
 
 - Protobuf Editions support
 - Add `ServiceGenerator` extension points for generating custom code from Protobuf services
+- Add `DecodeError::WrongWireType` variant and wire type checks during field decoding
+- Add `wire_type_check` generator option to configure wire type checking in generated decoders
 
 ### Changed
 
