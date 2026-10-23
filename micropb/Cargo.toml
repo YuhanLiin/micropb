@@ -11,9 +11,10 @@ rust-version = "1.88.0"
 license = "MIT OR Apache-2.0"
 
 [features]
-default = ["encode", "decode", "enable-64bit"]
+default = ["encode", "decode", "enable-64bit", "nesting-limit"]
 encode = []
 decode = []
+nesting-limit = []
 enable-64bit = []
 alloc = []
 std = ["alloc"]
@@ -28,7 +29,7 @@ heapless-0-9 = { package = "heapless", version = "0.9", optional = true }
 num-traits = { version = "0.2", default-features = false }
 
 [dev-dependencies]
-micropb = { path = ".", features = ["std" ,"container-arrayvec-0-7", "container-heapless-0-9"] }
+micropb = { path = ".", default-features = false, features = ["encode", "decode", "enable-64bit", "std", "container-arrayvec-0-7", "container-heapless-0-9"] }
 paste = "1"
 proptest = "1.6"
 
