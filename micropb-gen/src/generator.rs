@@ -124,6 +124,7 @@ pub(crate) struct Params {
     pub(crate) single_oneof_msg_as_enum: bool,
     pub(crate) encode_cache: bool,
     pub(crate) cache_extern_types: bool,
+    pub(crate) wire_type_check: bool,
 }
 
 pub(crate) struct Context<'proto> {
@@ -152,6 +153,7 @@ impl<'proto> Context<'proto> {
                 single_oneof_msg_as_enum: generator.single_oneof_msg_as_enum,
                 encode_cache: generator.encode_cache,
                 cache_extern_types: generator.cache_extern_types,
+                wire_type_check: generator.wire_type_check,
             },
             warning_cb: generator.warning_cb,
             graph: TypeGraph::default(),

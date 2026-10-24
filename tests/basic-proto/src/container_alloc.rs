@@ -149,7 +149,7 @@ fn decode_packed() {
 fn decode_packed_fixed() {
     let mut list = proto::FixedList::default();
     // non-packed decoding
-    let mut decoder = PbDecoder::new([0x08, 0x12, 0x11, 0x00, 0x00].as_slice());
+    let mut decoder = PbDecoder::new([0x0D, 0x12, 0x11, 0x00, 0x00].as_slice());
     let len = decoder.as_reader().len();
     list.decode(&mut decoder, len).unwrap();
     assert_eq!(list.list.len(), 1);

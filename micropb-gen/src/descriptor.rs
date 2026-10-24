@@ -20,6 +20,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: FileDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -131,6 +134,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#name;
                             {
                                 decoder
@@ -139,6 +145,9 @@ pub mod google_ {
                             self._has.set_name();
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#package;
                             {
                                 decoder
@@ -147,6 +156,9 @@ pub mod google_ {
                             self._has.set_package();
                         }
                         3u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: ::std::string::String = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -161,6 +173,11 @@ pub mod google_ {
                             }
                         }
                         10u32 => {
+                            if tag.wire_type() != 0u8
+                                && tag.wire_type() != ::micropb::WIRE_TYPE_LEN
+                            {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             if tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                                 decoder
                                     .decode_packed(
@@ -179,6 +196,11 @@ pub mod google_ {
                             }
                         }
                         11u32 => {
+                            if tag.wire_type() != 0u8
+                                && tag.wire_type() != ::micropb::WIRE_TYPE_LEN
+                            {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             if tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                                 decoder
                                     .decode_packed(
@@ -197,6 +219,9 @@ pub mod google_ {
                             }
                         }
                         4u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: DescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -210,6 +235,9 @@ pub mod google_ {
                             }
                         }
                         5u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: EnumDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -223,6 +251,9 @@ pub mod google_ {
                             }
                         }
                         6u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: ServiceDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -236,6 +267,9 @@ pub mod google_ {
                             }
                         }
                         7u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: FieldDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -249,6 +283,9 @@ pub mod google_ {
                             }
                         }
                         8u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#options;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -256,6 +293,9 @@ pub mod google_ {
                             self._has.set_options();
                         }
                         9u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#source_code_info;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -263,6 +303,9 @@ pub mod google_ {
                             self._has.set_source_code_info();
                         }
                         12u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#syntax;
                             {
                                 decoder
@@ -271,6 +314,9 @@ pub mod google_ {
                             self._has.set_syntax();
                         }
                         14u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#edition;
                             {
                                 let val = decoder.decode_int32().map(|n| Edition(n as _))?;
@@ -568,6 +614,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#name;
                             {
                                 decoder
@@ -576,6 +625,9 @@ pub mod google_ {
                             self._has.set_name();
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: FieldDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -589,6 +641,9 @@ pub mod google_ {
                             }
                         }
                         6u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: FieldDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -602,6 +657,9 @@ pub mod google_ {
                             }
                         }
                         3u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: DescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -615,6 +673,9 @@ pub mod google_ {
                             }
                         }
                         4u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: EnumDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -628,6 +689,9 @@ pub mod google_ {
                             }
                         }
                         5u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: DescriptorProto_::ExtensionRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -641,6 +705,9 @@ pub mod google_ {
                             }
                         }
                         8u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: OneofDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -654,6 +721,9 @@ pub mod google_ {
                             }
                         }
                         7u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#options;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -661,6 +731,9 @@ pub mod google_ {
                             self._has.set_options();
                         }
                         9u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: DescriptorProto_::ReservedRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -674,6 +747,9 @@ pub mod google_ {
                             }
                         }
                         10u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: ::std::string::String = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -856,6 +932,9 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             1u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#start;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -864,6 +943,9 @@ pub mod google_ {
                                 self._has.set_start();
                             }
                             2u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#end;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -872,6 +954,9 @@ pub mod google_ {
                                 self._has.set_end();
                             }
                             3u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#options;
                                 {
                                     decoder.decode_submessage_delimited(mut_ref)?;
@@ -1083,6 +1168,9 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             1u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#start;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -1091,6 +1179,9 @@ pub mod google_ {
                                 self._has.set_start();
                             }
                             2u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#end;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -1289,6 +1380,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -1302,6 +1396,9 @@ pub mod google_ {
                             }
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: ExtensionRangeOptions_::Declaration = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -1315,6 +1412,9 @@ pub mod google_ {
                             }
                         }
                         50u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -1322,6 +1422,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         3u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#verification;
                             {
                                 let val = decoder
@@ -1416,6 +1519,9 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             1u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#number;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -1424,6 +1530,9 @@ pub mod google_ {
                                 self._has.set_number();
                             }
                             2u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#full_name;
                                 {
                                     decoder
@@ -1432,6 +1541,9 @@ pub mod google_ {
                                 self._has.set_full_name();
                             }
                             3u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#type;
                                 {
                                     decoder
@@ -1440,6 +1552,9 @@ pub mod google_ {
                                 self._has.set_type();
                             }
                             5u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#reserved;
                                 {
                                     let val = decoder.decode_bool()?;
@@ -1448,6 +1563,9 @@ pub mod google_ {
                                 self._has.set_reserved();
                             }
                             6u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#repeated;
                                 {
                                     let val = decoder.decode_bool()?;
@@ -2258,6 +2376,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#name;
                             {
                                 decoder
@@ -2266,6 +2387,9 @@ pub mod google_ {
                             self._has.set_name();
                         }
                         3u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#number;
                             {
                                 let val = decoder.decode_int32()?;
@@ -2274,6 +2398,9 @@ pub mod google_ {
                             self._has.set_number();
                         }
                         4u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#label;
                             {
                                 let val = decoder
@@ -2284,6 +2411,9 @@ pub mod google_ {
                             self._has.set_label();
                         }
                         5u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#type;
                             {
                                 let val = decoder
@@ -2294,6 +2424,9 @@ pub mod google_ {
                             self._has.set_type();
                         }
                         6u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#type_name;
                             {
                                 decoder
@@ -2302,6 +2435,9 @@ pub mod google_ {
                             self._has.set_type_name();
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#extendee;
                             {
                                 decoder
@@ -2310,6 +2446,9 @@ pub mod google_ {
                             self._has.set_extendee();
                         }
                         7u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#default_value;
                             {
                                 decoder
@@ -2318,6 +2457,9 @@ pub mod google_ {
                             self._has.set_default_value();
                         }
                         9u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#oneof_index;
                             {
                                 let val = decoder.decode_int32()?;
@@ -2326,6 +2468,9 @@ pub mod google_ {
                             self._has.set_oneof_index();
                         }
                         10u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#json_name;
                             {
                                 decoder
@@ -2334,6 +2479,9 @@ pub mod google_ {
                             self._has.set_json_name();
                         }
                         8u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#options;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -2341,6 +2489,9 @@ pub mod google_ {
                             self._has.set_options();
                         }
                         17u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#proto3_optional;
                             {
                                 let val = decoder.decode_bool()?;
@@ -2866,6 +3017,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#name;
                             {
                                 decoder
@@ -2874,6 +3028,9 @@ pub mod google_ {
                             self._has.set_name();
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#options;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -2996,6 +3153,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#name;
                             {
                                 decoder
@@ -3004,6 +3164,9 @@ pub mod google_ {
                             self._has.set_name();
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: EnumValueDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -3017,6 +3180,9 @@ pub mod google_ {
                             }
                         }
                         3u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#options;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -3024,6 +3190,9 @@ pub mod google_ {
                             self._has.set_options();
                         }
                         4u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: EnumDescriptorProto_::EnumReservedRange = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -3037,6 +3206,9 @@ pub mod google_ {
                             }
                         }
                         5u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: ::std::string::String = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -3104,6 +3276,9 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             1u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#start;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -3112,6 +3287,9 @@ pub mod google_ {
                                 self._has.set_start();
                             }
                             2u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#end;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -3401,6 +3579,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#name;
                             {
                                 decoder
@@ -3409,6 +3590,9 @@ pub mod google_ {
                             self._has.set_name();
                         }
                         2u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#number;
                             {
                                 let val = decoder.decode_int32()?;
@@ -3417,6 +3601,9 @@ pub mod google_ {
                             self._has.set_number();
                         }
                         3u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#options;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -3555,6 +3742,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#name;
                             {
                                 decoder
@@ -3563,6 +3753,9 @@ pub mod google_ {
                             self._has.set_name();
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: MethodDescriptorProto = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -3576,6 +3769,9 @@ pub mod google_ {
                             }
                         }
                         3u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#options;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -3740,6 +3936,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#name;
                             {
                                 decoder
@@ -3748,6 +3947,9 @@ pub mod google_ {
                             self._has.set_name();
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#input_type;
                             {
                                 decoder
@@ -3756,6 +3958,9 @@ pub mod google_ {
                             self._has.set_input_type();
                         }
                         3u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#output_type;
                             {
                                 decoder
@@ -3764,6 +3969,9 @@ pub mod google_ {
                             self._has.set_output_type();
                         }
                         4u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#options;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -3771,6 +3979,9 @@ pub mod google_ {
                             self._has.set_options();
                         }
                         5u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#client_streaming;
                             {
                                 let val = decoder.decode_bool()?;
@@ -3779,6 +3990,9 @@ pub mod google_ {
                             self._has.set_client_streaming();
                         }
                         6u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#server_streaming;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4265,6 +4479,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#java_package;
                             {
                                 decoder
@@ -4273,6 +4490,9 @@ pub mod google_ {
                             self._has.set_java_package();
                         }
                         8u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#java_outer_classname;
                             {
                                 decoder
@@ -4281,6 +4501,9 @@ pub mod google_ {
                             self._has.set_java_outer_classname();
                         }
                         10u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#java_multiple_files;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4289,6 +4512,9 @@ pub mod google_ {
                             self._has.set_java_multiple_files();
                         }
                         20u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#java_generate_equals_and_hash;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4297,6 +4523,9 @@ pub mod google_ {
                             self._has.set_java_generate_equals_and_hash();
                         }
                         27u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#java_string_check_utf8;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4305,6 +4534,9 @@ pub mod google_ {
                             self._has.set_java_string_check_utf8();
                         }
                         9u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#optimize_for;
                             {
                                 let val = decoder
@@ -4315,6 +4547,9 @@ pub mod google_ {
                             self._has.set_optimize_for();
                         }
                         11u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#go_package;
                             {
                                 decoder
@@ -4323,6 +4558,9 @@ pub mod google_ {
                             self._has.set_go_package();
                         }
                         16u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#cc_generic_services;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4331,6 +4569,9 @@ pub mod google_ {
                             self._has.set_cc_generic_services();
                         }
                         17u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#java_generic_services;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4339,6 +4580,9 @@ pub mod google_ {
                             self._has.set_java_generic_services();
                         }
                         18u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#py_generic_services;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4347,6 +4591,9 @@ pub mod google_ {
                             self._has.set_py_generic_services();
                         }
                         23u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4355,6 +4602,9 @@ pub mod google_ {
                             self._has.set_deprecated();
                         }
                         31u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#cc_enable_arenas;
                             {
                                 let val = decoder.decode_bool()?;
@@ -4363,6 +4613,9 @@ pub mod google_ {
                             self._has.set_cc_enable_arenas();
                         }
                         36u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#objc_class_prefix;
                             {
                                 decoder
@@ -4371,6 +4624,9 @@ pub mod google_ {
                             self._has.set_objc_class_prefix();
                         }
                         37u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#csharp_namespace;
                             {
                                 decoder
@@ -4379,6 +4635,9 @@ pub mod google_ {
                             self._has.set_csharp_namespace();
                         }
                         39u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#swift_prefix;
                             {
                                 decoder
@@ -4387,6 +4646,9 @@ pub mod google_ {
                             self._has.set_swift_prefix();
                         }
                         40u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#php_class_prefix;
                             {
                                 decoder
@@ -4395,6 +4657,9 @@ pub mod google_ {
                             self._has.set_php_class_prefix();
                         }
                         41u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#php_namespace;
                             {
                                 decoder
@@ -4403,6 +4668,9 @@ pub mod google_ {
                             self._has.set_php_namespace();
                         }
                         44u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#php_metadata_namespace;
                             {
                                 decoder
@@ -4411,6 +4679,9 @@ pub mod google_ {
                             self._has.set_php_metadata_namespace();
                         }
                         45u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#ruby_package;
                             {
                                 decoder
@@ -4419,6 +4690,9 @@ pub mod google_ {
                             self._has.set_ruby_package();
                         }
                         50u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -4426,6 +4700,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -5386,6 +5663,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#message_set_wire_format;
                             {
                                 let val = decoder.decode_bool()?;
@@ -5394,6 +5674,9 @@ pub mod google_ {
                             self._has.set_message_set_wire_format();
                         }
                         2u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#no_standard_descriptor_accessor;
                             {
                                 let val = decoder.decode_bool()?;
@@ -5402,6 +5685,9 @@ pub mod google_ {
                             self._has.set_no_standard_descriptor_accessor();
                         }
                         3u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
@@ -5410,6 +5696,9 @@ pub mod google_ {
                             self._has.set_deprecated();
                         }
                         7u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#map_entry;
                             {
                                 let val = decoder.decode_bool()?;
@@ -5418,6 +5707,9 @@ pub mod google_ {
                             self._has.set_map_entry();
                         }
                         11u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self
                                 .r#deprecated_legacy_json_field_conflicts;
                             {
@@ -5427,6 +5719,9 @@ pub mod google_ {
                             self._has.set_deprecated_legacy_json_field_conflicts();
                         }
                         12u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -5434,6 +5729,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -6222,6 +6520,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#ctype;
                             {
                                 let val = decoder
@@ -6232,6 +6533,9 @@ pub mod google_ {
                             self._has.set_ctype();
                         }
                         2u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#packed;
                             {
                                 let val = decoder.decode_bool()?;
@@ -6240,6 +6544,9 @@ pub mod google_ {
                             self._has.set_packed();
                         }
                         6u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#jstype;
                             {
                                 let val = decoder
@@ -6250,6 +6557,9 @@ pub mod google_ {
                             self._has.set_jstype();
                         }
                         5u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#lazy;
                             {
                                 let val = decoder.decode_bool()?;
@@ -6258,6 +6568,9 @@ pub mod google_ {
                             self._has.set_lazy();
                         }
                         15u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#unverified_lazy;
                             {
                                 let val = decoder.decode_bool()?;
@@ -6266,6 +6579,9 @@ pub mod google_ {
                             self._has.set_unverified_lazy();
                         }
                         3u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
@@ -6274,6 +6590,9 @@ pub mod google_ {
                             self._has.set_deprecated();
                         }
                         10u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#weak;
                             {
                                 let val = decoder.decode_bool()?;
@@ -6282,6 +6601,9 @@ pub mod google_ {
                             self._has.set_weak();
                         }
                         16u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#debug_redact;
                             {
                                 let val = decoder.decode_bool()?;
@@ -6290,6 +6612,9 @@ pub mod google_ {
                             self._has.set_debug_redact();
                         }
                         17u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#retention;
                             {
                                 let val = decoder
@@ -6300,6 +6625,11 @@ pub mod google_ {
                             self._has.set_retention();
                         }
                         19u32 => {
+                            if tag.wire_type() != 0u8
+                                && tag.wire_type() != ::micropb::WIRE_TYPE_LEN
+                            {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             if tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                                 decoder
                                     .decode_packed(
@@ -6327,6 +6657,9 @@ pub mod google_ {
                             }
                         }
                         20u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: FieldOptions_::EditionDefault = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -6340,6 +6673,9 @@ pub mod google_ {
                             }
                         }
                         21u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -6347,6 +6683,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         22u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#feature_support;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -6354,6 +6693,9 @@ pub mod google_ {
                             self._has.set_feature_support();
                         }
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -6488,6 +6830,9 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             3u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#edition;
                                 {
                                     let val = decoder
@@ -6498,6 +6843,9 @@ pub mod google_ {
                                 self._has.set_edition();
                             }
                             2u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#value;
                                 {
                                     decoder
@@ -6826,6 +7174,9 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             1u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#edition_introduced;
                                 {
                                     let val = decoder
@@ -6836,6 +7187,9 @@ pub mod google_ {
                                 self._has.set_edition_introduced();
                             }
                             2u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#edition_deprecated;
                                 {
                                     let val = decoder
@@ -6846,6 +7200,9 @@ pub mod google_ {
                                 self._has.set_edition_deprecated();
                             }
                             3u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#deprecation_warning;
                                 {
                                     decoder
@@ -6854,6 +7211,9 @@ pub mod google_ {
                                 self._has.set_deprecation_warning();
                             }
                             4u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#edition_removed;
                                 {
                                     let val = decoder
@@ -7490,6 +7850,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -7497,6 +7860,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -7638,6 +8004,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         2u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#allow_alias;
                             {
                                 let val = decoder.decode_bool()?;
@@ -7646,6 +8015,9 @@ pub mod google_ {
                             self._has.set_allow_alias();
                         }
                         3u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
@@ -7654,6 +8026,9 @@ pub mod google_ {
                             self._has.set_deprecated();
                         }
                         6u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self
                                 .r#deprecated_legacy_json_field_conflicts;
                             {
@@ -7663,6 +8038,9 @@ pub mod google_ {
                             self._has.set_deprecated_legacy_json_field_conflicts();
                         }
                         7u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -7670,6 +8048,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -7886,6 +8267,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
@@ -7894,6 +8278,9 @@ pub mod google_ {
                             self._has.set_deprecated();
                         }
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -7901,6 +8288,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         3u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#debug_redact;
                             {
                                 let val = decoder.decode_bool()?;
@@ -7909,6 +8299,9 @@ pub mod google_ {
                             self._has.set_debug_redact();
                         }
                         4u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#feature_support;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -7916,6 +8309,9 @@ pub mod google_ {
                             self._has.set_feature_support();
                         }
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -8102,6 +8498,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         34u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -8109,6 +8508,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         33u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
@@ -8117,6 +8519,9 @@ pub mod google_ {
                             self._has.set_deprecated();
                         }
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -8263,6 +8668,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         33u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#deprecated;
                             {
                                 let val = decoder.decode_bool()?;
@@ -8271,6 +8679,9 @@ pub mod google_ {
                             self._has.set_deprecated();
                         }
                         34u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#idempotency_level;
                             {
                                 let val = decoder
@@ -8281,6 +8692,9 @@ pub mod google_ {
                             self._has.set_idempotency_level();
                         }
                         35u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#features;
                             {
                                 decoder.decode_submessage_delimited(mut_ref)?;
@@ -8288,6 +8702,9 @@ pub mod google_ {
                             self._has.set_features();
                         }
                         999u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -8516,6 +8933,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         2u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: UninterpretedOption_::NamePart = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -8529,6 +8949,9 @@ pub mod google_ {
                             }
                         }
                         3u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#identifier_value;
                             {
                                 decoder
@@ -8537,6 +8960,9 @@ pub mod google_ {
                             self._has.set_identifier_value();
                         }
                         4u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#positive_int_value;
                             {
                                 let val = decoder.decode_varint64()?;
@@ -8545,6 +8971,9 @@ pub mod google_ {
                             self._has.set_positive_int_value();
                         }
                         5u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#negative_int_value;
                             {
                                 let val = decoder.decode_int64()?;
@@ -8553,6 +8982,9 @@ pub mod google_ {
                             self._has.set_negative_int_value();
                         }
                         6u32 => {
+                            if tag.wire_type() != 1u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#double_value;
                             {
                                 let val = decoder.decode_double()?;
@@ -8561,6 +8993,9 @@ pub mod google_ {
                             self._has.set_double_value();
                         }
                         7u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#string_value;
                             {
                                 decoder
@@ -8569,6 +9004,9 @@ pub mod google_ {
                             self._has.set_string_value();
                         }
                         8u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#aggregate_value;
                             {
                                 decoder
@@ -8627,6 +9065,9 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             1u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#name_part;
                                 {
                                     decoder
@@ -8635,6 +9076,9 @@ pub mod google_ {
                                 self._has.set_name_part();
                             }
                             2u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#is_extension;
                                 {
                                     let val = decoder.decode_bool()?;
@@ -9211,6 +9655,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#field_presence;
                             {
                                 let val = decoder
@@ -9221,6 +9668,9 @@ pub mod google_ {
                             self._has.set_field_presence();
                         }
                         2u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#enum_type;
                             {
                                 let val = decoder
@@ -9231,6 +9681,9 @@ pub mod google_ {
                             self._has.set_enum_type();
                         }
                         3u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#repeated_field_encoding;
                             {
                                 let val = decoder
@@ -9241,6 +9694,9 @@ pub mod google_ {
                             self._has.set_repeated_field_encoding();
                         }
                         4u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#utf8_validation;
                             {
                                 let val = decoder
@@ -9251,6 +9707,9 @@ pub mod google_ {
                             self._has.set_utf8_validation();
                         }
                         5u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#message_encoding;
                             {
                                 let val = decoder
@@ -9261,6 +9720,9 @@ pub mod google_ {
                             self._has.set_message_encoding();
                         }
                         6u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#json_format;
                             {
                                 let val = decoder
@@ -9696,6 +10158,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: FeatureSetDefaults_::FeatureSetEditionDefault = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -9709,6 +10174,9 @@ pub mod google_ {
                             }
                         }
                         4u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#minimum_edition;
                             {
                                 let val = decoder.decode_int32().map(|n| Edition(n as _))?;
@@ -9717,6 +10185,9 @@ pub mod google_ {
                             self._has.set_minimum_edition();
                         }
                         5u32 => {
+                            if tag.wire_type() != 0u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut_ref = &mut self.r#maximum_edition;
                             {
                                 let val = decoder.decode_int32().map(|n| Edition(n as _))?;
@@ -9789,6 +10260,9 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             3u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#edition;
                                 {
                                     let val = decoder
@@ -9799,6 +10273,9 @@ pub mod google_ {
                                 self._has.set_edition();
                             }
                             4u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#overridable_features;
                                 {
                                     decoder.decode_submessage_delimited(mut_ref)?;
@@ -9806,6 +10283,9 @@ pub mod google_ {
                                 self._has.set_overridable_features();
                             }
                             5u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#fixed_features;
                                 {
                                     decoder.decode_submessage_delimited(mut_ref)?;
@@ -10032,6 +10512,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: SourceCodeInfo_::Location = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -10171,6 +10654,11 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             1u32 => {
+                                if tag.wire_type() != 0u8
+                                    && tag.wire_type() != ::micropb::WIRE_TYPE_LEN
+                                {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 if tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                                     decoder
                                         .decode_packed(
@@ -10187,6 +10675,11 @@ pub mod google_ {
                                 }
                             }
                             2u32 => {
+                                if tag.wire_type() != 0u8
+                                    && tag.wire_type() != ::micropb::WIRE_TYPE_LEN
+                                {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 if tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                                     decoder
                                         .decode_packed(
@@ -10203,6 +10696,9 @@ pub mod google_ {
                                 }
                             }
                             3u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#leading_comments;
                                 {
                                     decoder
@@ -10211,6 +10707,9 @@ pub mod google_ {
                                 self._has.set_leading_comments();
                             }
                             4u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#trailing_comments;
                                 {
                                     decoder
@@ -10219,6 +10718,9 @@ pub mod google_ {
                                 self._has.set_trailing_comments();
                             }
                             6u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut val: ::std::string::String = ::core::default::Default::default();
                                 let mut_ref = &mut val;
                                 {
@@ -10327,6 +10829,9 @@ pub mod google_ {
                     match tag.field_num() {
                         0 => return Err(::micropb::DecodeError::ZeroField),
                         1u32 => {
+                            if tag.wire_type() != 2u8 {
+                                return Err(::micropb::DecodeError::WrongWireType);
+                            }
                             let mut val: GeneratedCodeInfo_::Annotation = ::core::default::Default::default();
                             let mut_ref = &mut val;
                             {
@@ -10413,6 +10918,11 @@ pub mod google_ {
                         match tag.field_num() {
                             0 => return Err(::micropb::DecodeError::ZeroField),
                             1u32 => {
+                                if tag.wire_type() != 0u8
+                                    && tag.wire_type() != ::micropb::WIRE_TYPE_LEN
+                                {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 if tag.wire_type() == ::micropb::WIRE_TYPE_LEN {
                                     decoder
                                         .decode_packed(
@@ -10429,6 +10939,9 @@ pub mod google_ {
                                 }
                             }
                             2u32 => {
+                                if tag.wire_type() != 2u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#source_file;
                                 {
                                     decoder
@@ -10437,6 +10950,9 @@ pub mod google_ {
                                 self._has.set_source_file();
                             }
                             3u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#begin;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -10445,6 +10961,9 @@ pub mod google_ {
                                 self._has.set_begin();
                             }
                             4u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#end;
                                 {
                                     let val = decoder.decode_int32()?;
@@ -10453,6 +10972,9 @@ pub mod google_ {
                                 self._has.set_end();
                             }
                             5u32 => {
+                                if tag.wire_type() != 0u8 {
+                                    return Err(::micropb::DecodeError::WrongWireType);
+                                }
                                 let mut_ref = &mut self.r#semantic;
                                 {
                                     let val = decoder
