@@ -105,6 +105,10 @@ pub struct Cli {
     #[arg(long = "no-cache-extern-types", action = ArgAction::SetFalse)]
     pub cache_extern_types: Option<bool>,
 
+    /// Do not check protobuf wire types when decoding [default: enabled]
+    #[arg(long = "no-wire-type-check", action = ArgAction::SetFalse)]
+    pub wire_type_check: Option<bool>,
+
     /// Map a Protobuf type path to an external Rust type (format: `.proto.Path=rust::Path`)
     #[arg(
         long = "extern-type-path",
@@ -233,6 +237,9 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     }
     if let Some(value) = cli.cache_extern_types {
         generator.cache_extern_types(value);
+    }
+    if let Some(value) = cli.wire_type_check {
+        generator.wire_type_check(value);
     }
 
     for include in cli.includes {

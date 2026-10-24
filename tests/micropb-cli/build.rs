@@ -42,6 +42,7 @@ fn main() {
         status.success(),
         "micropb-cli failed to generate fixture code"
     );
+    println!("cargo:rerun-if-changed={}", cli.display());
     println!("cargo:rerun-if-changed=proto");
     println!("cargo:rerun-if-env-changed=CARGO_TARGET_DIR");
 }
