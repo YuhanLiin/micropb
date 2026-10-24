@@ -1,0 +1,8 @@
+[package]
+name = "micropb-cli-integration"
+version = "0.0.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+micropb = { path = "../../micropb", features = ["std"] }
