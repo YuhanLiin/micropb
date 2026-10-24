@@ -1,10 +1,19 @@
-use std::{fmt::Display, io};
+use std::{
+    fmt::Display,
+    io,
+    path::{Path, PathBuf},
+};
 
 /// Error encountered while processing proto files and generating Rust code
 #[derive(Debug)]
 pub enum Error {
     /// IO error
-    Io(io::Error),
+    Io {
+        /// Inner error
+        err: io::Error,
+        /// File path associated with the error
+        file: Option<PathBuf>,
+    },
     /// Protoc invocation error
     Protoc(String),
     /// Protobuf field error
@@ -50,7 +59,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Io(error) => error.fmt(f),
+            Error::Io { err, file: None } => err.fmt(f),
+            Error::Io {
+                err,
+                file: Some(file),
+            } => write!(f, "{}: {err}", file.display()),
             Error::Protoc(error) => write!(f, "protoc failed: {error}"),
             Error::Field {
                 package,
@@ -84,7 +97,7 @@ impl Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Error::Io(error) => Some(error),
+            Error::Io { err, .. } => Some(err),
             #[cfg(feature = "config-file")]
             Error::ConfigFile { err, .. } => Some(err),
             Error::Field { .. }
@@ -92,12 +105,6 @@ impl std::error::Error for Error {
             | Error::Package { .. }
             | Error::Protoc(_) => None,
         }
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err)
     }
 }
 
@@ -128,4 +135,15 @@ pub(crate) fn pkg_error(pkg: &str, err_text: impl Display) -> Error {
         package: pkg.to_owned(),
         text: err_text.to_string(),
     }
+}
+
+pub(crate) fn file_error(file: &Path, err: io::Error) -> Error {
+    Error::Io {
+        err,
+        file: Some(file.to_owned()),
+    }
+}
+
+pub(crate) fn io_error(err: io::Error) -> Error {
+    Error::Io { err, file: None }
 }

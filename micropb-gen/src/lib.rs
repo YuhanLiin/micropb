@@ -530,12 +530,13 @@ use std::{
 
 pub use config::Config;
 pub use error::{Error, Result};
-use micropb::{MessageDecode, PbDecoder};
-use pathtree::PathTree;
-use proc_macro2::TokenStream;
 pub use service::{MethodView, ServiceGenerator, ServiceView, TypeResolver};
 
 use crate::generator::Context;
+use error::{file_error, io_error};
+use micropb::{MessageDecode, PbDecoder};
+use pathtree::PathTree;
+use proc_macro2::TokenStream;
 
 #[derive(Debug, Clone, Copy, Default)]
 /// Whether to include encode and decode logic
@@ -791,7 +792,7 @@ impl Generator {
     /// for TOML parsing to work correctly.</div>
     #[cfg(feature = "config-file")]
     pub fn parse_config_file(&mut self, file_path: &Path, package: &str) -> Result<()> {
-        let file_bytes = fs::read(file_path)?;
+        let file_bytes = fs::read(file_path).map_err(|e| file_error(file_path, e))?;
         self.parse_config_bytes(&file_bytes, package)
             .map_err(|err| Error::ConfigFile {
                 file_name: file_path.to_path_buf(),
@@ -930,7 +931,7 @@ impl Generator {
         };
         match self.parse_config_file(&toml_path, &pkg_path) {
             // If config file doesn't exist then just assume there's no configs
-            Err(Error::Io(err)) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(Error::Io { err, .. }) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
             Err(err) => Err(err),
             Ok(()) => Ok(()),
         }
@@ -979,7 +980,7 @@ impl Generator {
         let fdset_file = if let Some(fdset_path) = &self.fdset_path {
             fdset_path.to_owned()
         } else {
-            tmp = tempfile::tempdir()?;
+            tmp = tempfile::tempdir().map_err(io_error)?;
             tmp.path().join("micropb-fdset")
         };
 
@@ -995,12 +996,15 @@ impl Generator {
             cmd.arg(proto.as_ref());
         }
 
-        let output = cmd.output().map_err(|e| match e.kind() {
-            std::io::ErrorKind::NotFound => {
-                std::io::Error::new(e.kind(), "`protoc` was not found. Check your PATH.")
-            }
-            _ => e,
-        })?;
+        let output = cmd
+            .output()
+            .map_err(|e| match e.kind() {
+                std::io::ErrorKind::NotFound => {
+                    std::io::Error::new(e.kind(), "`protoc` was not found. Check your PATH.")
+                }
+                _ => e,
+            })
+            .map_err(io_error)?;
         if !output.status.success() {
             return Err(Error::Protoc(
                 String::from_utf8_lossy(&output.stderr).into(),
@@ -1031,7 +1035,7 @@ impl Generator {
         #[allow(unused)]
         let format = self.format;
 
-        let bytes = fs::read(fdset_file)?;
+        let bytes = fs::read(fdset_file).map_err(|e| file_error(fdset_file, e))?;
         let mut decoder = PbDecoder::new(bytes.as_slice());
         let mut fdset = descriptor::FileDescriptorSet::default();
         fdset
@@ -1050,8 +1054,9 @@ impl Generator {
         #[cfg(not(feature = "format"))]
         let output = code.to_string();
 
-        let mut file = fs::File::create(out_filename)?;
-        file.write_all(output.as_bytes())?;
+        let mut file = fs::File::create(out_filename).map_err(|e| file_error(out_filename, e))?;
+        file.write_all(output.as_bytes())
+            .map_err(|e| file_error(out_filename, e))?;
 
         Ok(())
     }
