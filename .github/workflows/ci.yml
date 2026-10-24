@@ -22,7 +22,7 @@ jobs:
           version: '27.x'
       - run: cargo clippy --workspace --tests --no-default-features --exclude arm-app -- -Dwarnings
       - run: cargo clippy --workspace --tests --all-features --exclude arm-app -- -Dwarnings
-      - run: cargo test --workspace --exclude arm-app
+      - run: cargo test --workspace --exclude arm-app --exclude micropb-cli-integration
 
   build:
     name: build workspace with ${{matrix.toolchain}}
@@ -41,10 +41,27 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: '27.x'
+      # Upload micropb-cli executable
+      - uses: actions/upload-artifact@v4
+        with:
+          name: micropb-cli
+          path: target/debug/micropb-cli
       - run: cargo build --workspace --exclude no-panicking --exclude arm-app
       - run: cargo build -p no-panicking --profile release-lto
       # Check if descriptor.rs has been bootstrapped properly
       - run: diff examples/file-descriptor-set/descriptor.rs micropb-gen/src/descriptor.rs
+
+  test-cli:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: micropb-cli
+          path: target/debug
+      - run: chmod +x target/debug/micropb-cli
+      - run: cargo test -p micropb-cli-integration
 
   build-arm-app:
     name: build arm-app with ${{matrix.toolchain}}
