@@ -46,7 +46,7 @@ jobs:
         with:
           name: micropb-cli
           path: target/debug/micropb-cli
-      - run: cargo build --workspace --exclude no-panicking --exclude arm-app
+      - run: cargo build --workspace --exclude no-panicking --exclude arm-app --exclude micropb-cli-integration
       - run: cargo build -p no-panicking --profile release-lto
       # Check if descriptor.rs has been bootstrapped properly
       - run: diff examples/file-descriptor-set/descriptor.rs micropb-gen/src/descriptor.rs
