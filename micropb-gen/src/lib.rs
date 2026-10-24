@@ -1209,7 +1209,7 @@ impl Generator {
     /// underscore.
     ///
     /// This is on by default. Even when off, module names like "super" and modules created from
-    /// from message names will still be suffixed.
+    /// message names will still be suffixed.
     pub fn suffixed_package_names(&mut self, suffixed: bool) -> &mut Self {
         self.suffixed_package_names = suffixed;
         self
