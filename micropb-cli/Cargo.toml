@@ -1,6 +1,6 @@
 [package]
 name = "micropb-cli"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2024"
 authors = ["Yuhan Lin <yuhanliin@protonmail.com>"]
 description = "CLI tool for micropb-gen Protobuf compiler"
@@ -15,6 +15,6 @@ name = "micropb-cli"
 path = "src/main.rs"
 
 [dependencies]
-micropb-gen = { version = "0.6.0", path = "../micropb-gen" }
+micropb-gen = { version = "0.7.0", path = "../micropb-gen" }
 clap = { version = "4.5", features = ["derive"] }
 

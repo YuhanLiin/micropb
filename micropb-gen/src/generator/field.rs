@@ -18,7 +18,8 @@ use super::{CurrentConfig, EncodeFunc, type_spec::TypeSpec};
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum CustomField {
-    Type(syn::Type),
+    // Box syn::Type due to its size
+    Type(Box<syn::Type>),
     Delegate(Ident),
 }
 

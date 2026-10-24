@@ -11,3 +11,5 @@ This folder contains the following test suites:
 - `decode-only`: Includes only decode logic, as well as disabling 64-bit ints. For testing decode-only and 32-bit only functionality.
 
 - `proptest-proto`: Tests randomly-generated message structures and decoding of random bytes.
+
+- `micropb-cli-integration`: Invokes `micropb-cli` command to generate Rust files from proto files and run tests on the generated Rust source. Requires `micropb-cli` to be built first.

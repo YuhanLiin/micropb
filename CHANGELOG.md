@@ -1,11 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 ### Added
 
 - Protobuf Editions support
-- New micropb generator CLI application, allowing the generator to be run from the command line
+- New micropb generator CLI application (`micropb-cli`), allowing the generator to be run from the command line
 
 - Add `ServiceGenerator` extension points for generating custom code from Protobuf services
 - Add `DecodeError::WrongWireType` variant and wire type checks during field decoding
