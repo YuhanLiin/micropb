@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package cli_test;
+
+enum State {
+    STATE_UNKNOWN = 0;
+    STATE_READY = 1;
+}
+
+// Sample message
+message Sample {
+    uint32 id = 1;
+    repeated uint32 values = 2;
+}
