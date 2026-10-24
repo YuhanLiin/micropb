@@ -41,26 +41,23 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: '27.x'
-      # Upload micropb-cli executable
-      - uses: actions/upload-artifact@v4
-        with:
-          name: micropb-cli
-          path: target/debug/micropb-cli
       - run: cargo build --workspace --exclude no-panicking --exclude arm-app --exclude micropb-cli-integration
       - run: cargo build -p no-panicking --profile release-lto
       # Check if descriptor.rs has been bootstrapped properly
       - run: diff examples/file-descriptor-set/descriptor.rs micropb-gen/src/descriptor.rs
 
   test-cli:
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: dtolnay/rust-toolchain@master
         with:
-          name: micropb-cli
-          path: target/debug
-      - run: chmod +x target/debug/micropb-cli
+          toolchain: ${{matrix.toolchain}}
+      - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          version: '27.x'
+      - run: cargo build -p micropb-cli
       - run: cargo test -p micropb-cli-integration
 
   build-arm-app:
