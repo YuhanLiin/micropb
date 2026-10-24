@@ -4,7 +4,6 @@ resolver = "2"
 members = [
     "micropb",
     "micropb-gen",
-    "micropb-cli",
     "tests/micropb-cli",
     "tests/basic-proto", 
     "tests/serde-proto",
@@ -18,6 +17,8 @@ members = [
     "tests/doc-proto",
     "tests/editions",
 ]
+
+exclude = ["micropb-cli"]
 
 # For the no-panicking example
 [profile.release-lto]

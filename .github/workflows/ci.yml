@@ -57,7 +57,9 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: '27.x'
-      - run: cargo build -p micropb-cli
+      - run: cd micropb-cli
+      - run: cargo build
+      - run: cd ..
       - run: cargo test -p micropb-cli-integration
 
   build-arm-app:
