@@ -39,6 +39,12 @@ The `micropb` project consists of two crates:
 
 For a concrete example of `micropb` on an embedded application, see [`arm-app`](https://github.com/YuhanLiin/micropb/tree/main/examples/arm-app).
 
+## CLI
+
+[`micropb-cli`](https://crates.io/crates/micropb-cli) is a standalone application that provides a command-line interface to `micropb-gen`, allowing Rust source to be generated from the command-line rather than from the build script. All generator settings are available as CLI options, and package-specific configurations can be passed in as TOML config files.
+
+To install, do `cargo install micropb-cli`
+
 ## Documentation
 
 Documentation is at [docs.rs](https://docs.rs/micropb-gen/latest/micropb_gen/).
