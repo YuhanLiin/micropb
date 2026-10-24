@@ -12,7 +12,7 @@ mod tests {
 
     #[test]
     fn cli_config_changes_generated_type_and_message_round_trips() {
-        let message = proto::cli_test_::Sample {
+        let message = proto::cli_test::Sample {
             id: 42,
             values: vec![7, 11, 19],
         };
@@ -22,8 +22,20 @@ mod tests {
         message.encode(&mut encoder).unwrap();
         let bytes = encoder.into_writer();
 
-        let mut decoded = proto::cli_test_::Sample::default();
+        let mut decoded = proto::cli_test::Sample::default();
         decoded.decode_from_bytes(&bytes).unwrap();
         assert_eq!(decoded, message);
+    }
+
+    #[test]
+    fn cli_enum() {
+        assert_eq!(
+            proto::cli_test::State::StateUnknown,
+            proto::cli_test::State(0)
+        );
+        assert_eq!(
+            proto::cli_test::State::StateReady,
+            proto::cli_test::State(1)
+        );
     }
 }

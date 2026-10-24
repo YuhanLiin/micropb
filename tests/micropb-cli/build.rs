@@ -26,7 +26,9 @@ fn main() {
         .arg("--encode-cache")
         .arg("--config-file")
         .arg("proto/cli.toml:cli_test")
+        .arg("--retain-enum-prefix")
         .arg("-Iproto")
+        .arg("--no-suffixed-package-names")
         .arg("proto/cli.proto")
         .status()
         .unwrap_or_else(|error| {
