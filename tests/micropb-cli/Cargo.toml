@@ -6,3 +6,7 @@ build = "build.rs"
 
 [dependencies]
 micropb = { path = "../../micropb", features = ["std"] }
+
+[build-dependencies]
+# Ensure that the CLI crate is built before the build scripts are run, so the build script will always be able to call the executable
+micropb-cli = { path = "../../micropb-cli" }
