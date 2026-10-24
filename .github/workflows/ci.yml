@@ -20,8 +20,8 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: '27.x'
-      - run: cargo clippy --workspace --tests --no-default-features --exclude arm-app -- -Dwarnings
-      - run: cargo clippy --workspace --tests --all-features --exclude arm-app -- -Dwarnings
+      - run: cargo clippy --workspace --tests --no-default-features --exclude arm-app --exclude micropb-cli-integration -- -Dwarnings
+      - run: cargo clippy --workspace --tests --all-features --exclude arm-app --exclude micropb-cli-integration -- -Dwarnings
       - run: cargo test --workspace --exclude arm-app --exclude micropb-cli-integration
 
   build:
